@@ -132,6 +132,77 @@ class MaintenanceUpdateTests(unittest.TestCase):
     def target_bytes(self):
         return {path.relative_to(self.root).as_posix(): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
 
+    def install_owned_receipt(self):
+        import copy
+        component = copy.deepcopy(self.old_component)
+        data = b'historical component revision\n'
+        (self.old/'receipt.bin').write_bytes(data)
+        component['files'].append({'source': 'receipt.bin', 'target': 'usr/local/lib/boiler-test/historical-receipt.json',
+                                   'size': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'mode': 0o600})
+        self.engine.apply(component, self.old, environment=self.environment)
+        return self.root/'usr/local/lib/boiler-test/historical-receipt.json'
+
+    def test_signed_retained_ownership_plan_upgrade_and_restore(self):
+        receipt = self.install_owned_receipt()
+        prior = self.engine._state()['components']['core:maintenance']['transaction']
+        old_receipt = receipt.read_bytes()
+        def components(payload):
+            value = self.component(payload, 'core:maintenance', '2.0.0', b'new runtime\n')
+            value['retain_owned_paths'] = True
+            return [value]
+        package = self.package(components=components)
+        self.sign_index(package)
+        plan = self.plan(package)
+        retained = plan['actions'][0]['retained_owned_paths']
+        self.assertEqual(len(retained), 1)
+        self.assertEqual(retained[0]['transaction'], prior)
+        self.assertEqual(retained[0]['target'], receipt.relative_to(self.root).as_posix())
+        self.assertEqual(retained[0]['snapshot']['sha256'], hashlib.sha256(old_receipt).hexdigest())
+        self.assertNotIn('data', retained[0]['snapshot'])
+        self.execute(plan, package)
+        self.assertEqual(receipt.read_bytes(), old_receipt)
+        transaction = self.engine._state()['components']['core:maintenance']['transaction']
+        self.assertNotEqual(transaction, prior)
+        self.assertEqual(self.engine._state()['owners'][retained[0]['target']]['transaction'], transaction)
+        self.engine.restore(transaction)
+        self.assertEqual(receipt.read_bytes(), old_receipt)
+        self.assertEqual(self.engine._state()['components']['core:maintenance']['transaction'], prior)
+        self.assertTrue(self.engine.verify('core:maintenance')['ok'])
+
+    def test_retained_ownership_is_explicit_and_changed_files_invalidate_review(self):
+        receipt = self.install_owned_receipt()
+        ordinary = self.package()
+        self.sign_index(ordinary)
+        with self.assertRaisesRegex(MaintenanceError, 'drops managed paths'):
+            self.plan(ordinary)
+        def components(payload):
+            value = self.component(payload, 'core:maintenance', '2.0.0', b'new runtime\n')
+            value['retain_owned_paths'] = True
+            return [value]
+        package = self.package(components=components)
+        self.sign_index(package, sequence=11)
+        plan = self.plan(package)
+        receipt.write_bytes(b'user modification')
+        runtime = self.root/self.old_component['files'][0]['target']
+        with self.assertRaises(MaintenanceError):
+            self.execute(plan, package)
+        self.assertEqual(runtime.read_bytes(), b'old runtime\n')
+        self.assertEqual(receipt.read_bytes(), b'user modification')
+
+    def test_equal_version_static_retention_is_unchanged_not_a_fabricated_upgrade(self):
+        self.install_owned_receipt()
+        def components(payload):
+            value = self.component(payload, 'core:maintenance', '1.0.0', b'old runtime\n')
+            value['retain_owned_paths'] = True
+            return [value]
+        package = self.package(version='1.0.0', components=components)
+        self.sign_index(package)
+        plan = self.plan(package)
+        self.assertEqual(plan['actions'][0]['action'], 'unchanged')
+        before = self.engine._state()
+        self.execute(plan, package)
+        self.assertEqual(self.engine._state(), before)
+
     def test_inventory_and_signed_planning_are_readonly(self):
         package = self.package()
         self.sign_index(package)

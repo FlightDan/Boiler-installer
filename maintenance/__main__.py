@@ -1,4 +1,4 @@
-"""Guest maintenance CLI; invocation must supply the mounted target root."""
+"""Explicit target maintenance, with durable SteamOS live-root protection."""
 import argparse
 import json
 import sys
@@ -34,6 +34,8 @@ def main(argv=None):
         plugin=plugins.add_parser(action); plugin.add_argument("plugin",choices=("decky","steamgriddb","protondb"))
     args=parser.parse_args(argv)
     try:
+        from .live_root import check_state_directory,pending
+        check_state_directory(args.root,args.state_dir)
         if args.command in ("inventory","discover","plan-update","execute-update"):
             from . import updates
             if args.command=="inventory": result=updates.inventory(args.root,args.state_dir,device_id=args.device_id)
@@ -44,11 +46,21 @@ def main(argv=None):
         if args.command=="plugins":
             from .plugins import PluginMaintenance
             adapter=PluginMaintenance(args.root)
-            result=adapter.list() if args.plugin_command=="list" else getattr(adapter,args.plugin_command)(args.plugin)
+            if args.plugin_command=='restore':
+                engine=Engine(args.root,args.state_dir)
+                with engine._lock():
+                    engine._recover()
+                    result=adapter.restore(args.plugin)
+            else:
+                result=adapter.list() if args.plugin_command=='list' else adapter.verify(args.plugin)
             print(json.dumps({"ok":True,"result":result})); return 0
+        if args.command=='verify':
+            if pending(args.root,args.state_dir):
+                raise RuntimeError('Interrupted root protection window requires explicit recover')
+            result=Engine(args.root,args.state_dir,read_only=True).verify_readonly(args.component)
+            print(json.dumps({'ok':True,'result':result})); return 0
         engine=Engine(args.root,args.state_dir)
         if args.command=="apply": result=engine.apply(load_json(args.manifest),args.payload)
-        elif args.command=="verify": result=engine.verify(args.component)
         elif args.command=="restore": result=engine.restore(args.transaction)
         elif args.command=="inspect-legacy": result=engine.inspect_legacy(args.state,args.public_key)
         elif args.command=="adopt": result=engine.adopt(args.receipt)

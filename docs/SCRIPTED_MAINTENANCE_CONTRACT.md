@@ -59,3 +59,26 @@ that real lifecycle, component mapping and recovery behavior before opting in.
 Do not add this declaration merely to bypass the current refusal. Scripted
 fixture tests establish software behavior, not device upgrade, reboot or
 hardware acceptance.
+
+## Static updates that retain existing ownership
+
+A signed static `ComponentManifest` may declare `retain_owned_paths: true` to
+update listed files while preserving omitted paths already owned by that exact
+component. The default is false. This is an upgrade-only contract and cannot be
+combined with hooks or used to adopt unowned files. It does not authorize a
+pattern, directory walk or machine-specific path supplied by a script.
+
+Planning resolves retained paths from the installed component's committed
+journal and exact ownership records. Each retained entry binds its target,
+prior transaction, existence, size, SHA-256, mode, uid and gid in the reviewed
+plan. Execution rebuilds the plan, then the engine rechecks live ownership and
+bytes under its transaction lock. Case aliases, overlapping paths, stale owner
+records and edited retained files are rejected. Absent owned paths remain absent.
+
+Retained files are not rewritten during application. The new journal preserves
+their current generation for rollback, while earlier journals retain original
+pre-install backups. Historical legacy revision receipts remain historical;
+retaining one does not assert that the old maintenance engine installed the new
+payload. Both engines continue to reject unexpected file changes through their
+own integrity checks. Equal-version, identical static content is reported as
+unchanged, never as a fabricated functional upgrade.

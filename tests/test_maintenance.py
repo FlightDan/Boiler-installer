@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -25,6 +26,20 @@ class MaintenanceTests(unittest.TestCase):
         self.engine.restore(result["transaction"])
         self.assertEqual((self.root/"etc/test").read_bytes(),b"original")
         with self.assertRaises(MaintenanceError): self.engine.verify("core:decky")
+
+    def test_binary_new_install_needs_no_legacy_store_and_creates_public_system_parents(self):
+        result=self.engine.apply(component(target='etc/new-system/runtime/file'),self.payload)
+        target=self.root/'etc/new-system/runtime/file'
+        self.assertEqual(target.read_bytes(),b'ok')
+        self.assertFalse((self.root/'home/.oxp3-maintenance').exists())
+        journal=json.loads(self.engine._journal(result['transaction']).read_bytes())
+        self.assertFalse(journal['legacy_lock_required'])
+        self.assertEqual(journal['operations'][0]['after']['storage'],'blob-v1')
+        self.assertNotIn('data',journal['operations'][0]['after'])
+        if os.name != 'nt':
+            self.assertEqual(target.parent.stat().st_mode & 0o777,0o755)
+        self.engine.restore(result['transaction'])
+        self.assertFalse(target.exists())
 
     def test_ownership_and_modified_restore(self):
         tx=self.engine.apply(component(),self.payload)

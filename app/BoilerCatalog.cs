@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Diagnostics;
 using Microsoft.Win32;
 
 namespace OxpInstaller;
@@ -29,6 +31,7 @@ public partial class MainWindow
     private StackPanel? devicePanel;
     private TextBlock? deviceStatus;
     private TextBlock? deviceNotes;
+    private TextBlock? deviceSourceLink;
     private Expander? deviceNotesExpander;
     private JsonElement? reviewedDeviceMetadata;
     private ComboBox? deviceList;
@@ -37,6 +40,7 @@ public partial class MainWindow
     private TextBox? developerRef;
     private TextBox? developerPackagePath;
     private bool deviceActionBusy;
+    private TextBlock? hardwareAdvice;
     private readonly Dictionary<string, CheckBox> deviceComponentChoices = new();
     private StackPanel? deviceComponentsPanel;
 
@@ -45,6 +49,7 @@ public partial class MainWindow
         selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
         reviewedDeviceMetadata = null;
         if (deviceNotesExpander != null) deviceNotesExpander.Visibility = Visibility.Collapsed;
+        if (deviceSourceLink != null) deviceSourceLink.Visibility = Visibility.Collapsed;
         deviceComponentChoices.Clear();
         if (deviceComponentsPanel != null) { ComponentOptionsHost.Children.Remove(deviceComponentsPanel); deviceComponentsPanel = null; }
         ConfigurationChanged();
@@ -66,12 +71,30 @@ public partial class MainWindow
         var offline = new Button { Content = PartitionInventory.L("使用已验证的缓存目录", "Use verified cached index"), HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 48 };
         offline.Click += async (_, _) => await DeviceAction(async () => ShowDeviceIndex(await BoilerProtocol.RunAsync(["cached-index", BoilerProtocol.RegistryCache], CancellationToken.None), true));
         devicePanel.Children.Add(offline);
+        var detect = new Button { Content = PartitionInventory.L("检测本机并查看机型建议", "Detect this PC for device suggestions"), HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 48 };
+        hardwareAdvice = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 8),
+            Text = PartitionInventory.L("为外部设备制作系统时，请按目标设备手选机型。", "When preparing a system for another device, select that target model manually.") };
+        detect.Click += (_, _) =>
+        {
+            var computer = BoilerHardware.ReadThisComputer();
+            if (computer == null) { hardwareAdvice.Text = PartitionInventory.L("无法读取本机型号，请手选目标机型。", "This PC's model is unavailable. Select the target model manually."); return; }
+            var matches = deviceList!.Items.OfType<ComboBoxItem>().Where(choice => choice.Tag is JsonElement entry && BoilerHardware.Matches(entry, computer)).Select(choice => choice.Content?.ToString()).ToArray();
+            hardwareAdvice.Text = computer.Manufacturer + " · " + computer.Model + "\n"
+                + (deviceList.Items.Count == 0 ? PartitionInventory.L("请先加载已验签机型目录。", "Load a verified device index first.")
+                    : matches.Length == 0 ? PartitionInventory.L("目录中没有精确匹配，请手选目标机型。", "No exact match in this index. Select the target model manually.")
+                    : PartitionInventory.L("本机建议：", "Suggestions for this PC: ") + string.Join(" / ", matches))
+                + "\n" + PartitionInventory.L("此建议只描述当前电脑。机型和组件仍需手选；为其他设备制作系统时按目标设备选择。", "This suggestion describes the current PC. Choose the model and components manually, using the target device when preparing another computer.");
+        };
+        devicePanel.Children.Add(detect);
+        devicePanel.Children.Add(hardwareAdvice);
         deviceList = new ComboBox { MinHeight = 48, Margin = new Thickness(0, 8, 0, 8) };
         deviceList.SelectionChanged += (_, _) => { if (deviceList.SelectedItem is ComboBoxItem { Tag: JsonElement item }) ShowDeviceDetails(item); };
         devicePanel.Children.Add(deviceList);
         deviceNotes = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 8, 12, 12) };
         deviceNotesExpander = new Expander { Header = PartitionInventory.L("开发者完整备注与验证记录", "Developer notes and validation records"), Content = deviceNotes, MinHeight = 48, Visibility = Visibility.Collapsed };
         devicePanel.Children.Add(deviceNotesExpander);
+        deviceSourceLink = new TextBlock { MinHeight = 48, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+        devicePanel.Children.Add(deviceSourceLink);
         var choose = new Button { Content = PartitionInventory.L("使用所选机型包", "Use selected device package"), HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 48 };
         choose.Click += async (_, _) => await DeviceAction(async () =>
         {
@@ -120,6 +143,7 @@ public partial class MainWindow
     }
     private void ShowDeviceIndex(JsonElement index, bool cached)
     {
+        if (hardwareAdvice != null) hardwareAdvice.Text = PartitionInventory.L("目录已更新，可重新检测本机；为外部设备制作系统时请手选目标机型。", "Index updated. You can detect this PC again; select another target device manually.");
         deviceList!.Items.Clear();
         foreach (var entry in index.GetProperty("packages").EnumerateArray())
                 deviceList.Items.Add(new ComboBoxItem { Content = entry.TryGetProperty("name", out var name) ? LocalizedValue(name) : entry.GetProperty("id").GetString(), Tag = entry.Clone() });
@@ -135,7 +159,7 @@ public partial class MainWindow
         if (value.ValueKind == JsonValueKind.Object)
         {
             if (value.TryGetProperty("zh", out _) || value.TryGetProperty("en", out _)) return LocalizedValue(value);
-            return string.Join(" · ", new[] { "severity", "issue", "note", "scope", "date", "os_version", "kernel", "evidence" }.Where(key => value.TryGetProperty(key, out _)).Select(key => DeviceText(value.GetProperty(key))));
+            return string.Join(" · ", new[] { "severity", "status", "state", "issue", "note", "scope", "date", "architecture", "os_version", "build", "kernel", "evidence" }.Where(key => value.TryGetProperty(key, out _)).Select(key => DeviceText(value.GetProperty(key))));
         }
         return value.ToString();
     }
@@ -156,6 +180,21 @@ public partial class MainWindow
         deviceNotes!.Text = string.Join("\n\n", new[] { "notes", "compatibility_records", "verified_at", "source_url" }.Where(key => item.TryGetProperty(key, out _)).Select(key => DeviceText(item.GetProperty(key))));
         deviceNotesExpander!.Visibility = string.IsNullOrWhiteSpace(deviceNotes.Text) ? Visibility.Collapsed : Visibility.Visible;
         deviceNotesExpander.IsExpanded = false;
+        deviceSourceLink!.Inlines.Clear(); deviceSourceLink.Visibility = Visibility.Collapsed;
+        if (item.TryGetProperty("source_url", out var source) && source.ValueKind == JsonValueKind.String
+            && source.GetString() is { Length: > 0 and <= 2048 } url
+            && Uri.TryCreate(url, UriKind.Absolute, out var address) && address.Scheme == Uri.UriSchemeHttps
+            && string.IsNullOrEmpty(address.UserInfo))
+        {
+            var link = new Hyperlink(new Run(PartitionInventory.L("查看固定版本源码：", "View pinned source: ") + address.Host)) { NavigateUri = address };
+            link.RequestNavigate += (_, e) =>
+            {
+                try { Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); }
+                catch (Exception error) { deviceStatus.Text = PartitionInventory.L("无法打开来源链接：", "Cannot open source link: ") + error.Message; }
+                e.Handled = true;
+            };
+            deviceSourceLink.Inlines.Add(link); deviceSourceLink.Visibility = Visibility.Visible;
+        }
     }
     private async Task DeviceAction(Func<Task> action)
     {
@@ -173,6 +212,8 @@ public partial class MainWindow
         var digest = expected ?? observed;
         if (observed != digest) throw new IOException("Selected manifest differs from its approved anchor.");
         var package = await BoilerProtocol.RunAsync(["package", folder, "--manifest-sha256", digest], CancellationToken.None);
+        if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
+            throw new IOException(PartitionInventory.L("这是维护专用包，请在通用维护器中使用，不能作为新装机型包。", "This package is for maintenance. Use the generic maintainer; it cannot be used as an installation device package."));
         var key = digest[..24]; var cached = Path.Combine(BoilerProtocol.PackageRoot, key);
         if (!Directory.Exists(cached)) Backend.CopyDirectory(folder, cached);
         await BoilerProtocol.RunAsync(["package", cached, "--manifest-sha256", digest], CancellationToken.None);

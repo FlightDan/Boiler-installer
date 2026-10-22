@@ -27,6 +27,29 @@ def package(root):
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_retained_ownership_requires_boolean_and_static_component(self):
+        value = component()
+        for flag in (0, 1, 'true', [], {}):
+            with self.assertRaises(ProtocolError):
+                validate_manifest(dict(value, retain_owned_paths=flag))
+        validate_manifest(dict(value, retain_owned_paths=True))
+        validate_manifest(dict(value, retain_owned_paths=False))
+        with self.assertRaises(ProtocolError):
+            validate_manifest(dict(value, retain_owned_paths=True, files=[]))
+        with self.assertRaises(ProtocolError):
+            validate_manifest(dict(value, retain_owned_paths=True, hooks={'apply':'scripts/apply.sh'}))
+
+    def test_device_advice_cannot_contain_executable_or_unbounded_rules(self):
+        from protocol.manifest import _hardware_advice
+        good = {'mode':'advisory-exact-dmi-v1','pairs':[{'manufacturer':'ONE-NETBOOK','model':'ONEXPLAYER 3'}]}
+        _hardware_advice(good)
+        for value in ({'mode':'script','pairs':good['pairs']}, dict(good, script='run.sh'),
+                      dict(good,pairs=[]), dict(good,pairs=good['pairs']*33),
+                      dict(good,pairs=[{'manufacturer':'ONE-NETBOOK','model':'\nONEXPLAYER 3'}]),
+                      dict(good,pairs=[{'manufacturer':'ONE-NETBOOK','model':' '*3}]),
+                      dict(good,pairs=[{'manufacturer':'ONE-NETBOOK','model':'x'*257}])):
+            with self.subTest(value=value), self.assertRaises(ProtocolError): _hardware_advice(value)
+
     def test_explicit_maintenance_contract_and_legacy_inventory(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); manifest=package(root)

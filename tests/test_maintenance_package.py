@@ -16,6 +16,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from maintenance import Engine
+from maintenance import engine as maintenance_engine
 from maintenance import updates
 from protocol.manifest import compatible, safe_extract_archive, validate_package
 
@@ -57,6 +58,18 @@ class MaintenancePackageTests(unittest.TestCase):
     def build(self, name='artifact.zip', **kwargs):
         return builder.package(kwargs.get('root', self.source), self.work/name,
                                kwargs.get('commit', self.commit), kwargs.get('url', URL))
+
+    def test_installer_runtime_uses_reviewed_explicit_list_and_rejects_extra_code(self):
+        self.assertEqual(maintenance_engine.RUNTIME_FILES, builder.RUNTIME_FILES)
+        with mock.patch.object(maintenance_engine, '__file__', str(self.source/'maintenance/engine.py')):
+            self.assertEqual({path.relative_to(self.source.resolve()).as_posix() for path in maintenance_engine.runtime_files()},
+                             set(builder.RUNTIME_FILES))
+            (self.source/'maintenance/__pycache__').mkdir()
+            (self.source/'maintenance/__pycache__/ignored.pyc').write_bytes(b'ignored cache')
+            self.assertEqual(len(maintenance_engine.runtime_files()),len(builder.RUNTIME_FILES))
+            (self.source/'maintenance/unlisted.py').write_bytes(b'unreviewed runtime')
+            with self.assertRaisesRegex(maintenance_engine.MaintenanceError,'Unreviewed maintenance runtime'):
+                maintenance_engine.runtime_files()
 
     def test_reproducible_inventory_targets_and_byte_identical_public_key(self):
         # Ignored local material is never discovered or copied by the builder.

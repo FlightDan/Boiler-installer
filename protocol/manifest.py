@@ -155,6 +155,18 @@ def _source(source):
             _fail("Invalid local base commit")
 
 
+def _hardware_advice(value):
+    if (not isinstance(value, dict) or set(value) != {"mode", "pairs"}
+            or value["mode"] != "advisory-exact-dmi-v1" or not isinstance(value["pairs"], list)
+            or not 1 <= len(value["pairs"]) <= 32): _fail("Invalid advisory hardware matching")
+    for pair in value["pairs"]:
+        if not isinstance(pair, dict) or set(pair) != {"manufacturer", "model"}: _fail("Invalid advisory DMI pair")
+        for field in pair.values():
+            if (not isinstance(field, str) or not 1 <= len(field) <= 256 or not field.strip()
+                    or any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in field)):
+                _fail("Invalid advisory DMI value")
+
+
 def validate_manifest(obj, kind=None):
     if not isinstance(obj, dict) or type(obj.get("schema_version")) is not int or obj["schema_version"] != 1:
         _fail("Unsupported schema version")
@@ -169,6 +181,10 @@ def validate_manifest(obj, kind=None):
     if "minimum_engine_version" in obj and not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", str(obj["minimum_engine_version"])):
         _fail("Minimum engine version must be a stable three-part version")
     if actual == "ComponentManifest":
+        if "retain_owned_paths" in obj and type(obj["retain_owned_paths"]) is not bool:
+            _fail("Retained ownership must be an explicit boolean")
+        if obj.get("retain_owned_paths") and (obj.get("hooks") or not obj.get("files")):
+            _fail("Retained ownership requires nonempty static file components")
         for field in ("requires", "conflicts"):
             ids = _list(obj, field)
             if any(not isinstance(i,str) or not _ID.fullmatch(i) for i in ids) or len(set(ids)) != len(ids):
@@ -219,6 +235,7 @@ def validate_manifest(obj, kind=None):
         for entry in _list(obj, "packages"):
             if not isinstance(entry,dict): _fail("Invalid index entry")
             _identity(entry); _digest(entry); _source(entry.get("source")); _compat(entry.get("compatibility",{}))
+            if "hardware_matching" in entry: _hardware_advice(entry["hardware_matching"])
             key=(entry["id"],entry["version"])
             if key in seen: _fail("Duplicate index package")
             seen.add(key)

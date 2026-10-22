@@ -131,6 +131,8 @@ def _provenance(engine):
 def inventory(root, state_dir=None, *, device_id=None):
     """Read installed identities and live verification without mkdir, lock or recovery."""
     engine = Engine(root, state_dir, read_only=True)
+    from .live_root import pending as pending_platform
+    platform_recovery = pending_platform(engine.root,state_dir)
     state = engine._state()
     pending = []
     for path in sorted(engine.journals.glob('*.json')):
@@ -140,8 +142,8 @@ def inventory(root, state_dir=None, *, device_id=None):
             pending.append(path.stem)
     components = {}
     for identity, item in sorted(state['components'].items()):
-        status = {'ok': False, 'modified': [], 'pending_recovery': bool(pending)}
-        if not pending:
+        status = {'ok': False, 'modified': [], 'pending_recovery': bool(pending or platform_recovery)}
+        if not pending and platform_recovery is None:
             status = engine.verify_readonly(identity)
         components[identity] = {'version': item['version'], 'transaction': item['transaction'],
                                 'verified': status['ok'], 'modified': status.get('modified', [])}
@@ -149,7 +151,8 @@ def inventory(root, state_dir=None, *, device_id=None):
     info = engine.root.stat()
     return {'schema_version': 1, 'kind': 'InstalledInventory', 'target': {'root': str(engine.root), 'device': info.st_dev, 'inode': info.st_ino},
             'environment': target_environment(engine.root, device_id=device_id), 'components': components,
-            'pending_transactions': pending, 'state_sha256': _digest(state), 'provenance_sha256': _digest(provenance),
+            'pending_transactions': pending, 'pending_platform_recovery':platform_recovery,
+            'state_sha256': _digest(state), 'provenance_sha256': _digest(provenance),
             'packages': provenance['packages']}
 
 
@@ -227,12 +230,12 @@ def _source_identity(source):
     return 'https://'+parsed.netloc.lower()+parsed.path.rsplit('/', 1)[0]
 
 
-def _unchanged_component(engine, state, component):
+def _unchanged_component(engine, state, component, retained=()):
     current = state['components'][component['id']]
     journal = _read(engine._journal(current['transaction']))
     old = {item['target']: item['after'] for item in journal['operations']}
     new = {item['target']: item for item in component.get('files', [])}
-    return (old.keys() == new.keys() and journal['component'].get('hooks', {}) == component.get('hooks', {}) and
+    return (old.keys() == new.keys() | {item['target'] for item in retained} and journal['component'].get('hooks', {}) == component.get('hooks', {}) and
             all(old[path].get('sha256') == entry['sha256'] and old[path].get('mode') == entry.get('mode', 420) for path, entry in new.items()))
 
 
@@ -341,7 +344,7 @@ def _execution_context(root, index_cache, state_dir, plan, public_key, openssl, 
 def plan_update(root, index_cache, package_dir, identity, version, selected=None, state_dir=None,
                 *, device_id=None, public_key=None, openssl='openssl'):
     current = inventory(root, state_dir, device_id=device_id)
-    if current['pending_transactions']:
+    if current['pending_transactions'] or current.get('pending_platform_recovery'):
         raise UpdateError('Recover or inspect pending maintenance transactions before planning an update')
     engine = Engine(root, state_dir, read_only=True)
     state, provenance = engine._state(), _provenance(engine)
@@ -387,7 +390,8 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
         old_key, new_key = _version_key(old_version), _version_key(component['version'])
         if new_key < old_key:
             raise UpdateError('Component downgrade refused: '+cid)
-        same = _unchanged_component(engine, state, component)
+        retained = engine.retained_owned(component, state)
+        same = _unchanged_component(engine, state, component, retained)
         if new_key == old_key and component.get('hooks') and cid in package_ids:
             # Old journals record hook paths, not the old script bytes. A path
             # match cannot prove that a same-version hook is unchanged.
@@ -396,7 +400,7 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
             raise UpdateError('Equal-precedence component version changes bytes or scripts: '+cid)
         old_paths = {name for name, owner in state['owners'].items() if owner['component'] == cid}
         new_paths = {item['target'] for item in component.get('files', [])}
-        if old_paths - new_paths:
+        if old_paths - new_paths - {item['target'] for item in retained}:
             raise UpdateError('Update drops managed paths; restore explicitly first: '+cid)
         for item in component.get('files', []):
             path = engine._target(item['target'])
@@ -422,7 +426,8 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
             if conflict in state['components']:
                 raise UpdateError('Installed component conflict: '+conflict)
         actions.append({'id': cid, 'from_version': old_version, 'to_version': component['version'],
-                        'action': 'unchanged' if same and new_key == old_key else 'upgrade', 'scripted': bool(component.get('hooks'))})
+                        'action': 'unchanged' if same and new_key == old_key else 'upgrade', 'scripted': bool(component.get('hooks')),
+                        'retained_owned_paths': retained})
     scripted = any(item['scripted'] and item['action'] == 'upgrade' and item['id'] in package_ids for item in actions)
     maintenance_entry = _maintenance_entry(package)
     execution = 'engine-hooks-v1' if scripted and maintenance_entry == {'kind': 'engine-hooks-v1'} else 'files-v1' if not scripted else 'unsupported-model-entry'

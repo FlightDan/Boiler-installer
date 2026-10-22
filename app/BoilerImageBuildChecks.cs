@@ -69,6 +69,13 @@ internal static class BoilerImageBuildChecks
         MediaSource.Ordinary(image, InstallationController.Work);
         var fixture = image.EndsWith(".qcow2", StringComparison.OrdinalIgnoreCase);
         if (fixture) Backend.VerifyFixture(image);
+        var originalFixture = fixture ? image : null;
+        string? originalFixtureDigest = null;
+        if (originalFixture != null)
+        {
+            using var input = File.OpenRead(originalFixture);
+            originalFixtureDigest = Convert.ToHexString(await SHA256.HashDataAsync(input)).ToLowerInvariant();
+        }
         var directory = fixture ? Path.Combine(InstallationController.Work, "boiler-recheck-" + mode + "-" + Guid.NewGuid().ToString("N")) : Path.GetDirectoryName(image)!;
         Directory.CreateDirectory(directory);
         var name = "recheck-" + Guid.NewGuid().ToString("N");
@@ -90,7 +97,16 @@ internal static class BoilerImageBuildChecks
         var plans = output.Split('\n').Select(value => value.Trim()).Where(value => value.StartsWith("BOILER_INSTALL_PLAN_JSON=", StringComparison.Ordinal))
             .Select(value => JsonSerializer.Deserialize<JsonElement>(value["BOILER_INSTALL_PLAN_JSON=".Length..])).ToArray();
         if (plans.Length != 2) throw new IOException("Expected source-bound install plans for both slots.");
-        var json = JsonSerializer.Serialize(new { passed = true, image, mode, outcome = JsonSerializer.Deserialize<JsonElement>(proof), plans,
+        if (originalFixture != null)
+        {
+            using var input = File.OpenRead(originalFixture);
+            if (Convert.ToHexString(await SHA256.HashDataAsync(input)).ToLowerInvariant() != originalFixtureDigest)
+                throw new IOException("Original disposable source fixture changed during image QA.");
+        }
+        var json = JsonSerializer.Serialize(new { passed = true, image, mode,
+            original_fixture = originalFixture, original_fixture_sha256 = originalFixtureDigest,
+            original_fixture_unchanged = fixture ? true : (bool?)null,
+            outcome = JsonSerializer.Deserialize<JsonElement>(proof), plans,
             source = readiness.Split('\n').Select(value => value.Trim()).Single(value => value.StartsWith("BOILER_SOURCE_JSON=", StringComparison.Ordinal)),
             scope = "Existing disposable prepared image, same installation outcome gate, readonly verification; no physical disk acceptance" }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(directory, name + "-result.json"), json);

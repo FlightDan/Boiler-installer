@@ -83,3 +83,61 @@ unchanged.
 
 Detailed publication and hardware results belong in the final version release
 record and must be updated only when actually completed.
+
+Legacy adoption also accepts a private version 2 receipt with an exact inventory
+of binary SHA-256 objects. Metadata is limited to 8 MiB, each object to 256 MiB,
+and unique and referenced file bytes to 8 GiB. Adoption streams originals into
+private durable shared-home storage (`home/.boiler/maintenance-blobs`) and verifies all current targets before recording any
+ownership. It preserves explicit missing files, all old state and the original
+signing anchor. The existing legacy store lock covers adoption and binary
+restore/recovery. An interrupted batch remains incomplete and blocks ordinary
+operations until the exact same receipt is explicitly resumed; committed
+components are not duplicated. All original blobs are checked before a restore
+or recovery writes any target. Version 1 inline receipts remain supported.
+Slot ownership and journals remain under each slot's maintenance state. The
+content store deduplicates verified objects and never automatically deletes
+them, because the other installed root slot can retain references.
+User-home restore requires existing protected parent directories: file-only
+receipts do not contain the original directory ownership metadata.
+
+Ordinary file updates also use bounded binary snapshots (256 MiB per file,
+8 GiB of before/after references per transaction). This supports adopted-file
+upgrades without base64-sized journals. Static signed updates can explicitly
+retain verified omitted paths already owned by the same component; the reviewed
+plan binds each retained path and its prior generation. Large-file upgrade and
+restore native acceptance is tracked separately below. Authenticated update
+payloads still stage in the selected state filesystem; packages exceeding its
+free capacity are not claimed as validated by this release.
+
+## Live SteamOS root protection
+
+Live maintenance uses the canonical `/var/lib/boiler/maintenance` state directory.
+The protected write window is ordered after the engine lock and, when present,
+the original legacy store lock. A private durable intent records the original
+read-only state and both root PARTUUID and filesystem UUID before disabling
+protection. Mounted-image operations retain their existing behavior.
+
+An interrupted write window requires explicit recovery. Recovery first restores
+root protection and preserves all component, hook and adoption barriers; it does
+not mark a component transaction complete. Exact-receipt adoption can then be
+resumed. Unknown or mismatched root identity cannot silently clear an intent.
+
+The official SteamOS 3.8.14 and 3.10 images were inspected read-only. Both provide
+the required UUID/PARTUUID query columns and the same protection-state contract:
+enabled returns status 0, disabled returns status 1. The 3.10 command is a protected
+system symlink; 3.8.14 uses a regular executable. Those image observations do not
+constitute a full system boot or real-device write-window acceptance.
+
+The live-root implementation passed independent review and all 30 focused Linux
+native tests. A disposable SteamOS 3.10 UEFI boot then exercised the real `/`
+CLI without bypassing platform protection: apply, read-only verification and
+restore each ended with protection enabled, btrfs `ro=true` and no pending intent.
+After SIGKILL immediately following the first target-file publication, the
+intent remained and ordinary verification refused. Explicit recovery rolled
+back the transaction, restored protection and cleared the platform intent.
+The original source disk was a read-only backing file; only the disposable COW
+disk was modified. This is virtual-system integration evidence, not acceptance
+of the existing physical device's adoption, reboot or hardware functionality.
+
+Final artifact publication and physical-device migration acceptance remain
+separate gates. The latter is pending device availability.

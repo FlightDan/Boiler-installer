@@ -9,7 +9,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'components'))
 sys.path.insert(0, str(ROOT / 'guest'))
-from integration import stage, validate_options, check_conflicts, verify_device_components
+from integration import stage, validate_options, check_conflicts, verify_device_components, device_plan
 from source_profile import inspect_source
 
 
@@ -98,6 +98,19 @@ class GenericIntegrationChecks(unittest.TestCase):
         self.assertFalse(manifest['components']['wifi:intel']['available'])
         with self.assertRaises(FileExistsError): prepare(output)
         self.assertFalse(any('oxp3' in p.as_posix() for p in output.rglob('*')))
+
+    def test_maintenance_package_role_is_refused_before_install_plan(self):
+        package = dict(id='device:oxp3', device_id='oxp3', purpose='maintenance',
+                       version='1.0.6', components=[], compatibility={})
+        options = dict(device_package='trusted-cache-name', device_manifest_sha256='a'*64,
+                       device_trust='developer-session', device_components=[])
+        source = dict(ID='steamos', VERSION_ID='3.10', KERNELS=['existing-kernel'])
+        with mock.patch('protocol.validate_package', return_value=package) as validate, \
+             mock.patch('protocol.resolve_plan') as resolve:
+            with self.assertRaisesRegex(ValueError, 'Maintenance-only'):
+                device_plan(self.root, options, source)
+            validate.assert_called_once()
+            resolve.assert_not_called()
 
     def test_readonly_device_verification_executes_only_declared_verify_with_clean_environment(self):
         component = dict(id='oxp3:legacy-adaptation', hooks=dict(apply='scripts/apply.sh', verify='scripts/verify.sh'))

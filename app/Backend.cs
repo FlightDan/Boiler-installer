@@ -217,14 +217,14 @@ public static class Backend
         var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, Path.Combine(work, "payload-volumes"), token);
         var payloadMount = PayloadVolumes.MountCommand(payloadVolumes.Length);
         var scratch = Path.Combine(work, "scratch.raw");
-        using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task == "home-copy-plan-checks" ? 4L * 1024 * 1024 * 1024 : task == "integration-check" ? 3L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
+        using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task == "home-copy-plan-checks" ? 4L * 1024 * 1024 * 1024 : task == "integration-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
         var arguments = new List<string> { "-accel", "tcg", "-m", "1024", "-smp", "2", "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
             "-kernel", Path.Combine(Root, "runtime/alpine/boot/vmlinuz-virt"), "-initrd", Path.Combine(Root, "runtime/alpine/boot/initramfs-virt"),
             "-append", "console=ttyS0,115200 modules=loop,squashfs,sd-mod,virtio_pci,virtio_blk,vfat alpine_dev=cdrom:iso9660",
             "-drive", $"file={Option(Path.Combine(Root, "cache/alpine-virt-3.23.6-x86_64.iso"))},format=raw,media=cdrom,readonly=on",
             "-drive", $"file={Option(scratch)},format=raw,if=none,id=boiler-scratch",
-            "-device", "virtio-blk-pci,drive=boiler-scratch",
+            "-device", "virtio-blk-pci,drive=boiler-scratch,serial=boiler-scratch",
             "-drive", $"file=fat:ro:{Option(payloadVolumes[0])},format=raw,if=none,id=payload-0,readonly=on",
             "-device", "virtio-blk-pci,drive=payload-0,serial=boiler-payload-0" };
         if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=none,id=boiler-image{(writable ? "" : ",readonly=on")}", "-device", "virtio-blk-pci,drive=boiler-image"]);

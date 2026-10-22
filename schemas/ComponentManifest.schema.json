@@ -1,18 +1,98 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "title":"Boiler ComponentManifest v1","type":"object",
-  "required":["schema_version","kind","id","version"],
-  "properties":{
-    "schema_version":{"const":1},"kind":{"const":"ComponentManifest"},
-    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
-    "compatibility":{"$ref":"definitions.json#/$defs/compatibility"},
-    "requires":{"type":"array","uniqueItems":true,"items":{"$ref":"definitions.json#/$defs/id"}},
-    "conflicts":{"type":"array","uniqueItems":true,"items":{"$ref":"definitions.json#/$defs/id"}},
-    "files":{"type":"array","items":{"$ref":"definitions.json#/$defs/file"}},
-    "hooks":{"type":"object","additionalProperties":false,"properties":{
-      "apply":{"type":"string","pattern":"^scripts/.+\\.sh$"},
-      "verify":{"type":"string","pattern":"^scripts/.+\\.sh$"},
-      "restore":{"type":"string","pattern":"^scripts/.+\\.sh$"}
-    }}
-  }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Boiler ComponentManifest v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "version"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "ComponentManifest"
+    },
+    "id": {
+      "$ref": "definitions.json#/$defs/id"
+    },
+    "version": {
+      "$ref": "definitions.json#/$defs/version"
+    },
+    "compatibility": {
+      "$ref": "definitions.json#/$defs/compatibility"
+    },
+    "requires": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "definitions.json#/$defs/id"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "definitions.json#/$defs/id"
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "definitions.json#/$defs/file"
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apply": {
+          "type": "string",
+          "pattern": "^scripts/.+\\.sh$"
+        },
+        "verify": {
+          "type": "string",
+          "pattern": "^scripts/.+\\.sh$"
+        },
+        "restore": {
+          "type": "string",
+          "pattern": "^scripts/.+\\.sh$"
+        }
+      }
+    },
+    "retain_owned_paths": {
+      "type": "boolean",
+      "default": false,
+      "description": "Upgrade only: retain verified omitted paths already owned by this exact component; static files only."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "retain_owned_paths": {
+            "const": true
+          }
+        },
+        "required": [
+          "retain_owned_paths"
+        ]
+      },
+      "then": {
+        "properties": {
+          "hooks": {
+            "maxProperties": 0
+          },
+          "files": {
+            "minItems": 1
+          }
+        },
+        "required": [
+          "files"
+        ]
+      }
+    }
+  ]
 }

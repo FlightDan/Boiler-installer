@@ -28,7 +28,7 @@ PUBLIC_KEY_SHA256 = 'c3f443312c74bcdc3013d7a9deb306473dc6c3b21f6625319012c9dbdb9
 # Explicit additions require source review; do not turn this into a directory walk.
 RUNTIME_FILES = (
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
-    'maintenance/plugins.py', 'maintenance/updates.py',
+    'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
     'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py',
     'protocol/manifest.py', 'protocol/trusted-public-key.pem',
 )
@@ -167,7 +167,7 @@ def package(root, output, source_commit, asset_url):
         'builder': record('scripts/package-maintenance.py', contents['scripts/package-maintenance.py']),
         'acceptance': release['acceptance'],
     })
-    manifest = dict(schema_version=1, kind='DevicePackage', id='bundle:maintenance',
+    manifest = dict(schema_version=1, kind='DevicePackage', id='bundle:maintenance', purpose='maintenance',
                     version=release['version'], source={'kind': 'github', 'repository': REPOSITORY, 'commit': source_commit},
                     minimum_engine_version=release['minimum_engine_version'], compatibility=release['compatibility'],
                     components=[component], files=[record(name, data) for name, data in sorted(payload.items())])

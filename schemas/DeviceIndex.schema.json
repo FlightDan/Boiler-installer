@@ -1,17 +1,116 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "title":"Boiler signed DeviceIndex v1","type":"object",
-  "required":["schema_version","kind","id","version","generated_at","sequence","packages"],
-  "properties":{
-    "schema_version":{"const":1},"kind":{"const":"DeviceIndex"},
-    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
-    "generated_at":{"type":"string","minLength":1},
-    "sequence":{"type":"integer","minimum":0},
-    "revocations":{"type":"array","items":{"$ref":"definitions.json#/$defs/sha256"}},
-    "packages":{"type":"array","items":{"type":"object","required":["id","version","sha256","size","source"],"properties":{
-      "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
-      "sha256":{"$ref":"definitions.json#/$defs/sha256"},"size":{"type":"integer","minimum":0},
-      "source":{"$ref":"definitions.json#/$defs/source"},"compatibility":{"$ref":"definitions.json#/$defs/compatibility"}
-    }}}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Boiler signed DeviceIndex v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "version",
+    "generated_at",
+    "sequence",
+    "packages"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "DeviceIndex"
+    },
+    "id": {
+      "$ref": "definitions.json#/$defs/id"
+    },
+    "version": {
+      "$ref": "definitions.json#/$defs/version"
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "revocations": {
+      "type": "array",
+      "items": {
+        "$ref": "definitions.json#/$defs/sha256"
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "sha256",
+          "size",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "definitions.json#/$defs/id"
+          },
+          "version": {
+            "$ref": "definitions.json#/$defs/version"
+          },
+          "sha256": {
+            "$ref": "definitions.json#/$defs/sha256"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "definitions.json#/$defs/source"
+          },
+          "compatibility": {
+            "$ref": "definitions.json#/$defs/compatibility"
+          },
+          "hardware_matching": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "pairs"
+            ],
+            "properties": {
+              "mode": {
+                "const": "advisory-exact-dmi-v1"
+              },
+              "pairs": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "manufacturer",
+                    "model"
+                  ],
+                  "properties": {
+                    "manufacturer": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    },
+                    "model": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

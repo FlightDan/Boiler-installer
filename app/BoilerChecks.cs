@@ -18,6 +18,13 @@ internal static class BoilerChecks
         var visualFailures = new List<string>();
         void Require(bool value, string name) { if (!value) throw new IOException(name); checks.Add(name); }
         async Task Reject(Func<Task> action, string name) { try { await action(); } catch (Exception e) when (e is IOException or InvalidOperationException or JsonException) { checks.Add(name); return; } throw new IOException("Expected rejection: " + name); }
+        using (var advisory = JsonDocument.Parse("""{"hardware_matching":{"mode":"advisory-exact-dmi-v1","pairs":[{"manufacturer":"ONE-NETBOOK","model":"ONEXPLAYER 3"}]}}"""))
+        {
+            Require(BoilerHardware.Matches(advisory.RootElement, new(" one-netbook ", "onexplayer 3")), "hardware-advice-exact-pair-case-insensitive");
+            Require(!BoilerHardware.Matches(advisory.RootElement, new("OTHER", "ONEXPLAYER 3"))
+                && !BoilerHardware.Matches(advisory.RootElement, new("ONE-NETBOOK", "ONEXPLAYER 3 Pro")), "hardware-advice-rejects-partial-and-cross-vendor-match");
+            Require(!BoilerHardware.Matches(advisory.RootElement, new("ONE-NETBOOK", "ONEXPLAYER 3\n")), "hardware-advice-rejects-control-characters");
+        }
         var transport = Path.Combine(directory, "transport"); Directory.CreateDirectory(Path.Combine(transport, "nested"));
         for (var index = 0; index < 5; index++) await File.WriteAllBytesAsync(Path.Combine(transport, "nested", index + ".bin"), Enumerable.Repeat((byte)(index + 1), 20000).ToArray());
         var volumes = await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "volumes"), CancellationToken.None, 65536);

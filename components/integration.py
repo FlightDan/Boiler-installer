@@ -92,6 +92,8 @@ def device_plan(payload, options, source):
     from protocol import validate_package, resolve_plan, compatible
     folder = payload / 'device-packages' / package_id
     package = validate_package(folder, expected_manifest_sha256=options['device_manifest_sha256'])
+    if package.get('purpose') == 'maintenance':
+        raise ValueError('Maintenance-only packages cannot be selected for image installation')
     hardware_id = package.get('device_id', package['id'].split(':', 1)[-1])
     environment = dict(architecture='x86_64', os_id=source['ID'], os_version=source['VERSION_ID'], device_id=hardware_id,
                        kernels=source['KERNELS'])

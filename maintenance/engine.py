@@ -26,9 +26,40 @@ class MaintenanceError(RuntimeError):
     pass
 
 
+def _overlapping_targets(names):
+    folded=[name.casefold() for name in names]
+    if len(set(folded)) != len(folded): return True
+    names=set(folded)
+    return any('/'.join(name.split('/')[:index]) in names
+               for name in names for index in range(1,len(name.split('/'))))
+
+
+def _legacy_lock_required(journal):
+    """V1 inline adoption predates a store-lock contract; binary adoption has one."""
+    if journal.get('legacy_lock_required') is True: return True
+    # Also recognize early binary v2 journals written before the explicit flag.
+    return bool(journal.get('adoption_receipt') and any(
+        item.get(phase,{}).get('storage') == 'blob-v1'
+        for item in journal.get('operations',[]) for phase in ('before','after')))
+
+
+RUNTIME_FILES = (
+    'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
+    'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
+    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py',
+    'protocol/manifest.py', 'protocol/trusted-public-key.pem',
+)
+
+
 def runtime_files():
     root=Path(__file__).resolve().parents[1]
-    return [p for name in ("maintenance","protocol") for p in sorted((root/name).iterdir()) if p.suffix in (".py",".pem")]
+    expected=set(RUNTIME_FILES)
+    for name in ('maintenance','protocol'):
+        with os.scandir(root/name) as entries:
+            for entry in entries:
+                if Path(entry.name).suffix in ('.py','.pem') and name+'/'+entry.name not in expected:
+                    raise MaintenanceError('Unreviewed maintenance runtime source: '+name+'/'+entry.name)
+    return [root/name for name in RUNTIME_FILES]
 
 
 def _sync_dir(path):
@@ -154,7 +185,8 @@ def _snapshot(path):
 
 def _same(left,right):
     return left.get("exists")==right.get("exists") and (not left.get("exists") or
-        all(left.get(k)==right.get(k) for k in (("sha256",) if os.name=="nt" else ("sha256","mode","uid","gid"))))
+        all(left.get(k)==right.get(k) for k in (("sha256",) if os.name=="nt" else ("sha256","mode","uid","gid"))) and
+        (right.get('storage') != 'blob-v1' or left.get('size') == right.get('size')))
 
 
 def build_hook_environment(root, transaction_id, extra=None):
@@ -183,21 +215,52 @@ class Engine:
     def __init__(self,root,state_dir=None,*,read_only=False):
         self.root=Path(root).resolve()
         if not self.root.is_dir(): raise MaintenanceError("Target root is not mounted")
+        from .live_root import check_state_directory
+        check_state_directory(self.root,state_dir)
         self.state_dir=Path(state_dir).absolute() if state_dir else self.root/"var/lib/boiler/maintenance"
         self.read_only=read_only
-        cursor=self.state_dir
-        while cursor != cursor.parent:
-            if cursor.is_symlink() or (hasattr(cursor,"is_junction") and cursor.is_junction()): raise MaintenanceError("State path contains a link")
-            cursor=cursor.parent
-        if not read_only: self.state_dir.mkdir(parents=True,exist_ok=True)
-        self.state_dir=self.state_dir.resolve()
+        if os.name != 'nt':
+            from .adoption_blobs import _directory
+            for directory in (self.state_dir,self.state_dir/'transactions'):
+                try:
+                    with _directory(directory,create=not read_only) as descriptor:
+                        if os.fstat(descriptor).st_mode & 0o022:
+                            raise MaintenanceError('Maintenance state directories must not be writable by others')
+                except FileNotFoundError:
+                    if not read_only: raise
+                except OSError as error:
+                    raise MaintenanceError('Unsafe maintenance state path') from error
+        else:
+            cursor=self.state_dir
+            while cursor != cursor.parent:
+                if cursor.is_symlink() or (hasattr(cursor,"is_junction") and cursor.is_junction()): raise MaintenanceError("State path contains a link")
+                cursor=cursor.parent
+            if not read_only: self.state_dir.mkdir(parents=True,exist_ok=True)
+            self.state_dir=self.state_dir.resolve()
         self.identity="mounted-target" if self.state_dir.is_relative_to(self.root) else str(self.root)
         self.journals=self.state_dir/"transactions"
-        if not read_only: self.journals.mkdir(exist_ok=True)
+        if not read_only and os.name == 'nt': self.journals.mkdir(exist_ok=True)
 
     @contextlib.contextmanager
-    def _lock(self):
+    def _lock(self,*,live_recover=False):
         if self.read_only: raise MaintenanceError("Read-only verification cannot modify maintenance state")
+        if os.name != 'nt':
+            from .adoption_blobs import _directory
+            import fcntl
+            with _directory(self.state_dir) as directory, _directory(self.journals) as journals:
+                if os.fstat(directory).st_mode & 0o022 or os.fstat(journals).st_mode & 0o022:
+                    raise MaintenanceError('Maintenance state directories must not be writable by others')
+                descriptor=os.open('lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW|os.O_NONBLOCK,0o600,dir_fd=directory)
+                with os.fdopen(descriptor,'a+b') as stream:
+                    info=os.fstat(stream.fileno())
+                    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != 0 or info.st_mode & 0o022:
+                        raise MaintenanceError('Unsafe maintenance lock file')
+                    fcntl.flock(stream.fileno(),fcntl.LOCK_EX)
+                    try:
+                        from .live_root import write_scope
+                        with write_scope(self,recover=live_recover): yield
+                    finally: fcntl.flock(stream.fileno(),fcntl.LOCK_UN)
+            return
         lock=self.state_dir/"lock"
         if lock.is_symlink(): raise MaintenanceError("Unsafe lock file")
         with lock.open("a+b") as stream:
@@ -217,6 +280,9 @@ class Engine:
         path=confined(self.root,name)
         if path==self.state_dir or self.state_dir in path.parents or path in self.state_dir.parents:
             raise MaintenanceError("Components cannot own maintenance state")
+        backups=self.root/'home/.boiler/maintenance-blobs'
+        if path==backups or backups in path.parents or path in backups.parents:
+            raise MaintenanceError('Components cannot own maintenance backups')
         return path
 
     def _state(self):
@@ -235,6 +301,11 @@ class Engine:
         return path
 
     def _put_snapshot(self,path,snapshot):
+        if snapshot.get('storage') == 'blob-v1':
+            from .adoption_blobs import restore_blob, remove_blob_target
+            if snapshot.get('exists'): restore_blob(self,path,snapshot)
+            else: remove_blob_target(self,path)
+            return
         if not snapshot["exists"]:
             if path.exists(): path.unlink(); _sync_dir(path.parent)
             return
@@ -243,7 +314,24 @@ class Engine:
         _atomic(path,data,snapshot["mode"])
         if os.name!="nt": os.chown(path,snapshot["uid"],snapshot["gid"])
 
-    def _recover(self):
+    def _observed(self,path,*expected):
+        if any(item.get('storage') == 'blob-v1' for item in expected):
+            from .adoption_blobs import observe
+            return observe(self,path)
+        return _snapshot(path)
+
+    def _recover(self,*,allow_adoption=False,legacy_locked=False):
+        if not allow_adoption and os.path.lexists(self.state_dir/'adoption-pending.json'):
+            raise MaintenanceError('Pending adoption migration requires explicit receipt resume')
+        if not legacy_locked:
+            for candidate in self.journals.glob('*.json'):
+                if candidate.is_symlink(): raise MaintenanceError('Unsafe journal')
+                journal=_read(candidate)
+                if (journal.get('status') not in ('committed','restored','rolled_back') and
+                        _legacy_lock_required(journal)):
+                    from .adoption_blobs import _legacy_lock
+                    with _legacy_lock(self):
+                        return self._recover(allow_adoption=allow_adoption,legacy_locked=True)
         recovered=[]
         for path in sorted(self.journals.glob("*.json")):
             if path.is_symlink(): raise MaintenanceError("Unsafe journal")
@@ -259,21 +347,71 @@ class Engine:
                 raise MaintenanceError("Interrupted script requires manual recovery: "+journal["id"])
             # An interrupted write can only have produced the recorded before or after.
             for item in journal["operations"]:
-                current=_snapshot(self._target(item["target"]))
+                current=self._observed(self._target(item["target"]),item['before'],item['after'])
                 if not (_same(current,item["before"]) or _same(current,item["after"])):
                     raise MaintenanceError("Recovery refused modified target: "+item["target"])
             restore_in_progress=journal.get("status")=="restoring"
-            for item in reversed(journal["operations"]): self._put_snapshot(self._target(item["target"]),item["before"])
+            from .adoption_blobs import validate_backups
+            validate_backups(self,journal['operations'])
+            for item in reversed(journal["operations"]):
+                if not item.get("retained"): self._put_snapshot(self._target(item["target"]),item["before"])
             _json_write(self.state_dir/"state.json",journal["before_state"])
             journal["status"]="restored" if restore_in_progress else "rolled_back"
             _json_write(path,journal); recovered.append(journal["id"])
         return recovered
 
     def recover(self):
-        with self._lock(): return self._recover()
+        with self._lock(live_recover=True): return self._recover()
+
+    def retained_owned(self,component,state=None):
+        """Return bounded current identities for an explicit static retention plan."""
+        retain=component.get('retain_owned_paths',False)
+        if type(retain) is not bool: raise MaintenanceError('retain_owned_paths must be a boolean')
+        if not retain: return []
+        if component.get('hooks'): raise MaintenanceError('Retained ownership is restricted to static file components')
+        if not component.get('files'): raise MaintenanceError('Retained static update requires declared files')
+        from .adoption_blobs import observe, MAX_OPERATIONS
+        state=self._state() if state is None else state
+        cid=component['id']; installed=state['components'].get(cid)
+        if not installed: raise MaintenanceError('Retained ownership requires an existing component')
+        transaction=installed['transaction']; prior=_read(self._journal(transaction))
+        if (prior.get('root') != self.identity or prior.get('status') != 'committed' or
+                prior.get('id') != transaction or prior.get('component',{}).get('id') != cid):
+            raise MaintenanceError('Retained ownership requires the current committed component journal')
+        if prior['component'].get('hooks'):
+            raise MaintenanceError('Retained ownership cannot replace a scripted component lifecycle')
+        operations=prior.get('operations')
+        if not isinstance(operations,list) or len(operations) > MAX_OPERATIONS:
+            raise MaintenanceError('Invalid retained component journal')
+        old={}
+        for operation in operations:
+            name=relative_path(operation['target'])
+            if name in old: raise MaintenanceError('Duplicate retained ownership journal target')
+            old[name]=operation['after']
+        owned={name for name,owner in state['owners'].items() if owner['component'] == cid}
+        if owned != set(old): raise MaintenanceError('Retained owner and journal path coverage differ')
+        declared={relative_path(item['target']) for item in component.get('files',[])}
+        if _overlapping_targets(declared | owned):
+            raise MaintenanceError('Retained targets overlap or alias declared paths')
+        result=[]
+        for name in sorted(owned):
+            owner=state['owners'][name]
+            if owner.get('transaction') != transaction or owner.get('sha256') != old[name].get('sha256'):
+                raise MaintenanceError('Retained path belongs to another component generation')
+            folded=name.casefold()
+            if any(other != name and (other.casefold() == folded or other.casefold().startswith(folded+'/') or
+                    folded.startswith(other.casefold()+'/')) for other in state['owners']):
+                raise MaintenanceError('Retained target overlaps installed ownership')
+            current=observe(self,self._target(name))
+            if not _same(current,old[name]): raise MaintenanceError('Retained managed file has changed')
+            if name not in declared:
+                result.append(dict(target=name,snapshot=current,transaction=transaction))
+        return result
 
     def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None):
         validate_manifest(component,"ComponentManifest")
+        if type(component.get('retain_owned_paths',False)) is not bool:
+            raise MaintenanceError('retain_owned_paths must be a boolean')
         if not compatible(component,environment or {}): raise MaintenanceError("Component target compatibility has not been established")
         payload_root=Path(payload_root).resolve()
         hooks=component.get("hooks",{})
@@ -293,72 +431,108 @@ class Engine:
                 raise MaintenanceError("Conflicting component is installed")
             if any(component["id"] in item.get("conflicts",[]) for item in state["components"].values()):
                 raise MaintenanceError("Installed component declares a conflict")
-            operations=[]; total=0; targets=set()
-            for entry in component.get("files",[]):
-                target=self._target(entry["target"]); key=entry["target"]
-                if key.casefold() in targets: raise MaintenanceError("Duplicate target")
-                targets.add(key.casefold())
-                for owned,owner in state["owners"].items():
-                    if (key.casefold()==owned.casefold() or key.casefold().startswith(owned.casefold()+"/") or owned.casefold().startswith(key.casefold()+"/")) and owner["component"]!=component["id"]:
-                        raise MaintenanceError("Target owned by another component")
-                source=confined(payload_root,entry["source"]); verify_file(source,entry)
-                before=_snapshot(target); data=source.read_bytes(); total+=len(data)+(len(base64.b64decode(before["data"])) if before["exists"] else 0)
-                if hashlib.sha256(data).hexdigest()!=entry["sha256"] or len(data)!=entry["size"]:
-                    raise MaintenanceError("Payload changed after verification")
-                owner=state["owners"].get(key)
-                if owner:
-                    prior=_read(self._journal(owner["transaction"]))
-                    recorded=next((op["after"] for op in prior["operations"] if op["target"]==key),None)
-                    if recorded is None or not _same(before,recorded): raise MaintenanceError("Upgrade refused modified managed file")
-                if total>256*1024**2: raise MaintenanceError("Transaction exceeds backup limit")
-                uid=before.get("uid",os.getuid() if hasattr(os,"getuid") else 0)
-                gid=before.get("gid",os.getgid() if hasattr(os,"getgid") else 0)
-                after={"exists":True,"data":base64.b64encode(data).decode(),"sha256":entry["sha256"],"mode":entry.get("mode",420),"uid":uid,"gid":gid}
-                operations.append({"target":key,"before":before,"after":after})
-            # Fail closed for upgrades that silently drop previously owned paths.
-            old_paths={p for p,o in state["owners"].items() if o["component"]==component["id"]}
-            if old_paths - {op["target"] for op in operations}: raise MaintenanceError("Upgrade drops owned files; explicit restore is required")
-            journal={"schema_version":1,"id":identity,"root":self.identity,"status":"prepared","component":component,
-                     "operations":operations,"before_state":state}
-            path=self._journal(identity); _json_write(path,journal)
-            try:
-                journal["status"]="applying"; _json_write(path,journal)
-                for item in operations: self._put_snapshot(self._target(item["target"]),item["after"])
-                if hooks:
-                    journal["status"]="hook_running"; _json_write(path,journal)
-                    for phase in ("apply","verify"):
-                        if phase in hooks:
-                            env=build_hook_environment(self.root,identity,hook_environment)
-                            subprocess.run(["/bin/bash",str(confined(payload_root,hooks[phase])),str(self.root)],cwd=payload_root,env=env,check=True,timeout=900)
-                    journal["status"]="hook_completed"; _json_write(path,journal)
-                # Hooks may not rewrite managed files behind ownership records.
-                for item in operations:
-                    if not _same(_snapshot(self._target(item["target"])),item["after"]): raise MaintenanceError("Applied file verification failed")
-                next_state=json.loads(json.dumps(state))
-                for item in operations: next_state["owners"][item["target"]]={"component":component["id"],"transaction":identity,"sha256":item["after"]["sha256"]}
-                next_state["components"][component["id"]]={"version":component["version"],"transaction":identity,
-                    "requires":component.get("requires",[]),"conflicts":component.get("conflicts",[])}
-                _json_write(self.state_dir/"state.json",next_state)
-                journal["status"]="committed"; _json_write(path,journal)
-            except BaseException:
-                if journal["status"] in ("hook_running","hook_completed"):
-                    journal["status"]="manual_recovery_required"; _json_write(path,journal)
-                else: self._recover()
-                raise
-            return {"transaction":identity,"component":component["id"],"status":"committed","files":len(operations),
-                    "state_sha256":hashlib.sha256(json.dumps(next_state,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')).hexdigest()}
+            legacy_required=False
+            installed=state['components'].get(component['id'])
+            if installed:
+                prior=_read(self._journal(installed['transaction']))
+                if prior.get('root') != self.identity or prior.get('status') != 'committed':
+                    raise MaintenanceError('Installed component journal is invalid')
+                legacy_required=_legacy_lock_required(prior)
+            from .adoption_blobs import _legacy_lock
+            with _legacy_lock(self) if legacy_required else contextlib.nullcontext():
+                return self._apply_locked(component,payload_root,hooks,state,identity,hook_environment,legacy_required)
+
+    def _apply_locked(self,component,payload_root,hooks,state,identity,hook_environment,legacy_required):
+        from .adoption_blobs import capture, payload_snapshot, observe, _hash_file, MAX_FILE, MAX_TOTAL, MAX_OPERATIONS
+        operations=[]; total=0; targets=set()
+        if _overlapping_targets(item['target'] for item in component.get('files',[])):
+            raise MaintenanceError('Component targets overlap or alias')
+        retained=self.retained_owned(component,state)
+        if len(component.get('files',[]))+len(retained) > MAX_OPERATIONS:
+            raise MaintenanceError('Component operation limit exceeded')
+        for entry in component.get("files",[]):
+            target=self._target(entry["target"]); key=entry["target"]
+            if key.casefold() in targets: raise MaintenanceError("Duplicate target")
+            targets.add(key.casefold())
+            for owned,owner in state["owners"].items():
+                if (key.casefold()==owned.casefold() or key.casefold().startswith(owned.casefold()+"/") or owned.casefold().startswith(key.casefold()+"/")) and owner["component"]!=component["id"]:
+                    raise MaintenanceError("Target owned by another component")
+            if entry['size'] > MAX_FILE:
+                raise MaintenanceError('Component file exceeds the explicit binary transaction limit')
+            source=confined(payload_root,entry['source'])
+            try: _hash_file(source,entry)
+            except MaintenanceError as error: raise ProtocolError(str(error)) from error
+            before=observe(self,target)
+            total+=entry['size']+before.get('size',0)
+            if total > MAX_TOTAL: raise MaintenanceError('Transaction exceeds binary backup limit')
+            owner=state["owners"].get(key)
+            if owner:
+                prior=_read(self._journal(owner["transaction"]))
+                recorded=next((op["after"] for op in prior["operations"] if op["target"]==key),None)
+                if recorded is None or not _same(before,recorded): raise MaintenanceError("Upgrade refused modified managed file")
+            before=capture(self,target,before)
+            after=payload_snapshot(self,source,entry,before)
+            operations.append({"target":key,"before":before,"after":after})
+        for item in retained:
+            snapshot=item['snapshot']
+            total+=2*snapshot.get('size',0)
+            if total > MAX_TOTAL: raise MaintenanceError('Transaction exceeds binary backup limit')
+            current=observe(self,self._target(item['target']))
+            if not _same(current,snapshot): raise MaintenanceError('Retained managed file changed during preparation')
+            snapshot=capture(self,self._target(item['target']),snapshot)
+            operations.append(dict(target=item['target'],before=snapshot,after=dict(snapshot),retained=True))
+        # Fail closed for upgrades that silently drop previously owned paths.
+        old_paths={p for p,o in state["owners"].items() if o["component"]==component["id"]}
+        if old_paths - {op["target"] for op in operations}: raise MaintenanceError("Upgrade drops owned files; explicit restore is required")
+        journal={"schema_version":1,"id":identity,"root":self.identity,"status":"prepared","component":component,
+                 "operations":operations,"before_state":state,"legacy_lock_required":legacy_required}
+        path=self._journal(identity); _json_write(path,journal)
+        try:
+            journal["status"]="applying"; _json_write(path,journal)
+            for item in operations:
+                if not _same(observe(self,self._target(item['target'])),item['before']):
+                    raise MaintenanceError('Target changed before apply')
+            for item in operations:
+                target=self._target(item['target'])
+                if not _same(observe(self,target),item['before']):
+                    raise MaintenanceError('Target changed before apply')
+                if not item.get('retained'): self._put_snapshot(target,item['after'])
+            if hooks:
+                journal["status"]="hook_running"; _json_write(path,journal)
+                for phase in ("apply","verify"):
+                    if phase in hooks:
+                        env=build_hook_environment(self.root,identity,hook_environment)
+                        subprocess.run(["/bin/bash",str(confined(payload_root,hooks[phase])),str(self.root)],cwd=payload_root,env=env,check=True,timeout=900)
+                journal["status"]="hook_completed"; _json_write(path,journal)
+            # Hooks may not rewrite managed files behind ownership records.
+            for item in operations:
+                if not _same(observe(self,self._target(item["target"])),item["after"]): raise MaintenanceError("Applied file verification failed")
+            next_state=json.loads(json.dumps(state))
+            for item in operations: next_state["owners"][item["target"]]={"component":component["id"],"transaction":identity,"sha256":item["after"].get("sha256")}
+            next_state["components"][component["id"]]={"version":component["version"],"transaction":identity,
+                "requires":component.get("requires",[]),"conflicts":component.get("conflicts",[])}
+            _json_write(self.state_dir/"state.json",next_state)
+            journal["status"]="committed"; _json_write(path,journal)
+        except BaseException:
+            if journal["status"] in ("hook_running","hook_completed"):
+                journal["status"]="manual_recovery_required"; _json_write(path,journal)
+            else: self._recover(legacy_locked=legacy_required)
+            raise
+        return {"transaction":identity,"component":component["id"],"status":"committed","files":len(operations),
+                "state_sha256":hashlib.sha256(json.dumps(next_state,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')).hexdigest()}
 
     def verify(self,component_id):
         with self._lock():
             self._recover(); state=self._state()
             if component_id not in state["components"]: raise MaintenanceError("Component is not installed")
             journal=_read(self._journal(state["components"][component_id]["transaction"]))
-            failures=[op["target"] for op in journal["operations"] if not _same(_snapshot(self._target(op["target"])),op["after"])]
+            failures=[op["target"] for op in journal["operations"] if not _same(self._observed(self._target(op["target"]),op['after']),op["after"])]
             return {"component":component_id,"ok":not failures,"modified":failures}
 
     def verify_readonly(self,component_id):
         """For an exclusively mounted read-only image: never lock, recover or mkdir."""
         if not self.read_only: raise MaintenanceError("Read-only verification requires a read-only engine")
+        if os.path.lexists(self.state_dir/'adoption-pending.json'): raise MaintenanceError('Pending adoption migration requires explicit receipt resume')
         for path in self.journals.glob("*.json"):
             if path.is_symlink(): raise MaintenanceError("Unsafe journal")
             if _read(path).get("status") not in ("committed","restored","rolled_back"):
@@ -367,33 +541,43 @@ class Engine:
         if component_id not in state["components"]: raise MaintenanceError("Component is not installed")
         journal=_read(self._journal(state["components"][component_id]["transaction"]))
         if journal.get("root") != self.identity or journal.get("status") != "committed": raise MaintenanceError("Invalid active journal")
-        failures=[op["target"] for op in journal["operations"] if not _same(_snapshot(self._target(op["target"])),op["after"])]
+        failures=[op["target"] for op in journal["operations"] if not _same(self._observed(self._target(op["target"]),op['after']),op["after"])]
         return {"component":component_id,"ok":not failures,"modified":failures}
 
     def restore(self,transaction_id):
         with self._lock():
             self._recover(); state=self._state(); path=self._journal(transaction_id); journal=_read(path)
-            if journal.get("root")!=self.identity or journal.get("status")!="committed": raise MaintenanceError("Transaction is not restorable")
-            cid=journal["component"]["id"]
-            if state["components"].get(cid,{}).get("transaction")!=transaction_id: raise MaintenanceError("Only active component generation can be restored")
-            if journal["component"].get("hooks"): raise MaintenanceError("Script component requires explicit package restore integration")
-            for item in journal["operations"]:
-                if not _same(_snapshot(self._target(item["target"])),item["after"]): raise MaintenanceError("Restore refused modified target")
-            # Preserve transactions belonging to other components installed later.
-            previous=journal["before_state"]
-            if cid not in previous["components"] and any(cid in item.get("requires",[]) for key,item in state["components"].items() if key!=cid):
-                raise MaintenanceError("Installed component still requires this component")
-            for item in journal["operations"]:
-                name=item["target"]
-                if name in previous["owners"]: state["owners"][name]=previous["owners"][name]
-                else: state["owners"].pop(name,None)
-            if cid in previous["components"]: state["components"][cid]=previous["components"][cid]
-            else: state["components"].pop(cid,None)
-            journal["before_state"]=state; journal["status"]="restoring"; _json_write(path,journal)
-            for item in reversed(journal["operations"]): self._put_snapshot(self._target(item["target"]),item["before"])
-            _json_write(self.state_dir/"state.json",state)
-            journal["status"]="restored"; _json_write(path,journal)
-            return {"transaction":transaction_id,"status":"restored"}
+            if _legacy_lock_required(journal):
+                from .adoption_blobs import _legacy_lock
+                with _legacy_lock(self):
+                    return self._restore_locked(transaction_id,state,path,journal)
+            return self._restore_locked(transaction_id,state,path,journal)
+
+    def _restore_locked(self,transaction_id,state,path,journal):
+        if journal.get("root")!=self.identity or journal.get("status")!="committed": raise MaintenanceError("Transaction is not restorable")
+        cid=journal["component"]["id"]
+        if state["components"].get(cid,{}).get("transaction")!=transaction_id: raise MaintenanceError("Only active component generation can be restored")
+        if journal["component"].get("hooks"): raise MaintenanceError("Script component requires explicit package restore integration")
+        for item in journal["operations"]:
+            if not _same(self._observed(self._target(item["target"]),item['after']),item["after"]): raise MaintenanceError("Restore refused modified target")
+        # Preserve transactions belonging to other components installed later.
+        previous=journal["before_state"]
+        if cid not in previous["components"] and any(cid in item.get("requires",[]) for key,item in state["components"].items() if key!=cid):
+            raise MaintenanceError("Installed component still requires this component")
+        from .adoption_blobs import validate_backups
+        validate_backups(self,journal['operations'])
+        for item in journal["operations"]:
+            name=item["target"]
+            if name in previous["owners"]: state["owners"][name]=previous["owners"][name]
+            else: state["owners"].pop(name,None)
+        if cid in previous["components"]: state["components"][cid]=previous["components"][cid]
+        else: state["components"].pop(cid,None)
+        journal["before_state"]=state; journal["status"]="restoring"; _json_write(path,journal)
+        for item in reversed(journal["operations"]):
+            if not item.get("retained"): self._put_snapshot(self._target(item["target"]),item["before"])
+        _json_write(self.state_dir/"state.json",state)
+        journal["status"]="restored"; _json_write(path,journal)
+        return {"transaction":transaction_id,"status":"restored"}
 
     def inspect_legacy(self,legacy_state,legacy_public_key):
         """Record evidence only. Original state/key stay untouched and authoritative.
@@ -416,6 +600,9 @@ class Engine:
     def adopt(self,receipt_path):
         """Accept a protected model-adapter receipt without changing legacy files or keys."""
         receipt,receipt_digest=_adoption_receipt(receipt_path)
+        if receipt.get('schema_version') == 2:
+            from .adoption_blobs import adopt
+            return adopt(self,receipt_path,receipt,receipt_digest)
         if (receipt.get("schema_version")!=1 or receipt.get("kind")!="LegacyAdoptionReceipt"
             or receipt.get("device_id")!="oxp3" or receipt.get("preserve_legacy") is not True
             or receipt.get("translation_complete") is not True): raise MaintenanceError("Unsupported adoption receipt")
