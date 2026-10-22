@@ -56,6 +56,7 @@ public partial class App : Application
                 if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-image-checks") { log.AppendLine(await BoilerImageBuildChecks.RunAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-prepared-checks") { log.AppendLine(await BoilerImageBuildChecks.RecheckAsync(e.Args[2], e.Args[3])); }
+                else if (e.Args.Length == 4 && e.Args[1] == "boiler-model-checks") { log.AppendLine(await BoilerImageBuildChecks.ModelAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 2 && e.Args[1] == "native-volume-checks") { log.AppendLine(NativeVolumeChecks.Run()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "process-checks") { log.AppendLine(await ProcessChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "installer-restart-checks") { log.AppendLine(await InstallerRestartChecks.RunAsync()); }

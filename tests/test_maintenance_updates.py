@@ -3,6 +3,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,11 +12,34 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives import serialization
+try:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+except ImportError:
+    Ed25519PrivateKey = None
 from maintenance import Engine, MaintenanceError
 from maintenance import updates
+from maintenance.engine import build_hook_environment
 from protocol.manifest import ProtocolError
+
+
+class OpenSSLTestSigner:
+    """Disposable test key only; preserve real Ed25519 checks without Python extras."""
+    def __init__(self, work, executable, public_key):
+        self.work, self.executable = work, executable
+        self.private_key = work/'test-only-private.pem'
+        self.run('genpkey', '-algorithm', 'ED25519', '-out', str(self.private_key))
+        self.run('pkey', '-in', str(self.private_key), '-pubout', '-out', str(public_key))
+
+    def run(self, *args):
+        subprocess.run([self.executable, *args], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+
+    def sign(self, data):
+        with tempfile.TemporaryDirectory(prefix='test-signature-', dir=self.work) as temporary:
+            message, signature = Path(temporary)/'index.json', Path(temporary)/'index.sig'
+            message.write_bytes(data)
+            self.run('pkeyutl', '-sign', '-inkey', str(self.private_key), '-rawin', '-in', str(message), '-out', str(signature))
+            return signature.read_bytes()
 
 
 class MaintenanceUpdateTests(unittest.TestCase):
@@ -37,9 +62,15 @@ class MaintenanceUpdateTests(unittest.TestCase):
         self.old.mkdir()
         self.old_component = self.component(self.old, 'core:maintenance', '1.0.0', b'old runtime\n')
         self.engine.apply(self.old_component, self.old, environment=self.environment)
-        self.key = Ed25519PrivateKey.generate()
         self.public_key = self.work/'test-only-public.pem'
-        self.public_key.write_bytes(self.key.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo))
+        self.openssl = os.environ.get('BOILER_TEST_OPENSSL') or shutil.which('openssl')
+        if Ed25519PrivateKey is not None and not os.environ.get('BOILER_TEST_OPENSSL'):
+            self.key = Ed25519PrivateKey.generate()
+            self.public_key.write_bytes(self.key.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo))
+        elif self.openssl:
+            self.key = OpenSSLTestSigner(self.work, self.openssl, self.public_key)
+        else:
+            self.skipTest('Ed25519 tests require system OpenSSL or the optional cryptography module')
         self.cache = self.work/'registry-cache'
         self.cache.mkdir()
 
@@ -93,10 +124,10 @@ class MaintenanceUpdateTests(unittest.TestCase):
         return index
 
     def plan(self, package, **kwargs):
-        return updates.plan_update(self.root, self.cache, package[0], 'bundle:maintenance', package[1]['version'], public_key=self.public_key, **kwargs)
+        return updates.plan_update(self.root, self.cache, package[0], 'bundle:maintenance', package[1]['version'], public_key=self.public_key, openssl=self.openssl or 'openssl', **kwargs)
 
     def execute(self, plan, package):
-        return updates.execute_plan(self.root, plan, self.cache, package[0], reviewed_sha256=plan['review_sha256'], public_key=self.public_key)
+        return updates.execute_plan(self.root, plan, self.cache, package[0], reviewed_sha256=plan['review_sha256'], public_key=self.public_key, openssl=self.openssl or 'openssl')
 
     def target_bytes(self):
         return {path.relative_to(self.root).as_posix(): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
@@ -230,6 +261,213 @@ class MaintenanceUpdateTests(unittest.TestCase):
                 self.execute(plan, package)
             apply.assert_not_called()
 
+    def engine_hook_package(self, *, extra_components=False, script=b'#!/bin/bash\nexit 0\n'):
+        def components(payload):
+            items = [self.component(payload, 'core:maintenance', '2.0.0', b'new runtime\n')]
+            if extra_components:
+                existing = self.work/'second-old'
+                existing.mkdir()
+                old = self.component(existing, 'core:second', '1.0.0', b'old second\n')
+                self.engine.apply(old, existing, environment=self.environment)
+                items.append(self.component(payload, 'core:second', '2.0.0', b'new second\n'))
+            return items
+        package = self.package(components=components, scripted=True)
+        payload, manifest = package
+        manifest['maintenance_entry'] = {'kind': 'engine-hooks-v1'}
+        (payload/'scripts/apply.sh').write_bytes(script)
+        manifest['files'] = [dict(path=path.relative_to(payload).as_posix(), size=path.stat().st_size,
+                                  sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+                             for path in sorted(payload.rglob('*')) if path.is_file() and path.name != 'manifest.json']
+        (payload/'manifest.json').write_text(json.dumps(manifest))
+        self.sign_index(package)
+        return package
+
+    def test_engine_hook_contract_authorizes_only_private_signed_snapshot(self):
+        package = self.engine_hook_package()
+        plan = self.plan(package)
+        self.assertTrue(plan['executable'])
+        self.assertEqual(plan['execution'], 'engine-hooks-v1')
+        original_apply = Engine.apply
+        calls = []
+        def checked_apply(engine, component, payload, **kwargs):
+            calls.append((component, Path(payload), kwargs))
+            self.assertNotEqual(Path(payload), package[0])
+            self.assertEqual((Path(payload)/'scripts/apply.sh').read_bytes(), b'#!/bin/bash\nexit 0\n')
+            self.assertTrue(kwargs['allow_hooks'])
+            self.assertNotIn('hook_environment', kwargs)
+            self.assertEqual(kwargs['expected_state_sha256'], plan['state_sha256'])
+            if os.name != 'nt':
+                self.assertEqual(Path(payload).stat().st_mode & 0o777, 0o700)
+            # Windows cannot execute Linux hooks. Exercise the authentication
+            # bridge and real file transaction; native hook coverage is below.
+            files_only = dict(component)
+            files_only.pop('hooks')
+            return original_apply(engine, files_only, payload, environment=kwargs['environment'],
+                                  expected_state_sha256=kwargs['expected_state_sha256'])
+        with mock.patch.object(Engine, 'apply', checked_apply):
+            result = self.execute(plan, package)
+        self.assertEqual(result['status'], 'committed')
+        self.assertEqual(len(calls), 1)
+        self.assertFalse(calls[0][1].exists())
+
+    def test_scripted_review_rejects_tampered_identity_source_revocation_and_payload(self):
+        for change in ('identity', 'source', 'revocation', 'payload'):
+            with self.subTest(change=change):
+                package = self.engine_hook_package()
+                plan = self.plan(package)
+                if change == 'payload':
+                    (package[0]/'scripts/apply.sh').write_bytes(b'#!/bin/bash\nexit 1\n')
+                elif change == 'identity':
+                    package[1]['id'] = 'bundle:other'
+                    (package[0]/'manifest.json').write_text(json.dumps(package[1]))
+                    self.sign_index(package, sequence=11)
+                elif change == 'source':
+                    self.sign_index(package, sequence=11, repository='Different/Publisher')
+                else:
+                    self.sign_index(package, sequence=11, revoked=True)
+                with mock.patch.object(Engine, 'apply') as apply:
+                    with self.assertRaises(UpdateErrorTypes):
+                        self.execute(plan, package)
+                    apply.assert_not_called()
+
+    def test_same_version_hook_bytes_and_unknown_contract_fail_closed(self):
+        package = self.engine_hook_package()
+        package[1]['components'][0]['version'] = '1.0.0'
+        (package[0]/'manifest.json').write_text(json.dumps(package[1]))
+        self.sign_index(package)
+        with self.assertRaisesRegex(updates.UpdateError, 'scripted component'):
+            self.plan(package)
+        package[1]['components'][0]['version'] = '2.0.0'
+        package[1]['maintenance_entry'] = {'kind': 'run-arbitrary-script'}
+        (package[0]/'manifest.json').write_text(json.dumps(package[1]))
+        self.sign_index(package)
+        with self.assertRaisesRegex((updates.UpdateError, ProtocolError), 'entry|contract'):
+            self.plan(package)
+
+    def test_registry_change_after_first_commit_stops_remaining_components(self):
+        package = self.engine_hook_package(extra_components=True)
+        plan = self.plan(package)
+        original_apply = Engine.apply
+        calls = []
+        def revoking_apply(engine, component, payload, **kwargs):
+            calls.append(component['id'])
+            files_only = dict(component)
+            files_only.pop('hooks', None)
+            result = original_apply(engine, files_only, payload, environment=kwargs['environment'],
+                                    expected_state_sha256=kwargs['expected_state_sha256'])
+            self.sign_index(package, sequence=11, revoked=True)
+            return result
+        with mock.patch.object(Engine, 'apply', revoking_apply):
+            with self.assertRaisesRegex(updates.UpdateError, 'registry changed'):
+                self.execute(plan, package)
+        self.assertEqual(calls, ['core:maintenance'])
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/core-second.txt').read_bytes(), b'old second\n')
+        receipt = json.loads((self.engine.state_dir/'updates'/(plan['review_sha256']+'.json')).read_text())
+        self.assertEqual(receipt['status'], 'failed-preserved')
+        self.assertEqual(len(receipt['transactions']), 1)
+
+    def test_hook_failure_barrier_stops_later_components_and_subsequent_execution(self):
+        package = self.engine_hook_package(extra_components=True)
+        plan = self.plan(package)
+        calls = []
+        def failed_hook(engine, component, payload, **kwargs):
+            calls.append(component['id'])
+            # Mirror the Engine's durable failure boundary, also covered by the
+            # native Linux test; do not infer that arbitrary effects rolled back.
+            (engine.journals/('f'*32+'.json')).write_text(json.dumps(dict(status='manual_recovery_required')))
+            raise MaintenanceError('simulated failed authenticated hook')
+        with mock.patch.object(Engine, 'apply', failed_hook):
+            with self.assertRaises(MaintenanceError):
+                self.execute(plan, package)
+        self.assertEqual(calls, ['core:maintenance'])
+        with mock.patch.object(Engine, 'apply') as apply:
+            with self.assertRaisesRegex(updates.UpdateError, 'pending'):
+                self.execute(plan, package)
+            apply.assert_not_called()
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/core-second.txt').read_bytes(), b'old second\n')
+
+    def test_hook_environment_is_minimal_and_requires_explicit_context(self):
+        with mock.patch.dict(os.environ, {'BASH_ENV': '/bad', 'ENV': '/bad', 'LD_PRELOAD': '/bad',
+                                          'PYTHONPATH': '/bad', 'PATH': '/bad', 'BOILER_GUEST': 'spoof'}):
+            env = build_hook_environment(self.root, 'transaction')
+        self.assertEqual(set(env), {'PATH', 'LANG', 'LC_ALL', 'HOME', 'BOILER_TARGET_ROOT', 'BOILER_TRANSACTION_ID'})
+        self.assertEqual(env['PATH'], '/usr/sbin:/usr/bin:/sbin:/bin')
+        self.assertEqual(build_hook_environment(self.root, 'transaction', {'BOILER_INSTALL_SLOT': 'A'})['BOILER_INSTALL_SLOT'], 'A')
+        for extra in ({'BASH_ENV': '/bad'}, {'BOILER_TARGET_ROOT': '/other'}, {'BOILER_EXTRA': 'bad\x00value'}):
+            with self.assertRaises(MaintenanceError):
+                build_hook_environment(self.root, 'transaction', extra)
+
+    @unittest.skipUnless(os.name != 'nt' and os.geteuid() == 0, 'Ancestor ownership checks require Linux root')
+    def test_native_snapshot_rejects_unprotected_ancestor_and_accepts_root_sticky_parent(self):
+        package = self.engine_hook_package()
+        parent = self.work/'unprotected-parent'
+        parent.mkdir()
+        parent.chmod(0o777)
+        state = parent/'root-owned-state'
+        state.mkdir(mode=0o700)
+        digest = hashlib.sha256((package[0]/'manifest.json').read_bytes()).hexdigest()
+        with self.assertRaisesRegex(updates.UpdateError, 'writable ancestor'):
+            with updates._authenticated_payload(package[0], digest, state):
+                self.fail('Writable ancestor must be refused before executing signed code')
+        parent.chmod(0o1777)
+        with updates._authenticated_payload(package[0], digest, state) as snapshot:
+            self.assertEqual(snapshot.stat().st_mode & 0o777, 0o700)
+        os.chown(parent, 65534, 65534)
+        try:
+            with self.assertRaisesRegex(updates.UpdateError, 'untrusted ancestor'):
+                updates._protected_staging_path(state)
+        finally:
+            os.chown(parent, 0, 0)
+
+    @unittest.skipIf(os.name == 'nt', 'No-follow/nonblocking source checks require Linux')
+    def test_native_source_open_rejects_fifo_and_swapped_symbolic_link(self):
+        fifo = self.work/'fifo'
+        os.mkfifo(fifo)
+        with self.assertRaisesRegex(updates.UpdateError, 'regular file'):
+            with updates._regular_stream(fifo):
+                self.fail('FIFO sources must not wait for a writer')
+        ordinary = self.work/'ordinary'
+        ordinary.write_bytes(b'authenticated bytes')
+        link = self.work/'link'
+        link.symlink_to(ordinary)
+        with self.assertRaises(OSError):
+            with updates._regular_stream(link):
+                self.fail('Swapped symbolic links must not be followed')
+
+    @unittest.skipIf(os.name == 'nt', 'Native Engine Bash hooks require Linux')
+    def test_native_hook_success_runs_apply_verify_with_minimal_environment(self):
+        package = self.engine_hook_package(script=b'#!/bin/bash\nset -eu\nprintf apply > "$BOILER_TARGET_ROOT/hook-result"\n')
+        payload, manifest = package
+        (payload/'scripts/verify.sh').write_text('set -eu\ntest "$(cat "$BOILER_TARGET_ROOT/hook-result")" = apply\nprintf verified >> "$BOILER_TARGET_ROOT/hook-result"\n')
+        manifest['components'][0]['hooks']['verify'] = 'scripts/verify.sh'
+        manifest['files'].append(dict(path='scripts/verify.sh', size=(payload/'scripts/verify.sh').stat().st_size,
+                                      sha256=hashlib.sha256((payload/'scripts/verify.sh').read_bytes()).hexdigest()))
+        (payload/'manifest.json').write_text(json.dumps(manifest))
+        self.sign_index(package)
+        poison = self.work/'bash-env'
+        poison.write_text('touch "'+str(self.work/'poison-ran')+'"\n')
+        with mock.patch.dict(os.environ, {'BASH_ENV': str(poison), 'BOILER_GUEST': 'spoof'}):
+            result = self.execute(self.plan(package), package)
+        self.assertEqual(result['status'], 'committed')
+        self.assertEqual((self.root/'hook-result').read_text(), 'applyverified')
+        self.assertFalse((self.work/'poison-ran').exists())
+
+    @unittest.skipIf(os.name == 'nt', 'Native Engine Bash hooks require Linux')
+    def test_native_failed_hook_preserves_manual_recovery_and_blocks_later_component(self):
+        package = self.engine_hook_package(extra_components=True, script=b'#!/bin/bash\nprintf side-effect > "$BOILER_TARGET_ROOT/failed-hook-effect"\nexit 7\n')
+        plan = self.plan(package)
+        with self.assertRaises(Exception):
+            self.execute(plan, package)
+        pending = [json.loads(path.read_text()) for path in self.engine.journals.glob('*.json')
+                   if json.loads(path.read_text()).get('status') == 'manual_recovery_required']
+        self.assertEqual(len(pending), 1)
+        self.assertEqual((self.root/'failed-hook-effect').read_text(), 'side-effect')
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/core-second.txt').read_bytes(), b'old second\n')
+        with self.assertRaises(MaintenanceError):
+            self.engine.recover()
+        with self.assertRaises(updates.UpdateError):
+            self.execute(plan, package)
+
     def test_failed_execution_preserves_receipt_and_old_journals(self):
         package = self.package()
         self.sign_index(package)
@@ -273,6 +511,11 @@ class MaintenanceUpdateTests(unittest.TestCase):
             self.plan(later)
         self.sign_index(later, sequence=11, repository='Different/Publisher')
         with self.assertRaises(updates.UpdateError):
+            self.plan(later)
+        later[1]['source']['repository'] = 'Different/DeclaredSource'
+        (later[0]/'manifest.json').write_text(json.dumps(later[1]))
+        self.sign_index(later, sequence=11)
+        with self.assertRaisesRegex(updates.UpdateError, 'declared source'):
             self.plan(later)
 
 

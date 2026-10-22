@@ -13,12 +13,115 @@ import stat
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from maintenance import Engine
+from maintenance import Engine, MaintenanceError
+from maintenance import engine as implementation
 
 MODEL = Path(os.environ['BOILER_MODEL_SOURCE']) if os.environ.get('BOILER_MODEL_SOURCE') else None
+
+
+class AdoptionReceiptIntakeTests(unittest.TestCase):
+    """The privileged intake boundary needs no external model checkout."""
+    def setUp(self):
+        if os.name != 'nt' and os.geteuid() != 0:
+            self.skipTest('Adoption requires Linux root; ownership checks remain enabled')
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.work = Path(temporary.name)
+        self.root = self.work/'target'
+        (self.root/'etc').mkdir(parents=True)
+        target = self.root/'etc/model.conf'
+        target.write_bytes(b'applied configuration\n')
+        target.chmod(0o644)
+        info = target.stat()
+        def snapshot(data):
+            return dict(exists=True, data=base64.b64encode(data).decode(), sha256=hashlib.sha256(data).hexdigest(),
+                        mode=stat.S_IMODE(info.st_mode), uid=info.st_uid, gid=info.st_gid)
+        key = (ROOT/'protocol/trusted-public-key.pem').read_bytes()
+        name = 'usr/local/lib/legacy/trusted-public-key.pem'
+        key_path = self.root/name
+        key_path.parent.mkdir(parents=True)
+        key_path.write_bytes(key)
+        key_path.chmod(0o644)
+        anchor = dict(path=name, size=len(key), sha256=hashlib.sha256(key).hexdigest(), role='trusted-public-key')
+        receipt = dict(schema_version=1, kind='LegacyAdoptionReceipt', device_id='oxp3', slot='B',
+                       preserve_legacy=True, translation_complete=True, trusted_public_key=anchor, evidence=[anchor],
+                       components=[dict(id='oxp3:input', version='1.0.6', operations=[dict(target='etc/model.conf',
+                                        before=snapshot(b'original configuration\n'), after=snapshot(target.read_bytes()))])])
+        self.raw = json.dumps(receipt).encode()
+        self.receipt = self.work/'adoption.private.json'
+        self.receipt.write_bytes(self.raw)
+        self.receipt.chmod(0o600)
+        self.engine = Engine(self.root)
+
+    def test_private_receipt_adopts_original_bytes_and_uses_the_same_digest(self):
+        result = self.engine.adopt(self.receipt)
+        self.assertTrue(result['migration_complete'])
+        journal = json.loads(self.engine._journal(result['transactions'][0]).read_text())
+        self.assertEqual(journal['adoption_receipt'], hashlib.sha256(self.raw).hexdigest())
+        self.assertTrue(self.engine.verify('oxp3:input')['ok'])
+        self.engine.restore(result['transactions'][0])
+        self.assertEqual((self.root/'etc/model.conf').read_bytes(), b'original configuration\n')
+
+    @unittest.skipIf(os.name == 'nt', 'Protected ancestor traversal requires Linux')
+    def test_root_owned_private_leaf_under_a_writable_ancestor_is_refused(self):
+        parent = self.work/'writable'
+        parent.mkdir()
+        parent.chmod(0o777)
+        leaf = parent/'root-private'
+        leaf.mkdir(mode=0o700)
+        receipt = leaf/'receipt.json'
+        receipt.write_bytes(self.raw)
+        receipt.chmod(0o600)
+        with self.assertRaisesRegex(MaintenanceError, 'writable ancestor'):
+            self.engine.adopt(receipt)
+        self.assertEqual(self.engine._state()['components'], {})
+        self.assertEqual(list(self.engine.journals.glob('*.json')), [])
+
+    @unittest.skipIf(os.name == 'nt', 'Descriptor no-follow and FIFO checks require Linux')
+    def test_receipt_intake_refuses_ancestor_links_leaf_links_and_fifos(self):
+        protected = self.work/'protected'
+        protected.mkdir(mode=0o700)
+        receipt = protected/'receipt.json'
+        receipt.write_bytes(self.raw)
+        receipt.chmod(0o600)
+        alias = self.work/'alias'
+        alias.symlink_to(protected, target_is_directory=True)
+        linked = self.work/'linked.json'
+        linked.symlink_to(receipt)
+        fifo = self.work/'fifo'
+        os.mkfifo(fifo, 0o600)
+        for candidate in (alias/'receipt.json', linked, fifo):
+            with self.subTest(candidate=candidate), self.assertRaises(MaintenanceError):
+                self.engine.adopt(candidate)
+        self.assertEqual(self.engine._state()['components'], {})
+
+    @unittest.skipIf(os.name == 'nt', 'Receipt pathname rebinding check requires Linux file descriptors')
+    def test_receipt_rebinding_after_open_cannot_change_parsed_bytes_or_digest(self):
+        original_open = os.open
+        rebound = []
+        changed = json.loads(self.raw)
+        replacement = b'untrusted replacement original\n'
+        changed['components'][0]['operations'][0]['before'].update(
+            data=base64.b64encode(replacement).decode(), sha256=hashlib.sha256(replacement).hexdigest())
+        def opening(path, flags, *args, **kwargs):
+            descriptor = original_open(path, flags, *args, **kwargs)
+            if path == self.receipt.name and kwargs.get('dir_fd') is not None and not rebound:
+                rebound.append(True)
+                self.receipt.rename(self.work/'original-held-inode.json')
+                self.receipt.write_text(json.dumps(changed))
+                self.receipt.chmod(0o600)
+            return descriptor
+        with mock.patch.object(implementation.os, 'open', side_effect=opening):
+            result = self.engine.adopt(self.receipt)
+        self.assertTrue(rebound)
+        self.assertNotEqual(self.receipt.read_bytes(), self.raw)
+        journal = json.loads(self.engine._journal(result['transactions'][0]).read_text())
+        self.assertEqual(journal['adoption_receipt'], hashlib.sha256(self.raw).hexdigest())
+        self.assertEqual(base64.b64decode(journal['operations'][0]['before']['data']), b'original configuration\n')
 
 
 @unittest.skipUnless(MODEL and (MODEL/'adapter.py').is_file(), 'Set BOILER_MODEL_SOURCE to run the independent model adoption integration')

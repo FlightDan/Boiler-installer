@@ -84,13 +84,28 @@ class DependencyBootstrapTests(unittest.TestCase):
                          'runtime/desync/desync.exe', 'runtime/aria2/aria2c.exe', 'components/refind/manage.py', 'components/refind/refind_x64.efi'):
             self.assertIn(required, members)
         self.assertTrue(all(not name.startswith(('research/', 'cache/integration/', 'components/controls/')) for name in members))
-        self.assertEqual(len(lock['offline_packages']), 43)
-        inventory = {item['target']: item for item in public['members']}
+        self.assertEqual(len(lock['offline_packages']), 44)
+        inventory = {item['target']: item for archive in lock['archives'] for item in archive.get('members', [])}
         for package in lock['offline_packages']:
             name = 'runtime/payload/apks/'+package['name']+'-'+package['version']+'.apk'
             self.assertIn(name, inventory)
             self.assertEqual(inventory[name]['size'], package['bytes'])
         self.assertEqual(lock['versions']['dotnet_sdk'], json.loads((ROOT/'global.json').read_text())['sdk']['version'])
+
+    def test_raw_locked_dependency_preserves_tampered_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work=Path(temporary); source=work/'bash.apk'; source.write_bytes(b'locked raw')
+            entry={'member':'bash.apk','target':'runtime/bash.apk','group':'guest-packages','size':10,'sha256':bootstrap.hash_file(source)}
+            item={'id':'bash','format':'raw','name':source.name,'url':'https://example.invalid/bash.apk','size':10,'sha256':entry['sha256'],'members':[entry]}
+            lock={'schema_version':1,'kind':'BoilerDependencyLock','versions':{},'profiles':{'guest':['guest-packages']},'archives':[item]}
+            path=work/'lock.json'; path.write_text(json.dumps(lock))
+            root=work/'out'
+            result=bootstrap.prepare(root,'guest',cache=work,lock_path=path,offline=True)
+            self.assertEqual(result['created'],1)
+            self.assertEqual((root/'runtime/bash.apk').read_bytes(),b'locked raw')
+            (root/'runtime/bash.apk').write_bytes(b'changed')
+            with self.assertRaises(ValueError): bootstrap.prepare(root,'guest',cache=work,lock_path=path,offline=True)
+            self.assertEqual((root/'runtime/bash.apk').read_bytes(),b'changed')
 
 
 if __name__ == '__main__':

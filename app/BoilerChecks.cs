@@ -18,6 +18,15 @@ internal static class BoilerChecks
         var visualFailures = new List<string>();
         void Require(bool value, string name) { if (!value) throw new IOException(name); checks.Add(name); }
         async Task Reject(Func<Task> action, string name) { try { await action(); } catch (Exception e) when (e is IOException or InvalidOperationException or JsonException) { checks.Add(name); return; } throw new IOException("Expected rejection: " + name); }
+        var transport = Path.Combine(directory, "transport"); Directory.CreateDirectory(Path.Combine(transport, "nested"));
+        for (var index = 0; index < 5; index++) await File.WriteAllBytesAsync(Path.Combine(transport, "nested", index + ".bin"), Enumerable.Repeat((byte)(index + 1), 20000).ToArray());
+        var volumes = await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "volumes"), CancellationToken.None, 65536);
+        Require(volumes.Length == 3, "payload-splits-beyond-vvfat-capacity");
+        var delivered = volumes.SelectMany(volume => Directory.GetFiles(volume, "*", SearchOption.AllDirectories).Select(file => (file, relative: Path.GetRelativePath(volume, file)))).ToArray();
+        Require(delivered.Length == 5 && delivered.Select(file => file.relative).Distinct().Count() == 5
+            && delivered.All(file => File.ReadAllBytes(file.file).SequenceEqual(File.ReadAllBytes(Path.Combine(transport, file.relative)))), "payload-volumes-preserve-every-file-and-source");
+        Require(PayloadVolumes.MountCommand(3).Contains("remount,ro") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-merge") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-2"), "payload-volumes-use-readonly-identified-mounts");
+        await Reject(async () => { await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "too-small"), CancellationToken.None, 8192); }, "oversized-payload-file-refused");
         var source = Path.Combine(directory, "source.img");
         await File.WriteAllBytesAsync(source, RecoveryImageChecks.Fixture());
         var before = SHA256.HashData(await File.ReadAllBytesAsync(source));

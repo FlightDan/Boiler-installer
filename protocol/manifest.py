@@ -189,6 +189,14 @@ def validate_manifest(obj, kind=None):
             if not path.startswith("scripts/") or not path.endswith(".sh"): _fail("Hooks must be guest Bash scripts")
     elif actual == "DevicePackage":
         _source(obj.get("source"))
+        if "maintenance_entry" in obj:
+            entry = obj["maintenance_entry"]
+            if isinstance(entry, dict):
+                if entry != {"kind": "engine-hooks-v1"}: _fail("Unsupported model maintenance contract")
+            elif isinstance(entry, str):
+                relative_path(entry)
+                if not entry.startswith("scripts/") or not entry.endswith(".sh"): _fail("Invalid legacy maintenance entry")
+            else: _fail("Invalid model maintenance contract")
         if "components" not in obj or "files" not in obj: _fail("Package inventory and components required")
         components = _list(obj, "components")
         ids = set()
@@ -254,6 +262,8 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
         _fail("Anchored manifest digest changed")
     obj=validate_manifest(_decode_json(raw),"DevicePackage")
     inventory={e["path"]:e for e in obj.get("files",[])}
+    if isinstance(obj.get("maintenance_entry"), str) and obj["maintenance_entry"] not in inventory:
+        _fail("Legacy maintenance entry absent from package inventory")
     actual=set()
     for path in root.rglob("*"):
         if path.is_symlink() or (hasattr(path,"is_junction") and path.is_junction()): _fail("Package contains a link")

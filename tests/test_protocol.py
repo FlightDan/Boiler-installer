@@ -27,6 +27,19 @@ def package(root):
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_explicit_maintenance_contract_and_legacy_inventory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); manifest=package(root)
+            manifest["maintenance_entry"]={"kind":"engine-hooks-v1"}
+            validate_manifest(manifest)
+            for entry in (True,None,{}, {"kind":"shell"}, {"kind":"engine-hooks-v1","script":"scripts/run.sh"}, "../run.sh"):
+                with self.subTest(entry=entry),self.assertRaises(ProtocolError):
+                    validate_manifest(dict(manifest,maintenance_entry=entry))
+            manifest["maintenance_entry"]="scripts/legacy.sh"
+            (root/"manifest.json").write_text(json.dumps(manifest),encoding="utf-8")
+            with self.assertRaisesRegex(ProtocolError,"absent from package inventory"):
+                validate_package(root,allow_unsigned=True)
+
     def test_traversal_and_duplicate_targets(self):
         for target in ("../etc/test","/etc/test","etc/../test","C:/test","etc\\test","etc/CON","etc/test."):
             with self.subTest(target=target),self.assertRaises(ProtocolError):

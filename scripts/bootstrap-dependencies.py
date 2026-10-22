@@ -129,6 +129,17 @@ def prepare(root, profile, *, public_installer=None, dotnet_sdk=None, cache=None
             continue
         source = source_file(item, cache, supplied.get(item['id']), offline or check_only)
         report['archives'].append({key: item[key] for key in ('id', 'name', 'url', 'size', 'sha256')})
+        if item.get('format') == 'raw':
+            if len(members) != 1 or any(members[0][key] != item[key] for key in ('size', 'sha256')):
+                raise ValueError('Raw dependency must have one identical locked output')
+            entry = members[0]
+            relative_path(entry['target'])
+            class RawSource:
+                def open(self, unused):
+                    return source.open('rb')
+            report['created'] += install_member(RawSource(), None, root, entry, check_only)
+            report['files'].append({key: entry[key] for key in ('target', 'size', 'sha256', 'group')})
+            continue
         with zipfile.ZipFile(source) as archive:
             entries = archive_members(archive)
             if sdk:

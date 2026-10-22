@@ -56,10 +56,13 @@ def prepare(output, decky=None, wireless=()):
         data = source.read_bytes(); name = 'maintenance-runtime/' + relative
         staged[name] = data
         runtime.append(record(name, data, target='usr/local/lib/boiler/' + relative, mode=0o644))
-    launcher = b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\nexec /usr/bin/python3 -B -m maintenance "$@"\n'
+    launcher = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
+                b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
+                b'from maintenance.__main__ import main; raise SystemExit(main())\' "$@"\n')
     staged['maintenance-runtime/boiler-maintenance'] = launcher
     runtime.append(record('maintenance-runtime/boiler-maintenance', launcher, target='usr/local/bin/boiler-maintenance', mode=0o755))
-    component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance', version='0.1.0', files=runtime)
+    maintenance_release = json.loads((ROOT / 'maintenance/release.json').read_text(encoding='utf-8'))
+    component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance', version=maintenance_release['version'], files=runtime)
     components['core:maintenance'] = dict(available=True, files=runtime, component=component)
     output.mkdir(parents=True)
     for name, data in sorted(staged.items()):

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "product": "Boiler Maintenance",
+  "version": "0.1.0",
+  "display_version": "0.1.0-preview",
+  "channel": "preview",
+  "minimum_engine_version": "0.1.0",
+  "compatibility": {
+    "architectures": ["x86_64"],
+    "os_ids": ["steamos"],
+    "os_versions": ["3.8.14", "3.10"]
+  },
+  "acceptance": "Generic runtime software scope only; device upgrade, restart and hardware acceptance are separate release gates."
+}

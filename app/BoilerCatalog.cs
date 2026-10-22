@@ -28,6 +28,9 @@ public partial class MainWindow
     private string? selectedDeviceTrust;
     private StackPanel? devicePanel;
     private TextBlock? deviceStatus;
+    private TextBlock? deviceNotes;
+    private Expander? deviceNotesExpander;
+    private JsonElement? reviewedDeviceMetadata;
     private ComboBox? deviceList;
     private CheckBox? developerPackages;
     private TextBox? developerRepo;
@@ -40,6 +43,8 @@ public partial class MainWindow
     private void ClearDeviceSelection()
     {
         selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
+        reviewedDeviceMetadata = null;
+        if (deviceNotesExpander != null) deviceNotesExpander.Visibility = Visibility.Collapsed;
         deviceComponentChoices.Clear();
         if (deviceComponentsPanel != null) { ComponentOptionsHost.Children.Remove(deviceComponentsPanel); deviceComponentsPanel = null; }
         ConfigurationChanged();
@@ -62,13 +67,17 @@ public partial class MainWindow
         offline.Click += async (_, _) => await DeviceAction(async () => ShowDeviceIndex(await BoilerProtocol.RunAsync(["cached-index", BoilerProtocol.RegistryCache], CancellationToken.None), true));
         devicePanel.Children.Add(offline);
         deviceList = new ComboBox { MinHeight = 48, Margin = new Thickness(0, 8, 0, 8) };
-        deviceList.SelectionChanged += (_, _) => { if (deviceList.SelectedItem is ComboBoxItem { Tag: JsonElement item }) deviceStatus.Text = DescribeDevice(item); };
+        deviceList.SelectionChanged += (_, _) => { if (deviceList.SelectedItem is ComboBoxItem { Tag: JsonElement item }) ShowDeviceDetails(item); };
         devicePanel.Children.Add(deviceList);
+        deviceNotes = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 8, 12, 12) };
+        deviceNotesExpander = new Expander { Header = PartitionInventory.L("开发者完整备注与验证记录", "Developer notes and validation records"), Content = deviceNotes, MinHeight = 48, Visibility = Visibility.Collapsed };
+        devicePanel.Children.Add(deviceNotesExpander);
         var choose = new Button { Content = PartitionInventory.L("使用所选机型包", "Use selected device package"), HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 48 };
         choose.Click += async (_, _) => await DeviceAction(async () =>
         {
             if (deviceList.SelectedItem is not ComboBoxItem { Tag: JsonElement item }) throw new IOException("请选择机型。 / Select a device.");
             var id = item.GetProperty("id").GetString()!;
+            reviewedDeviceMetadata = item.Clone();
             var digest = item.GetProperty("sha256").GetString()!;
             var current = await BoilerProtocol.RunAsync(["cached-index", BoilerProtocol.RegistryCache], CancellationToken.None);
             if (!current.GetProperty("packages").EnumerateArray().Any(p => p.GetProperty("id").GetString() == id && p.GetProperty("sha256").GetString() == digest)
@@ -120,7 +129,34 @@ public partial class MainWindow
             + "\n" + PartitionInventory.L("序列：", "Sequence: ") + index.GetProperty("sequence");
     }
     private static string LocalizedValue(JsonElement value) => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(InstallerI18n.Language == "en-US" ? "en" : "zh", out var text) ? text.ToString() : value.ToString();
-    private static string DescribeDevice(JsonElement item) => string.Join("\n", new[] { "id", "version", "status", "notes", "known_issues", "verified_at", "compatibility", "source" }.Where(key => item.TryGetProperty(key, out _)).Select(key => key + ": " + LocalizedValue(item.GetProperty(key))));
+    private static string DeviceText(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.Array) return string.Join("\n", value.EnumerateArray().Select(DeviceText));
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            if (value.TryGetProperty("zh", out _) || value.TryGetProperty("en", out _)) return LocalizedValue(value);
+            return string.Join(" · ", new[] { "severity", "issue", "note", "scope", "date", "os_version", "kernel", "evidence" }.Where(key => value.TryGetProperty(key, out _)).Select(key => DeviceText(value.GetProperty(key))));
+        }
+        return value.ToString();
+    }
+    private static string DescribeDevice(JsonElement item)
+    {
+        var lines = new List<string>();
+        if (item.TryGetProperty("name", out var name)) lines.Add(LocalizedValue(name));
+        if (item.TryGetProperty("version", out var version)) lines.Add(PartitionInventory.L("机型包版本：", "Package version: ") + version);
+        var status = item.TryGetProperty("status", out var state) ? state.GetString() : "unverified";
+        lines.Add(status switch { "supported" => PartitionInventory.L("适配状态：已支持（请查看验证范围）", "Compatibility: supported within the recorded validation scope"), "experimental" => PartitionInventory.L("适配状态：实验性，仍有待验证功能", "Compatibility: experimental; hardware validation is incomplete"), "blocked" => PartitionInventory.L("适配状态：存在阻塞问题", "Compatibility: blocked by known issues"), _ => PartitionInventory.L("适配状态：尚未完成实机验证", "Compatibility: hardware validation pending") });
+        lines.Add(PartitionInventory.L("允许构建不代表全部硬件功能已通过。", "Build availability does not mean every hardware feature has passed."));
+        if (item.TryGetProperty("known_issues", out var issues)) lines.Add(PartitionInventory.L("已知问题：\n", "Known issues:\n") + DeviceText(issues));
+        return string.Join("\n", lines);
+    }
+    private void ShowDeviceDetails(JsonElement item)
+    {
+        deviceStatus!.Text = DescribeDevice(item);
+        deviceNotes!.Text = string.Join("\n\n", new[] { "notes", "compatibility_records", "verified_at", "source_url" }.Where(key => item.TryGetProperty(key, out _)).Select(key => DeviceText(item.GetProperty(key))));
+        deviceNotesExpander!.Visibility = string.IsNullOrWhiteSpace(deviceNotes.Text) ? Visibility.Collapsed : Visibility.Visible;
+        deviceNotesExpander.IsExpanded = false;
+    }
     private async Task DeviceAction(Func<Task> action)
     {
         if (operation != null || DownloadsBusy) return;
@@ -148,13 +184,16 @@ public partial class MainWindow
         foreach (var component in package.GetProperty("components").EnumerateArray())
         {
             var id = component.GetProperty("id").GetString()!;
-            var check = new CheckBox { Content = new TextBlock { Text = component.TryGetProperty("name", out var name) ? LocalizedValue(name) : id, TextWrapping = TextWrapping.Wrap },
+            var componentText = component.TryGetProperty("name", out var name) ? LocalizedValue(name) : id;
+            if (component.TryGetProperty("description", out var description)) componentText += "\n" + LocalizedValue(description);
+            var check = new CheckBox { Content = new TextBlock { Text = componentText, TextWrapping = TextWrapping.Wrap },
                 IsChecked = component.TryGetProperty("default", out var value) && value.ValueKind == JsonValueKind.True, MinHeight = 48 };
             check.Checked += (_, _) => ConfigurationChanged(); check.Unchecked += (_, _) => ConfigurationChanged();
             deviceComponentChoices.Add(id, check); deviceComponentsPanel.Children.Add(check);
         }
         ComponentOptionsHost.Children.Add(deviceComponentsPanel);
-        deviceStatus!.Text = DescribeDevice(package) + "\nSHA-256: " + digest + "\n" + trust;
+        ShowDeviceDetails(trust == "signed-index" && reviewedDeviceMetadata is JsonElement reviewed ? reviewed : package);
+        deviceStatus!.Text += "\n" + (trust == "signed-index" ? PartitionInventory.L("来源：已验签目录中的固定版本", "Source: fixed version from the verified index") : PartitionInventory.L("来源：仅本次信任的开发包", "Source: development package trusted for this session"));
         ConfigurationChanged();
     }
 }

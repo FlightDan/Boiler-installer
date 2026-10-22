@@ -112,6 +112,36 @@ def install_plan(options, source, slot):
                 maintenance=dict(id='core:maintenance', version='0.1.0', state_schema=1))
 
 
+def verify_device_components(root, payload, options, slot, installed):
+    """Only authenticated verify hooks may run against the caller's readonly image."""
+    import subprocess
+    root, payload = Path(root), Path(payload)
+    from maintenance.engine import build_hook_environment
+    from protocol.manifest import confined
+    validate_options(options)
+    if slot not in ('A', 'B'): raise ValueError('Unknown verification slot')
+    recorded = set(installed) - CORE - WIRELESS
+    if not options.get('device_package'):
+        if recorded: raise ValueError('Device verification requires an explicitly trusted package')
+        return set()
+    folder, components, environment, descriptor = device_plan(payload, options, release(root))
+    identities = {component['id'] for component in components}
+    if recorded != identities: raise ValueError('Installed device components differ from the authenticated selection')
+    Engine = maintenance_api(payload)
+    engine = Engine(root, Path(root) / 'var/lib/boiler/maintenance', read_only=True)
+    for component in components:
+        if not engine.verify_readonly(component['id'])['ok']:
+            raise ValueError('Device managed files differ: ' + component['id'])
+        hooks = component.get('hooks', {})
+        if hooks:
+            if 'verify' not in hooks: raise ValueError('Scripted device component has no readonly verification hook')
+            subprocess.run(['/bin/bash', str(confined(folder, hooks['verify'])), str(root)], cwd=folder,
+                           env=build_hook_environment(root, 'readonly-' + slot), stdin=subprocess.DEVNULL,
+                           check=True, timeout=900)
+        print('BOILER_DEVICE_VERIFIED=' + json.dumps(dict(slot=slot, id=component['id'], hook=bool(hooks), readonly=True)), flush=True)
+    return identities
+
+
 def decky_manifest(root, metadata, slot):
     from payload_lock import record
     from plugin_installer import UNIT

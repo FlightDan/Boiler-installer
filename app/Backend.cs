@@ -125,10 +125,10 @@ public static class Backend
         var id = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + "-" + task;
         var work = Path.Combine(InstallerWorkspace.DirectoryPath, id); Directory.CreateDirectory(work);
         var payload = Path.Combine(work, "payload"); Directory.CreateDirectory(payload);
-        using (var manifest = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(Root, "runtime/payload/packages.json"), token)))
+        using (var manifest = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(Root, "scripts/runtime-dependencies.lock.json"), token)))
         {
             var destination = Path.Combine(payload, "apks"); Directory.CreateDirectory(destination);
-            foreach (var package in manifest.RootElement.EnumerateArray())
+            foreach (var package in manifest.RootElement.GetProperty("offline_packages").EnumerateArray())
             {
                 var filename = package.GetProperty("name").GetString() + "-" + package.GetProperty("version").GetString() + ".apk";
                 if (Path.GetFileName(filename) != filename) throw new InvalidOperationException("离线包路径无效。");
@@ -214,6 +214,8 @@ public static class Backend
                 }
             }
         }
+        var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, Path.Combine(work, "payload-volumes"), token);
+        var payloadMount = PayloadVolumes.MountCommand(payloadVolumes.Length);
         var scratch = Path.Combine(work, "scratch.raw");
         using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task == "home-copy-plan-checks" ? 4L * 1024 * 1024 * 1024 : task == "integration-check" ? 3L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
@@ -221,9 +223,11 @@ public static class Backend
             "-kernel", Path.Combine(Root, "runtime/alpine/boot/vmlinuz-virt"), "-initrd", Path.Combine(Root, "runtime/alpine/boot/initramfs-virt"),
             "-append", "console=ttyS0,115200 modules=loop,squashfs,sd-mod,virtio_pci,virtio_blk,vfat alpine_dev=cdrom:iso9660",
             "-drive", $"file={Option(Path.Combine(Root, "cache/alpine-virt-3.23.6-x86_64.iso"))},format=raw,media=cdrom,readonly=on",
-            "-drive", $"file={Option(scratch)},format=raw,if=virtio",
-            "-drive", $"file=fat:ro:{Option(payload)},format=raw,if=virtio,readonly=on" };
-        if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=virtio{(writable ? "" : ",readonly=on")}"]);
+            "-drive", $"file={Option(scratch)},format=raw,if=none,id=boiler-scratch",
+            "-device", "virtio-blk-pci,drive=boiler-scratch",
+            "-drive", $"file=fat:ro:{Option(payloadVolumes[0])},format=raw,if=none,id=payload-0,readonly=on",
+            "-device", "virtio-blk-pci,drive=payload-0,serial=boiler-payload-0" };
+        if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=none,id=boiler-image{(writable ? "" : ",readonly=on")}", "-device", "virtio-blk-pci,drive=boiler-image"]);
         if (task is "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test")
         {
             if (fixture == null) throw new InvalidOperationException("没有选择本工具创建的虚拟测试盘。");
@@ -240,17 +244,24 @@ public static class Backend
                 if (image != null) throw new InvalidOperationException("分区夹具创建任务不应接收系统镜像。");
                 var reserved = Path.Combine(work, "reserved.raw");
                 using (var file = new FileStream(reserved, FileMode.CreateNew)) file.SetLength(1024 * 1024);
-                arguments.AddRange(["-drive", $"file={Option(reserved)},format=raw,if=virtio"]);
+                arguments.AddRange(["-drive", $"file={Option(reserved)},format=raw,if=none,id=boiler-reserved", "-device", "virtio-blk-pci,drive=boiler-reserved"]);
             }
             else if (image == null) throw new InvalidOperationException("系统部署验证需要恢复镜像。");
-            arguments.AddRange(["-drive", $"file={Option(task is "firstboot-verify" or "ui-installed-check" ? QcowReadOnlyGraph.Filename(fixture) : fixture)},format=qcow2,if=virtio{(task is "firstboot-verify" or "handoff-binding" or "ui-installed-check" or "ui-cancelled-check" ? ",readonly=on" : "")}"]);
+            arguments.AddRange(["-drive", $"file={Option(task is "firstboot-verify" or "ui-installed-check" ? QcowReadOnlyGraph.Filename(fixture) : fixture)},format=qcow2,if=none,id=boiler-fixture{(task is "firstboot-verify" or "handoff-binding" or "ui-installed-check" or "ui-cancelled-check" ? ",readonly=on" : "")}", "-device", "virtio-blk-pci,drive=boiler-fixture"]);
             if (stateDisk != null)
             {
                 VerifyStateDisk(stateDisk, fixture);
-                arguments.AddRange(["-drive", $"file={Option(stateDisk)},format=qcow2,if=virtio"]);
+                arguments.AddRange(["-drive", $"file={Option(stateDisk)},format=qcow2,if=none,id=boiler-state", "-device", "virtio-blk-pci,drive=boiler-state"]);
             }
         }
-        if(updateRoot != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(updateRoot))},format=raw,if=virtio,readonly=on"]);
+        if(updateRoot != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(updateRoot))},format=raw,if=none,id=boiler-update,readonly=on", "-device", "virtio-blk-pci,drive=boiler-update"]);
+        for (var volume = 1; volume < payloadVolumes.Length; volume++) arguments.AddRange(["-drive", $"file=fat:ro:{Option(payloadVolumes[volume])},format=raw,if=none,id=payload-{volume},readonly=on", "-device", $"virtio-blk-pci,drive=payload-{volume},serial=boiler-payload-{volume}"]);
+        if (payloadVolumes.Length > 1)
+        {
+            var merge = Path.Combine(work, "payload-merge.raw");
+            using (var disk = new FileStream(merge, FileMode.CreateNew)) disk.SetLength(checked((payloadVolumes.Length * 512L + 256) * 1024 * 1024));
+            arguments.AddRange(["-drive", $"file={Option(merge)},format=raw,if=none,id=payload-merge", "-device", "virtio-blk-pci,drive=payload-merge,serial=boiler-payload-merge"]);
+        }
         var qemu = Path.Combine(Root, "runtime/qemu-min/qemu-system-x86_64.exe");
         if (task is "integration" or "integration-check") arguments[arguments.IndexOf("-m") + 1] = "2048";
         var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
@@ -289,8 +300,8 @@ public static class Backend
                         // Only the secret file uses 077. Applying it to the task also makes
                         // public runtime directories root-only and breaks the deck session.
                         var command = secureInput == null
-                            ? $"( umask 022; mkdir -p /mnt/payload && mount -t vfat -o ro /dev/vdb1 /mnt/payload && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
-                            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( mkdir -p /mnt/payload && mount -t vfat -o ro /dev/vdb1 /mnt/payload && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
+                            ? $"( umask 022; {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
+                            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
                         for (var offset = 0; offset < command.Length; offset += 8)
                         {
                             await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);

@@ -4947,6 +4947,23 @@
       "official_metadata": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json",
       "target_prefix": "runtime/dotnet/",
       "group": "dotnet-sdk"
+    },
+    {
+      "id": "alpine-bash",
+      "format": "raw",
+      "name": "bash-5.3.3-r1.apk",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/bash-5.3.3-r1.apk",
+      "size": 480971,
+      "sha256": "c52a2b6997567830d573160c2c0cad665473320f08862133aaf4c1e96864fc48",
+      "members": [
+        {
+          "member": "bash-5.3.3-r1.apk",
+          "target": "runtime/payload/apks/bash-5.3.3-r1.apk",
+          "group": "guest-packages",
+          "size": 480971,
+          "sha256": "c52a2b6997567830d573160c2c0cad665473320f08862133aaf4c1e96864fc48"
+        }
+      ]
     }
   ],
   "profiles": {
@@ -5329,6 +5346,14 @@
       "source": "https://e2fsprogs.sourceforge.net/",
       "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/e2fsprogs-extra-1.47.3-r0.apk",
       "bytes": 214319
+    },
+    {
+      "name": "bash",
+      "version": "5.3.3-r1",
+      "license": "GPL-3.0-or-later",
+      "source": "https://www.gnu.org/software/bash/bash.html",
+      "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/bash-5.3.3-r1.apk",
+      "bytes": 480971
     }
   ],
   "limitations": [

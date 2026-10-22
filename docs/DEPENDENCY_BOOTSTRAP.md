@@ -3,9 +3,12 @@
 The installer source does not depend on an adjacent OXP3 checkout or on tools
 installed in a particular user's home. `scripts/runtime-dependencies.lock.json`
 pins the public archive URLs, exact sizes and hashes, all 702 audited runtime and
-rEFInd member hashes, 43 offline Alpine APK versions, and explicit SDK/runtime
+rEFInd member hashes, 44 offline Alpine APK versions, and explicit SDK/runtime
 versions. Inputs are byte-for-byte existing public distributions; no local
-research tree, private record or signing key is read.
+research tree, private record or signing key is read. The additional Bash 5.3.3-r1
+APK is downloaded from Alpine over HTTPS and locked by exact size and SHA-256;
+it is installed by the guest through Alpine signature verification. For offline
+preparation, include it in the cache passed with `--cache`.
 
 Use CPython 3.12 or later to prepare a clean checkout:
 

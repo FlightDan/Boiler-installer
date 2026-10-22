@@ -2,22 +2,25 @@
 
 Discovery and planning never change target state. Execution rechecks the signed
 snapshot, immutable package digest, real target environment and private state.
-Script packages remain the responsibility of an authenticated model maintenance
-entry; this module intentionally has no arbitrary hook execution switch.
+Script packages require an explicit engine-hooks-v1 maintenance contract. Only
+the signed, unchanged reviewed plan can authorize Engine hooks, using a private
+authenticated snapshot. There is no unsigned CLI hook execution switch.
 """
 from __future__ import annotations
 
 import hashlib
+import contextlib
 import json
 import os
 from pathlib import Path
 import re
 import stat
+import tempfile
 from urllib.parse import urlparse
 
 from protocol import compatible, resolve_plan, validate_package, validate_manifest
 from protocol.fetch import _cache_lock, cached_index, fetch_index, fetch_package
-from protocol.manifest import confined, load_json, relative_path
+from protocol.manifest import confined, load_json, relative_path, _decode_json, MAX_MANIFEST
 from .engine import Engine, MaintenanceError, _json_write, _read
 
 
@@ -237,12 +240,102 @@ def _maintenance_entry(package):
     entry = package.get('maintenance_entry')
     if entry is None:
         return None
+    if isinstance(entry, dict):
+        if entry != {'kind': 'engine-hooks-v1'}:
+            raise UpdateError('Unsupported structured model maintenance entry')
+        return entry
     if not isinstance(entry, str) or not entry.startswith('scripts/') or not entry.endswith('.sh'):
         raise UpdateError('Invalid declared model maintenance entry')
     relative_path(entry)
     if entry not in {item['path'] for item in package['files']}:
         raise UpdateError('Model maintenance entry is absent from authenticated inventory')
     return entry
+
+
+@contextlib.contextmanager
+def _regular_stream(path):
+    """Do not follow a swapped link or wait for a FIFO in a writable cache."""
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+                         getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise UpdateError('Authenticated package source must be a regular file')
+        with os.fdopen(descriptor, 'rb') as stream:
+            descriptor = None
+            yield stream
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _protected_staging_path(path):
+    if os.name == 'nt':
+        return
+    path = Path(path).absolute()
+    # Check top down: once a directory is validated, an unprivileged user
+    # cannot replace its protected child while subsequent paths are inspected.
+    for current in reversed([path, *path.parents]):
+        info = current.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid not in (0, os.geteuid()):
+            raise UpdateError('Authenticated staging path has an untrusted ancestor')
+        if stat.S_IMODE(info.st_mode) & 0o022:
+            # /tmp is safe only because root-owned sticky parents prevent a
+            # user from renaming somebody else's root/euid-owned child.
+            if current == path or info.st_uid != 0 or not info.st_mode & stat.S_ISVTX:
+                raise UpdateError('Authenticated staging path has a writable ancestor')
+
+
+@contextlib.contextmanager
+def _authenticated_payload(package_dir, manifest_sha256, staging_parent):
+    """Detach execution from a caller-writable cache, copying only signed inventory.
+
+    The temporary parent is mode 0700 on Linux. Every copied byte is bounded and
+    verified against the anchored manifest before Engine can open a hook. Source
+    files changing during the copy either fail verification or produce the exact
+    signed bytes; arbitrary cache additions are never copied.
+    """
+    source = Path(package_dir).resolve()
+    with _regular_stream(confined(source, 'manifest.json')) as incoming:
+        manifest_bytes = incoming.read(MAX_MANIFEST+1)
+    if len(manifest_bytes) > MAX_MANIFEST or hashlib.sha256(manifest_bytes).hexdigest() != manifest_sha256:
+        raise UpdateError('Authenticated package manifest changed before snapshot')
+    package = validate_manifest(_decode_json(manifest_bytes), 'DevicePackage')
+    parent = Path(staging_parent)
+    _protected_staging_path(parent)
+    with tempfile.TemporaryDirectory(prefix='.authenticated-update-', dir=parent) as temporary:
+        snapshot = Path(temporary)
+        (snapshot/'manifest.json').write_bytes(manifest_bytes)
+        for entry in package['files']:
+            target = confined(snapshot, entry['path'])
+            target.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+            digest, written = hashlib.sha256(), 0
+            with _regular_stream(confined(source, entry['path'])) as incoming, target.open('xb') as outgoing:
+                while True:
+                    block = incoming.read(min(1024*1024, entry['size']-written+1))
+                    if not block:
+                        break
+                    written += len(block)
+                    if written > entry['size']:
+                        raise UpdateError('Authenticated package file grew while staging')
+                    digest.update(block)
+                    outgoing.write(block)
+            if written != entry['size'] or digest.hexdigest() != entry['sha256']:
+                raise UpdateError('Authenticated package file changed while staging')
+        validate_package(snapshot, expected_manifest_sha256=manifest_sha256)
+        yield snapshot
+
+
+def _execution_context(root, index_cache, state_dir, plan, public_key, openssl, payload):
+    """Recheck revocation/source identity, actual target metadata and snapshot bytes."""
+    _protected_staging_path(payload)
+    if target_environment(root, device_id=plan['environment'].get('device_id')) != plan['environment']:
+        raise UpdateError('Actual target environment changed during the reviewed update')
+    _, anchor = _signed_snapshot(index_cache, public_key, openssl)
+    if anchor != plan['index']:
+        raise UpdateError('Signed registry changed during the reviewed update; review again')
+    validate_package(payload, expected_manifest_sha256=plan['package']['manifest_sha256'])
+    if _digest(_provenance(Engine(root, state_dir, read_only=True))) != plan['provenance_sha256']:
+        raise UpdateError('Updater provenance changed during the reviewed update')
 
 
 def plan_update(root, index_cache, package_dir, identity, version, selected=None, state_dir=None,
@@ -263,11 +356,14 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
         raise UpdateError('Package identity or size differs from signed discovery')
     if package.get('trust', {}).get('status') == 'unsigned-development' or package['source']['kind'] == 'local':
         raise UpdateError('Developer snapshots cannot become normal installed updates')
+    declared_source_identity = _source_identity(package['source'])
     if not compatible(entry, current['environment']) or not compatible(package, current['environment']):
         raise UpdateError('Package is incompatible with the actual target OS, architecture or kernels')
     prior = provenance['packages'].get(identity)
     if prior and (prior['source_identity'] != source_identity or _version_key(version) < _version_key(prior['version'])):
         raise UpdateError('Package downgrade or implicit source repository change refused')
+    if prior and _source_identity(prior['declared_source']) != declared_source_identity:
+        raise UpdateError('Implicit declared source repository change refused')
     if selected is None:
         selected = sorted(item['id'] for item in package['components'] if item['id'] in state['components'])
     if not isinstance(selected, list) or not selected or len(set(selected)) != len(selected):
@@ -292,6 +388,10 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
         if new_key < old_key:
             raise UpdateError('Component downgrade refused: '+cid)
         same = _unchanged_component(engine, state, component)
+        if new_key == old_key and component.get('hooks') and cid in package_ids:
+            # Old journals record hook paths, not the old script bytes. A path
+            # match cannot prove that a same-version hook is unchanged.
+            raise UpdateError('Equal-precedence scripted component requires a new version: '+cid)
         if new_key == old_key and not same:
             raise UpdateError('Equal-precedence component version changes bytes or scripts: '+cid)
         old_paths = {name for name, owner in state['owners'].items() if owner['component'] == cid}
@@ -323,14 +423,16 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
                 raise UpdateError('Installed component conflict: '+conflict)
         actions.append({'id': cid, 'from_version': old_version, 'to_version': component['version'],
                         'action': 'unchanged' if same and new_key == old_key else 'upgrade', 'scripted': bool(component.get('hooks'))})
-    scripted = any(item['scripted'] and item['id'] in package_ids for item in actions)
+    scripted = any(item['scripted'] and item['action'] == 'upgrade' and item['id'] in package_ids for item in actions)
+    maintenance_entry = _maintenance_entry(package)
+    execution = 'engine-hooks-v1' if scripted and maintenance_entry == {'kind': 'engine-hooks-v1'} else 'files-v1' if not scripted else 'unsupported-model-entry'
     plan = {'schema_version': 1, 'kind': 'ReviewedUpdatePlan', 'target': current['target'], 'environment': current['environment'],
             'state_sha256': current['state_sha256'], 'provenance_sha256': current['provenance_sha256'], 'index': anchor,
             'package': {'id': identity, 'version': version, 'manifest_sha256': entry['sha256'], 'manifest_size': entry['size'],
                         'source': entry['source'], 'source_identity': source_identity, 'declared_source': package['source'], 'component_ids': sorted(package_ids)},
             'selected': selected, 'components': resolved['components'], 'actions': actions, 'scripted': scripted,
-            'maintenance_entry': _maintenance_entry(package), 'executable': not scripted,
-            'scope': 'already-owned file components; per-component transactions, no automatic rollback of a multi-component batch'}
+            'maintenance_entry': maintenance_entry, 'execution': execution, 'executable': execution != 'unsupported-model-entry',
+            'scope': 'already-owned components; authenticated Engine apply/verify hooks only when declared; per-component transactions, no automatic rollback of a multi-component batch or arbitrary hook effects'}
     plan['review_sha256'] = _digest(plan)
     return plan
 
@@ -343,14 +445,16 @@ def execute_plan(root, reviewed_plan, index_cache, package_dir, *, reviewed_sha2
     body = {key: value for key, value in plan.items() if key != 'review_sha256'}
     if not re.fullmatch(r'[0-9a-f]{64}', reviewed_sha256 or '') or reviewed_sha256 != claimed or _digest(body) != reviewed_sha256:
         raise UpdateError('Explicit reviewed plan hash does not match')
-    if plan.get('scripted') or not plan.get('executable'):
-        raise UpdateError('Scripted updates require the authenticated model maintenance entry; generic CLI hooks are disabled')
+    if not plan.get('executable') or (plan.get('scripted') and
+            (plan.get('execution') != 'engine-hooks-v1' or plan.get('maintenance_entry') != {'kind': 'engine-hooks-v1'})):
+        raise UpdateError('Unsupported model maintenance entry; scripted updates require the explicit engine-hooks-v1 contract')
     engine = Engine(root, state_dir)
     cache_path = Path(index_cache).resolve()
     if cache_path == engine.state_dir.resolve() or cache_path in engine.state_dir.resolve().parents or engine.state_dir.resolve() in cache_path.parents:
         raise UpdateError('Registry cache and target maintenance state must use separate directories')
-    with _cache_lock(engine.state_dir):
-        fresh = plan_update(root, index_cache, package_dir, plan['package']['id'], plan['package']['version'], plan['selected'], state_dir,
+    _protected_staging_path(engine.state_dir)
+    with _cache_lock(engine.state_dir), _authenticated_payload(package_dir, plan['package']['manifest_sha256'], engine.state_dir) as payload:
+        fresh = plan_update(root, index_cache, payload, plan['package']['id'], plan['package']['version'], plan['selected'], state_dir,
                             device_id=plan['environment'].get('device_id'), public_key=public_key, openssl=openssl)
         if fresh != plan:
             raise UpdateError('Reviewed update plan became stale; review a fresh plan')
@@ -378,10 +482,16 @@ def execute_plan(root, reviewed_plan, index_cache, package_dir, *, reviewed_sha2
                     continue
                 # Engine checks this digest while holding its own transaction
                 # lock, preventing concurrent mutation from causing downgrade.
-                result = engine.apply(component, package_dir, environment=plan['environment'], expected_state_sha256=expected_state)
+                _execution_context(root, index_cache, state_dir, plan, public_key, openssl, payload)
+                authorized_hooks = bool(component.get('hooks')) and plan['execution'] == 'engine-hooks-v1' and component['id'] in plan['package']['component_ids']
+                if component.get('hooks') and not authorized_hooks:
+                    raise UpdateError('Hook component is outside the authenticated reviewed package')
+                result = engine.apply(component, payload, allow_hooks=authorized_hooks,
+                                      environment=plan['environment'], expected_state_sha256=expected_state)
                 expected_state = result['state_sha256']
                 receipt['transactions'].append(result)
                 _json_write(receipt_path, receipt)
+            _execution_context(root, index_cache, state_dir, plan, public_key, openssl, payload)
             with engine._lock():
                 if _digest(engine._state()) != expected_state:
                     raise UpdateError('Maintenance ownership changed before update provenance commit')

@@ -4,11 +4,12 @@ import runpy
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'components'))
 sys.path.insert(0, str(ROOT / 'guest'))
-from integration import stage, validate_options, check_conflicts
+from integration import stage, validate_options, check_conflicts, verify_device_components
 from source_profile import inspect_source
 
 
@@ -97,6 +98,36 @@ class GenericIntegrationChecks(unittest.TestCase):
         self.assertFalse(manifest['components']['wifi:intel']['available'])
         with self.assertRaises(FileExistsError): prepare(output)
         self.assertFalse(any('oxp3' in p.as_posix() for p in output.rglob('*')))
+
+    def test_readonly_device_verification_executes_only_declared_verify_with_clean_environment(self):
+        component = dict(id='oxp3:legacy-adaptation', hooks=dict(apply='scripts/apply.sh', verify='scripts/verify.sh'))
+        package = Path(self.tmp.name) / 'package'; (package / 'scripts').mkdir(parents=True)
+        (package / 'scripts/verify.sh').write_text('exit 0\n')
+        options = dict(schema=1, repairs=[], plugins=[], device_package='oxp3', device_manifest_sha256='a'*64,
+                       device_trust='developer-session', device_components=[component['id']])
+        engine = mock.Mock(); engine.verify_readonly.return_value = dict(ok=True)
+        factory = mock.Mock(return_value=engine)
+        with mock.patch('integration.device_plan', return_value=(package, [component], {}, {})) as plan, \
+             mock.patch('integration.maintenance_api', return_value=factory), mock.patch('subprocess.run') as execute, \
+             mock.patch.dict('os.environ', dict(BASH_ENV='/untrusted', LD_PRELOAD='/untrusted', PYTHONPATH='/untrusted')):
+            self.assertEqual({component['id']}, verify_device_components(self.root, '/payload', options, 'A', {component['id']: {}}))
+        self.assertEqual(Path('/payload'), plan.call_args.args[0])
+        command = execute.call_args.args[0]; environment = execute.call_args.kwargs['env']
+        self.assertEqual(['/bin/bash', str(package.resolve()/'scripts/verify.sh'), str(self.root)], command)
+        self.assertEqual(str(self.root), environment['BOILER_TARGET_ROOT'])
+        self.assertFalse(set(environment) & {'BASH_ENV', 'LD_PRELOAD', 'PYTHONPATH'})
+        self.assertTrue(factory.call_args.kwargs['read_only']); engine.apply.assert_not_called(); engine.recover.assert_not_called()
+
+    def test_scripted_device_without_verify_hook_is_not_silently_skipped(self):
+        component = dict(id='oxp3:legacy-adaptation', hooks=dict(apply='scripts/apply.sh'))
+        options = dict(schema=1, repairs=[], plugins=[], device_package='oxp3', device_manifest_sha256='a'*64,
+                       device_trust='developer-session', device_components=[component['id']])
+        engine = mock.Mock(); engine.verify_readonly.return_value = dict(ok=True)
+        with mock.patch('integration.device_plan', return_value=(Path(self.tmp.name), [component], {}, {})), \
+             mock.patch('integration.maintenance_api', return_value=mock.Mock(return_value=engine)), mock.patch('subprocess.run') as execute:
+            with self.assertRaisesRegex(ValueError, 'no readonly verification'):
+                verify_device_components(self.root, '/payload', options, 'A', {component['id']: {}})
+            execute.assert_not_called()
 
 
 if __name__ == '__main__': unittest.main()

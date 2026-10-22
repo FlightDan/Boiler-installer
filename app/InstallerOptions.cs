@@ -36,6 +36,11 @@ public static class InstallerOptions
         if (value.InstallMode != "custom" && value.DevicePackage != null) throw new IOException("Device packages require custom mode.");
         if (value.SetDeckPassword || value.EnableSsh || value.KdeLanguage != "system" || value.StorageMounts is { Length: > 0 }) throw new IOException("Unsupported generic account, language or storage policy.");
         if (value.DeviceComponents is { Length: > 0 } && value.DevicePackage == null) throw new IOException("Device components require a package.");
+        if (value.DevicePackage != null && (value.DeviceManifestSha256 == null
+            || !System.Text.RegularExpressions.Regex.IsMatch(value.DeviceManifestSha256, "^[0-9a-f]{64}$")
+            || value.DevicePackage != value.DeviceManifestSha256[..24]
+            || value.DeviceTrust is not ("signed-index" or "developer-session"))) throw new IOException("Invalid locked device package identity.");
+        if ((value.Wireless ?? []).Any(vendor => vendor is not ("intel" or "realtek" or "mediatek" or "wifi:intel" or "wifi:realtek" or "wifi:mediatek"))) throw new IOException("Unknown wireless firmware selection.");
         SharedStorage.Validate(value.StorageMounts);
         var catalog = Catalog;
         if (value.Schema != 1 || !catalog.Languages.Contains(value.InstallerLanguage) || !catalog.KdeLanguages.Contains(value.KdeLanguage)

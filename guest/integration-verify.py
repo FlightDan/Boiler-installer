@@ -1,6 +1,8 @@
 """Read-only verification of Boiler generic component files in prepared A/B images."""
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 sys.path.insert(0, '/mnt/payload/components')
@@ -8,9 +10,21 @@ sys.path.insert(0, '/mnt/payload')
 from offload_mounts import mount_etc, mount_opt
 from maintenance import Engine
 from payload_lock import checked
+from integration import verify_device_components
 
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU':
     raise RuntimeError('Managed VM required')
+if Path('/sys/class/block/vdc/ro').read_text().strip() != '1':
+    raise RuntimeError('Verification image must be readonly at the virtual block device')
+
+
+def guest_marker(name, content):
+    descriptor = os.open('/run/' + name, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, 'w') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o022:
+            raise RuntimeError('Untrusted managed guest marker')
+        os.fchmod(stream.fileno(), 0o600); stream.truncate(0); stream.write(content)
 options = json.loads(Path('/mnt/payload/selection.json').read_text())
 if options.get('install_mode') == 'imported':
     print('OXP_INTEGRATION_VERIFIED=preserved-image', flush=True)
@@ -32,6 +46,10 @@ for slot in ('A', 'B'):
         mount(parts['home'], root / 'home', '-t', 'ext4', '-o', 'ro,noload')
         if not empty:
             mount_etc(root, mounts, readonly=True); mount_opt(root, mounts, readonly=True)
+        if options.get('device_package'):
+            mount(parts['efi-' + slot], root / 'efi', '-t', 'vfat', '-o', 'ro')
+            guest_marker('boiler-guest-context', 'managed-qemu-integration\n')
+            guest_marker('boiler-install-slot', slot + '\n')
         if not options.get('device_package'):
             for relative in ('etc/oxp3-installer/update-hold', 'etc/systemd/system/atomupd.service.d/90-oxp3-update-hold.conf',
                              'etc/modprobe.d/xe-oxp3.conf', 'usr/local/lib/oxp3-integration'):
@@ -46,6 +64,7 @@ for slot in ('A', 'B'):
         result = json.loads((root / 'home/.boiler/integration' / slot / 'result.json').read_text())
         if result['options'] != {key: value for key,value in options.items() if key != '_target_disk'}:
             raise RuntimeError('Verification selection differs from installed request')
+        device_ids = verify_device_components(root, '/mnt/payload', options, slot, result['components'])
         for identity, component in result['components'].items():
             if component['status'] != 'files_installed': raise RuntimeError('Component was not installed: ' + identity)
             if identity == 'core:decky':
@@ -58,7 +77,7 @@ for slot in ('A', 'B'):
                 from maintenance.plugins import PluginMaintenance
                 if not PluginMaintenance(root).verify('decky')['ok']:
                     raise RuntimeError('Decky transaction files or ownership differ')
-            elif not identity.startswith('oxp3:'):
+            elif identity not in device_ids:
                 # Engine.verify only reads state and targets. It does not recover
                 # or acquire a write lock during this read-only verification.
                 proof = Engine(root, root / 'var/lib/boiler/maintenance', read_only=True).verify_readonly(identity)

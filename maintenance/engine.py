@@ -66,6 +66,82 @@ def _read(path):
     except (ValueError,UnicodeError) as exc: raise MaintenanceError("Invalid maintenance state") from exc
 
 
+def _adoption_receipt(path):
+    """Read one protected receipt inode once; parsing and identity share its bytes."""
+    path = Path(path).absolute()
+    if '..' in path.parts or not path.name:
+        raise MaintenanceError('Unsafe adoption receipt path')
+    maximum = 512*1024**2
+    directory = descriptor = None
+    try:
+        if os.name != 'nt':
+            if os.geteuid() != 0:
+                raise MaintenanceError('Adoption requires a root-owned private receipt')
+
+            def protected_directory(fd):
+                info = os.fstat(fd)
+                if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0:
+                    raise MaintenanceError('Adoption receipt has an untrusted ancestor')
+                if stat.S_IMODE(info.st_mode) & 0o022 and not info.st_mode & stat.S_ISVTX:
+                    raise MaintenanceError('Adoption receipt has a writable ancestor')
+
+            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+            directory = os.open(path.anchor, flags)
+            protected_directory(directory)
+            for part in path.parent.parts[1:]:
+                child = os.open(part, flags, dir_fd=directory)
+                try:
+                    protected_directory(child)
+                except BaseException:
+                    os.close(child)
+                    raise
+                os.close(directory)
+                directory = child
+            descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        else:
+            # Windows source tests have no POSIX ownership model. Linux is the
+            # privileged adoption runtime; still reject known redirected paths.
+            for current in (path, *path.parents):
+                if current.is_symlink() or (hasattr(current, 'is_junction') and current.is_junction()):
+                    raise MaintenanceError('Unsafe adoption receipt path')
+            descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_BINARY', 0))
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > maximum:
+            raise MaintenanceError('Unsafe or oversized adoption receipt')
+        if os.name != 'nt' and (info.st_uid != 0 or stat.S_IMODE(info.st_mode) & 0o077):
+            raise MaintenanceError('Adoption requires a root-owned private receipt')
+        with os.fdopen(descriptor, 'rb') as stream:
+            descriptor = None
+            raw = stream.read(maximum+1)
+            after = os.fstat(stream.fileno())
+        attributes = ('st_dev', 'st_ino', 'st_mode', 'st_uid', 'st_gid', 'st_nlink', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+        if len(raw) != info.st_size or len(raw) > maximum or any(getattr(info, key) != getattr(after, key) for key in attributes):
+            raise MaintenanceError('Adoption receipt changed while reading')
+    except OSError as error:
+        raise MaintenanceError('Unsafe adoption receipt path') from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if directory is not None:
+            os.close(directory)
+    def pairs(entries):
+        result = {}
+        for key, value in entries:
+            if key in result:
+                raise MaintenanceError('Duplicate adoption receipt key')
+            result[key] = value
+        return result
+    def invalid_constant(value):
+        raise MaintenanceError('Invalid adoption receipt constant')
+    try:
+        receipt = json.loads(raw.decode('utf-8'), object_pairs_hook=pairs, parse_constant=invalid_constant)
+    except (ValueError, UnicodeError, RecursionError) as error:
+        raise MaintenanceError('Invalid adoption receipt') from error
+    if not isinstance(receipt, dict):
+        raise MaintenanceError('Unsupported adoption receipt')
+    return receipt, hashlib.sha256(raw).hexdigest()
+
+
 def _snapshot(path):
     if not path.exists(): return {"exists":False}
     if path.is_symlink() or not path.is_file(): raise MaintenanceError("Target must be a regular file")
@@ -79,6 +155,28 @@ def _snapshot(path):
 def _same(left,right):
     return left.get("exists")==right.get("exists") and (not left.get("exists") or
         all(left.get(k)==right.get(k) for k in (("sha256",) if os.name=="nt" else ("sha256","mode","uid","gid"))))
+
+
+def build_hook_environment(root, transaction_id, extra=None):
+    """No ambient shell startup, loader, Python, or executable search settings.
+
+    Privileged installer integration may explicitly supply BOILER_* context;
+    authenticated live updates supply none. Root and transaction identity cannot
+    be overridden by an extension. This is execution hygiene, not a sandbox for
+    an authenticated root script.
+    """
+    env = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8', 'HOME': '/root'}
+    if extra is not None:
+        if not isinstance(extra, dict):
+            raise MaintenanceError('Invalid explicit hook environment')
+        for name, value in extra.items():
+            if (not isinstance(name, str) or not __import__('re').fullmatch(r'BOILER_[A-Z0-9_]+', name) or
+                    name in ('BOILER_TARGET_ROOT', 'BOILER_TRANSACTION_ID') or not isinstance(value, str) or
+                    '\x00' in value or len(value) > 4096):
+                raise MaintenanceError('Invalid explicit hook environment')
+            env[name] = value
+    env.update(BOILER_TARGET_ROOT=str(root), BOILER_TRANSACTION_ID=transaction_id)
+    return env
 
 
 class Engine:
@@ -174,13 +272,14 @@ class Engine:
     def recover(self):
         with self._lock(): return self._recover()
 
-    def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None):
+    def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None):
         validate_manifest(component,"ComponentManifest")
         if not compatible(component,environment or {}): raise MaintenanceError("Component target compatibility has not been established")
         payload_root=Path(payload_root).resolve()
         hooks=component.get("hooks",{})
         if hooks:
             if not allow_hooks or os.name=="nt": raise MaintenanceError("Guest hooks require explicit privileged authorization on Linux")
+            build_hook_environment(self.root, 'pending', hook_environment)
             package=validate_package(payload_root,allow_unsigned=True)
             if component not in package["components"]: raise MaintenanceError("Hook component not in verified package")
         with self._lock():
@@ -229,7 +328,7 @@ class Engine:
                     journal["status"]="hook_running"; _json_write(path,journal)
                     for phase in ("apply","verify"):
                         if phase in hooks:
-                            env=dict(os.environ,BOILER_TARGET_ROOT=str(self.root),BOILER_TRANSACTION_ID=identity)
+                            env=build_hook_environment(self.root,identity,hook_environment)
                             subprocess.run(["/bin/bash",str(confined(payload_root,hooks[phase])),str(self.root)],cwd=payload_root,env=env,check=True,timeout=900)
                     journal["status"]="hook_completed"; _json_write(path,journal)
                 # Hooks may not rewrite managed files behind ownership records.
@@ -316,13 +415,7 @@ class Engine:
 
     def adopt(self,receipt_path):
         """Accept a protected model-adapter receipt without changing legacy files or keys."""
-        receipt_path=Path(receipt_path)
-        if receipt_path.is_symlink() or not receipt_path.is_file(): raise MaintenanceError("Unsafe adoption receipt")
-        info=receipt_path.stat()
-        if os.name!="nt" and (os.geteuid()!=0 or info.st_uid!=0 or stat.S_IMODE(info.st_mode)&0o077):
-            raise MaintenanceError("Adoption requires a root-owned private receipt")
-        receipt=_read(receipt_path)
-        receipt_digest=hashlib.sha256(receipt_path.read_bytes()).hexdigest()
+        receipt,receipt_digest=_adoption_receipt(receipt_path)
         if (receipt.get("schema_version")!=1 or receipt.get("kind")!="LegacyAdoptionReceipt"
             or receipt.get("device_id")!="oxp3" or receipt.get("preserve_legacy") is not True
             or receipt.get("translation_complete") is not True): raise MaintenanceError("Unsupported adoption receipt")
