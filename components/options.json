@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "languages": [
+    "zh-CN",
+    "en-US"
+  ],
+  "kde_languages": [
+    "system",
+    "zh_CN",
+    "zh_TW",
+    "en_US",
+    "ja_JP",
+    "ko_KR",
+    "de_DE",
+    "fr_FR",
+    "es_ES",
+    "ru_RU"
+  ],
+  "repairs": [
+    {
+      "id": "wifi:intel",
+      "zh": "Intel Wi-Fi 固件",
+      "en": "Intel Wi-Fi firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "wifi:realtek",
+      "zh": "Realtek Wi-Fi 固件",
+      "en": "Realtek Wi-Fi firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "wifi:mediatek",
+      "zh": "MediaTek Wi-Fi 固件",
+      "en": "MediaTek Wi-Fi firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    }
+  ],
+  "plugins": [
+    {
+      "id": "core:decky",
+      "zh": "Decky Loader（离线安装）",
+      "en": "Decky Loader (offline)",
+      "default": true,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "core:maintenance",
+      "zh": "Boiler 通用维护工具",
+      "en": "Boiler generic maintenance",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    }
+  ]
+}

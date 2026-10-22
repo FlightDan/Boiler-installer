@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Boiler InstallPlan v1","type":"object",
+  "required":["schema_version","kind","mode","components"],
+  "properties":{
+    "schema_version":{"const":1},"kind":{"const":"InstallPlan"},
+    "mode":{"enum":["normal","vanilla","imported","developer"]},
+    "components":{"type":"array","items":{"$ref":"ComponentManifest.schema.json"}},
+    "environment":{"type":"object"}
+  }
+}

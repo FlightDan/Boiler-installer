@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "python": "3.13.9",
+  "artifacts": [
+    {
+      "name": "python-3.13.9-embed-amd64.zip",
+      "url": "https://www.python.org/ftp/python/3.13.9/python-3.13.9-embed-amd64.zip",
+      "sha256": "91d828c2da3a029b41699e918674a0cb379c02cf20dab9c501306885f837402a",
+      "size": 10926675,
+      "kind": "python"
+    },
+    {
+      "name": "cryptography-46.0.3-cp311-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/7e/bf/80fbf45253ea585a1e492a6a17efcb93467701fa79e71550a430c5e60df0/cryptography-46.0.3-cp311-abi3-win_amd64.whl",
+      "sha256": "a9a3008438615669153eb86b26b61e09993921ebdd75385ddd748702c5adfddb",
+      "size": 3514451,
+      "kind": "wheel"
+    },
+    {
+      "name": "cffi-2.0.0-cp313-cp313-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/37/18/6519e1ee6f5a1e579e04b9ddb6f1676c17368a7aba48299c3759bbc3c8b3/cffi-2.0.0-cp313-cp313-win_amd64.whl",
+      "sha256": "19f705ada2530c1167abacb171925dd886168931e0a7b78f5bffcae5c6b5be75",
+      "size": 183402,
+      "kind": "wheel"
+    },
+    {
+      "name": "pycparser-2.23-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a0/e3/59cd50310fc9b59512193629e1984c1f95e5c8ae6e5d8c69532ccc65a7fe/pycparser-2.23-py3-none-any.whl",
+      "sha256": "e5c6e8d3fbad53479cab09ac03729e0a9faf2bee3db8208a550daf5af81a5934",
+      "size": 118140,
+      "kind": "wheel"
+    }
+  ]
+}

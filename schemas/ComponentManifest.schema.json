@@ -1,0 +1,18 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Boiler ComponentManifest v1","type":"object",
+  "required":["schema_version","kind","id","version"],
+  "properties":{
+    "schema_version":{"const":1},"kind":{"const":"ComponentManifest"},
+    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
+    "compatibility":{"$ref":"definitions.json#/$defs/compatibility"},
+    "requires":{"type":"array","uniqueItems":true,"items":{"$ref":"definitions.json#/$defs/id"}},
+    "conflicts":{"type":"array","uniqueItems":true,"items":{"$ref":"definitions.json#/$defs/id"}},
+    "files":{"type":"array","items":{"$ref":"definitions.json#/$defs/file"}},
+    "hooks":{"type":"object","additionalProperties":false,"properties":{
+      "apply":{"type":"string","pattern":"^scripts/.+\\.sh$"},
+      "verify":{"type":"string","pattern":"^scripts/.+\\.sh$"},
+      "restore":{"type":"string","pattern":"^scripts/.+\\.sh$"}
+    }}
+  }
+}

@@ -1,0 +1,1207 @@
+{
+  "files": [
+    {
+      "git_blob": "f509d0b97d0d74ac0e2928c0d5d96fd1c9476e22",
+      "sha256": "4f53b5e02fbd933172e18caf952bda410a877eaad00561781528cb4aff58dc38",
+      "size": 509320,
+      "source": "mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "ef69acd85b3473df4e23813939155cf08efef5fe",
+      "sha256": "f7376b11fe3c4dd67a6f8db6eb2c9690f708174f578b92211ac5ae700a9a2813",
+      "size": 517142,
+      "source": "mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "7fe2337fc22a4a0020129b850ef5e28265002bb2",
+      "sha256": "7a440a0f7404c73a2f03d8cc0475ac9f7fdc931b494dce37705e7d578153dbae",
+      "size": 533870,
+      "source": "mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin"
+    },
+    {
+      "git_blob": "7a4f2c6508f346350b9c1897514123b644d69e4c",
+      "sha256": "671d18fd594a73bc4747c1922b17271878c8bb26fa8fd122238e797d52e337e9",
+      "size": 494705,
+      "source": "mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin"
+    },
+    {
+      "git_blob": "38dccd38da2323f5976b0d3b2baeb529b22075b7",
+      "sha256": "d73ba9e982f781221a2b9f10c42031f20a9dce046929fc0d55c791a417efe30a",
+      "size": 119328,
+      "source": "mediatek/WIFI_MT7902_patch_mcu_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_MT7902_patch_mcu_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_MT7902_patch_mcu_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "ee779382e7f7ee0f102c10ab22e6dcaf0b72bdce",
+      "sha256": "490f19974ac232b2f95d995091e2e0d578521354c07f41cf9f0c198fce83b46d",
+      "size": 137632,
+      "source": "mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "b065872ba268342137612061efb3257662368a6f",
+      "sha256": "a276c06c2b772adb50b86639d33c82824ff4c21d617feb78caea74c040b873f6",
+      "size": 92192,
+      "source": "mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin"
+    },
+    {
+      "git_blob": "dda9457cb7a1036a78ee7377c6fdb62bb28af6ff",
+      "sha256": "a766c4e39815e554c80ce5b1596095ff283a60db93356679fecd6494f71cee23",
+      "size": 100384,
+      "source": "mediatek/WIFI_MT7961_patch_mcu_1a_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_MT7961_patch_mcu_1a_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_MT7961_patch_mcu_1a_2_hdr.bin"
+    },
+    {
+      "git_blob": "c530cfda2840cd9c3e23a4c0530ab1cb445da931",
+      "sha256": "b5958ac72c71fb8405e080f52d378d02b484812b9f1010c8843727056bbfc998",
+      "size": 716944,
+      "source": "mediatek/WIFI_RAM_CODE_MT7902_1.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_RAM_CODE_MT7902_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_RAM_CODE_MT7902_1.bin"
+    },
+    {
+      "git_blob": "a02cd5aad3f42af1fcf3c924cbb8af51ebeb85c5",
+      "sha256": "d95cef824e8fd6a51324a04eca067c2a005239451f471a96a83d0190b022e7fe",
+      "size": 1122084,
+      "source": "mediatek/WIFI_RAM_CODE_MT7922_1.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_RAM_CODE_MT7922_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_RAM_CODE_MT7922_1.bin"
+    },
+    {
+      "git_blob": "9639b4893a096edac8c0321e6ec38932e2c5058a",
+      "sha256": "b94217a951518a9c14095765f367bc5dd7698f2dc033941d6f18fc2ebd6a2ab9",
+      "size": 792036,
+      "source": "mediatek/WIFI_RAM_CODE_MT7961_1.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_RAM_CODE_MT7961_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_RAM_CODE_MT7961_1.bin"
+    },
+    {
+      "git_blob": "76cd0b3e2e0007c474017bfed3fb88d1e8687e4f",
+      "sha256": "3edec74ffe341b917e7fa4ddb2b68851411f2416555f10619a5900fa4b141e6c",
+      "size": 802808,
+      "source": "mediatek/WIFI_RAM_CODE_MT7961_1a.bin",
+      "target": "usr/lib/firmware/mediatek/WIFI_RAM_CODE_MT7961_1a.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/WIFI_RAM_CODE_MT7961_1a.bin"
+    },
+    {
+      "git_blob": "62b3894310da4d8c77b97f6b8df9ab6d3d6b28d0",
+      "sha256": "4511b1d840e22aea2bf5fdca419c91c0d94cbfb291b9ac4f8be6d9100d1a7046",
+      "size": 45412,
+      "source": "mediatek/mt7601u.bin",
+      "target": "usr/lib/firmware/mediatek/mt7601u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7601u.bin"
+    },
+    {
+      "git_blob": "62b3894310da4d8c77b97f6b8df9ab6d3d6b28d0",
+      "sha256": "4511b1d840e22aea2bf5fdca419c91c0d94cbfb291b9ac4f8be6d9100d1a7046",
+      "size": 45412,
+      "source": "mediatek/mt7601u.bin",
+      "target": "usr/lib/firmware/mt7601u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7601u.bin"
+    },
+    {
+      "git_blob": "76600842a70c374aefeb1bf36ae5a88f35651ecb",
+      "sha256": "538d08c08f8fb5aa05cacf34e49aeb307e8b2dc094407fc655fbf3580c893953",
+      "size": 80680,
+      "source": "mediatek/mt7610e.bin",
+      "target": "usr/lib/firmware/mediatek/mt7610e.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7610e.bin"
+    },
+    {
+      "git_blob": "76600842a70c374aefeb1bf36ae5a88f35651ecb",
+      "sha256": "538d08c08f8fb5aa05cacf34e49aeb307e8b2dc094407fc655fbf3580c893953",
+      "size": 80680,
+      "source": "mediatek/mt7610e.bin",
+      "target": "usr/lib/firmware/mt7610e.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7610e.bin"
+    },
+    {
+      "git_blob": "c6c863e62cd3831105570e97db5967f2ed1182e5",
+      "sha256": "5a4268e9021bb587426ba624b425f1e660bfc82cd63b36ad3ce6fb9ce6751760",
+      "size": 80288,
+      "source": "mediatek/mt7610u.bin",
+      "target": "usr/lib/firmware/mediatek/mt7610u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7610u.bin"
+    },
+    {
+      "git_blob": "c6c863e62cd3831105570e97db5967f2ed1182e5",
+      "sha256": "5a4268e9021bb587426ba624b425f1e660bfc82cd63b36ad3ce6fb9ce6751760",
+      "size": 80288,
+      "source": "mediatek/mt7610u.bin",
+      "target": "usr/lib/firmware/mt7610u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7610u.bin"
+    },
+    {
+      "git_blob": "208f2e70e491b8c01d5251dd047039b2d7fe37b6",
+      "sha256": "0a025aa567c2b8c1cf83293a03f43c2a92957f4bac4b31570a7cf81721e9a3a2",
+      "size": 122644,
+      "source": "mediatek/mt7615_cr4.bin",
+      "target": "usr/lib/firmware/mediatek/mt7615_cr4.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_cr4.bin"
+    },
+    {
+      "git_blob": "208f2e70e491b8c01d5251dd047039b2d7fe37b6",
+      "sha256": "0a025aa567c2b8c1cf83293a03f43c2a92957f4bac4b31570a7cf81721e9a3a2",
+      "size": 122644,
+      "source": "mediatek/mt7615_cr4.bin",
+      "target": "usr/lib/firmware/mt7615_cr4.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_cr4.bin"
+    },
+    {
+      "git_blob": "2490ace8b15f9e31055a037b6f819fdcd01e1205",
+      "sha256": "ae730b7b5414e24f320908ef6e1d8978b129b00eaf898bdf6b331b2477336dd9",
+      "size": 457992,
+      "source": "mediatek/mt7615_n9.bin",
+      "target": "usr/lib/firmware/mediatek/mt7615_n9.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_n9.bin"
+    },
+    {
+      "git_blob": "2490ace8b15f9e31055a037b6f819fdcd01e1205",
+      "sha256": "ae730b7b5414e24f320908ef6e1d8978b129b00eaf898bdf6b331b2477336dd9",
+      "size": 457992,
+      "source": "mediatek/mt7615_n9.bin",
+      "target": "usr/lib/firmware/mt7615_n9.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_n9.bin"
+    },
+    {
+      "git_blob": "4aeaa7511216961c766895329edac4f2b646b9d9",
+      "sha256": "0084920ea9b96e0474c036401af7fc6bdeee5c4c3577b8ecd3daecc3965c1e7d",
+      "size": 11102,
+      "source": "mediatek/mt7615_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7615_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_rom_patch.bin"
+    },
+    {
+      "git_blob": "4aeaa7511216961c766895329edac4f2b646b9d9",
+      "sha256": "0084920ea9b96e0474c036401af7fc6bdeee5c4c3577b8ecd3daecc3965c1e7d",
+      "size": 11102,
+      "source": "mediatek/mt7615_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7615_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7615_rom_patch.bin"
+    },
+    {
+      "git_blob": "444d5e0999f0637a8d8355435251f378993d60e4",
+      "sha256": "f1b21fced7344006e029b291ed1edacddd41eaf2571c7a31e2207903ddd111a3",
+      "size": 300376,
+      "source": "mediatek/mt7622_n9.bin",
+      "target": "usr/lib/firmware/mediatek/mt7622_n9.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622_n9.bin"
+    },
+    {
+      "git_blob": "444d5e0999f0637a8d8355435251f378993d60e4",
+      "sha256": "f1b21fced7344006e029b291ed1edacddd41eaf2571c7a31e2207903ddd111a3",
+      "size": 300376,
+      "source": "mediatek/mt7622_n9.bin",
+      "target": "usr/lib/firmware/mt7622_n9.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622_n9.bin"
+    },
+    {
+      "git_blob": "7d0e643d96be0858f97ff71bb34f6d5528b91202",
+      "sha256": "b7ad5bab333b2dffe31dcb4cc911a15060ee16f661de38139e66f0804a74ba26",
+      "size": 82110,
+      "source": "mediatek/mt7622_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7622_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622_rom_patch.bin"
+    },
+    {
+      "git_blob": "7d0e643d96be0858f97ff71bb34f6d5528b91202",
+      "sha256": "b7ad5bab333b2dffe31dcb4cc911a15060ee16f661de38139e66f0804a74ba26",
+      "size": 82110,
+      "source": "mediatek/mt7622_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7622_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622_rom_patch.bin"
+    },
+    {
+      "git_blob": "06bae379be2f9cd45074076bc5100725e1076a82",
+      "sha256": "48c919e6ea243485f5092e63fd5558d03a5b9075e79c14447e3705ca42c14b53",
+      "size": 78158,
+      "source": "mediatek/mt7622pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7622pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622pr2h.bin"
+    },
+    {
+      "git_blob": "06bae379be2f9cd45074076bc5100725e1076a82",
+      "sha256": "48c919e6ea243485f5092e63fd5558d03a5b9075e79c14447e3705ca42c14b53",
+      "size": 78158,
+      "source": "mediatek/mt7622pr2h.bin",
+      "target": "usr/lib/firmware/mt7622pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622pr2h.bin"
+    },
+    {
+      "git_blob": "1bdf904bcf82a220ca0471e5b8fb889c7ee083ef",
+      "sha256": "20a0dc43fdc9e1f146de9eb3fba09a538a87a066a127b99798ac66317f2a3637",
+      "size": 368220,
+      "source": "mediatek/mt7650.bin",
+      "target": "usr/lib/firmware/mediatek/mt7650.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7650.bin"
+    },
+    {
+      "git_blob": "1bdf904bcf82a220ca0471e5b8fb889c7ee083ef",
+      "sha256": "20a0dc43fdc9e1f146de9eb3fba09a538a87a066a127b99798ac66317f2a3637",
+      "size": 368220,
+      "source": "mediatek/mt7650.bin",
+      "target": "usr/lib/firmware/mt7650.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7650.bin"
+    },
+    {
+      "git_blob": "f62f5b5a04242f67b54247bd7682b99e7c09d048",
+      "sha256": "7eecb7cd7637aed35d8f0e6b898a06d6e0b901e3b4e1d8ef3dae537a832efed2",
+      "size": 382212,
+      "source": "mediatek/mt7650e.bin",
+      "target": "usr/lib/firmware/mediatek/mt7650e.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7650e.bin"
+    },
+    {
+      "git_blob": "f62f5b5a04242f67b54247bd7682b99e7c09d048",
+      "sha256": "7eecb7cd7637aed35d8f0e6b898a06d6e0b901e3b4e1d8ef3dae537a832efed2",
+      "size": 382212,
+      "source": "mediatek/mt7650e.bin",
+      "target": "usr/lib/firmware/mt7650e.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7650e.bin"
+    },
+    {
+      "git_blob": "26c6fbb278bc2531b3fd907e4c96e2c532545a31",
+      "sha256": "f7e52492f58088cae50e51a54cca68e4abc5b74f7d0b6b731dbb4c04465a94b6",
+      "size": 81908,
+      "source": "mediatek/mt7662.bin",
+      "target": "usr/lib/firmware/mediatek/mt7662.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662.bin"
+    },
+    {
+      "git_blob": "26c6fbb278bc2531b3fd907e4c96e2c532545a31",
+      "sha256": "f7e52492f58088cae50e51a54cca68e4abc5b74f7d0b6b731dbb4c04465a94b6",
+      "size": 81908,
+      "source": "mediatek/mt7662.bin",
+      "target": "usr/lib/firmware/mt7662.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662.bin"
+    },
+    {
+      "git_blob": "10b245e9c17843c67cd008b9c26d0bc060e3ebd7",
+      "sha256": "6f0e871268f6e4d99196d90d89bcc09fe493d010366260a2cfcaa5dd66095f8c",
+      "size": 26350,
+      "source": "mediatek/mt7662_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7662_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662_rom_patch.bin"
+    },
+    {
+      "git_blob": "10b245e9c17843c67cd008b9c26d0bc060e3ebd7",
+      "sha256": "6f0e871268f6e4d99196d90d89bcc09fe493d010366260a2cfcaa5dd66095f8c",
+      "size": 26350,
+      "source": "mediatek/mt7662_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7662_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662_rom_patch.bin"
+    },
+    {
+      "git_blob": "93c8a7967c8b225f7be3cb2b24f717a79d18bda5",
+      "sha256": "527dc38380b698330a6f5300bfd70278c45c0b6c60596e6ef6ac9828a84628fb",
+      "size": 91412,
+      "source": "mediatek/mt7662u.bin",
+      "target": "usr/lib/firmware/mediatek/mt7662u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662u.bin"
+    },
+    {
+      "git_blob": "93c8a7967c8b225f7be3cb2b24f717a79d18bda5",
+      "sha256": "527dc38380b698330a6f5300bfd70278c45c0b6c60596e6ef6ac9828a84628fb",
+      "size": 91412,
+      "source": "mediatek/mt7662u.bin",
+      "target": "usr/lib/firmware/mt7662u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662u.bin"
+    },
+    {
+      "git_blob": "2213b2a831e8050705e2374aef16872aacb08c66",
+      "sha256": "3c358bb8feebfa124e809891a9d8efc27c69efa8a3169f3061f625f6b25d2870",
+      "size": 20686,
+      "source": "mediatek/mt7662u_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7662u_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662u_rom_patch.bin"
+    },
+    {
+      "git_blob": "2213b2a831e8050705e2374aef16872aacb08c66",
+      "sha256": "3c358bb8feebfa124e809891a9d8efc27c69efa8a3169f3061f625f6b25d2870",
+      "size": 20686,
+      "source": "mediatek/mt7662u_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7662u_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7662u_rom_patch.bin"
+    },
+    {
+      "git_blob": "62f96f385cf804e43ddecd17e4c9435bca806add",
+      "sha256": "5e1a65036ccf9f53a6f69d9d8f75a07f546f9a7cec83ca89f24907925c54f079",
+      "size": 335072,
+      "source": "mediatek/mt7663_n9_rebb.bin",
+      "target": "usr/lib/firmware/mediatek/mt7663_n9_rebb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663_n9_rebb.bin"
+    },
+    {
+      "git_blob": "62f96f385cf804e43ddecd17e4c9435bca806add",
+      "sha256": "5e1a65036ccf9f53a6f69d9d8f75a07f546f9a7cec83ca89f24907925c54f079",
+      "size": 335072,
+      "source": "mediatek/mt7663_n9_rebb.bin",
+      "target": "usr/lib/firmware/mt7663_n9_rebb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663_n9_rebb.bin"
+    },
+    {
+      "git_blob": "196facfba9d64e54a6598202f051dcfc780b32be",
+      "sha256": "d8b8488f37f65e41ded9a911950afb000d236b36e5aa94ad9650ad0c3a86fd45",
+      "size": 441688,
+      "source": "mediatek/mt7663_n9_v3.bin",
+      "target": "usr/lib/firmware/mediatek/mt7663_n9_v3.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663_n9_v3.bin"
+    },
+    {
+      "git_blob": "196facfba9d64e54a6598202f051dcfc780b32be",
+      "sha256": "d8b8488f37f65e41ded9a911950afb000d236b36e5aa94ad9650ad0c3a86fd45",
+      "size": 441688,
+      "source": "mediatek/mt7663_n9_v3.bin",
+      "target": "usr/lib/firmware/mt7663_n9_v3.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663_n9_v3.bin"
+    },
+    {
+      "git_blob": "97314ea146e9ab08860dfccbb4d3e92c15997736",
+      "sha256": "534f2152f9b0f48dfcec9c1727b0bab9a3727a655d76d5ec818cc39a55602336",
+      "size": 278558,
+      "source": "mediatek/mt7663pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7663pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663pr2h.bin"
+    },
+    {
+      "git_blob": "97314ea146e9ab08860dfccbb4d3e92c15997736",
+      "sha256": "534f2152f9b0f48dfcec9c1727b0bab9a3727a655d76d5ec818cc39a55602336",
+      "size": 278558,
+      "source": "mediatek/mt7663pr2h.bin",
+      "target": "usr/lib/firmware/mt7663pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663pr2h.bin"
+    },
+    {
+      "git_blob": "ea03c48c170704071849700ecee05d88fe554514",
+      "sha256": "e812442fd631ecbea7d2898c3168cb5780377378a0eed74c14fe8d8057fe547c",
+      "size": 209230,
+      "source": "mediatek/mt7663pr2h_rebb.bin",
+      "target": "usr/lib/firmware/mediatek/mt7663pr2h_rebb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663pr2h_rebb.bin"
+    },
+    {
+      "git_blob": "ea03c48c170704071849700ecee05d88fe554514",
+      "sha256": "e812442fd631ecbea7d2898c3168cb5780377378a0eed74c14fe8d8057fe547c",
+      "size": 209230,
+      "source": "mediatek/mt7663pr2h_rebb.bin",
+      "target": "usr/lib/firmware/mt7663pr2h_rebb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663pr2h_rebb.bin"
+    },
+    {
+      "git_blob": "223c0f92f685226b52870ecf89b3f5162e3a4810",
+      "sha256": "465ed634c61b46b34bb21240736f33d3d347fefec7cbfbd1cb6e63334aec4cc9",
+      "size": 170990,
+      "source": "mediatek/mt7668pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7668pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7668pr2h.bin"
+    },
+    {
+      "git_blob": "223c0f92f685226b52870ecf89b3f5162e3a4810",
+      "sha256": "465ed634c61b46b34bb21240736f33d3d347fefec7cbfbd1cb6e63334aec4cc9",
+      "size": 170990,
+      "source": "mediatek/mt7668pr2h.bin",
+      "target": "usr/lib/firmware/mt7668pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7668pr2h.bin"
+    },
+    {
+      "git_blob": "007df1ba00c92130613ecb82e6df3c3c9cc22d0d",
+      "sha256": "87af3cbb8890e0fcb955c1504311a7dc8d864c9ccf865fc2d827e45036f44901",
+      "size": 3584,
+      "source": "mediatek/mt7915_eeprom.bin",
+      "target": "usr/lib/firmware/mediatek/mt7915_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_eeprom.bin"
+    },
+    {
+      "git_blob": "007df1ba00c92130613ecb82e6df3c3c9cc22d0d",
+      "sha256": "87af3cbb8890e0fcb955c1504311a7dc8d864c9ccf865fc2d827e45036f44901",
+      "size": 3584,
+      "source": "mediatek/mt7915_eeprom.bin",
+      "target": "usr/lib/firmware/mt7915_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_eeprom.bin"
+    },
+    {
+      "git_blob": "6c0b64e05f3c844cd9ec65ba20e1ad9e5b68b6e1",
+      "sha256": "ac72fd7ba181613fe5696d7bd99dbdf87e15f3e654cc9becf25dcfd9146b7a66",
+      "size": 3584,
+      "source": "mediatek/mt7915_eeprom_dbdc.bin",
+      "target": "usr/lib/firmware/mediatek/mt7915_eeprom_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_eeprom_dbdc.bin"
+    },
+    {
+      "git_blob": "6c0b64e05f3c844cd9ec65ba20e1ad9e5b68b6e1",
+      "sha256": "ac72fd7ba181613fe5696d7bd99dbdf87e15f3e654cc9becf25dcfd9146b7a66",
+      "size": 3584,
+      "source": "mediatek/mt7915_eeprom_dbdc.bin",
+      "target": "usr/lib/firmware/mt7915_eeprom_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_eeprom_dbdc.bin"
+    },
+    {
+      "git_blob": "638aeaf348b17feb7415b3afeefbc736cfed77a6",
+      "sha256": "89fae20235b31400abc5558200d66951a119801ff4a5d6e19d3550cadc7a75d8",
+      "size": 144544,
+      "source": "mediatek/mt7915_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7915_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_rom_patch.bin"
+    },
+    {
+      "git_blob": "638aeaf348b17feb7415b3afeefbc736cfed77a6",
+      "sha256": "89fae20235b31400abc5558200d66951a119801ff4a5d6e19d3550cadc7a75d8",
+      "size": 144544,
+      "source": "mediatek/mt7915_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7915_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_rom_patch.bin"
+    },
+    {
+      "git_blob": "a1cbdd1be9854c287f5285b95e4b8e8ab5378327",
+      "sha256": "c28a3279fcdbd22f3ae34fa5c2adef3617015d1142b46ba8fa388beda7d968a0",
+      "size": 116160,
+      "source": "mediatek/mt7915_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7915_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_wa.bin"
+    },
+    {
+      "git_blob": "a1cbdd1be9854c287f5285b95e4b8e8ab5378327",
+      "sha256": "c28a3279fcdbd22f3ae34fa5c2adef3617015d1142b46ba8fa388beda7d968a0",
+      "size": 116160,
+      "source": "mediatek/mt7915_wa.bin",
+      "target": "usr/lib/firmware/mt7915_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_wa.bin"
+    },
+    {
+      "git_blob": "d8f0b05cfdde3365ca8599186d1531a3246f269f",
+      "sha256": "93ada741ec11b8a8c12dde51dd1c54e05ef860a9d0c79cebea0a8c3089aa550c",
+      "size": 1260960,
+      "source": "mediatek/mt7915_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7915_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_wm.bin"
+    },
+    {
+      "git_blob": "d8f0b05cfdde3365ca8599186d1531a3246f269f",
+      "sha256": "93ada741ec11b8a8c12dde51dd1c54e05ef860a9d0c79cebea0a8c3089aa550c",
+      "size": 1260960,
+      "source": "mediatek/mt7915_wm.bin",
+      "target": "usr/lib/firmware/mt7915_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7915_wm.bin"
+    },
+    {
+      "git_blob": "35b287c35e87607ed4a6b4c4a9087ac1cd975584",
+      "sha256": "3ed7ca6b67ca3ef2e915c71fc7c0fc5e745cb87e441b7c5305b6bdf47fc155d6",
+      "size": 4096,
+      "source": "mediatek/mt7916_eeprom.bin",
+      "target": "usr/lib/firmware/mediatek/mt7916_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_eeprom.bin"
+    },
+    {
+      "git_blob": "35b287c35e87607ed4a6b4c4a9087ac1cd975584",
+      "sha256": "3ed7ca6b67ca3ef2e915c71fc7c0fc5e745cb87e441b7c5305b6bdf47fc155d6",
+      "size": 4096,
+      "source": "mediatek/mt7916_eeprom.bin",
+      "target": "usr/lib/firmware/mt7916_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_eeprom.bin"
+    },
+    {
+      "git_blob": "2d0b38b6bb37562587827b7a313ad7dd782ae5ee",
+      "sha256": "d74eda13fc1dbd49f5bbe46738f5a24fbfb270c97f76623a0b21e8a08a883fd4",
+      "size": 8800,
+      "source": "mediatek/mt7916_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7916_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_rom_patch.bin"
+    },
+    {
+      "git_blob": "2d0b38b6bb37562587827b7a313ad7dd782ae5ee",
+      "sha256": "d74eda13fc1dbd49f5bbe46738f5a24fbfb270c97f76623a0b21e8a08a883fd4",
+      "size": 8800,
+      "source": "mediatek/mt7916_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7916_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_rom_patch.bin"
+    },
+    {
+      "git_blob": "4ff7c6b9dca98b90e21e9e7d76109646cc02fc58",
+      "sha256": "abeeb31611d3faed6178357988fc54858ddf7f7a5eb742d41fb55e9bb6da3fdc",
+      "size": 504032,
+      "source": "mediatek/mt7916_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7916_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_wa.bin"
+    },
+    {
+      "git_blob": "4ff7c6b9dca98b90e21e9e7d76109646cc02fc58",
+      "sha256": "abeeb31611d3faed6178357988fc54858ddf7f7a5eb742d41fb55e9bb6da3fdc",
+      "size": 504032,
+      "source": "mediatek/mt7916_wa.bin",
+      "target": "usr/lib/firmware/mt7916_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_wa.bin"
+    },
+    {
+      "git_blob": "8a4a8b15cf9d9111b8f7ff630ec746a9c0163920",
+      "sha256": "64d86cfa4f00f9452b4706389d648d4ce0e563ddd512cc9845ba4e4442e99cb0",
+      "size": 1767568,
+      "source": "mediatek/mt7916_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7916_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_wm.bin"
+    },
+    {
+      "git_blob": "8a4a8b15cf9d9111b8f7ff630ec746a9c0163920",
+      "sha256": "64d86cfa4f00f9452b4706389d648d4ce0e563ddd512cc9845ba4e4442e99cb0",
+      "size": 1767568,
+      "source": "mediatek/mt7916_wm.bin",
+      "target": "usr/lib/firmware/mt7916_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7916_wm.bin"
+    },
+    {
+      "git_blob": "109fe883690f7a759a6e242649c1703306bd763a",
+      "sha256": "97238e2228897a7388370604cbe7175e0bfa0cc35f562b64330b12c1aaeeb751",
+      "size": 4096,
+      "source": "mediatek/mt7981_eeprom_mt7976_dbdc.bin",
+      "target": "usr/lib/firmware/mediatek/mt7981_eeprom_mt7976_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_eeprom_mt7976_dbdc.bin"
+    },
+    {
+      "git_blob": "109fe883690f7a759a6e242649c1703306bd763a",
+      "sha256": "97238e2228897a7388370604cbe7175e0bfa0cc35f562b64330b12c1aaeeb751",
+      "size": 4096,
+      "source": "mediatek/mt7981_eeprom_mt7976_dbdc.bin",
+      "target": "usr/lib/firmware/mt7981_eeprom_mt7976_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_eeprom_mt7976_dbdc.bin"
+    },
+    {
+      "git_blob": "c5506a2def97c1d94990827b1e0befa1d8c56f89",
+      "sha256": "1cd38eaa68820ee35fbe58863b3e14d4f47be3b2e74d1d8b6ca279cb6bb5f07d",
+      "size": 9824,
+      "source": "mediatek/mt7981_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7981_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_rom_patch.bin"
+    },
+    {
+      "git_blob": "c5506a2def97c1d94990827b1e0befa1d8c56f89",
+      "sha256": "1cd38eaa68820ee35fbe58863b3e14d4f47be3b2e74d1d8b6ca279cb6bb5f07d",
+      "size": 9824,
+      "source": "mediatek/mt7981_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7981_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_rom_patch.bin"
+    },
+    {
+      "git_blob": "559c35b7b128c107a2055bd87abf0f07164a96a9",
+      "sha256": "5b838a854838b978a4b846628daf4fdf329d8fe44b5819532d8c6f525122905d",
+      "size": 494256,
+      "source": "mediatek/mt7981_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7981_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wa.bin"
+    },
+    {
+      "git_blob": "559c35b7b128c107a2055bd87abf0f07164a96a9",
+      "sha256": "5b838a854838b978a4b846628daf4fdf329d8fe44b5819532d8c6f525122905d",
+      "size": 494256,
+      "source": "mediatek/mt7981_wa.bin",
+      "target": "usr/lib/firmware/mt7981_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wa.bin"
+    },
+    {
+      "git_blob": "6f08b5fba08441f0aa127bc67018bf7ddf5cab3c",
+      "sha256": "e09cecd2931d537c78b3dbda4a1afc10677535616cda1e1336f65f06c1b24ca8",
+      "size": 2054688,
+      "source": "mediatek/mt7981_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7981_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wm.bin"
+    },
+    {
+      "git_blob": "6f08b5fba08441f0aa127bc67018bf7ddf5cab3c",
+      "sha256": "e09cecd2931d537c78b3dbda4a1afc10677535616cda1e1336f65f06c1b24ca8",
+      "size": 2054688,
+      "source": "mediatek/mt7981_wm.bin",
+      "target": "usr/lib/firmware/mt7981_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wm.bin"
+    },
+    {
+      "git_blob": "896ac86017f4f9b146f16b41edc01b7a369be102",
+      "sha256": "2d69d4cb56d4808727e8ab1bf9a9abfc61657f9803c284bf39017f1872af9dd1",
+      "size": 2454304,
+      "source": "mediatek/mt7981_wo.bin",
+      "target": "usr/lib/firmware/mediatek/mt7981_wo.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wo.bin"
+    },
+    {
+      "git_blob": "896ac86017f4f9b146f16b41edc01b7a369be102",
+      "sha256": "2d69d4cb56d4808727e8ab1bf9a9abfc61657f9803c284bf39017f1872af9dd1",
+      "size": 2454304,
+      "source": "mediatek/mt7981_wo.bin",
+      "target": "usr/lib/firmware/mt7981_wo.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7981_wo.bin"
+    },
+    {
+      "git_blob": "dfe5376aeac05adab57266ee2f7d18ba80dc6b65",
+      "sha256": "21392c9ee930c22b9ae3c870a26f8eea61fb4b60cd784bb4fae72fa64743d715",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7975_dual.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_eeprom_mt7975_dual.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7975_dual.bin"
+    },
+    {
+      "git_blob": "dfe5376aeac05adab57266ee2f7d18ba80dc6b65",
+      "sha256": "21392c9ee930c22b9ae3c870a26f8eea61fb4b60cd784bb4fae72fa64743d715",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7975_dual.bin",
+      "target": "usr/lib/firmware/mt7986_eeprom_mt7975_dual.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7975_dual.bin"
+    },
+    {
+      "git_blob": "c821f2d89bb5e70130f6a99b79fe07857e99bd94",
+      "sha256": "1d33c8af0adfc2d93a86143b5afd05dfa7b4b30b62eda45347ab83df7faa8890",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_eeprom_mt7976.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976.bin"
+    },
+    {
+      "git_blob": "c821f2d89bb5e70130f6a99b79fe07857e99bd94",
+      "sha256": "1d33c8af0adfc2d93a86143b5afd05dfa7b4b30b62eda45347ab83df7faa8890",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976.bin",
+      "target": "usr/lib/firmware/mt7986_eeprom_mt7976.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976.bin"
+    },
+    {
+      "git_blob": "54858b0a2ab8e12f2a51f0d9fdc8dd7bcc2633f6",
+      "sha256": "22eefa2204d03c0c4908d818a3461b345e7a8439d2fa422c8ad73e46be3e9f28",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976_dbdc.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_eeprom_mt7976_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976_dbdc.bin"
+    },
+    {
+      "git_blob": "54858b0a2ab8e12f2a51f0d9fdc8dd7bcc2633f6",
+      "sha256": "22eefa2204d03c0c4908d818a3461b345e7a8439d2fa422c8ad73e46be3e9f28",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976_dbdc.bin",
+      "target": "usr/lib/firmware/mt7986_eeprom_mt7976_dbdc.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976_dbdc.bin"
+    },
+    {
+      "git_blob": "dc0d3e433f6a05fbcc6085420131676e44a03a9d",
+      "sha256": "a70da76d43eb481a768cd02e74f589c77b505935f081c2ea12e55714228ed62d",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976_dual.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_eeprom_mt7976_dual.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976_dual.bin"
+    },
+    {
+      "git_blob": "dc0d3e433f6a05fbcc6085420131676e44a03a9d",
+      "sha256": "a70da76d43eb481a768cd02e74f589c77b505935f081c2ea12e55714228ed62d",
+      "size": 4096,
+      "source": "mediatek/mt7986_eeprom_mt7976_dual.bin",
+      "target": "usr/lib/firmware/mt7986_eeprom_mt7976_dual.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_eeprom_mt7976_dual.bin"
+    },
+    {
+      "git_blob": "9c3f8e02a35aa8e42579e1bbf63964e2bdab8d9b",
+      "sha256": "d8ebdd936384c0528687281b7d3d4c842aa35267bb3b2bbb2b8ffda286c5ab37",
+      "size": 13216,
+      "source": "mediatek/mt7986_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_rom_patch.bin"
+    },
+    {
+      "git_blob": "9c3f8e02a35aa8e42579e1bbf63964e2bdab8d9b",
+      "sha256": "d8ebdd936384c0528687281b7d3d4c842aa35267bb3b2bbb2b8ffda286c5ab37",
+      "size": 13216,
+      "source": "mediatek/mt7986_rom_patch.bin",
+      "target": "usr/lib/firmware/mt7986_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_rom_patch.bin"
+    },
+    {
+      "git_blob": "c88d961078ca78e895fd4c6b9436d015206db383",
+      "sha256": "4e4dbd0c1ab3474962d3dd1afb39c9cf500ea92d741a225f5cf502580c65f6ec",
+      "size": 13216,
+      "source": "mediatek/mt7986_rom_patch_mt7975.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_rom_patch_mt7975.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_rom_patch_mt7975.bin"
+    },
+    {
+      "git_blob": "c88d961078ca78e895fd4c6b9436d015206db383",
+      "sha256": "4e4dbd0c1ab3474962d3dd1afb39c9cf500ea92d741a225f5cf502580c65f6ec",
+      "size": 13216,
+      "source": "mediatek/mt7986_rom_patch_mt7975.bin",
+      "target": "usr/lib/firmware/mt7986_rom_patch_mt7975.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_rom_patch_mt7975.bin"
+    },
+    {
+      "git_blob": "7340b2941b5518c8cd8dfdb02396eb2fbbd4676e",
+      "sha256": "e76e96e9959ee501fc499ebfd558a52557a2798e6f554e62d101a093fc609625",
+      "size": 522368,
+      "source": "mediatek/mt7986_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wa.bin"
+    },
+    {
+      "git_blob": "7340b2941b5518c8cd8dfdb02396eb2fbbd4676e",
+      "sha256": "e76e96e9959ee501fc499ebfd558a52557a2798e6f554e62d101a093fc609625",
+      "size": 522368,
+      "source": "mediatek/mt7986_wa.bin",
+      "target": "usr/lib/firmware/mt7986_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wa.bin"
+    },
+    {
+      "git_blob": "3def10f0acfd69afe802a7ca1a0abb610a9579b9",
+      "sha256": "86baa5bcb05436c23ac443dd937cbb6d8cc9920eab6fd86bc4421038f526a03a",
+      "size": 2229264,
+      "source": "mediatek/mt7986_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wm.bin"
+    },
+    {
+      "git_blob": "3def10f0acfd69afe802a7ca1a0abb610a9579b9",
+      "sha256": "86baa5bcb05436c23ac443dd937cbb6d8cc9920eab6fd86bc4421038f526a03a",
+      "size": 2229264,
+      "source": "mediatek/mt7986_wm.bin",
+      "target": "usr/lib/firmware/mt7986_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wm.bin"
+    },
+    {
+      "git_blob": "25c1fd7349f9ac4d175847e7a92cd2a94ce9a4cb",
+      "sha256": "8af5695d6486ac1a0c69bd3951453c6ad267225e8a2574ef00c61961b7200afa",
+      "size": 2229264,
+      "source": "mediatek/mt7986_wm_mt7975.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_wm_mt7975.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wm_mt7975.bin"
+    },
+    {
+      "git_blob": "25c1fd7349f9ac4d175847e7a92cd2a94ce9a4cb",
+      "sha256": "8af5695d6486ac1a0c69bd3951453c6ad267225e8a2574ef00c61961b7200afa",
+      "size": 2229264,
+      "source": "mediatek/mt7986_wm_mt7975.bin",
+      "target": "usr/lib/firmware/mt7986_wm_mt7975.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wm_mt7975.bin"
+    },
+    {
+      "git_blob": "f34dbd5f3ea4101f2d603cbde8a681c73b9337ce",
+      "sha256": "4c268aed7c9ebd7fdd9afc6d2f93e64e108e335626b7b025d7ab7c80704684d8",
+      "size": 2455072,
+      "source": "mediatek/mt7986_wo_0.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_wo_0.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wo_0.bin"
+    },
+    {
+      "git_blob": "f34dbd5f3ea4101f2d603cbde8a681c73b9337ce",
+      "sha256": "4c268aed7c9ebd7fdd9afc6d2f93e64e108e335626b7b025d7ab7c80704684d8",
+      "size": 2455072,
+      "source": "mediatek/mt7986_wo_0.bin",
+      "target": "usr/lib/firmware/mt7986_wo_0.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wo_0.bin"
+    },
+    {
+      "git_blob": "1f0f2ce44aae0af8132f6629180fb809e42c5af7",
+      "sha256": "b60e9930e507b9e8228ba229c3ba6d1e4736d34720c744aeb2f85a9c8e5d3f29",
+      "size": 2455072,
+      "source": "mediatek/mt7986_wo_1.bin",
+      "target": "usr/lib/firmware/mediatek/mt7986_wo_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wo_1.bin"
+    },
+    {
+      "git_blob": "1f0f2ce44aae0af8132f6629180fb809e42c5af7",
+      "sha256": "b60e9930e507b9e8228ba229c3ba6d1e4736d34720c744aeb2f85a9c8e5d3f29",
+      "size": 2455072,
+      "source": "mediatek/mt7986_wo_1.bin",
+      "target": "usr/lib/firmware/mt7986_wo_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7986_wo_1.bin"
+    },
+    {
+      "git_blob": "5c65f0be10617dbfe24e3e8f529e7f400eb97416",
+      "sha256": "d6423564bc4ffbaa5c5252844942f77a6163f3b1ff22cb51d9adf829916f7b53",
+      "size": 446831,
+      "source": "mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "cec1c5873c042697153a81da2fc7884d0270ce4e",
+      "sha256": "089dd0252a7eb95feed55950ad0fd9e6f751a07b4cf22273de722b73fa50d49e",
+      "size": 198112,
+      "source": "mediatek/mt7925/WIFI_MT7925_PATCH_MCU_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/mt7925/WIFI_MT7925_PATCH_MCU_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7925/WIFI_MT7925_PATCH_MCU_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "256f85d31537e0ebc1beaa03a4033cf3755968bb",
+      "sha256": "7e4ed27d1e9fe21cdefda35a22da32137b2473fada350617fb603489af19346a",
+      "size": 1254904,
+      "source": "mediatek/mt7925/WIFI_RAM_CODE_MT7925_1_1.bin",
+      "target": "usr/lib/firmware/mediatek/mt7925/WIFI_RAM_CODE_MT7925_1_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7925/WIFI_RAM_CODE_MT7925_1_1.bin"
+    },
+    {
+      "git_blob": "b41e6a741aa192eac654322d66fffed2f586c12e",
+      "sha256": "7a5aacf68ed8526c1d94ba962f84046496b3909562decf8bb690cfbd8de5b65e",
+      "size": 297120,
+      "source": "mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin"
+    },
+    {
+      "git_blob": "e769dd14601982e49e48d67515096e62a0fad97a",
+      "sha256": "e841f5ed4fe547ff2f15275a2f330bb19a253db92e3e59cbdfd8581d72b2582d",
+      "size": 1596792,
+      "source": "mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin",
+      "target": "usr/lib/firmware/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin"
+    },
+    {
+      "git_blob": "32b3e1621f0af4937ea1e115b74993f1a33f149b",
+      "sha256": "efacee4f35bf66787af3578b7f0754f3ecc4c9002c39910e24934373951dc11d",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7990_eeprom.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7990_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7990_eeprom.bin"
+    },
+    {
+      "git_blob": "f0db071fa564a1c43947d938e6dc188f66395f6c",
+      "sha256": "ae8f5fbad39959d0a94df5ad2ce93a41962b948d4d61beb1774acbb27734b799",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7990_eeprom_2i5i.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7990_eeprom_2i5i.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7990_eeprom_2i5i.bin"
+    },
+    {
+      "git_blob": "07f972b88e218a4a36d745e59f2d262d5a38c14e",
+      "sha256": "e3ca02567e703a224719dd80c8f1d0c47642d4bede0c4501249ccf7b7602d973",
+      "size": 12576,
+      "source": "mediatek/mt7996/mt7990_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7990_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7990_rom_patch.bin"
+    },
+    {
+      "git_blob": "f2e51697f8f507d055c423ba6b70c3eca82cac03",
+      "sha256": "b35b8c0737b55bd176a7e0142ec902c6edcfee1731b9ae6b2b7ecb557c2637c3",
+      "size": 1355148,
+      "source": "mediatek/mt7996/mt7990_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7990_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7990_wm.bin"
+    },
+    {
+      "git_blob": "21f4bca39272d226b8586ced7c0c798a342e10f7",
+      "sha256": "79b11c6e94e017ac72c4ac152e003af35af195c86b0e9a21a15c73767438f0dd",
+      "size": 1315276,
+      "source": "mediatek/mt7996/mt7990_wm_tm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7990_wm_tm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7990_wm_tm.bin"
+    },
+    {
+      "git_blob": "941be24b06792df3fdfbc295b8a7832e38493753",
+      "sha256": "1a90a88c0da90dc8e4259472b91cb0e1cb37ba131652da0530c8af6fe7b1e540",
+      "size": 63568,
+      "source": "mediatek/mt7996/mt7992_dsp.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_dsp.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_dsp.bin"
+    },
+    {
+      "git_blob": "7252163ddcee3f7ab998547ed7943c77b8e40f27",
+      "sha256": "43f2db9152dd9aaeb9c27848215445ee8a48978fb2d2f15b13a3af5ecb77e631",
+      "size": 63568,
+      "source": "mediatek/mt7996/mt7992_dsp_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_dsp_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_dsp_23.bin"
+    },
+    {
+      "git_blob": "5d567db06607b9d3e912d8822c099ebc1fb6513f",
+      "sha256": "9dde8b84b9c2308d264a2aee5a1a87fe6549884226c4e44047bdb48d0a2257f3",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7992_eeprom.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_eeprom.bin"
+    },
+    {
+      "git_blob": "20c59081281bd3a305a540e5d7e4817e6f3bd542",
+      "sha256": "ccc92839a805320e5f3708dcd9559bbfe5f741b4e8628f384e9f500aaf372275",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7992_eeprom_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_eeprom_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_eeprom_23.bin"
+    },
+    {
+      "git_blob": "b0894b6ec2da243a575a5aec71645e957fe9d2a4",
+      "sha256": "f88ad725f82aa54269eba65f8e10b7eb9d652a3da46edde53c6a48f3960c7376",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7992_eeprom_23_2i5i.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_eeprom_23_2i5i.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_eeprom_23_2i5i.bin"
+    },
+    {
+      "git_blob": "226e2b30a4901c80af9c176444e737eb75da629f",
+      "sha256": "898439862ecc00a00a0896d7327f319e425e04e466937434728966b2d68c22a8",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7992_eeprom_2i5e.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_eeprom_2i5e.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_eeprom_2i5e.bin"
+    },
+    {
+      "git_blob": "cae73ac415971ab8fba18ebbeb6317eada040db9",
+      "sha256": "454ce57758188e1aab934863d0a67a64b66ac88c509c41c1283f2d226fb2fd48",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7992_eeprom_2i5i.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_eeprom_2i5i.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_eeprom_2i5i.bin"
+    },
+    {
+      "git_blob": "868b1cb96a4e0cad0f1512aa0aaccf3819b9ef6c",
+      "sha256": "836ab41cb5c7266fc60e16c5312c9726a1bf3ab8e1cbd50fb8a8d340236b0e29",
+      "size": 20896,
+      "source": "mediatek/mt7996/mt7992_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_rom_patch.bin"
+    },
+    {
+      "git_blob": "3e9bb24070d54e7cc676bf91683c296b61326af7",
+      "sha256": "1577fb68e31bb6535ec7d5757fa07d0df5aa0c0024f6fa9d2da1423b3ca73248",
+      "size": 20896,
+      "source": "mediatek/mt7996/mt7992_rom_patch_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_rom_patch_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_rom_patch_23.bin"
+    },
+    {
+      "git_blob": "99778d17bef66a89c7bd424cccd3034fcdc5d8d7",
+      "sha256": "5c982d6c7f7346096d165374ce70c21beb2fc1a7d97d7ae1b837dfbe887c3f78",
+      "size": 517552,
+      "source": "mediatek/mt7996/mt7992_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wa.bin"
+    },
+    {
+      "git_blob": "3e3c1de6456ceeea944f40960afb0e61ae114aec",
+      "sha256": "667a345e351d1a3c3d0d34989794aa8c615e478dc6b785a1fe5f9aee1f587c20",
+      "size": 517552,
+      "source": "mediatek/mt7996/mt7992_wa_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wa_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wa_23.bin"
+    },
+    {
+      "git_blob": "a268932eb0463b040965f4024b1c1947b587ea77",
+      "sha256": "8df1e82b58a64df7c693af01849a1a961f9f8a34cd3273512b771c00b8f9293f",
+      "size": 1745440,
+      "source": "mediatek/mt7996/mt7992_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wm.bin"
+    },
+    {
+      "git_blob": "96fe1c32d2ad574bc6e42dd4a6cf9a0f93e3f894",
+      "sha256": "74dc06194134a79e30d8ebd1d1fbe0a62f1deabda9efa592a4a0d32743811381",
+      "size": 1704688,
+      "source": "mediatek/mt7996/mt7992_wm_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wm_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wm_23.bin"
+    },
+    {
+      "git_blob": "1460583504d47856a90d4a6fd69762e650450037",
+      "sha256": "78948516384dd4367236220e8f99a09bc0525321c589db794175895ba79e762d",
+      "size": 1757072,
+      "source": "mediatek/mt7996/mt7992_wm_tm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wm_tm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wm_tm.bin"
+    },
+    {
+      "git_blob": "e8785c4d6f0dc28ca18890e6b13ff7fe7dbb87fd",
+      "sha256": "6d941d8e40275bf45ea325013c12d4160f7572c5c2db27b6117d2997c941809b",
+      "size": 1716256,
+      "source": "mediatek/mt7996/mt7992_wm_tm_23.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7992_wm_tm_23.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7992_wm_tm_23.bin"
+    },
+    {
+      "git_blob": "fed33fb5bccc9ec6971711241ecf112e2bde51ab",
+      "sha256": "c2d9e048cc1ce29d472f5bb342445a41bdb2d11c5c904bc904a498ae60ece3f7",
+      "size": 192688,
+      "source": "mediatek/mt7996/mt7996_dsp.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_dsp.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_dsp.bin"
+    },
+    {
+      "git_blob": "6fb81b6ce2d4e576d798f17e7f2ef83e7ec6331e",
+      "sha256": "86611acc8560d05a8e18780838cf8400e82ba313cdc9329d0097422d591199d6",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7996_eeprom.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_eeprom.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_eeprom.bin"
+    },
+    {
+      "git_blob": "11eaa85f4682f751da129a86dca7e842a78b6948",
+      "sha256": "d4e2c032657c35d79f651d7e3b6af2e05f6a498228be31394d032640851a9643",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7996_eeprom_233.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_eeprom_233.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_eeprom_233.bin"
+    },
+    {
+      "git_blob": "11eaa85f4682f751da129a86dca7e842a78b6948",
+      "sha256": "d4e2c032657c35d79f651d7e3b6af2e05f6a498228be31394d032640851a9643",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7996_eeprom_233_2i5i6i.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_eeprom_233_2i5i6i.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_eeprom_233_2i5i6i.bin"
+    },
+    {
+      "git_blob": "5ad238a5ae704873933b6df1c9af42ee206a686b",
+      "sha256": "22f5caa4400963ecacb840d8acb7c004260b567709b1c09c6e2309a6050d9f28",
+      "size": 7680,
+      "source": "mediatek/mt7996/mt7996_eeprom_2i5i6i.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_eeprom_2i5i6i.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_eeprom_2i5i6i.bin"
+    },
+    {
+      "git_blob": "7cc515b21242dbd101c558b048af8782c8ad4883",
+      "sha256": "b0e5d7794d5101268a6d4bcba31bef8d8b908104ec4d7bec439b95d5fb888f3f",
+      "size": 37216,
+      "source": "mediatek/mt7996/mt7996_rom_patch.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_rom_patch.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_rom_patch.bin"
+    },
+    {
+      "git_blob": "f3ab3c14e750264338cfdced394b5bd08599d87e",
+      "sha256": "14220455d9975e0ee901f4c905bf0eb2aeaf767c6f5443169a551af44c22e72b",
+      "size": 37216,
+      "source": "mediatek/mt7996/mt7996_rom_patch_233.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_rom_patch_233.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_rom_patch_233.bin"
+    },
+    {
+      "git_blob": "61dc7a97a013d279e5ffee49a455f1e21df5ba3d",
+      "sha256": "9df39dc262aec716594d2a46a3b6d6da58afbb85a015c2f94bf467db7a764d12",
+      "size": 510000,
+      "source": "mediatek/mt7996/mt7996_wa.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wa.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wa.bin"
+    },
+    {
+      "git_blob": "e620ef142a71d99a93c0850216918f3a7ee01e3d",
+      "sha256": "b54558552ee4d70794c6772e90cfdcce9d77c9feaaf5ab83e215151c8595e07d",
+      "size": 510000,
+      "source": "mediatek/mt7996/mt7996_wa_233.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wa_233.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wa_233.bin"
+    },
+    {
+      "git_blob": "1b8859dd71c2ae092eda5bcf480b3d5d896c83a0",
+      "sha256": "ba5b800e560a7940f1c51db0f99ab4dc249389f6e1a9e4e863f62ff28cc5ff50",
+      "size": 2656440,
+      "source": "mediatek/mt7996/mt7996_wm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wm.bin"
+    },
+    {
+      "git_blob": "f701831c480a3c69f2a979c1afc311b29b234cfa",
+      "sha256": "b41bcbdd69306885c0d94783e0fe25956137489970ef958198d6eec5ef274d72",
+      "size": 2681656,
+      "source": "mediatek/mt7996/mt7996_wm_233.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wm_233.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wm_233.bin"
+    },
+    {
+      "git_blob": "bfee3617088f786a4f4bfc8109d61a57e51fb3d0",
+      "sha256": "21e5f84ee2d410505851727d041e4932846d174ff130fd0ffd4f8894e6a7efa0",
+      "size": 2159544,
+      "source": "mediatek/mt7996/mt7996_wm_tm.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wm_tm.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wm_tm.bin"
+    },
+    {
+      "git_blob": "ff8687934133e611449333d9a8c1391af4c9228c",
+      "sha256": "b229353cf258df94bb33e184474190553774559c7981941a5a32ac57ef482120",
+      "size": 2167480,
+      "source": "mediatek/mt7996/mt7996_wm_tm_233.bin",
+      "target": "usr/lib/firmware/mediatek/mt7996/mt7996_wm_tm_233.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7996/mt7996_wm_tm_233.bin"
+    },
+    {
+      "git_blob": "5b0e44c524f35591288c79c5941f33cf74c27e4b",
+      "sha256": "1f7b7fd1c243576e04c16b98c649db1e3326f6a715556c2a56094bcd7d300d71",
+      "size": 28672,
+      "source": "mediatek/mt7987/i2p5ge-phy-DSPBitTb.bin",
+      "target": "usr/lib/firmware/mediatek/mt7987/i2p5ge-phy-DSPBitTb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7987/i2p5ge-phy-DSPBitTb.bin"
+    },
+    {
+      "git_blob": "2eaf41096bdbd43c4a90a773f24791e79a4d8650",
+      "sha256": "941e3118493d5cb14323968ebc1193b23411d7c330a566014eeeb51c5ea7ed45",
+      "size": 98304,
+      "source": "mediatek/mt7987/i2p5ge-phy-pmb.bin",
+      "target": "usr/lib/firmware/mediatek/mt7987/i2p5ge-phy-pmb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7987/i2p5ge-phy-pmb.bin"
+    },
+    {
+      "git_blob": "e2baa07cb6f3ccbc96d020bedf7f499929735ddd",
+      "sha256": "643157e984732eccad6aa5e1f80a2be82a6cbf747aac25b54c75eefeccaf8aec",
+      "size": 131072,
+      "source": "mediatek/mt7988/i2p5ge-phy-pmb.bin",
+      "target": "usr/lib/firmware/mediatek/mt7988/i2p5ge-phy-pmb.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7988/i2p5ge-phy-pmb.bin"
+    },
+    {
+      "git_blob": "6e44614614913e8254bdd95b5447ec4fa58b9a75",
+      "sha256": "a00b95235a9baa850fe5e9c08562b54279bb5528abad207de6f2e649a8009b15",
+      "size": 107816,
+      "source": "mediatek/mt7988/mt7988_wo_0.bin",
+      "target": "usr/lib/firmware/mediatek/mt7988/mt7988_wo_0.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7988/mt7988_wo_0.bin"
+    },
+    {
+      "git_blob": "3d5bd5c5271603d507d619666178ea1c903a3ccb",
+      "sha256": "6d9123b4e8400f93fc40cfe1adcfe67c5a2e9d7c07c168ca05f0eba739e8d39f",
+      "size": 107752,
+      "source": "mediatek/mt7988/mt7988_wo_1.bin",
+      "target": "usr/lib/firmware/mediatek/mt7988/mt7988_wo_1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7988/mt7988_wo_1.bin"
+    }
+  ],
+  "kind": "firmware-only",
+  "licenses": [
+    {
+      "git_blob": "6886c61bab1bec4c1a653abd2324adac4f296fcb",
+      "sha256": "a90d3f66704d85889945fec5525ea77622549da83aced1aac99828383f8f1805",
+      "size": 561,
+      "source": "LICENSES/LICENCE.mediatek",
+      "target": "licenses/LICENCE.mediatek",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.mediatek"
+    },
+    {
+      "git_blob": "18dd038e4fa93fece997e51fe1d63da15981700a",
+      "sha256": "d7bec70668ddd4aae8fb4aa32870e54b49fcdb0b9b007aa9f54b53a1ac7461bd",
+      "size": 2103,
+      "source": "LICENSES/LICENCE.ralink-firmware.txt",
+      "target": "licenses/LICENCE.ralink-firmware.txt",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.ralink-firmware.txt"
+    },
+    {
+      "git_blob": "fef16b68a52a3b04aab115f320661fa1fd8ee074",
+      "sha256": "8568352b57f3574f9d5b2753cdb7c6e5eb2b79e82fbb9c9ba6566947467ef508",
+      "size": 2100,
+      "source": "LICENSES/LICENCE.ralink_a_mediatek_company_firmware",
+      "target": "licenses/LICENCE.ralink_a_mediatek_company_firmware",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.ralink_a_mediatek_company_firmware"
+    },
+    {
+      "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+      "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+      "size": 451055,
+      "source": "WHENCE",
+      "target": "licenses/WHENCE",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+    }
+  ],
+  "provenance": {
+    "license": "LICENCE.mediatek, LICENCE.ralink-firmware.txt, LICENCE.ralink_a_mediatek_company_firmware",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+  },
+  "schema": 1,
+  "vendor": "mediatek",
+  "version": "linux-firmware-2ab4ce216003"
+}

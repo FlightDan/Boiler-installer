@@ -1,0 +1,551 @@
+{
+  "files": [
+    {
+      "git_blob": "5be9b5a273ff0e88633d9ebdfa0576a837dd9f17",
+      "sha256": "1c4ccb5fa06bf5649146025e95993db66876a1fbc0bd766ec05686587f69c1b7",
+      "size": 1408706,
+      "source": "rtw89/rtw8851b_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8851b_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8851b_fw-1.bin"
+    },
+    {
+      "git_blob": "526c65b39a8e02c79d84c0b82f7eb18c5683bb18",
+      "sha256": "945c854d7cf69dd97bf1da0181b011787d9b3c5d59c47e8b9dbea4eb4eee170b",
+      "size": 1164440,
+      "source": "rtw89/rtw8851b_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8851b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8851b_fw.bin"
+    },
+    {
+      "git_blob": "b8ff43e54b7dc47f1092cb8e08ea60a08bb45924",
+      "sha256": "fdb5513cf7372440d7980a61aa4b753b192b056734a978458ae4a4ef7f4b2c1e",
+      "size": 1958648,
+      "source": "rtw89/rtw8852a_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852a_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852a_fw-1.bin"
+    },
+    {
+      "git_blob": "362db7ec3e2b564a713e549c087263f1fec2a676",
+      "sha256": "7eb1fe457f5a704b7a4f05a66c67cfa6af2f1142566b640c8e402445d04b0159",
+      "size": 1428272,
+      "source": "rtw89/rtw8852a_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852a_fw.bin"
+    },
+    {
+      "git_blob": "21fdfe0729a0939c86ec7ca773ad21336f2c3b90",
+      "sha256": "5b68415e3bfe72715d63a70703d4471b04b5475b8ff69cfdc8cdf48233cd5d3a",
+      "size": 1245944,
+      "source": "rtw89/rtw8852b_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852b_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852b_fw-1.bin"
+    },
+    {
+      "git_blob": "c54ba7c53a40704bf74749d6415d7135e5bbdf91",
+      "sha256": "6ff6aeb56bb5b85cba333b755f8cc1dbfe9ff6e5b16e39f6ba01ce7f1eaa7714",
+      "size": 1554594,
+      "source": "rtw89/rtw8852b_fw-2.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852b_fw-2.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852b_fw-2.bin"
+    },
+    {
+      "git_blob": "1fbf0b86889d990be62c74cf9365897b65198caf",
+      "sha256": "5b9c224ae014e0aeade8701412d820e213c8880e08615b3905dba89659f21baf",
+      "size": 1035232,
+      "source": "rtw89/rtw8852b_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852b_fw.bin"
+    },
+    {
+      "git_blob": "da285fcf449df20a71b1a8c306fc074bd8cc5f07",
+      "sha256": "164e5e2243b1241a23d5e77876aa11be003fb09f5aa7794dc7bbf80957c8c254",
+      "size": 937688,
+      "source": "rtw89/rtw8852bt_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852bt_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852bt_fw-1.bin"
+    },
+    {
+      "git_blob": "88d8bace3b4ceff836d1e5061fb93f86eab5e244",
+      "sha256": "b75914312181a2cd8a15fe65024d218e875324de9231ce2071e31513bffbffa3",
+      "size": 928714,
+      "source": "rtw89/rtw8852bt_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852bt_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852bt_fw.bin"
+    },
+    {
+      "git_blob": "d0e78e7fa0c1fdcf226fbfcb5e382ce239335b1b",
+      "sha256": "95e4226f7a4c2a506a5ea2bb8b6247842dd12fc312639750881c5bfdec7bbec5",
+      "size": 2375560,
+      "source": "rtw89/rtw8852c_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852c_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852c_fw-1.bin"
+    },
+    {
+      "git_blob": "241b996f4aaa3ec6aea70f7d59a19d875b412b8d",
+      "sha256": "916e87d1470bce5400712f53d419ae68a0f44d858670c57e118d4f0b1d89c5b4",
+      "size": 2644326,
+      "source": "rtw89/rtw8852c_fw-2.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852c_fw-2.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852c_fw-2.bin"
+    },
+    {
+      "git_blob": "3bbb45f996b41905ab3575f8ca221e85b38ee1b4",
+      "sha256": "e05e704911ec5d6523e2951416290cc2189444d48a0420e637de6acf5bf21228",
+      "size": 1532656,
+      "source": "rtw89/rtw8852c_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8852c_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8852c_fw.bin"
+    },
+    {
+      "git_blob": "e9b0060b9aad8a23ca34b82b405464d9a5ac4b23",
+      "sha256": "4340bc322912f30f1793bb57a1747c23b15e40db2df628d6687d1ddf722f2828",
+      "size": 1583434,
+      "source": "rtw89/rtw8922a_fw-1.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8922a_fw-1.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8922a_fw-1.bin"
+    },
+    {
+      "git_blob": "0535165eb500947d8b4820a5c9f769eb141af511",
+      "sha256": "9ca08cd3098b954cc0d44edd5c0b079877e5dd9b98d55cfec1c302b41475d88c",
+      "size": 1586954,
+      "source": "rtw89/rtw8922a_fw-2.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8922a_fw-2.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8922a_fw-2.bin"
+    },
+    {
+      "git_blob": "85b87db87d2438efbc3fb31409d7de014e44cb0a",
+      "sha256": "484f496bc149706b92c7352925fef4155fecb60bc61ec0f5c55a3b651ed915f4",
+      "size": 1238542,
+      "source": "rtw89/rtw8922a_fw-3.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8922a_fw-3.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8922a_fw-3.bin"
+    },
+    {
+      "git_blob": "df106220e6cdfddb1bf886052637315960fe8b83",
+      "sha256": "d11927f593c82879bd0437435475d7915a60932374747984b3dc906a23009dea",
+      "size": 1849226,
+      "source": "rtw89/rtw8922a_fw-4.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8922a_fw-4.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8922a_fw-4.bin"
+    },
+    {
+      "git_blob": "51125d1a2018f14dd6663d308b498e4d83ea9b61",
+      "sha256": "84458f2fa7c9a730fae242d858a82814141421d66a1f672a10121982513daf6d",
+      "size": 1537690,
+      "source": "rtw89/rtw8922a_fw.bin",
+      "target": "usr/lib/firmware/rtw89/rtw8922a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw89/rtw8922a_fw.bin"
+    },
+    {
+      "git_blob": "8d7b0db379abb1936b6062083da9ee2ae9449df6",
+      "sha256": "5e32bd891c74a0719c871726b74490cf5e1a05cdcefb8fe2414f80fffdeb9f9d",
+      "size": 20290,
+      "source": "rtw88/rtw8703b_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8703b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8703b_fw.bin"
+    },
+    {
+      "git_blob": "ad1fe5da9ae2994423481e9140701ccd17d75052",
+      "sha256": "7156b0d2b4580e63d11a3a78258c35ff28e840c7c6428953920ae6a1cd5d05ac",
+      "size": 23074,
+      "source": "rtw88/rtw8703b_wow_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8703b_wow_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8703b_wow_fw.bin"
+    },
+    {
+      "git_blob": "ac2b9250c39e15c9fd183711fff3cfcc022fb691",
+      "sha256": "9c64e079815a333a3f7b731be7cc0be65206ebc883891659dc8ff5ed36a5e2f5",
+      "size": 28884,
+      "source": "rtw88/rtw8723d_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8723d_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8723d_fw.bin"
+    },
+    {
+      "git_blob": "eabb779a944e7120e1de4025e05d89a74379b066",
+      "sha256": "abdcca4e8bf76ebfba23d433de310ffefebd0ff9d01990639d4cd9602b32b71a",
+      "size": 27030,
+      "source": "rtw88/rtw8812a_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8812a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8812a_fw.bin"
+    },
+    {
+      "git_blob": "e14924e12f88824a2ad06e4210a47e6614004392",
+      "sha256": "aa6bf9d62b2d2d8a37254fd6d917ba2839888cdedc21850d4481874cb1d3d7cb",
+      "size": 68320,
+      "source": "rtw88/rtw8814a_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8814a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8814a_fw.bin"
+    },
+    {
+      "git_blob": "89181109691c610c1e33d809051c5bef64180713",
+      "sha256": "4693ece655044d96f81bd3f3e8db14dc352b493219c4fd0a75788a6fbd9eac3c",
+      "size": 31898,
+      "source": "rtw88/rtw8821a_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8821a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8821a_fw.bin"
+    },
+    {
+      "git_blob": "9beeb38c4bfb767aed5584ade886bc18e0fd61a0",
+      "sha256": "2ef409bc418549fcf294061dd0cae1fc22fd9da79b60524950b25de18732f3f0",
+      "size": 139472,
+      "source": "rtw88/rtw8821c_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8821c_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8821c_fw.bin"
+    },
+    {
+      "git_blob": "7ed1ab4845c960001aa51e2968bc2baf19008a55",
+      "sha256": "a72da690597bfa99d8eb6fc2ab090d18d8ad92ac2befd35db1c9e3662d8d8418",
+      "size": 161240,
+      "source": "rtw88/rtw8822b_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8822b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8822b_fw.bin"
+    },
+    {
+      "git_blob": "7cad71b0a0c15e802701da9cb2301ed7d31ce6ad",
+      "sha256": "3deecb31210986d98cdbfb000391e08d602a6eee4ffc883969faa2b907ab03ba",
+      "size": 202600,
+      "source": "rtw88/rtw8822c_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8822c_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8822c_fw.bin"
+    },
+    {
+      "git_blob": "1ce74fda8bff87cd5cd06d1027198e06954866da",
+      "sha256": "6717fc6ff426a74571ac4f04cd9698fb2f356012c05c58aa64cf21ceb6b958a2",
+      "size": 145224,
+      "source": "rtw88/rtw8822c_wow_fw.bin",
+      "target": "usr/lib/firmware/rtw88/rtw8822c_wow_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtw88/rtw8822c_wow_fw.bin"
+    },
+    {
+      "git_blob": "ac9a430a8350ac533153068a8c2eb24e2e76dc65",
+      "sha256": "ca778610db58042c395141918b319c76df10a83dbd0aa9b3db6a9bb01c477cce",
+      "size": 11216,
+      "source": "rtlwifi/rtl8188efw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8188efw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8188efw.bin"
+    },
+    {
+      "git_blob": "8bb12ea88246d2e7060a46bdeef61800c1ed1881",
+      "sha256": "2ff74315287529dec2e50eb57d6e0c97d2116f28ae166773ccdf93b6360000c4",
+      "size": 15262,
+      "source": "rtlwifi/rtl8188eufw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8188eufw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8188eufw.bin"
+    },
+    {
+      "git_blob": "0d7fbab5ce8aae0c562131b31065130e202d0d81",
+      "sha256": "e6189d6d7032b83f0ed4284629c43db66262449a866f33fd329e611239f62e1f",
+      "size": 21020,
+      "source": "rtlwifi/rtl8188fufw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8188fufw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8188fufw.bin"
+    },
+    {
+      "git_blob": "77eb1ebef5834f7c923c4ba2792e10fcff5c2b39",
+      "sha256": "1f4fae583e47e28b208a955a55e187e07ec44a0efcf0e0d357a7462d1f135618",
+      "size": 16192,
+      "source": "rtlwifi/rtl8192cfw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cfw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cfw.bin"
+    },
+    {
+      "git_blob": "b231e1d642d3a4226e3cadbf4f708bf72a1a4234",
+      "sha256": "2d6ad600581c5792d2de9c2bd31617563dbbe50f2ba709acf35ea36158586f01",
+      "size": 14818,
+      "source": "rtlwifi/rtl8192cfwU.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cfwU.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cfwU.bin"
+    },
+    {
+      "git_blob": "3a3e38675c6d84004ff8eacaaeb4004660a0f155",
+      "sha256": "a5a32fcb5c9876b63472aafaab4b6ec37104f23c48becb52e0b57c7a326d755b",
+      "size": 16332,
+      "source": "rtlwifi/rtl8192cfwU_B.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cfwU_B.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cfwU_B.bin"
+    },
+    {
+      "git_blob": "3aa75065747e546ba593195423ffb1f931337d6a",
+      "sha256": "6327de71c544c27fe909d509a3d5605d46b94c102a3c27700f812b95cbe74254",
+      "size": 16014,
+      "source": "rtlwifi/rtl8192cufw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cufw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cufw.bin"
+    },
+    {
+      "git_blob": "fceafc922cc2118d8ead2a6f7faf241df0ea0d00",
+      "sha256": "32846065b017c8b1d2d448e8c0ea2f5e741424809be49f2c6a6261339cd0b0cf",
+      "size": 16126,
+      "source": "rtlwifi/rtl8192cufw_A.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cufw_A.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cufw_A.bin"
+    },
+    {
+      "git_blob": "06569e7f60cd573936546b28f2530f4ccfe68161",
+      "sha256": "479e5e6732b0e07cfcab4cc190b8c30465c0b7f8c0ed22d742bedd4412cbcf2a",
+      "size": 16096,
+      "source": "rtlwifi/rtl8192cufw_B.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cufw_B.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cufw_B.bin"
+    },
+    {
+      "git_blob": "ec0a0d3e544af69e452f5d1054157b493ac847e3",
+      "sha256": "c083f2db36ef33d0ffffc979aba1d40f55fa9dc38dce50f26e0108a21c080286",
+      "size": 16126,
+      "source": "rtlwifi/rtl8192cufw_TMSC.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192cufw_TMSC.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192cufw_TMSC.bin"
+    },
+    {
+      "git_blob": "cbb4b887c4df118a1d23fd8663809d1133ed3ed3",
+      "sha256": "618a5c9fbf96d60a9340abd740d75224ba47cd08dd4fbed05aae47a082155e78",
+      "size": 31376,
+      "source": "rtlwifi/rtl8192defw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192defw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192defw.bin"
+    },
+    {
+      "git_blob": "a2f3015eb478a6709eb243010f8b955a4dc0a1d3",
+      "sha256": "710c4a28904b180e5a316a372e1038972102b2545909bc117c2455cf536e4490",
+      "size": 31452,
+      "source": "rtlwifi/rtl8192dufw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192dufw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192dufw.bin"
+    },
+    {
+      "git_blob": "f68d10c67e31ac870c7903ebc9329454aeec5edd",
+      "sha256": "52ba57df842c97b38b8108e53577911efb9da29dc352499c149564a08827db60",
+      "size": 25264,
+      "source": "rtlwifi/rtl8192eu_ap_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192eu_ap_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192eu_ap_wowlan.bin"
+    },
+    {
+      "git_blob": "4ee03e8842953cd6a2b122c54a7fd71e91176c38",
+      "sha256": "b15bc955fba2fc3abc093affe62c9f7284a0b84d4f13f8ce55366488dc9aad8b",
+      "size": 32286,
+      "source": "rtlwifi/rtl8192eu_nic.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192eu_nic.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192eu_nic.bin"
+    },
+    {
+      "git_blob": "4a12a1d4de77867498840df54a5dd160dc5ccc58",
+      "sha256": "4caf9e99e31b059a6c6f42e11554f14b5413eadde20dba1c66476d284a5e52f7",
+      "size": 29008,
+      "source": "rtlwifi/rtl8192eu_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192eu_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192eu_wowlan.bin"
+    },
+    {
+      "git_blob": "508ae1204747a99b613fe2afda6fe199b7b85099",
+      "sha256": "3001f8b50176ede76d0cde20c7c7ff84ebe12331049e65e1a1a768b1d45b74de",
+      "size": 31136,
+      "source": "rtlwifi/rtl8192fufw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192fufw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192fufw.bin"
+    },
+    {
+      "git_blob": "ed4afe8598cf859e43f865d419442a41293ad414",
+      "sha256": "a24d1c61251321b94943f8bd65b4110658cc4c94e61e2e643946d6e5008e4c5b",
+      "size": 80208,
+      "source": "rtlwifi/rtl8192sefw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8192sefw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8192sefw.bin"
+    },
+    {
+      "git_blob": "63dd71efd91ab20a44015169d32db35d99a7cb3f",
+      "sha256": "5601323d5840f81aae228545ef6a7285afefcc0979c286a296e3ec731d67177d",
+      "size": 23750,
+      "source": "rtlwifi/rtl8710bufw_SMIC.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8710bufw_SMIC.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8710bufw_SMIC.bin"
+    },
+    {
+      "git_blob": "6030ddfb25376bbd641d81377edd7f7a97891354",
+      "sha256": "ca3701b33c715136d818fd7fc95ef851c30f2fd9d5e265781094c7234fc7da01",
+      "size": 22654,
+      "source": "rtlwifi/rtl8710bufw_UMC.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8710bufw_UMC.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8710bufw_UMC.bin"
+    },
+    {
+      "git_blob": "3f965a652d1eb5ea9a2101ac093b9883af0822cd",
+      "sha256": "6e84ec69c300b0182c9bc8fa41e88281eeb04013c4a34c341748052c3c6a9d3d",
+      "size": 122328,
+      "source": "rtlwifi/rtl8712u.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8712u.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8712u.bin"
+    },
+    {
+      "git_blob": "7accded754a7c114db71870728b124ad7ddb25b9",
+      "sha256": "d63e39f41dd726b3a833e64fea44696c7b74ad595d31dcaae509b17d247f125c",
+      "size": 22172,
+      "source": "rtlwifi/rtl8723aufw_A.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723aufw_A.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723aufw_A.bin"
+    },
+    {
+      "git_blob": "5c37400025210a6da3a2bc4c8cae3f1481ed2a3b",
+      "sha256": "850374b96076ab4b854ee9dc42ef57f9bd6b24493b74ba6b609c690d17f1c552",
+      "size": 24118,
+      "source": "rtlwifi/rtl8723aufw_B.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723aufw_B.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723aufw_B.bin"
+    },
+    {
+      "git_blob": "8e9952cbe58ca69bbf11acce688c75aa6ee960c0",
+      "sha256": "a24af5491dbfa3937633049fc66576ed478dec60e7676263f00a2ce9dd22c25b",
+      "size": 19200,
+      "source": "rtlwifi/rtl8723aufw_B_NoBT.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723aufw_B_NoBT.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723aufw_B_NoBT.bin"
+    },
+    {
+      "git_blob": "25e183cb15a3f2bc05418d3fac4be7bd8e62a779",
+      "sha256": "1bfa6d0910e072ed26d793ccf27889ebd774851be95d2d2543fd8de7cf31b969",
+      "size": 30746,
+      "source": "rtlwifi/rtl8723befw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723befw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723befw.bin"
+    },
+    {
+      "git_blob": "1bb9b9c8cea95689a0d27f9d7c264ad63728dde1",
+      "sha256": "adba42ade555a5e4383373b76706443f27bf0f006fbc296a640c7155192febf2",
+      "size": 31762,
+      "source": "rtlwifi/rtl8723befw_36.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723befw_36.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723befw_36.bin"
+    },
+    {
+      "git_blob": "f29df42f93347813a18df81767acfd3adcbc1f72",
+      "sha256": "774f6628ae2cd7d6d8563cbf88f67f9a95e895cb44b55fb26ffdf895fdf26aea",
+      "size": 9120,
+      "source": "rtlwifi/rtl8723bs_bt.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723bs_bt.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723bs_bt.bin"
+    },
+    {
+      "git_blob": "944bc16c3d55d495c1660710dac1a59a7e60868a",
+      "sha256": "957707c7d6e01564685a801da1084a60b6b726c3d756d54dbe56ce064110e288",
+      "size": 20886,
+      "source": "rtlwifi/rtl8723bu_ap_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723bu_ap_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723bu_ap_wowlan.bin"
+    },
+    {
+      "git_blob": "8d534053823e47ba4e49c8600463af47fbec7306",
+      "sha256": "a52b5a7be4841b4b2839eddf5122b3300a3610866abe4bb3c3c9e444c8ab7969",
+      "size": 32108,
+      "source": "rtlwifi/rtl8723bu_nic.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723bu_nic.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723bu_nic.bin"
+    },
+    {
+      "git_blob": "473e29c3217fb06046aa0df7a22b2e613b331235",
+      "sha256": "534f6c4ad8a8068f7888db7af83408f0d2ef04e5d4fc8514e07522a4b0bab3a7",
+      "size": 26398,
+      "source": "rtlwifi/rtl8723bu_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723bu_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723bu_wowlan.bin"
+    },
+    {
+      "git_blob": "6d2c95392a947e454d0365d6d982d393a5dfadf6",
+      "sha256": "f305bf993989c2a80afbd86e1b680261f443a47fec40743aee3a625381c219fc",
+      "size": 27726,
+      "source": "rtlwifi/rtl8723defw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723defw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723defw.bin"
+    },
+    {
+      "git_blob": "725f2138e1c0134bcb094594e9ea0e30dce08e6d",
+      "sha256": "9b6d8f2546834b69abc675fe4450e5d92f6ecbeaa22619d9047b8e5f27909d4e",
+      "size": 11662,
+      "source": "rtlwifi/rtl8723fw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723fw.bin"
+    },
+    {
+      "git_blob": "993c7f6ecea30c5bae914c4c22152735d8eb0d61",
+      "sha256": "a8d1b37e7585445f599de24f4b655b194857e2c836f450798be04f67b3898305",
+      "size": 22996,
+      "source": "rtlwifi/rtl8723fw_B.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8723fw_B.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8723fw_B.bin"
+    },
+    {
+      "git_blob": "90a04098d2114e1f58361d8e74fb684b94899c6c",
+      "sha256": "d40396544ee56c9dab43a458344b8936aa3d878c1582e96a62e9346bdfbdf50f",
+      "size": 27516,
+      "source": "rtlwifi/rtl8812aefw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8812aefw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8812aefw.bin"
+    },
+    {
+      "git_blob": "4d0cc358b040100b2e0f2cbc0c5b3e1274111d37",
+      "sha256": "5579eba1de0b9084ad1f8968480acdba1684893fc4332c0a9797465ffabc60ff",
+      "size": 21204,
+      "source": "rtlwifi/rtl8812aefw_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8812aefw_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8812aefw_wowlan.bin"
+    },
+    {
+      "git_blob": "4f84cf94a1682b29714d2f086abb7fad3ef55a2f",
+      "sha256": "025c13f2e7f7526e1f932049bed2146467318f547ffa8481804ecfd911cda695",
+      "size": 28984,
+      "source": "rtlwifi/rtl8821aefw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8821aefw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8821aefw.bin"
+    },
+    {
+      "git_blob": "f0acde46948149dd6c49d203814e2dc417b07e91",
+      "sha256": "11e7ea00504fa2fa6f5216bb59403c4f2f20eec5b676c0add0695db3b0c4a335",
+      "size": 28348,
+      "source": "rtlwifi/rtl8821aefw_29.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8821aefw_29.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8821aefw_29.bin"
+    },
+    {
+      "git_blob": "115d49f157d8c53447e8d78f7fb4a3a032d223d2",
+      "sha256": "df6fe0f14f6c7755da351b8d02282dde1c190133c118a5ca9627b6fd87dfd5da",
+      "size": 19858,
+      "source": "rtlwifi/rtl8821aefw_wowlan.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8821aefw_wowlan.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8821aefw_wowlan.bin"
+    },
+    {
+      "git_blob": "1fcdbeb2dddf300be548f219065746a90b84fa21",
+      "sha256": "0952522dd0fa8cd226a0394a8092e98cd0bdccb59b31ed00dd682a6c28f60839",
+      "size": 127496,
+      "source": "rtlwifi/rtl8822befw.bin",
+      "target": "usr/lib/firmware/rtlwifi/rtl8822befw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtlwifi/rtl8822befw.bin"
+    }
+  ],
+  "kind": "firmware-only",
+  "licenses": [
+    {
+      "git_blob": "d70921f493795acb9af2a38f405193ba7a1b28a3",
+      "sha256": "a61351665b4f264f6c631364f85b907d8f8f41f8b369533ef4021765f9f3b62e",
+      "size": 2115,
+      "source": "LICENSES/LICENCE.rtlwifi_firmware.txt",
+      "target": "licenses/LICENCE.rtlwifi_firmware.txt",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.rtlwifi_firmware.txt"
+    },
+    {
+      "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+      "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+      "size": 451055,
+      "source": "WHENCE",
+      "target": "licenses/WHENCE",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+    }
+  ],
+  "provenance": {
+    "license": "LICENCE.rtlwifi_firmware.txt",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+  },
+  "schema": 1,
+  "vendor": "realtek",
+  "version": "linux-firmware-2ab4ce216003"
+}

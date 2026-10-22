@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Boiler ImageManifest v1","type":"object",
+  "required":["schema_version","kind","id","version","image","layout","architecture"],
+  "properties":{
+    "schema_version":{"const":1},"kind":{"const":"ImageManifest"},
+    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
+    "image":{"$ref":"definitions.json#/$defs/inventoryFile"},
+    "layout":{"enum":["steamos-ab","steamos-recovery"]},"architecture":{"type":"string","minLength":1},
+    "install_plan":{"$ref":"InstallPlan.schema.json"},
+    "compatibility":{"$ref":"definitions.json#/$defs/compatibility"}
+  }
+}

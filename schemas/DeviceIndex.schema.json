@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Boiler signed DeviceIndex v1","type":"object",
+  "required":["schema_version","kind","id","version","generated_at","sequence","packages"],
+  "properties":{
+    "schema_version":{"const":1},"kind":{"const":"DeviceIndex"},
+    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
+    "generated_at":{"type":"string","minLength":1},
+    "sequence":{"type":"integer","minimum":0},
+    "revocations":{"type":"array","items":{"$ref":"definitions.json#/$defs/sha256"}},
+    "packages":{"type":"array","items":{"type":"object","required":["id","version","sha256","size","source"],"properties":{
+      "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
+      "sha256":{"$ref":"definitions.json#/$defs/sha256"},"size":{"type":"integer","minimum":0},
+      "source":{"$ref":"definitions.json#/$defs/source"},"compatibility":{"$ref":"definitions.json#/$defs/compatibility"}
+    }}}
+  }
+}

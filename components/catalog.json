@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "components": [
+    {
+      "id": "core:decky",
+      "default": true,
+      "dependencies": [],
+      "state": "locked_payload_prepared_runtime_unverified",
+      "source": "https://github.com/SteamDeckHomebrew/decky-loader",
+      "available": true
+    },
+    {
+      "id": "core:maintenance",
+      "default": false,
+      "dependencies": [],
+      "state": "source_implemented_hardware_unverified",
+      "source": "maintenance/"
+    },
+    {
+      "id": "wifi:intel",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_locked_payload_prepared_target_modules_required",
+      "source": "explicit_local_lock",
+      "available": true
+    },
+    {
+      "id": "wifi:realtek",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_locked_payload_prepared_target_modules_required",
+      "source": "explicit_local_lock",
+      "available": true
+    },
+    {
+      "id": "wifi:mediatek",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_locked_payload_prepared_target_modules_required",
+      "source": "explicit_local_lock",
+      "available": true
+    }
+  ]
+}

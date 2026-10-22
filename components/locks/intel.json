@@ -1,0 +1,1591 @@
+{
+  "files": [
+    {
+      "git_blob": "0e69a1a71cfc4a27a9604c79561a4bb3e31cf134",
+      "sha256": "cba50730d97bf3bebfc8b66c47f2eb20d1a26472beccbc47171d1ff01586f240",
+      "size": 337572,
+      "source": "intel/iwlwifi/iwlwifi-100-5.ucode",
+      "target": "usr/lib/firmware/iwlwifi-100-5.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-100-5.ucode"
+    },
+    {
+      "git_blob": "7aa466c37dd832025080e719b141b1b034c0964b",
+      "sha256": "8e5fae67b9b84d90fd806fb907707af0ede479351848547fbe8cdf1d74005f2b",
+      "size": 337520,
+      "source": "intel/iwlwifi/iwlwifi-1000-5.ucode",
+      "target": "usr/lib/firmware/iwlwifi-1000-5.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-1000-5.ucode"
+    },
+    {
+      "git_blob": "7d532e5c7046054c407f9e8381a239aa48300a8f",
+      "sha256": "1cb5c90756de33f044ebf82e0a9295f73534577d6b011be3b79df98412880487",
+      "size": 689680,
+      "source": "intel/iwlwifi/iwlwifi-105-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-105-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-105-6.ucode"
+    },
+    {
+      "git_blob": "a0a32ede3c110d69879a504d27890803c898585a",
+      "sha256": "db87dd4a4307bf5b553de80dd135598319fc6c8133dac8cc8d1673e9c27f5ee1",
+      "size": 701228,
+      "source": "intel/iwlwifi/iwlwifi-135-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-135-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-135-6.ucode"
+    },
+    {
+      "git_blob": "3d58016cf99a64497f8e8250f974ee82aab2f0fc",
+      "sha256": "f026eed05503e1fe752bebcd1e0a03aed79d0da757ae69d7dea82295036f1f82",
+      "size": 695876,
+      "source": "intel/iwlwifi/iwlwifi-2000-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-2000-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-2000-6.ucode"
+    },
+    {
+      "git_blob": "6ad76561b99956ee7c7523ee932afb1a74a5bc33",
+      "sha256": "8d84a8cbdaa1fd12917a8b65a08d4ba59fae1d578444389fcf5982193e3e8b9d",
+      "size": 707392,
+      "source": "intel/iwlwifi/iwlwifi-2030-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-2030-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-2030-6.ucode"
+    },
+    {
+      "git_blob": "95b26df9d56dbde09617843c88436c777455ecd5",
+      "sha256": "0e893c1ed74c3186047508e93442b2d71a07dd5fac00d9dbdb68f34407d7be14",
+      "size": 918268,
+      "source": "intel/iwlwifi/iwlwifi-3160-17.ucode",
+      "target": "usr/lib/firmware/iwlwifi-3160-17.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-3160-17.ucode"
+    },
+    {
+      "git_blob": "1759561ec20327fd6083a79781eba3dd559e7bee",
+      "sha256": "3afae7bf4bb5fbb83a895ec7ad097b9fd20b7d8794f405c2823cbea5284e65c3",
+      "size": 1036288,
+      "source": "intel/iwlwifi/iwlwifi-3168-29.ucode",
+      "target": "usr/lib/firmware/iwlwifi-3168-29.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-3168-29.ucode"
+    },
+    {
+      "git_blob": "b8806a24910542176fb7613aa0ee19feecbb7089",
+      "sha256": "9bccc66fab027d18f0977fa737816d3e67938d4a9f5cf0790df8e45e19168f20",
+      "size": 150100,
+      "source": "intel/iwlwifi/iwlwifi-3945-2.ucode",
+      "target": "usr/lib/firmware/iwlwifi-3945-2.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-3945-2.ucode"
+    },
+    {
+      "git_blob": "dad4acfb6095d06a791b2305aef922b5b341afd3",
+      "sha256": "4c7a8faeb1ed8ae5f9b24d5282373ceb44283b220a064fc0ee1a668a4506cdde",
+      "size": 187972,
+      "source": "intel/iwlwifi/iwlwifi-4965-2.ucode",
+      "target": "usr/lib/firmware/iwlwifi-4965-2.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-4965-2.ucode"
+    },
+    {
+      "git_blob": "184f0c7350a2315f5190e856cba8e735e6d045bf",
+      "sha256": "da259ae4b436f4d166aad2139f23694c2737e25288095140a1809d60fe676247",
+      "size": 340696,
+      "source": "intel/iwlwifi/iwlwifi-5000-5.ucode",
+      "target": "usr/lib/firmware/iwlwifi-5000-5.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-5000-5.ucode"
+    },
+    {
+      "git_blob": "04d658685b1c3f2a5421c343e02f5a56ca1bf7e8",
+      "sha256": "590d631088ad606a59318ba123dc744a02366d9dad84196ee5b078ca286ba749",
+      "size": 337400,
+      "source": "intel/iwlwifi/iwlwifi-5150-2.ucode",
+      "target": "usr/lib/firmware/iwlwifi-5150-2.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-5150-2.ucode"
+    },
+    {
+      "git_blob": "dce03ae2878048f04eba27dd113842ebb430a705",
+      "sha256": "5babe59eda1022a45b2ae0460e13302eff0b3575b776e86fa68e50dfce62f94f",
+      "size": 454608,
+      "source": "intel/iwlwifi/iwlwifi-6000-4.ucode",
+      "target": "usr/lib/firmware/iwlwifi-6000-4.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-6000-4.ucode"
+    },
+    {
+      "git_blob": "a1f2454df70ab9f59a284ce86969aee36b06c8a1",
+      "sha256": "9c435c7f413ff2ff1320604c68beb6e8239bb93522dc4b7c02c8cc94a393d88a",
+      "size": 677296,
+      "source": "intel/iwlwifi/iwlwifi-6000g2a-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-6000g2a-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-6000g2a-6.ucode"
+    },
+    {
+      "git_blob": "baaf9db7731113f2017db953bad07a2f48036646",
+      "sha256": "49f2408828b9b8ea3818f487a7c0b736d13879d4fcd21cf1082d41e03fb00e4f",
+      "size": 679436,
+      "source": "intel/iwlwifi/iwlwifi-6000g2b-6.ucode",
+      "target": "usr/lib/firmware/iwlwifi-6000g2b-6.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-6000g2b-6.ucode"
+    },
+    {
+      "git_blob": "74a2085acf4ce1941e60301c719db9705e929fab",
+      "sha256": "aff6b154449646db106b85c7a086ddae30913ebdc499228a9d0be8d523dfcac1",
+      "size": 469780,
+      "source": "intel/iwlwifi/iwlwifi-6050-5.ucode",
+      "target": "usr/lib/firmware/iwlwifi-6050-5.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-6050-5.ucode"
+    },
+    {
+      "git_blob": "b1a87d52cdd1d61d50c1040eefdb18bcc599dccf",
+      "sha256": "5d81a6003df0228a497ad27f916ba2c979614b4c439b0f45a5f2873dc0607fe8",
+      "size": 1049340,
+      "source": "intel/iwlwifi/iwlwifi-7260-17.ucode",
+      "target": "usr/lib/firmware/iwlwifi-7260-17.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-7260-17.ucode"
+    },
+    {
+      "git_blob": "f4a549cce6ed59efb063e4a723ae1d8544b135f1",
+      "sha256": "91f699308f102a9ed90217d813bfdb355464ece958a4f8ac96bba5e9d77fe870",
+      "size": 1180412,
+      "source": "intel/iwlwifi/iwlwifi-7265-17.ucode",
+      "target": "usr/lib/firmware/iwlwifi-7265-17.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-7265-17.ucode"
+    },
+    {
+      "git_blob": "b5b9cbe86290d7edfe7d00e69ab02a80abbe9165",
+      "sha256": "c52bcaa0595f64d5fb32b7db3dd4b832ea7bf78f1037bcafc19d9c0f5c5c617e",
+      "size": 1036312,
+      "source": "intel/iwlwifi/iwlwifi-7265D-29.ucode",
+      "target": "usr/lib/firmware/iwlwifi-7265D-29.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-7265D-29.ucode"
+    },
+    {
+      "git_blob": "ba83ac0a730879a18bcd59fef5506191fbb61e62",
+      "sha256": "5476ec3e48825739c4d19a0a690ee72f05717bca797214065037f2077c0249ce",
+      "size": 2448976,
+      "source": "intel/iwlwifi/iwlwifi-8000C-34.ucode",
+      "target": "usr/lib/firmware/iwlwifi-8000C-34.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-8000C-34.ucode"
+    },
+    {
+      "git_blob": "7d4277b3a813d2d3e40771e45e0786a50a267b69",
+      "sha256": "479931721f5e168d69d67c297c11738acd75da390adb94f96030a1055f4cf57a",
+      "size": 2425084,
+      "source": "intel/iwlwifi/iwlwifi-8000C-36.ucode",
+      "target": "usr/lib/firmware/iwlwifi-8000C-36.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-8000C-36.ucode"
+    },
+    {
+      "git_blob": "86089f81b60959211e41165b05b738dd6bf4af6e",
+      "sha256": "85566f9473b0774209b8351c2daeea8d5c20116f880082b64af819ca54e3b9f7",
+      "size": 2440780,
+      "source": "intel/iwlwifi/iwlwifi-8265-34.ucode",
+      "target": "usr/lib/firmware/iwlwifi-8265-34.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-8265-34.ucode"
+    },
+    {
+      "git_blob": "cff2c05e4fcfc98ac8e7fcce7e089646d495ce3e",
+      "sha256": "1336afcd028ed094d1fe33893c84c273bb5711be52970040344a75a12f276d56",
+      "size": 2432528,
+      "source": "intel/iwlwifi/iwlwifi-8265-36.ucode",
+      "target": "usr/lib/firmware/iwlwifi-8265-36.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-8265-36.ucode"
+    },
+    {
+      "git_blob": "5827e57b593d30cf03f3d585c3f2156f11ff1dae",
+      "sha256": "f70df706d28a4d82be27697cc5e9d675d260614b51deb16e71a6f59ed77504cd",
+      "size": 2678284,
+      "source": "intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-34.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9000-pu-b0-jf-b0-34.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-34.ucode"
+    },
+    {
+      "git_blob": "386ef9cf739ca91b5689730d27714f46fdc4cdcc",
+      "sha256": "4fd596eae953b37da59d30d7d1896db8512d9240702f7753a4b6f2edde1abf83",
+      "size": 2520568,
+      "source": "intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-38.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9000-pu-b0-jf-b0-38.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-38.ucode"
+    },
+    {
+      "git_blob": "c9a75fcc6b020c6c1fa7e3714cc1cf5ef6d63caf",
+      "sha256": "9a0c5d938646942f9798e6212579c25771e4bb44301cd409b82abe361ca2c3e0",
+      "size": 1519568,
+      "source": "intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-46.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9000-pu-b0-jf-b0-46.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9000-pu-b0-jf-b0-46.ucode"
+    },
+    {
+      "git_blob": "4aeb1a06dbcfce930d1217c9d68f239b1c690a08",
+      "sha256": "b074411f7f6ecadf31ff434c0202a9d9f00daa28f35c9e143d7dd9ba7dd2a404",
+      "size": 2678092,
+      "source": "intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-34.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9260-th-b0-jf-b0-34.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-34.ucode"
+    },
+    {
+      "git_blob": "33058dff3f274ffc6cc253eb082127a0f3b6359f",
+      "sha256": "1e9c023f11c787df7cdb8e19d03fc01c7220c2c3e57e1817748939d5adb3942f",
+      "size": 2521412,
+      "source": "intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-38.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9260-th-b0-jf-b0-38.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-38.ucode"
+    },
+    {
+      "git_blob": "dac525a26a3986ddde811c9323c10b6b7dac2eeb",
+      "sha256": "05f4c12514fddfd56fea660b3d2eb6b6e6f4a87a324d5d40464050312ddca911",
+      "size": 1490508,
+      "source": "intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-46.ucode",
+      "target": "usr/lib/firmware/iwlwifi-9260-th-b0-jf-b0-46.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-9260-th-b0-jf-b0-46.ucode"
+    },
+    {
+      "git_blob": "b8a6646893fbe0b06bd6f9f63e436997751d1016",
+      "sha256": "ace0076fe08de1f25d4d093c5726fbd3683ad54f842f5380993f2c3a61b5e800",
+      "size": 1103952,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-50.ucode"
+    },
+    {
+      "git_blob": "1858a5b1f5eff8031f2acb951cb5fe1cf6bbbeb7",
+      "sha256": "c57bd6ce863b822fe337dd7e65204324ee1c8f0f3ab83dc68bed13ed77dcf565",
+      "size": 1300764,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-59.ucode"
+    },
+    {
+      "git_blob": "29ae8fdfbfde4df2e305b97dd0dbe6890de85b10",
+      "sha256": "0d303c8a98ba8b2a0afe869ae22219298de035273839bb0657320c812750c291",
+      "size": 1344220,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-66.ucode"
+    },
+    {
+      "git_blob": "64462a58818bb930426eab9f282332f32793df4c",
+      "sha256": "6a1a008f5dd4f952e075c9032826b117d3468735e566a97e274935d82e8780f8",
+      "size": 1370236,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-72.ucode"
+    },
+    {
+      "git_blob": "26abb3a850a4b71c45ba4256b4250d10b5935391",
+      "sha256": "51d611a6287418584666567c2006a8493aca46747518c81da652e8a36f4de436",
+      "size": 1369840,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-73.ucode"
+    },
+    {
+      "git_blob": "6b1423de2398634e5bbf246c5f851b379630b8cb",
+      "sha256": "86e83ed4b8f28a867823fc9a6a8a199713d13bbffb832c2da3972e590237de8a",
+      "size": 1371532,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-74.ucode"
+    },
+    {
+      "git_blob": "975fd2113afc1d7a8207d647faa619a40b5ad851",
+      "sha256": "5c4f5aede4e12d00048afcfefafddf19295f3045968939985ca1a05fe472286e",
+      "size": 1406576,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-hr-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-hr-b0-77.ucode"
+    },
+    {
+      "git_blob": "8af5aa9bbdcd5d6aa65e01cfeb608b82faf54e52",
+      "sha256": "bd850a3e9d944603624e89ddef52fa3ba6cc3f7bfd891c26006fbe959c0d3534",
+      "size": 1053004,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-50.ucode"
+    },
+    {
+      "git_blob": "89b3e6dfc86c19f582d9e86250a40890d6313b7b",
+      "sha256": "e0e7d505fc973f335dad6f4442c5cde8b6cb860205ec9e034d7c152e11671e4d",
+      "size": 1226208,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-59.ucode"
+    },
+    {
+      "git_blob": "ff13b86c7ca14a574e5db854b7f2c52cdde43a7c",
+      "sha256": "ac49bdce174efd2a8e3a4cb88790881ae433b896c915830a7cb080454283460e",
+      "size": 1262312,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-66.ucode"
+    },
+    {
+      "git_blob": "186af9aadcd93f2f33ac6e1120e387f28ecd79f7",
+      "sha256": "55b0ef532793d14f6b6d1a8fee2848663391a04b2a3bfe2a586385af54ec974d",
+      "size": 1285968,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-72.ucode"
+    },
+    {
+      "git_blob": "e1ecc31408e24f85320d76ce2bca4aabec039e19",
+      "sha256": "8b73ec5863b1efcffbb3c130dda2905c1d209e56559a97df407ed5c8069a9192",
+      "size": 1290084,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-73.ucode"
+    },
+    {
+      "git_blob": "30843c801d36c188ec98a788e471e14c6f2296fa",
+      "sha256": "31ba930bcc3296ea0ab75b84eb4030a0d8cf94c2dde9b680e40537cb01154781",
+      "size": 1290892,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-74.ucode"
+    },
+    {
+      "git_blob": "274a7a04134b4bf6be70cf84527ddc204ef021d0",
+      "sha256": "599910caf5f5c8660bb8decc6f601dd18ce4b1d81cd23a4e2d6c9f82e358d9b3",
+      "size": 1323296,
+      "source": "intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-b0-jf-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-b0-jf-b0-77.ucode"
+    },
+    {
+      "git_blob": "fb08c3e5788c2d7e0e792264f2c7cff85b569c9f",
+      "sha256": "94428a58d5872d1990e28cb5ffcfac42bfaba69e10427f18847079c6e3a7d598",
+      "size": 1103968,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-50.ucode"
+    },
+    {
+      "git_blob": "b38f9f127b79ff1d64a40f2af85a9e45996574a4",
+      "sha256": "52c3182d37d9c6c9d0fc0acf8faecefb99bbc2055eb1ae5243309e28597e1272",
+      "size": 1300780,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-59.ucode"
+    },
+    {
+      "git_blob": "f1f4e232abd7aed9777f007b530ac7dba839f5f0",
+      "sha256": "a12d1823ae8e3fd30466eaf2c91c6371f93955429f269a78bd06f5f74d4b57b5",
+      "size": 1344236,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-66.ucode"
+    },
+    {
+      "git_blob": "8e5a17e140ac040d8525bbd383000ad2b2f82a5f",
+      "sha256": "7034b6db938bf313ec4885a3018786d5dcc0b3bd806c3654c7c0d180f0d632fd",
+      "size": 1370252,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-72.ucode"
+    },
+    {
+      "git_blob": "c3a23c81643c09ad7a322cab1c2d563b185d8829",
+      "sha256": "f6ae55ab9876fafa80d3086992c209f08ab77d336104f1721e3bb1abe960b249",
+      "size": 1369856,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-73.ucode"
+    },
+    {
+      "git_blob": "a6fa4ead91001abe92813a63a67b0ec0328688ba",
+      "sha256": "88d5978bb2a226af364bb3576b3528e7ff24a257513a7ee39fa21c8a5af13676",
+      "size": 1371548,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-74.ucode"
+    },
+    {
+      "git_blob": "6179f8c6146f622e5523b6f81c1238bde3725238",
+      "sha256": "5b3fba7570cff075b26131c606ac2848f4a7251abbcaf48df6cffbe43236e628",
+      "size": 1406592,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-hr-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-hr-b0-77.ucode"
+    },
+    {
+      "git_blob": "2d0d2808eca10c717e18be8e09809d3e4225df07",
+      "sha256": "be8c3465788b12b606c242f0cc2e5f26c713b13511deeb179c0015e03f56e202",
+      "size": 1053020,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-50.ucode"
+    },
+    {
+      "git_blob": "421daf4df16da2c1f40890204f9821b82aab3651",
+      "sha256": "3f94ab341a81485a77095d8c319a9ea07e7a9b70a1979e29d3c24587750e448c",
+      "size": 1226224,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-59.ucode"
+    },
+    {
+      "git_blob": "c7d0649e27aab646d8430d67b94c36259a568b38",
+      "sha256": "759eba74d73f3aeefc55fe52bf4f2ff4754dc5fe802def31f5f0b303fa778f0f",
+      "size": 1262328,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-66.ucode"
+    },
+    {
+      "git_blob": "905d1a14357970d2ed79fad6e276166dddac054d",
+      "sha256": "1f9666f4cfcef513d323162b95f5973b69087699c36a431e9e10c10c7ad0635c",
+      "size": 1285984,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-72.ucode"
+    },
+    {
+      "git_blob": "4e88eb24ba76af71fee79c10dd919d251db1980b",
+      "sha256": "f3f2047e98ee6fc2be449dddfef9d63f136ba21d2384aad8d1a8126972573d5a",
+      "size": 1290100,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-73.ucode"
+    },
+    {
+      "git_blob": "0b43083e7ab73dbf430996e46403f10750a43e06",
+      "sha256": "fec87e62e399e1d157dae2f397639aab57c4c39e09c72eda606b20e19037b5c3",
+      "size": 1290908,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-74.ucode"
+    },
+    {
+      "git_blob": "a1e86fdf046f0dcb03cd956840f0a12ce589d1f0",
+      "sha256": "bf9e8e899c4074ef7a3861d14be8086648f1c00a2bb197bc0ffd9d73d20d6f62",
+      "size": 1323312,
+      "source": "intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-Qu-c0-jf-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-Qu-c0-jf-b0-77.ucode"
+    },
+    {
+      "git_blob": "f5ea9c2163a0b1653a00d2f8bcc9cbcf50e36905",
+      "sha256": "f183aad973bc8e4cc80743a21f641880fa695ec2ca774de1519050bc136f1552",
+      "size": 1103952,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-50.ucode"
+    },
+    {
+      "git_blob": "dbbbe319e3e6db551458ea0f0c17a740f66e7e21",
+      "sha256": "d63d13b6091ad023bb12d89f325b00a45c7ebbe5ee55fd71815b746b14db182a",
+      "size": 1299660,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-59.ucode"
+    },
+    {
+      "git_blob": "2e7b56bb321cff37d4cd724ee8906b77b3b04a36",
+      "sha256": "4ece626f95073a49a6ebb38a671a0c58014f09df6ab6b7a80a7f08186c04509c",
+      "size": 1344216,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-66.ucode"
+    },
+    {
+      "git_blob": "1e594a16db7b9a3d5bbcfd0a87273b9148992356",
+      "sha256": "3238e87e9d87b8ad5a9f6c8640c9578f4121c3895413d3a104add5d5267a0c07",
+      "size": 1370356,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-72.ucode"
+    },
+    {
+      "git_blob": "16e42ff8889f6def8642a0c12df85ae01e85bb90",
+      "sha256": "c8ff480a80e91f9f5c9178c00e6667eb57e460263768fbe9e83de3ea1c90dc92",
+      "size": 1369976,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-73.ucode"
+    },
+    {
+      "git_blob": "898fed777d5997368b176eb66eecb2cfb4bb2289",
+      "sha256": "b6dcb1c941b1e8b780f8c15102894f65520fd8496a445154ade2a3c2c0848f8c",
+      "size": 1371668,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-74.ucode"
+    },
+    {
+      "git_blob": "cd12165e535919dcad192f33c09733613d582d3f",
+      "sha256": "ab6a01087fd0923462ac86028923f3c8ec2bc97af9004ab0da06eb7b024de30f",
+      "size": 1406720,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-hr-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-hr-b0-77.ucode"
+    },
+    {
+      "git_blob": "990c7e989335eb8fd17b41df5a2803440da50875",
+      "sha256": "3da33294a3f265ee906462d2e2d0d6303626906bee03632e46ed8cf07261a4e3",
+      "size": 1053004,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-50.ucode"
+    },
+    {
+      "git_blob": "56542dba2bdd792d8853ee4402cb399b5c60ea24",
+      "sha256": "84d16806b8a1b63259115737417a89dd761397dd1eed5e605b619b85bb73ca6a",
+      "size": 1226064,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-59.ucode"
+    },
+    {
+      "git_blob": "720fd13157015cc7c60353bad2372cc2d4f43dbd",
+      "sha256": "51e8008972ca98456e3751b8288a38cbb5d9c2d2df9536ceb6b342a419e55718",
+      "size": 1262244,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-66.ucode"
+    },
+    {
+      "git_blob": "e56c7af08aa4de8100713f9b471bf9530d31dfc3",
+      "sha256": "44790847fcd1c681fb6b8890a96eab694bc97db6650f44437f21948fe7e838f6",
+      "size": 1286088,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-72.ucode"
+    },
+    {
+      "git_blob": "072064dde7b1155477d5ae42b9b788e3426a7997",
+      "sha256": "e95b82cb03c5c031deb50071c6233f3fd9de11b028c1c0102c7242b1d2e35ef2",
+      "size": 1290220,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-73.ucode"
+    },
+    {
+      "git_blob": "3430fbf4467ec3363d6b859e17a150f111014d67",
+      "sha256": "9c59a92b714b91a9c50628c22ddd9c6040d614ee97fa902211ef50fbe9ad7aba",
+      "size": 1290972,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-74.ucode"
+    },
+    {
+      "git_blob": "b5b055c99591bd3784effda799a622b46700b103",
+      "sha256": "8213aed16505b2a5945b9b04ce517bd24c51222cc205a16454f66530f24075b8",
+      "size": 1323320,
+      "source": "intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-QuZ-a0-jf-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-QuZ-a0-jf-b0-77.ucode"
+    },
+    {
+      "git_blob": "9f6d73d83252a4eba8cac32438385e771142a06e",
+      "sha256": "c6c8fb5b81172ebfa24d5e291c023479bdf56dd08f01fc0043bf6e438764b712",
+      "size": 2225948,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-100.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-100.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-100.ucode"
+    },
+    {
+      "git_blob": "8d5b8907b37ddc74bb2de588219563daa54ed3aa",
+      "sha256": "f40a5186977d84cb6ef2834e4ab87fd915ea77899b8347c56f1f95e776359a41",
+      "size": 2225612,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-101.ucode"
+    },
+    {
+      "git_blob": "db76641fbcf9b204f172af80be12fa7f0f885da2",
+      "sha256": "820f9fb78e43b424befdc2d9253e2b56f9d2bb250d8a42217d9bb1d8b6d7957d",
+      "size": 1926176,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-92.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-92.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-92.ucode"
+    },
+    {
+      "git_blob": "6a959a5733438ebb5e0ce8b38f40a2504e030a6b",
+      "sha256": "5f817e8b9c2b0f3e79b15a171edaec8531707e454bf935c6bce29cc890de9b30",
+      "size": 1931432,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-93.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-93.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-93.ucode"
+    },
+    {
+      "git_blob": "ccb876d41af76fd0d4826e8d7ca452d617806759",
+      "sha256": "04431643df27c5362367ac155e8bd421d1a73ebd5de729157f3145e75d8c1b6c",
+      "size": 1933520,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-94.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-94.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-94.ucode"
+    },
+    {
+      "git_blob": "11e9e8fd4a41d8cfba8c4d82a8b263cbe29fc9c7",
+      "sha256": "02b95b667fbe4d0f2b5e7f96ff29990fec9772a47f048ab3fba9ecbc2de099ad",
+      "size": 1935524,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-96.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-96.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-96.ucode"
+    },
+    {
+      "git_blob": "9096a2331c89486b839e305ceeb4ae43474f8da0",
+      "sha256": "0f6f65cc0bcc9a2fec3ded8015ec855db7ccd7c31c9744e20b220628574cf70a",
+      "size": 1926136,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-97.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-97.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-97.ucode"
+    },
+    {
+      "git_blob": "26b7523a9feda311db6f6c3034a693f31aa4e1e4",
+      "sha256": "505ea859020839537bcf2831878d47895a9a468424bd0bd82df2e82be3b79034",
+      "size": 1925092,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-98.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-98.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-98.ucode"
+    },
+    {
+      "git_blob": "4b93bf8b96ae548a0646767e81954b8deabe83c2",
+      "sha256": "112cf2cdca66aeba41ba2b754babba76eb08c40416ac69dadf8961db010ce93a",
+      "size": 2239444,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-c101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c101.ucode"
+    },
+    {
+      "git_blob": "f5a96c17661989480f32e154086aaba7c980024e",
+      "sha256": "701151bf7b6707c0ecceb05b2d5fbaa01d16081292292f26153ed1eb36d0fc29",
+      "size": 2244684,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c102.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c102.ucode"
+    },
+    {
+      "git_blob": "48c86d4abfe33154aabd2b30d9c51ef0ddb937d5",
+      "sha256": "0daf0829d68efa01aa8525987412f7c8ff6e4fcbb2eb89c3ff26393c7db112bd",
+      "size": 2243748,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c103.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c103.ucode"
+    },
+    {
+      "git_blob": "b3e44b037d7bd80e93861e5e43fc2089309fa475",
+      "sha256": "a0f8fb464c7203a18b28d966f0565835c8744f21ed9e53fc9a1ae9a33ed52cd3",
+      "size": 2150968,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c106.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0-c106.ucode"
+    },
+    {
+      "git_blob": "d39ba711c48bf31254369dca9f6f6ebdaa8acd26",
+      "sha256": "2da92f02418fbde8d8210eb582d9697faa222f8ee2da229e29b8a108ea5c4c5c",
+      "size": 295356,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-fm-c0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-fm-c0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-fm-c0.pnvm"
+    },
+    {
+      "git_blob": "e7b3b4879f49b3ea8d9763165f547b9312b22f17",
+      "sha256": "d91d11f228aaf12bb2f3a4c7056d1d11669e2a6b1fb56bd74c9e84f16842524a",
+      "size": 1837536,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-100.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-100.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-100.ucode"
+    },
+    {
+      "git_blob": "69ce6b1b6f4506c7af81ce5520f52079eb5de18e",
+      "sha256": "d7f6592b0c0e425fe6eec9658e4d79fd77b9199b3b0456a4ec8f81c8ad68457b",
+      "size": 1757392,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-92.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-92.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-92.ucode"
+    },
+    {
+      "git_blob": "7fe64fec8c331bb5b686b51d4b931b51da6b1ce7",
+      "sha256": "4999d84d2be3e629199685bdd20b956f2b3990eb01da5ec06856da542e99573f",
+      "size": 1760372,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-94.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-94.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-94.ucode"
+    },
+    {
+      "git_blob": "d873cb6bd01777388e5e46d25d29e72f66d435ed",
+      "sha256": "e2335707eff6570f2571234df18727ea46dd5be7bf414a98b9356748e2c134ef",
+      "size": 1762852,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-96.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-96.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-96.ucode"
+    },
+    {
+      "git_blob": "434d19cf3256f63d36e4cf069302f718c9003754",
+      "sha256": "66a8f1848d6f426fdca1b35225c5bc9ce845ffd511b523774e80beda0d70a6d1",
+      "size": 1773268,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-97.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-97.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-97.ucode"
+    },
+    {
+      "git_blob": "a3741a574dcafcbda9f9b0183a3b574be2c14390",
+      "sha256": "3d753d893e0cf09460680fef030e84af1ec0309f47d9942661fd7d7a6ad5c65c",
+      "size": 1772684,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0-98.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0-98.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0-98.ucode"
+    },
+    {
+      "git_blob": "edebfbf2b3432b6ce71c9bfc39e5519fdfff57a9",
+      "sha256": "f9d1db89359af5426d4b912eddbccc29260c98991ea2b5be07154519198f3572",
+      "size": 55208,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-gf-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-gf-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-gf-a0.pnvm"
+    },
+    {
+      "git_blob": "7442d98547af7a15e9f2d89a8fd2803f951efffe",
+      "sha256": "627c1bdcd6ea024b4dd664a84d4c549b01d9237ab1a34366bea192ed3578a2e4",
+      "size": 1584748,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-hr-b0-100.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-hr-b0-100.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-hr-b0-100.ucode"
+    },
+    {
+      "git_blob": "5edfb68f808e5f83300771eec8b2f98d83c5e1a0",
+      "sha256": "e221347246db6e0d68e46fe0b4bfd4e088766c5ced39a6b4105624f3a10af8bc",
+      "size": 1563992,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-hr-b0-93.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-hr-b0-93.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-hr-b0-93.ucode"
+    },
+    {
+      "git_blob": "0e089bade697a20017e2350e280496a47910505f",
+      "sha256": "e17601f981685d04e7a33096fdd4fd6c259539e4f4ca82a0541ed56e012fe0b0",
+      "size": 1570700,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-hr-b0-96.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-hr-b0-96.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-hr-b0-96.ucode"
+    },
+    {
+      "git_blob": "7b9283dcd45f013c56df7d0b3faaa1273c452193",
+      "sha256": "4e31a7c8d134d1da7f2f6367cac3607fc8651bbafc1bc162e9bd9a9c6bb1cbc2",
+      "size": 1569048,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-hr-b0-98.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-hr-b0-98.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-hr-b0-98.ucode"
+    },
+    {
+      "git_blob": "0fcc45233afae498f6df24355f9be93356628e70",
+      "sha256": "9c6bfcd07d6e15711eb8e5e7aba83018999c2d65079fe38997641001c0a46eeb",
+      "size": 1788,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-hr-b0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-hr-b0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-hr-b0.pnvm"
+    },
+    {
+      "git_blob": "5d50c46ee626fc4a8c5a448d8d7533485713b8a3",
+      "sha256": "b53f9c7fdcdbac9c27af8908c536829206ec1c830b9329963f46a96b418b0d9d",
+      "size": 2116884,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c102.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-wh-b0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c102.ucode"
+    },
+    {
+      "git_blob": "bf3f22cfb71c67dc1f7e5a983cb99d7572ae26ee",
+      "sha256": "75724393894957e44aa8e873eb699396d1e7bbe4a51b5f1f9ab07cb024a75ac9",
+      "size": 2112100,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c103.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-wh-b0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c103.ucode"
+    },
+    {
+      "git_blob": "076ef533a344cebda60e2b3c76793a19cd948025",
+      "sha256": "ecdc58ba83c6ae84f0bd61f87b6aa65844a579696ae091822c35fac0dd80102e",
+      "size": 2022520,
+      "source": "intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c106.ucode",
+      "target": "usr/lib/firmware/iwlwifi-bz-b0-wh-b0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-bz-b0-wh-b0-c106.ucode"
+    },
+    {
+      "git_blob": "1aa110c85c7e0ab96f0b1855b987a5e30fc8c1de",
+      "sha256": "c0e3e205554aff5890715424dabca8939f572c473bd0fc13e136dad072100177",
+      "size": 1101228,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-50.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-50.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-50.ucode"
+    },
+    {
+      "git_blob": "ddf1e6bda2ed0d72f1cff30f718cfe3351dd80a8",
+      "sha256": "e18cbc975bdde4f5bc14796f23ca19e712f05b4c365c4be0a19f1a2b3b768af8",
+      "size": 1261280,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-59.ucode"
+    },
+    {
+      "git_blob": "974f0068d3666d65cbf47e4cc905de47ab69809c",
+      "sha256": "f9f5096305a38605e7aafffa6ac1e5469026f747a515b6d4ce63a3212817c347",
+      "size": 1307180,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-66.ucode"
+    },
+    {
+      "git_blob": "05285d845d8afd5e7890766d248b2c6c4e6aafd6",
+      "sha256": "dab42e36314fa8c2b4c9515668ffa416a4ce038cc76958b4c023aaf7ffdfc04e",
+      "size": 1329780,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-72.ucode"
+    },
+    {
+      "git_blob": "9f7df7693322ed15bf41fd297e73e9df7e00ec84",
+      "sha256": "d65c673128b2ae51f3ae021b4dd9567e3ec675152cd35853bd6fe5e57bd4bbd8",
+      "size": 1333296,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-73.ucode"
+    },
+    {
+      "git_blob": "4a080febb52d5cc5259b96fe8e62fd913e436424",
+      "sha256": "4b423eab5ae92e062eaa1d99ce665ebd4030f453cd85ddd640636c9984dd0143",
+      "size": 1334780,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-74.ucode"
+    },
+    {
+      "git_blob": "b99834677ce73e7043e888c68867610eff3616f6",
+      "sha256": "2e224e583d4225e9cd27e0f17bdacacf97e030943415d8b58ccceb5da1c5ed72",
+      "size": 1368100,
+      "source": "intel/iwlwifi/iwlwifi-cc-a0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-cc-a0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-cc-a0-77.ucode"
+    },
+    {
+      "git_blob": "28dc48020d0c78d19028cec8457103ed80c81d05",
+      "sha256": "f8cc54927ae551025a7550cf2117bdda30dc1f392ee925e5c60d80a9cdb0179b",
+      "size": 2210748,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-100.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-100.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-100.ucode"
+    },
+    {
+      "git_blob": "87580fe98574d2975b7c2de37f4bcaa2893cb6aa",
+      "sha256": "6769d9ce002bb404fbd0c39e28f3c68af4ec1583343ac66a98ca957710c3473b",
+      "size": 2209924,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-101.ucode"
+    },
+    {
+      "git_blob": "8679f708537932d29f5f53d3af1f01d317a42753",
+      "sha256": "1129761b5597077655996ec8590f100766e9d61ec9c331474b4febc6967f0e70",
+      "size": 1797996,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-83.ucode"
+    },
+    {
+      "git_blob": "27d4a8b93f2678b33d84319fcd9fab1efff86792",
+      "sha256": "6b1e8d640327ca05b33830499a8ac356d12973d3f3ae550e2d86bdf80a53d736",
+      "size": 1840116,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-86.ucode"
+    },
+    {
+      "git_blob": "b501bd9a4f8820625fc7506d1bc99bf54eddf864",
+      "sha256": "8f3f8c0de7bd86f2bb351cc08cd92598479b6a008b1457475d8fc9d7bbf317e1",
+      "size": 1890864,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-90.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-90.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-90.ucode"
+    },
+    {
+      "git_blob": "9a76202467356fa8b397a509149d295dec9eb08a",
+      "sha256": "c7092f1f78676f9e9c2c4d12716401db2116b009c5d7c464e8387c5b1c645d6f",
+      "size": 1913128,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-92.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-92.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-92.ucode"
+    },
+    {
+      "git_blob": "2dfdc8bb09c55e9dc13657c4d8f57de5e286555d",
+      "sha256": "ed0ad6bd1f306cc7649f02faa5ddef30be97879d115203e2bea06591cfcb7da0",
+      "size": 1919788,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-94.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-94.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-94.ucode"
+    },
+    {
+      "git_blob": "62e8ae30cc1ba2c16b0a803a755cac496af7a9ed",
+      "sha256": "3f674417ba092a8a85e96ae89ef0e4ac839b56f2dcd07ffc635fe6c030940c63",
+      "size": 1919592,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-96.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-96.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-96.ucode"
+    },
+    {
+      "git_blob": "c365d837177a22d9b20f72d298f01641d1dcedb3",
+      "sha256": "e4da856e42d21d5e44af15fcc1ab62177994034558fb586da6fc88f9b567548b",
+      "size": 1911436,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-97.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-97.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-97.ucode"
+    },
+    {
+      "git_blob": "d9607acf7df3c3ac8f9aba2f7f743426b3146f0d",
+      "sha256": "7025ff89573025e6c817bfb51d7ec65893e441b400aa991dc4f104ef2ce7c2a8",
+      "size": 1910432,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-98.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-98.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-98.ucode"
+    },
+    {
+      "git_blob": "ce2788f2f2f65cdfb000c77315c753359a3904fc",
+      "sha256": "e6bfbcac9843ef21045af726cc6709538f09be5da9fa1c0b90297ca95f3f1a4f",
+      "size": 2222248,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-c101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c101.ucode"
+    },
+    {
+      "git_blob": "d11a5b3e574deaad459e241b82ebbab026317985",
+      "sha256": "ce0b287854f721d17e101a2dd8485b3ca44895d8b106fdb37c715852c9eb4d45",
+      "size": 2223328,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c102.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c102.ucode"
+    },
+    {
+      "git_blob": "d1fbc3b5d837c2437535bdd9787c0853ad9e99ae",
+      "sha256": "cf03c56229f5a23e5b1ec5f84e057aaf0faa06cf2d885c3625381c6f9ddf8ac4",
+      "size": 2226528,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c103.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c103.ucode"
+    },
+    {
+      "git_blob": "c0aec04172476974d999805636a2eff68ebe9bda",
+      "sha256": "39a016632105fb327ba45f084a9d7f3775f3d238c20830ec9825d1773affde4d",
+      "size": 2134660,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c106.ucode",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0-c106.ucode"
+    },
+    {
+      "git_blob": "c4830003ca6bbe36598af11ba1c89bf47977370e",
+      "sha256": "f481e3b0403ca43a0a444b01c04fa4d1582868afcb026b1e697905f0039ccfa3",
+      "size": 295036,
+      "source": "intel/iwlwifi/iwlwifi-gl-c0-fm-c0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-gl-c0-fm-c0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-gl-c0-fm-c0.pnvm"
+    },
+    {
+      "git_blob": "67bfeec29272e1253a0ce69a07326794e15021bd",
+      "sha256": "9386a8294457f527c6e0fa1eac440c50cbee801707fdb480a10889770c0d297b",
+      "size": 1753308,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf-a0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf-a0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf-a0-83.ucode"
+    },
+    {
+      "git_blob": "e3b4b23a5dc8ad120d25db683037d3934c9d1080",
+      "sha256": "78c4e48743bf4dba6f02bf257290fac6eafa634ea162ec00e02275d24c672d7a",
+      "size": 1695788,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf-a0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf-a0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf-a0-86.ucode"
+    },
+    {
+      "git_blob": "52ab376bc8daf2988f0c6bfe19bdce3c1116890e",
+      "sha256": "fd69e6042821a42a62da44112346066a5c88556193b15a188b397dabe711f768",
+      "size": 1752756,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf-a0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf-a0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf-a0-89.ucode"
+    },
+    {
+      "git_blob": "dacdfdbed40ed8748a338bd94064f5bafecef990",
+      "sha256": "6b1526daa6552dcab485675f5ae1214ad6ab7c17414dae3c75ed1c36d53e8631",
+      "size": 55096,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf-a0.pnvm"
+    },
+    {
+      "git_blob": "bcc5b86a082292fb5bbf6056371571002b2d9a54",
+      "sha256": "6910e5f34c0922fd0460aa363d73d6295d6c866f3447b96e8eaad988c613c697",
+      "size": 1721448,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf4-a0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-83.ucode"
+    },
+    {
+      "git_blob": "5e036a38a6eea917f8550b474d28692a971dad6a",
+      "sha256": "cdd0d9db31343fdc772a099bd4f983ccf6cf03a72ae5bedc33fcfba63cea5c70",
+      "size": 1670940,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf4-a0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-86.ucode"
+    },
+    {
+      "git_blob": "236c874bd9eacb7e4132e8aaa134a1284ee05028",
+      "sha256": "bd473637b35a61b56f71e5c921461ebad583f5236a79912cc3dcf96a83011839",
+      "size": 1604796,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf4-a0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf4-a0-89.ucode"
+    },
+    {
+      "git_blob": "3395749c666f3b2b4d9c23722c493b346d04c7df",
+      "sha256": "8b44ff44708d007f273ced48cb95b89ae8deb62fd4a73e35c7a75732dd712ab8",
+      "size": 27820,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-gf4-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-gf4-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-gf4-a0.pnvm"
+    },
+    {
+      "git_blob": "bac1a2cdfb3bd6cc5a735f7339f41c3071274f17",
+      "sha256": "03b67d28b4916634c544e057abdc46b15b636a85064df993ca431fd92fe4a835",
+      "size": 1572104,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-hr-b0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-hr-b0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-hr-b0-83.ucode"
+    },
+    {
+      "git_blob": "5c5c1f69263c9d678c9240aafe3afd8104476ea9",
+      "sha256": "3272764d710ed9d5c550c093bf84c99c9ea232e10a5056311d95aa34905670c3",
+      "size": 1520636,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-hr-b0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-hr-b0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-hr-b0-86.ucode"
+    },
+    {
+      "git_blob": "0938b61461d85d7cf0feaf651a4ec9d8d871bacb",
+      "sha256": "97e31ee83d682ff9dadac78033e5e1f2df3e2950919261c6b6761d8d37d1c632",
+      "size": 1539832,
+      "source": "intel/iwlwifi/iwlwifi-ma-b0-hr-b0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ma-b0-hr-b0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ma-b0-hr-b0-89.ucode"
+    },
+    {
+      "git_blob": "b6d84080c028ae3d02487958df3017d28503038c",
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2",
+      "size": 2305636,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c101.ucode"
+    },
+    {
+      "git_blob": "5f384a6ab322b6ef68f9fae69a15eea0621d3c01",
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec",
+      "size": 2311660,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c102.ucode"
+    },
+    {
+      "git_blob": "6b68f7ba23996dcb3c66ab55085e38f1fa046688",
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c",
+      "size": 2326720,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c103.ucode"
+    },
+    {
+      "git_blob": "5dec4b70fb7178282b1688822346a4e837827b01",
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd",
+      "size": 2226844,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c106.ucode"
+    },
+    {
+      "git_blob": "748d3c1c41939b78e0415cb6827c2bfe9bd34e3b",
+      "sha256": "bd31a861687b0dde6981f1a0337a45c2f552791339511653a768f99e89932807",
+      "size": 1811212,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-gf-a0-100.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-gf-a0-100.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-gf-a0-100.ucode"
+    },
+    {
+      "git_blob": "5ab1dc426990fb282bb70e0cb9e4171cccdb23e8",
+      "sha256": "2286de3c518e1a930503e4ccfd51add6b4aa3d8ec6db5194a0aac0850712b4e8",
+      "size": 2096172,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-wh-b0-101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-wh-b0-101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-wh-b0-101.ucode"
+    },
+    {
+      "git_blob": "4ce3c5459df765d4f8c4d0e3fd16623fba4cf790",
+      "sha256": "5de8fbb3d61e020414b412086a8bf30ac7666e0811a8b4564ceff7340c535e29",
+      "size": 2209076,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c101.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-wh-b0-c101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c101.ucode"
+    },
+    {
+      "git_blob": "edabed51e44d74d39d58e016215312877f9acc59",
+      "sha256": "59d461bbc692ae2fd0ff3e96e00e44c32582b4ec0a83930c0996cef02f5cb3b5",
+      "size": 2214468,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c102.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-wh-b0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c102.ucode"
+    },
+    {
+      "git_blob": "c7c26992b844e47b148c4f8f650ccb6c85c2c87d",
+      "sha256": "08e748dec1e76a87731d844326c19c8f690add41feff0b691088761b13290a04",
+      "size": 2226060,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c103.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-wh-b0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c103.ucode"
+    },
+    {
+      "git_blob": "40d5b701586049a107e2dba2c8975f116e14f087",
+      "sha256": "253876486e3b45267c9b67b510b90b2a6dc67e7d9b51ef4b367bf4813db693d3",
+      "size": 2128788,
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c106.ucode",
+      "target": "usr/lib/firmware/iwlwifi-sc-a0-wh-b0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-wh-b0-c106.ucode"
+    },
+    {
+      "git_blob": "0e49219d0d719041de7fe91e30692de3688200f4",
+      "sha256": "69fd0b6f3165da435cb67bdd7fce504978780b69506a8c48a597d5c87bc99e73",
+      "size": 1560532,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-72.ucode"
+    },
+    {
+      "git_blob": "196a3bda21b7a32b6fada8c91563dbff493ced28",
+      "sha256": "bedc8c9e8155383281bfe82619416829ede048ba948ea3e763c6bcb244a10091",
+      "size": 1563692,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-73.ucode"
+    },
+    {
+      "git_blob": "73f819fe943cb661d28deaba27090d00b2e898ee",
+      "sha256": "2f97318d25a78b9e2053af733a65d00bde7af71c9263adc8c1305b14d49fc120",
+      "size": 1577460,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-74.ucode"
+    },
+    {
+      "git_blob": "f52e03240e99f2ef48ecce47be098165559e3315",
+      "sha256": "87590ea9535a8939fddb296bc7622f3a900f28f47b45cb4e435a2a1d5f496ccd",
+      "size": 1641260,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-77.ucode"
+    },
+    {
+      "git_blob": "0085929469a1dfaaee5b9dc1f3469157b8e7bed5",
+      "sha256": "a81a1c766dda18d1ec2886a87c195d62e26cce6f4be1cbbfa8ab5b009985bf42",
+      "size": 1667236,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-78.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-78.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-78.ucode"
+    },
+    {
+      "git_blob": "a9576f4b23e60f9dc47f9097bc4764de8ab35dda",
+      "sha256": "3c902b36204e1e1c0a5b194516fd8ad03820debd7ae09e60e4649f6267429ec8",
+      "size": 1672988,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-79.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-79.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-79.ucode"
+    },
+    {
+      "git_blob": "6e83f53b6f6aea1bb6aea546d0543b2fa61c8a21",
+      "sha256": "f99c2dbef4807b040965bfe15c8a725b71220ade4ed359a8517261919636080c",
+      "size": 1682852,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-81.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-81.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-81.ucode"
+    },
+    {
+      "git_blob": "dbb15f48771635d53f39963168a0dbe372adb89e",
+      "sha256": "5e5eaa6d917ccc420bd695db32d94148b9aeef7d9c95c64550ede82ba946efed",
+      "size": 1739988,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-83.ucode"
+    },
+    {
+      "git_blob": "53b97d84f8ea995c581b6cf5b4b90dfbc8cda0a8",
+      "sha256": "c9dc47de135c10395961ea8b71559a6bf4e956ca84703b35f9da86e74ebb983a",
+      "size": 1737644,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-84.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-84.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-84.ucode"
+    },
+    {
+      "git_blob": "27b090e0cb82e7360317ac9313b252ef13f5cf5d",
+      "sha256": "cea0aaeb034aadb36cde1d7b6f2a0f38cb78209cbe81a40d973318f820ebdd0c",
+      "size": 1679788,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-86.ucode"
+    },
+    {
+      "git_blob": "bc856bcf933e1a67b4dc0773a31ef6dd0425efb7",
+      "sha256": "7b53254bb28115f91b6eaa33b1f9a3526e32966105eaac587e259dd17790f384",
+      "size": 1736792,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0-89.ucode"
+    },
+    {
+      "git_blob": "2764fc82f245fdfc0f6f93b4828c51b205f01960",
+      "sha256": "2aee7592ddbd6c88f1aa51be4ada188fce44765405e52d7f3056b46e62cf3f91",
+      "size": 55176,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf-a0.pnvm"
+    },
+    {
+      "git_blob": "9763bc204022f60f3304df0740cdeed1a6f828f8",
+      "sha256": "91cf5bcc5245159ec05d21f162267f92792034629a605162457e303cd54450a0",
+      "size": 1580900,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-72.ucode"
+    },
+    {
+      "git_blob": "c1595fd0baa8c2c9cbba9e3315f38462c16c6fd9",
+      "sha256": "ddb86249436584fcea0cb18de501fb1c2ef58c9d95c986aae298f6da8342e7c1",
+      "size": 1587800,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-73.ucode"
+    },
+    {
+      "git_blob": "bbdb93b8efb2bf8de5df30345d44171cbc5f8f37",
+      "sha256": "70e99cf5712289c3575b775093a4470b1594818fd7aaeb7030928c8b0bca9239",
+      "size": 1602068,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-74.ucode"
+    },
+    {
+      "git_blob": "36cc81f4f066af6c6c772a550f9d933276b1e6c3",
+      "sha256": "d945bce539ee78033a85c288da9b988b2651a1623c5f6081b7db510d3967df76",
+      "size": 1669164,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-77.ucode"
+    },
+    {
+      "git_blob": "a3de68b9d909267cfc27f0f11d5e00a2944606e3",
+      "sha256": "10817b32029c9224648dc828635ad647aa7074739b25339a4e612aaf2c71766c",
+      "size": 1711100,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-78.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-78.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-78.ucode"
+    },
+    {
+      "git_blob": "9ffdbba62a721ab0fa3256638634f7623220421f",
+      "sha256": "2ea444a52e693a7ce6c632f5bf3c0c123e076e4bab5a86ae810053e012762485",
+      "size": 1712776,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-79.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-79.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-79.ucode"
+    },
+    {
+      "git_blob": "dbd7acfe7c6a19312471eeb2f93b03a79cf2dbfd",
+      "sha256": "e02b92af99482d6f4f21a4ccb61455695aba933af2d2ceef77e4da7920042bce",
+      "size": 1691804,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-81.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-81.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-81.ucode"
+    },
+    {
+      "git_blob": "1bc07d83ac0757193e620eb0c9c2ddc002591734",
+      "sha256": "5bce3d263ed4a6b8ff7a80544d43ca28b3b9e513a7d29c8f736fd45f54009e18",
+      "size": 1703968,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-83.ucode"
+    },
+    {
+      "git_blob": "799f74a37ac9b44c2851be2f36b9101228f9be6f",
+      "sha256": "5cdfb56034e5b09697d8770c96827a516694ac4515aa485ff110527b85b008d5",
+      "size": 1709900,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-84.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-84.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-84.ucode"
+    },
+    {
+      "git_blob": "0d51f8055b87cbe10778f783b544ff0fc9662bd3",
+      "sha256": "73b23eb7c117f8b1ed3f0845e9591925827cdd58fe50034f6e89f239392319e3",
+      "size": 1653836,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-86.ucode"
+    },
+    {
+      "git_blob": "3254484e6ecc9f843d0d7c746f08f4590976cdb9",
+      "sha256": "0771e0150047901990dc641f17b269c5e1e9240c3c1ef37fc95c0d349cfd3d10",
+      "size": 1591764,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0-89.ucode"
+    },
+    {
+      "git_blob": "30b03b7c7af3d3bff93edf49f8561d0efddd4ff5",
+      "sha256": "297ad93e6037dee40902934d53a23ed24517fd82c5b162fa71445a8c26bb3095",
+      "size": 27860,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-gf4-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-gf4-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-gf4-a0.pnvm"
+    },
+    {
+      "git_blob": "14761300257253d4336c8af5129a053f9ae5337b",
+      "sha256": "9cbe5de12153790e4c3ad2fc54ceaecec6821b229d75ebbca9f37ecf31d5a9db",
+      "size": 1470384,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-72.ucode"
+    },
+    {
+      "git_blob": "2da5b4cdcae999a81678aaf6c46ef6912f5d5ad6",
+      "sha256": "5275e0d93da7ab4b44e20fd59e4a5dd5806fbc0db14b3d7f673076f3f21d744a",
+      "size": 1465208,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-73.ucode"
+    },
+    {
+      "git_blob": "727b09bafd6f1f2b2b5f130c67b909bb723c98ac",
+      "sha256": "cc4743f9c73ffa8251ab8c75e5831d18018524a0cc2ae6873fabdfd501186a39",
+      "size": 1475876,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-74.ucode"
+    },
+    {
+      "git_blob": "57b7ad04e05c1aa92d7143093bb8b78b32699546",
+      "sha256": "bed4958236366c3c451b3ec994a56b2ad83c08d70e0a1eae42fb00f2eaabbcc8",
+      "size": 1500532,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-77.ucode"
+    },
+    {
+      "git_blob": "b05ff78e3b40ce52fc81c29f92fd396f5f0bf1c3",
+      "sha256": "fedbf6e4312fadfca9bab6818d688fdc2cdad7a98abdd34bda80cfbbc26b0671",
+      "size": 1517148,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-79.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-79.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-79.ucode"
+    },
+    {
+      "git_blob": "fc8558c6cc907dec0b2910af437d5f4388ffdb62",
+      "sha256": "7e011f6c2938331df5943f9ca6136bc87efbf329abc63fe2a4c6c952693bb8c2",
+      "size": 1539288,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-81.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-81.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-81.ucode"
+    },
+    {
+      "git_blob": "aafd0ad5ca12f8a3bf678e181565de364bc8d431",
+      "sha256": "97ef27a1e5a18236617f845f333222b5b1e034c654144dfcdda2f72886847fb6",
+      "size": 1552480,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-83.ucode"
+    },
+    {
+      "git_blob": "b0d2f63233826568a6cdf30af8fcd3b2790ab731",
+      "sha256": "20ce23a3c723efddbd909a239b99f9c9451c1f4fbcbdb1568eca9057853aa110",
+      "size": 1549088,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-84.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-84.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-84.ucode"
+    },
+    {
+      "git_blob": "5c012d8693297714f255be82471845e3cf1b4ae4",
+      "sha256": "ec99feda345472dd15e197eef289e3fa7caefdb156d861f3b5327b794b9ef7a8",
+      "size": 1507388,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-86.ucode"
+    },
+    {
+      "git_blob": "04924375fe8bfcf058461a624292e5e9d4d446b2",
+      "sha256": "0dce59ecc45a64cea18887d2bef2e2405935ae625e1ca600445b661e4d4ba2a8",
+      "size": 1527000,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-hr-b0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-hr-b0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-hr-b0-89.ucode"
+    },
+    {
+      "git_blob": "790a4694be2d2f2ff71f93b7161582f114b40ab4",
+      "sha256": "bc3a70588ae1563411556e43d23a65ea16f26f5a7fd551169c6c8a2eebf0f832",
+      "size": 1406312,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-jf-b0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-jf-b0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-jf-b0-72.ucode"
+    },
+    {
+      "git_blob": "4704c56f84562314980e916ab0ff90596601a3a3",
+      "sha256": "77d51a17aa469935c5b50b63a924e51f4b76b822b73b9475e99e54e0d60cc6b1",
+      "size": 1409336,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-jf-b0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-jf-b0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-jf-b0-73.ucode"
+    },
+    {
+      "git_blob": "ad4eaada54ac9b5e283f684c798b6dafcc094918",
+      "sha256": "3f493824fff4a27d86b12652357c2c3720a3b79b512bb891cd6f9d2cd040c5f4",
+      "size": 1417940,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-jf-b0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-jf-b0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-jf-b0-74.ucode"
+    },
+    {
+      "git_blob": "3649a1c89238e8722b982e137639a0b7e4825070",
+      "sha256": "9dccba0a8ba98483cb8385398d013b693b5b37cbff9402763ba215cc4921386c",
+      "size": 1446036,
+      "source": "intel/iwlwifi/iwlwifi-so-a0-jf-b0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-so-a0-jf-b0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-so-a0-jf-b0-77.ucode"
+    },
+    {
+      "git_blob": "955fb2c7d2c8b75d61bdd13221576a84b4519269",
+      "sha256": "7620861bcd60e5e89a2f0571b98e67f9451c52ce6c912b46c2f141b0005edd6c",
+      "size": 1413868,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-59.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-59.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-59.ucode"
+    },
+    {
+      "git_blob": "df1320eb9f9b69c5e1fc1ac2c99828f8b62137a1",
+      "sha256": "cc3e18861bbba5f9683f4b923b5aa6b2e2b54ca53915168acdd9059f1ca1ab71",
+      "size": 1481960,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-66.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-66.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-66.ucode"
+    },
+    {
+      "git_blob": "627daf4e89b4b5dd5d757ff2284358a0e241f757",
+      "sha256": "aab2f7dfddb0db3ecd096910e552ba53f07200179382c2725e29b6b00409cd4f",
+      "size": 1499284,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-72.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-72.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-72.ucode"
+    },
+    {
+      "git_blob": "1a6592408f1d59f1ca61a653cfff3e5506725a1e",
+      "sha256": "48258caf6befdca40a9136d8dbbe1a4325cbbdd0c36724f735d9c5c0b9596229",
+      "size": 1502900,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-73.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-73.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-73.ucode"
+    },
+    {
+      "git_blob": "1014ffe58d3b8e918de504ed9a15c75c0203725e",
+      "sha256": "6bbe249c7bdade5cf1772c0c3c4f79dab1396e5c9ee42b14c94faa7c2a202252",
+      "size": 1533444,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-74.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-74.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-74.ucode"
+    },
+    {
+      "git_blob": "bc3a062888802db0c129b766f9a1a32245c18ec9",
+      "sha256": "fd8977dbfacfe50b8a6601479aa9ffd21d01e274e4a9efd13935dd9d667fd45b",
+      "size": 1594276,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-77.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-77.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-77.ucode"
+    },
+    {
+      "git_blob": "a5d4436198da136669613cda048ac3551bbbf6cc",
+      "sha256": "36ca635c8f613ea4b3773780a8f0bd7745f9d708ee3e0526b95d86feba8a7a23",
+      "size": 1620004,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-78.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-78.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-78.ucode"
+    },
+    {
+      "git_blob": "8b44aa2e1068d023729c679e6277fcc45d279106",
+      "sha256": "df91dca738356a59f55ce25814a2d0e51264fb9a1146e38091a97b836acc8d6f",
+      "size": 1620704,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-79.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-79.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-79.ucode"
+    },
+    {
+      "git_blob": "66f3a2ebc9c81ae852f1447a60812dbc89e66093",
+      "sha256": "5a058dc2d2e7f4739b23fdeb1a891baf2a623a8c5574ce5ff80fea178ab3fbb8",
+      "size": 1628828,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-81.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-81.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-81.ucode"
+    },
+    {
+      "git_blob": "3fdd6d5a0d9a205638cf21ddb101e8cc2f72bf89",
+      "sha256": "c90da88a6dc8b159e14e378f66d52f52eb553dacdb90f053da612fc68668b7a6",
+      "size": 1683076,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-83.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-83.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-83.ucode"
+    },
+    {
+      "git_blob": "c871a441e24b5c20654d1b7822b099e846f2ecb3",
+      "sha256": "2471e392afd0b2cfbc498eff1cca3737ef189a259886db6c803300c896e3f9f7",
+      "size": 1676912,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-84.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-84.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-84.ucode"
+    },
+    {
+      "git_blob": "75719dd275c88e9e9210940de6275768af9a20fe",
+      "sha256": "f100ae9c94503b877311e2aaf036d8c1fa21196db5924c8aaaf7d050f4ac8f25",
+      "size": 1632464,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-86.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-86.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-86.ucode"
+    },
+    {
+      "git_blob": "dac6565d8726e6d301a3e9aa50f76b1bc0f0cf82",
+      "sha256": "9c63b42020d69598af746b7e265427f459ab773f1e31969d861e3e7b5fa30de4",
+      "size": 1678860,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0-89.ucode",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0-89.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0-89.ucode"
+    },
+    {
+      "git_blob": "5515368a6fd31714b8d40078fbedbb808cc11b6e",
+      "sha256": "1059f93a225e5c644d7c9c49302277b102f532b34672ef046c458befc1675fbb",
+      "size": 55020,
+      "source": "intel/iwlwifi/iwlwifi-ty-a0-gf-a0.pnvm",
+      "target": "usr/lib/firmware/iwlwifi-ty-a0-gf-a0.pnvm",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-ty-a0-gf-a0.pnvm"
+    }
+  ],
+  "kind": "firmware-only",
+  "licenses": [
+    {
+      "git_blob": "6bdd16d922b4e3e8f0f30265440f9ca972755aa9",
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5",
+      "size": 2046,
+      "source": "LICENSES/LICENCE.iwlwifi_firmware",
+      "target": "licenses/LICENCE.iwlwifi_firmware",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.iwlwifi_firmware"
+    },
+    {
+      "git_blob": "c4b92257d2c66a1995339c07b00a14983b9e4833",
+      "sha256": "23b74c4d8fa70f9ec99166804b6369f6f9f833ef105c529bb245a1184f7570c9",
+      "size": 1859,
+      "source": "LICENSES/LICENSE.intel",
+      "target": "licenses/LICENSE.intel",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.intel"
+    },
+    {
+      "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+      "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+      "size": 451055,
+      "source": "WHENCE",
+      "target": "licenses/WHENCE",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+    }
+  ],
+  "provenance": {
+    "license": "LICENCE.iwlwifi_firmware, LICENSE.intel",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+  },
+  "schema": 1,
+  "vendor": "intel",
+  "version": "linux-firmware-2ab4ce216003"
+}

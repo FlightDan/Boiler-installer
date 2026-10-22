@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Boiler DevicePackage v1","type":"object",
+  "required":["schema_version","kind","id","version","source","components","files"],
+  "properties":{
+    "schema_version":{"const":1},"kind":{"const":"DevicePackage"},
+    "id":{"$ref":"definitions.json#/$defs/id"},"version":{"$ref":"definitions.json#/$defs/version"},
+    "source":{"$ref":"definitions.json#/$defs/source"},"compatibility":{"$ref":"definitions.json#/$defs/compatibility"},
+    "minimum_engine_version":{"type":"string","pattern":"^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "components":{"type":"array","items":{"$ref":"ComponentManifest.schema.json"}},
+    "files":{"type":"array","items":{"$ref":"definitions.json#/$defs/inventoryFile"}}
+  }
+}

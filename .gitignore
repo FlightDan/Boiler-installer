@@ -1,0 +1,17 @@
+runtime/
+cache/
+work/
+output/
+dist/
+logs/
+**/bin/
+**/obj/
+**/__pycache__/
+*.pyc
+*.exe
+*.pdb
+*.user
+*.private
+*.key
+.release-private/
+components/refind/
