@@ -3,6 +3,7 @@
   "kind": "BoilerSourceWhitelist",
   "product": "Boiler Installer",
   "files": [
+    ".gitattributes",
     ".gitignore",
     "LICENSE",
     "README.md",
