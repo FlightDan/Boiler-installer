@@ -41,6 +41,9 @@ public partial class App : Application
         }
         if (e.Args.Length > 0 && e.Args[0] == "--cli")
         {
+            // QA windows may close before asynchronous evidence has been flushed.
+            // The CLI owns its lifetime and exits only after recording the result.
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var log = new System.Text.StringBuilder();
             var resultFile = Path.Combine(Backend.Root, "logs/native-cli-result.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(resultFile)!);
