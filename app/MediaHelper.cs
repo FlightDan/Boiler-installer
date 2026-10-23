@@ -84,7 +84,7 @@ public static class MediaWriterController
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe"))
         { UseShellExecute = !elevated, CreateNoWindow = elevated, WindowStyle = ProcessWindowStyle.Hidden };
         if (!elevated) start.Verb = "runas";
-        start.ArgumentList.Add(Path.Combine(Backend.Root, "app/bin/Debug/net10.0-windows/OxpInstaller.dll")); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(jobPath);
+        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(jobPath);
         using var process = Process.Start(start) ?? throw new IOException("Media helper did not start.");
         var progressPath = Path.Combine(directory, "status.jsonl"); long position = 0; string pending = "";
         try

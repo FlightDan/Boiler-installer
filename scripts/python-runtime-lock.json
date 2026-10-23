@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "python": "3.13.9",
+  "python": "3.13.17",
   "artifacts": [
     {
-      "name": "python-3.13.9-embed-amd64.zip",
-      "url": "https://www.python.org/ftp/python/3.13.9/python-3.13.9-embed-amd64.zip",
-      "sha256": "91d828c2da3a029b41699e918674a0cb379c02cf20dab9c501306885f837402a",
-      "size": 10926675,
+      "name": "python-3.13.17-embed-amd64.zip",
+      "url": "https://www.python.org/ftp/python/3.13.17/python-3.13.17-embed-amd64.zip",
+      "sha256": "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38",
+      "size": 11441267,
       "kind": "python"
     },
     {

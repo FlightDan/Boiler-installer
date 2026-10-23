@@ -82,7 +82,7 @@ public static class MediaWriterChecks
             var path = Path.Combine(folder, "media-job.json"); File.WriteAllText(path, JsonSerializer.Serialize(job));
             var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe"))
             { UseShellExecute = false, CreateNoWindow = true };
-            start.ArgumentList.Add(Path.Combine(Backend.Root, "app/bin/Debug/net10.0-windows/OxpInstaller.dll")); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(path);
+            start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(path);
             using var child = System.Diagnostics.Process.Start(start) ?? throw new IOException("Guard helper did not start.");
             await child.WaitForExitAsync();
             if (child.ExitCode == 0 || File.Exists(Path.Combine(folder, "media.vhd"))) throw new IOException("Unaccepted media job created a target: " + variant);

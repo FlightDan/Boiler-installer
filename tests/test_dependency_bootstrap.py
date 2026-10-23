@@ -76,6 +76,36 @@ class DependencyBootstrapTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bootstrap.prepare(work/'prepared', 'runtime', cache=work/'empty-cache', lock_path=lock, offline=True)
 
+    def test_sdk_archive_supplies_runtime_subset_and_overlapping_build(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            archive = work/'sdk.zip'
+            runtime = b'locked desktop runtime'
+            with zipfile.ZipFile(archive, 'w') as output:
+                output.writestr('shared/Microsoft.WindowsDesktop.App/10.0.13/PresentationCore.dll', runtime)
+                output.writestr('sdk/10.0.402/compiler.dll', b'build only')
+            entry = {'member': 'shared/Microsoft.WindowsDesktop.App/10.0.13/PresentationCore.dll',
+                     'target': 'runtime/dotnet/shared/Microsoft.WindowsDesktop.App/10.0.13/PresentationCore.dll',
+                     'group': 'dotnet-runtime', 'size': len(runtime), 'sha256': hashlib.sha256(runtime).hexdigest()}
+            lock = {'schema_version': 1, 'kind': 'BoilerDependencyLock', 'versions': {},
+                    'profiles': {'runtime': ['dotnet-runtime'], 'build': ['dotnet-sdk'],
+                                 'all': ['dotnet-runtime', 'dotnet-sdk']},
+                    'archives': [{'id': 'dotnet-sdk', 'group': 'dotnet-sdk', 'name': archive.name,
+                                  'url': 'https://example.invalid/sdk.zip', 'size': archive.stat().st_size,
+                                  'sha256': bootstrap.hash_file(archive), 'sha512': bootstrap.hash_file(archive, 'sha512'),
+                                  'target_prefix': 'runtime/dotnet/', 'members': [entry]}]}
+            path = work/'lock.json'; path.write_text(json.dumps(lock))
+            root = work/'prepared'
+            runtime_report = bootstrap.prepare(root, 'runtime', dotnet_sdk=archive, lock_path=path, offline=True)
+            self.assertEqual(runtime_report['created'], 1)
+            self.assertEqual((root/entry['target']).read_bytes(), runtime)
+            self.assertFalse((root/'runtime/dotnet/sdk').exists())
+            build = bootstrap.prepare(root, 'build', dotnet_sdk=archive, lock_path=path, offline=True)
+            self.assertEqual(build['created'], 1)
+            both = bootstrap.prepare(root, 'all', dotnet_sdk=archive, lock_path=path, check_only=True)
+            self.assertEqual(len(both['files']), 2)
+            self.assertEqual(len({item['target'] for item in both['files']}), 2)
+
     def test_real_lock_covers_all_required_runtime_and_no_model_payload(self):
         lock = json.loads((ROOT/'scripts/runtime-dependencies.lock.json').read_text())
         public = next(item for item in lock['archives'] if item['id'] == 'audited-public-runtime')

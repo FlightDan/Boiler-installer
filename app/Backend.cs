@@ -1,11 +1,228 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Buffers.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace OxpInstaller;
+internal static class ImageImportStreams
+{
+    // Import supports full disk images up to 1 TiB; this is an expansion safety
+    // ceiling, independent of the smaller installation/layout capacity policies.
+    internal const long MaximumImageBytes = 1L << 40;
+    internal const ulong ReserveBytes = 1UL << 30;
+
+    internal static ZipArchive OpenZip(string input, bool allowManifest)
+    {
+        var stream = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read);
+        try
+        {
+            CheckZipDirectory(stream, allowManifest ? 2 : 1);
+            stream.Position = 0;
+            return new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false);
+        }
+        catch { stream.Dispose(); throw; }
+    }
+
+    private static void CheckZipDirectory(FileStream stream, int maximumEntries)
+    {
+        // Bound metadata before ZipArchive can materialize its central directory.
+        // ZIP64 offsets remain 64-bit; no image data is read in this preflight.
+        const long maximumDirectory = 1024 * 1024;
+        void Invalid() => throw new IOException("ZIP 目录无效或超出限制。 / Invalid or excessive ZIP central directory.");
+        byte[] At(long offset, int count)
+        {
+            if (offset < 0 || offset > stream.Length || count > stream.Length - offset) Invalid();
+            stream.Position = offset; var bytes = new byte[count]; stream.ReadExactly(bytes); return bytes;
+        }
+        var tailStart = Math.Max(0, stream.Length - 65557);
+        var tail = At(tailStart, (int)(stream.Length - tailStart));
+        var end = -1;
+        // ZipArchive searches backwards for the last signature. Never skip a
+        // later signature with an invalid comment length to approve an earlier
+        // record: that would let the two parsers select different directories.
+        for (var index = tail.Length - 4; index >= 0; index--)
+            if (BinaryPrimitives.ReadUInt32LittleEndian(tail.AsSpan(index)) == 0x06054b50)
+            {
+                if (index > tail.Length - 22
+                    || index + 22 + BinaryPrimitives.ReadUInt16LittleEndian(tail.AsSpan(index + 20)) != tail.Length) Invalid();
+                end = index; break;
+            }
+        if (end < 0) Invalid();
+        var record = tail.AsSpan(end);
+        if (BinaryPrimitives.ReadUInt16LittleEndian(record[4..]) != 0 || BinaryPrimitives.ReadUInt16LittleEndian(record[6..]) != 0) Invalid();
+        ulong entriesHere = BinaryPrimitives.ReadUInt16LittleEndian(record[8..]);
+        ulong entries = BinaryPrimitives.ReadUInt16LittleEndian(record[10..]);
+        ulong size = BinaryPrimitives.ReadUInt32LittleEndian(record[12..]);
+        ulong offset = BinaryPrimitives.ReadUInt32LittleEndian(record[16..]);
+        var directoryEnd = tailStart + end;
+        var needs64 = entriesHere == ushort.MaxValue || entries == ushort.MaxValue || size == uint.MaxValue || offset == uint.MaxValue;
+        var locatorOffset = directoryEnd - 20;
+        var locator = locatorOffset >= 0 ? At(locatorOffset, 20) : [];
+        var has64 = locator.Length == 20 && BinaryPrimitives.ReadUInt32LittleEndian(locator) == 0x07064b50;
+        if (needs64 && !has64) Invalid();
+        if (has64)
+        {
+            if (BinaryPrimitives.ReadUInt32LittleEndian(locator.AsSpan(4)) != 0 || BinaryPrimitives.ReadUInt32LittleEndian(locator.AsSpan(16)) != 1) Invalid();
+            var end64Offset = BinaryPrimitives.ReadUInt64LittleEndian(locator.AsSpan(8));
+            if (end64Offset > (ulong)Math.Max(0, locatorOffset - 56)) Invalid();
+            var end64 = At((long)end64Offset, 56);
+            if (BinaryPrimitives.ReadUInt32LittleEndian(end64) != 0x06064b50) Invalid();
+            var length64 = BinaryPrimitives.ReadUInt64LittleEndian(end64.AsSpan(4));
+            if (length64 < 44 || length64 > maximumDirectory || end64Offset + 12 + length64 != (ulong)locatorOffset
+                || BinaryPrimitives.ReadUInt32LittleEndian(end64.AsSpan(16)) != 0 || BinaryPrimitives.ReadUInt32LittleEndian(end64.AsSpan(20)) != 0) Invalid();
+            var count64Here = BinaryPrimitives.ReadUInt64LittleEndian(end64.AsSpan(24));
+            var count64 = BinaryPrimitives.ReadUInt64LittleEndian(end64.AsSpan(32));
+            var size64 = BinaryPrimitives.ReadUInt64LittleEndian(end64.AsSpan(40));
+            var offset64 = BinaryPrimitives.ReadUInt64LittleEndian(end64.AsSpan(48));
+            if ((entriesHere != ushort.MaxValue && entriesHere != count64Here) || (entries != ushort.MaxValue && entries != count64)
+                || (size != uint.MaxValue && size != size64) || (offset != uint.MaxValue && offset != offset64)) Invalid();
+            entriesHere = count64Here; entries = count64; size = size64; offset = offset64; directoryEnd = (long)end64Offset;
+        }
+        if (entries != entriesHere || entries < 1 || entries > (ulong)maximumEntries || size > maximumDirectory
+            || offset > (ulong)directoryEnd || size != (ulong)directoryEnd - offset) Invalid();
+        var current = (long)offset; var count = 0;
+        while (current < directoryEnd)
+        {
+            // Count actual records, never only the attacker-controlled EOCD count.
+            if (++count > maximumEntries || directoryEnd - current < 46) Invalid();
+            var central = At(current, 46);
+            if (BinaryPrimitives.ReadUInt32LittleEndian(central) != 0x02014b50
+                || BinaryPrimitives.ReadUInt16LittleEndian(central.AsSpan(34)) != 0) Invalid();
+            var length = 46L + BinaryPrimitives.ReadUInt16LittleEndian(central.AsSpan(28))
+                + BinaryPrimitives.ReadUInt16LittleEndian(central.AsSpan(30)) + BinaryPrimitives.ReadUInt16LittleEndian(central.AsSpan(32));
+            if (length > directoryEnd - current) Invalid();
+            current += length;
+        }
+        if (current != directoryEnd || (ulong)count != entries) Invalid();
+    }
+
+    internal static (ZipArchiveEntry Image, ZipArchiveEntry? Manifest) ZipEntries(ZipArchive archive, bool allowManifest)
+    {
+        var entries = archive.Entries;
+        if (entries.Count < 1 || entries.Count > (allowManifest ? 2 : 1)
+            || entries.Any(e => e.FullName != e.Name || string.IsNullOrWhiteSpace(e.Name)
+                || e.Name.Contains(':') || e.Name.Contains('\\') || e.Name.Any(char.IsControl)
+                || e.Name.EndsWith('.') || e.Name.EndsWith(' ')
+                || ((e.ExternalAttributes >> 16) & 0xf000) is not (0 or 0x8000)))
+            throw new IOException("ZIP 必须只含一个根目录 IMG；Boiler 包可另含 image-manifest.json。 / ZIP must contain exactly one root IMG and, for Boiler packages, an optional image-manifest.json.");
+        var images = entries.Where(e => e.Name.EndsWith(".img", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (images.Length != 1 || entries.Any(e => e != images[0] && (!allowManifest || e.Name != "image-manifest.json")))
+            throw new IOException("镜像归档条目无效。 / Invalid image archive entries.");
+        var image = images[0];
+        if (image.Length < 34 * 512 || image.Length % 512 != 0 || image.Length > MaximumImageBytes)
+            throw new IOException("归档镜像大小无效或超过 1 TiB。 / Invalid or oversized archived image length (maximum 1 TiB).");
+        var manifest = entries.SingleOrDefault(e => e.Name == "image-manifest.json");
+        if (manifest != null && manifest.Length > 1024 * 1024) throw new IOException("镜像清单过大。 / Image manifest is too large.");
+        return (image, manifest);
+    }
+
+    internal static void RemoveOwned(string output)
+    {
+        // Only individual outputs in our workspace are removed; never recurse or
+        // follow a redirected parent during failure cleanup.
+        MediaSource.Ordinary(output, InstallationController.Work, false);
+        File.Delete(output);
+    }
+
+    internal static async Task<long> CopyOwnedAsync(Stream source, string output, CancellationToken token,
+        long? expected = null, long maximum = MaximumImageBytes, Func<ulong>? available = null)
+    {
+        if (maximum < 0 || maximum > MaximumImageBytes || expected is < 0 || expected > maximum)
+            throw new IOException("镜像解压大小限制无效（最大 1 TiB）。 / Invalid expanded image size budget (maximum 1 TiB).");
+        var directory = Path.GetDirectoryName(output)!;
+        MediaSource.Ordinary(output, InstallationController.Work, false);
+        available ??= () => MediaSpace.Available(directory);
+        void Space(ulong bytes)
+        {
+            if (available() < ReserveBytes + bytes) throw new IOException("镜像解压后须保留至少 1 GiB 可用工作空间。 / Image expansion would consume the 1 GiB workspace reserve.");
+        }
+        Space((ulong)(expected ?? 0));
+        token.ThrowIfCancellationRequested();
+        var owned = false;
+        try
+        {
+            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            owned = true;
+            var buffer = new byte[1024 * 1024]; long total = 0;
+            var limit = expected ?? maximum;
+            while (true)
+            {
+                token.ThrowIfCancellationRequested();
+                // Read at most one byte beyond the budget, and never write that
+                // byte. ZIP declared lengths are assertions, not trusted bounds.
+                var count = await source.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token);
+                if (count == 0) break;
+                if (count > limit - total) throw new IOException("镜像数据超过解压大小限制。 / Image stream exceeds its expanded byte budget.");
+                Space((ulong)count);
+                await target.WriteAsync(buffer.AsMemory(0, count), token);
+                total += count;
+            }
+            if (expected != null && total != expected) throw new IOException("镜像数据长度与声明不符。 / Image stream differs from its declared length.");
+            await target.FlushAsync(token);
+            Space(0);
+            return total;
+        }
+        catch { if (owned) RemoveOwned(output); throw; }
+    }
+
+    internal static async Task ExtractBzipAsync(string input, string output, CancellationToken token,
+        long maximum = MaximumImageBytes, Func<ulong>? available = null)
+    {
+        var executable = Path.Combine(Backend.Root, "runtime/archive/7z.exe");
+        if (!File.Exists(executable)) throw new FileNotFoundException("缺少工具自带的镜像解压程序。 / Missing bundled image decompressor.", executable);
+        // BZip2 is a single stream. Binary stdout prevents embedded filenames
+        // from becoming host paths; stderr is drained with bounded retention.
+        using var heldSource = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
+        foreach (var argument in new[] { "x", "-tbzip2", "-so", "-si" }) start.ArgumentList.Add(argument);
+        using var process = new Process { StartInfo = start };
+        token.ThrowIfCancellationRequested();
+        process.Start();
+        void Stop() { try { if (!process.HasExited) process.Kill(true); } catch (InvalidOperationException) { } }
+        async Task<string> DrainError()
+        {
+            var text = new StringBuilder(); var buffer = new char[4096]; int count;
+            while ((count = await process.StandardError.ReadAsync(buffer)) != 0)
+                if (text.Length < 16384) text.Append(buffer, 0, Math.Min(count, 16384 - text.Length));
+            return text.ToString();
+        }
+        var error = DrainError();
+        using var cancellation = token.Register(Stop);
+        async Task FeedSource()
+        {
+            // The decompressor consumes this held inode, never reopens a path
+            // whose parent may have changed since the source was locked.
+            try { await heldSource.CopyToAsync(process.StandardInput.BaseStream, token); await process.StandardInput.BaseStream.FlushAsync(token); }
+            finally { process.StandardInput.Close(); }
+        }
+        var feeding = FeedSource();
+        var copied = false;
+        try
+        {
+            await CopyOwnedAsync(process.StandardOutput.BaseStream, output, token, maximum: maximum, available: available);
+            copied = true;
+            await feeding;
+            await process.WaitForExitAsync(token);
+            var detail = await error;
+            token.ThrowIfCancellationRequested();
+            if (process.ExitCode != 0) throw new IOException("镜像解压失败。 / Image decompression failed: " + detail);
+        }
+        catch { if (copied) RemoveOwned(output); throw; }
+        finally
+        {
+            Stop(); await process.WaitForExitAsync();
+            try { await feeding; } catch { /* Preserve the original extraction/cancellation failure. */ }
+            try { await error; } catch { /* Observe the drain task even when the process was killed. */ }
+        }
+    }
+}
+
 public static class Backend
 {
+    public static string AppAssemblyPath => typeof(Backend).Assembly.Location;
     public static string Root { get; } = FindRoot();
     private static string FindRoot()
     {
@@ -69,25 +286,24 @@ public static class Backend
         if (!File.Exists(input)) throw new FileNotFoundException("恢复镜像不存在。", input);
         if (input.EndsWith(".img", StringComparison.OrdinalIgnoreCase)) { RecoveryImage.ValidateRaw(input, allowPrepared); return input; }
         if (!input.EndsWith(".img.bz2", StringComparison.OrdinalIgnoreCase) && !input.EndsWith(".img.zip", StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("只支持 .img、.img.bz2、.img.zip。");
-        var archive = Path.Combine(Root, "runtime/archive/7z.exe");
-        if (!File.Exists(archive)) throw new FileNotFoundException("缺少工具自带的解压程序。", archive);
         var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "import", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
-        // Open only the compression wrapper, not a filesystem inside the recovery image.
-        var archiveType = input.EndsWith(".img.zip", StringComparison.OrdinalIgnoreCase) ? "-tzip" : "-tbzip2";
-        // List names before extraction: do not allow paths to escape the isolated import folder.
-        var listing = await ProcessAsync(archive, ["l", "-slt", archiveType, "--", input], _ => { }, token);
-        var entries = listing.Split("----------", 2).Last();
-        foreach (Match match in Regex.Matches(entries, @"^Path = (.+)$", RegexOptions.Multiline))
+        var output = Path.Combine(directory, "imported.img");
+        var owned = false;
+        try
         {
-            var entry = match.Groups[1].Value.Trim();
-            var target = Path.GetFullPath(Path.Combine(directory, entry));
-            if (!target.StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("归档含有不安全的文件路径。");
+            if (input.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                using var bundle = ImageImportStreams.OpenZip(input, allowManifest: false);
+                var image = ImageImportStreams.ZipEntries(bundle, allowManifest: false).Image;
+                using var stream = image.Open();
+                await ImageImportStreams.CopyOwnedAsync(stream, output, token, expected: image.Length);
+            }
+            else await ImageImportStreams.ExtractBzipAsync(input, output, token);
+            owned = true;
+            RecoveryImage.ValidateRaw(output, allowPrepared);
+            return output;
         }
-        await ProcessAsync(archive, ["x", archiveType, $"-o{directory}", "-y", "--", input], log, token);
-        var images = Directory.GetFiles(directory, "*.img", SearchOption.AllDirectories);
-        if (images.Length != 1) throw new InvalidOperationException("归档必须包含一个 .img 镜像。");
-        RecoveryImage.ValidateRaw(images[0], allowPrepared);
-        return images[0];
+        catch { if (owned) ImageImportStreams.RemoveOwned(output); throw; }
     }
     public static async Task CopyImageAsync(string input, string output, CancellationToken token)
     {

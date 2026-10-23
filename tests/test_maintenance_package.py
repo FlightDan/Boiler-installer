@@ -182,7 +182,7 @@ class MaintenancePackageTests(unittest.TestCase):
         (trusted/'maintenance/__init__.py').write_text('')
         (trusted/'maintenance/__main__.py').write_text(
             'import json,sys,site\ndef main():\n'
-            ' print(json.dumps(dict(arguments=sys.argv[1:],isolated=sys.flags.isolated,user_site=site.ENABLE_USER_SITE)))\n'
+            ' print(json.dumps(dict(arguments=sys.argv[1:],isolated=sys.flags.isolated,no_user_site=sys.flags.no_user_site,no_site=sys.flags.no_site,user_site=site.ENABLE_USER_SITE)))\n'
             ' return 0\n')
         marker = self.work/'environment-injection-ran'
         poison = 'from pathlib import Path\nPath('+repr(str(marker))+').write_text("bad")\n'
@@ -199,7 +199,13 @@ class MaintenancePackageTests(unittest.TestCase):
         code = tokens[5].replace('"/usr/local/lib/boiler"', repr(str(trusted)))
         arguments = ['--root', '/target path', 'plugins', 'list', 'quoted"argument']
         output = subprocess.check_output([sys.executable, *tokens[2:5], code, *arguments], cwd=hostile, env=env)
-        self.assertEqual(json.loads(output), dict(arguments=arguments, isolated=1, user_site=False))
+        result = json.loads(output)
+        user_site_enabled = result.pop('user_site')
+        no_site = result.pop('no_site')
+        # Windows embeddable Python's ._pth disables site initialization; its
+        # ENABLE_USER_SITE is None instead of the initialized False state.
+        self.assertTrue(user_site_enabled is False or (user_site_enabled is None and no_site == 1))
+        self.assertEqual(result, dict(arguments=arguments, isolated=1, no_user_site=1))
         self.assertFalse(marker.exists())
         preparation_spec = importlib.util.spec_from_file_location('boiler_launcher_preparation', ROOT/'scripts/prepare-integration.py')
         preparation = importlib.util.module_from_spec(preparation_spec)

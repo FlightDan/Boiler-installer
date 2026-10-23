@@ -56,7 +56,7 @@ public static class UsbNativeReview
         var admin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe")) { UseShellExecute = !admin, CreateNoWindow = admin, WindowStyle = ProcessWindowStyle.Hidden };
         if (!admin) start.Verb = "runas";
-        start.ArgumentList.Add(Path.Combine(Backend.Root, "app/bin/Debug/net10.0-windows/OxpInstaller.dll")); start.ArgumentList.Add("--usb-review-helper"); start.ArgumentList.Add(jobPath);
+        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--usb-review-helper"); start.ArgumentList.Add(jobPath);
         using var process = Process.Start(start) ?? throw new IOException("Read-only USB helper did not start.");
         using var cancel = token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch (InvalidOperationException) { } });
         await process.WaitForExitAsync(); token.ThrowIfCancellationRequested();

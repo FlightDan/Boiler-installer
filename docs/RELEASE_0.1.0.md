@@ -34,9 +34,9 @@ Status: development verification in progress; not a published production release
 - QEMU final-payload lifecycle: 8 tests passed, including private ownership,
   repeated install, restoration, shared-slot marker guards and native metadata
   and firmware symlinks confined to the mounted image.
-- WPF visual capture is blocked in the current execution environment: the
-  loaded visual tree produces an empty bitmap. Route/default state checks pass;
-  screenshot appearance, scaling and touch layout remain unaccepted.
+- WPF capture now produces nonempty home/custom/Vanilla/imported pages in the
+  security follow-up. Route/default state checks pass; basic home/custom captures
+  were inspected. Multiple scales, keyboard and touch interaction remain unaccepted.
 - Actual 3.8.14 build20260707.10 source: fixture, A/B deployment with injected
   failure/recovery, sparse staging, Vanilla integration, read-only component
   verification and physical-readiness checks passed. This is image evidence.
@@ -94,10 +94,10 @@ Status: development verification in progress; not a published production release
 | Change list and repository contracts | Complete for the implementation described above |
 | Common installer and maintenance source synchronization | Complete for the frozen runtime; final public artifacts must bind these bytes |
 | Rebuilt component payload inventories | Complete: 429 files regenerated and verified against final source and locked inputs |
-| Final release/build identities | Pending final source commits |
+| Final release/build identities | Published maintenance binds source 6a181e3; Windows security follow-up uses a new source commit and timestamped candidate |
 | Source, image, new-install and maintenance tests | Partly complete; evidence categories kept separate |
 | Signed old-maintainer compatibility bridge | `.10`, `.11` and `.12` published and publicly verified; actual `.12` upgrade and binary export passed; generic adoption pending |
-| Generic maintainer publication and public download verification | Live-root implementation and independent review complete; final signing and publication pending |
+| Generic maintainer publication and public download verification | maintenance-v0.1.0 published; original-key signatures, complete package inventories, fixed hashes and offline cache verified from public downloads |
 | Old-to-new hardware upgrade, reboot and recovery acceptance | Pending; no hardware success claimed |
 | Windows final package and release | Pending preceding maintenance gates |
 | Existing README versions | Not applicable until a release version changes |
@@ -106,3 +106,31 @@ Known boundary: hook-based model adaptations cannot be universally rolled back
 by reversing only their declared file inventory. Interrupted hooks retain their
 journal and stop further deployment. Unverified radio hardware remains marked
 unverified; firmware availability does not establish chipset support.
+
+## Windows security follow-up (2026-10-23)
+
+- IMG ZIP and BZip2 expansion now enforce a 1 TiB limit and keep at least 1 GiB
+  of workspace free. Declared lengths are checked against actual streamed bytes.
+  Failed or cancelled imports remove only the output created by that operation.
+- ZIP central-directory metadata is bounded before framework enumeration. EOCD,
+  ZIP64 offsets, actual record counts and exact directory spans are validated;
+  conflicting later EOCD signatures are refused. Archives remain limited to a
+  root IMG and, for Boiler packages, an optional image-manifest.json.
+- BZip2 receives the held source through stdin instead of reopening its pathname.
+  Cancellation terminates the owned child and observes both pipe tasks.
+- Four helper launch paths now use the current application assembly, including
+  Release builds. Independent review covered both imports and helper binding.
+- Windows Python is updated to 3.13.17 and .NET runtime/SDK to 10.0.13/10.0.402,
+  independently of the Linux maintainer. Official archive hashes, all 480 runtime
+  members, the full SDK and isolated Python preparation are verified. No existing
+  published attachment is replaced.
+- The previous Windows candidate is withdrawn from publication. Final candidate
+  evidence must name its own source commit, timestamp, size and SHA-256.
+
+The pre-refresh Release build passed 79 synthetic image and WPF checks, including
+the reproduced EOCD parser differential, valid ZIP64, byte/space limits, BZip2
+stdin, cancellation, source preservation and both partition layouts. These checks
+do not write physical disks or establish hardware acceptance. A further local
+hardening item remains: bind the exact reviewed job bytes across the UAC helper
+handoff; current protected-disk checks remain in force. Normal UAC startup and
+physical migration/reboot/recovery are still release gates.

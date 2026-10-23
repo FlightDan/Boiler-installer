@@ -354,7 +354,7 @@ public static partial class InstallationController
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe"))
         { UseShellExecute = !admin, CreateNoWindow = admin, WindowStyle = ProcessWindowStyle.Hidden };
         if (!admin) start.Verb = "runas";
-        start.ArgumentList.Add(Path.Combine(Backend.Root, "app/bin/Debug/net10.0-windows/OxpInstaller.dll"));
+        start.ArgumentList.Add(Backend.AppAssemblyPath);
         start.ArgumentList.Add("--partition-helper"); start.ArgumentList.Add(path);
         using var process = Process.Start(start) ?? throw new IOException("无法启动分区写入助手。");
         var logPath = Path.Combine(Path.GetDirectoryName(path)!, "helper.jsonl"); long offset = 0; string pending = "";

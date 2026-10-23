@@ -17,19 +17,21 @@ python scripts/bootstrap-dependencies.py --profile all
 ```
 
 The preparer downloads the locked existing public runtime source artifact and
-the official .NET SDK archive into `cache/bootstrap`. SDK 10.0.401 includes
-runtime 10.0.12; its SHA-512 was checked against Microsoft's official release
+the official .NET SDK archive into `cache/bootstrap`. SDK 10.0.402 includes
+runtime 10.0.13; its SHA-512 was checked against Microsoft's official release
 metadata, and the lock also contains its SHA-256. Setup executables are never
 run. The published runtime supplies QEMU 11.1.0 (20260811 build), 7-Zip 26.03,
 Alpine virt 3.23.6, desync 1.0.4, aria2 1.37.0, offline filesystem/Python/OpenSSL
-APKs, console files and the .NET runtime. Unselected model payloads are not
-extracted from the source artifact.
+APKs and console files. The .NET host, Core runtime and Windows Desktop runtime
+come from 480 individually locked members of the official SDK archive, including
+when only the runtime profile is requested. Unselected model payloads and the old
+.NET runtime are not extracted from the public installer artifact.
 
 For disconnected preparation, explicitly supply the already-downloaded inputs:
 
 ```powershell
-python scripts/bootstrap-dependencies.py --profile all --public-installer inputs/oxp3-steamos-installer-1.0.6-20261022-220437.zip --dotnet-sdk inputs/dotnet-sdk-10.0.401-win-x64.zip --offline
-python scripts/bootstrap-dependencies.py --profile all --public-installer inputs/oxp3-steamos-installer-1.0.6-20261022-220437.zip --dotnet-sdk inputs/dotnet-sdk-10.0.401-win-x64.zip --check-only
+python scripts/bootstrap-dependencies.py --profile all --public-installer inputs/oxp3-steamos-installer-1.0.6-20261022-220437.zip --dotnet-sdk inputs/dotnet-sdk-10.0.402-win-x64.zip --offline
+python scripts/bootstrap-dependencies.py --profile all --public-installer inputs/oxp3-steamos-installer-1.0.6-20261022-220437.zip --dotnet-sdk inputs/dotnet-sdk-10.0.402-win-x64.zip --check-only
 ```
 
 `--profile runtime` prepares the end-user runtime without a build SDK.
