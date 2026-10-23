@@ -13,7 +13,7 @@ public sealed record InstallationProgress(string Stage, string Message, double? 
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
     string? DesktopRebootScript = null, string? DesktopRebootWarning = null);
-public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null);
+public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null, string? RecoveryDigest = null);
 public sealed record PartitionJobResult(string Status, string? Error);
 
 public static partial class InstallationController
@@ -292,8 +292,8 @@ public static partial class InstallationController
             var nonce = Guid.NewGuid().ToString("N"); var deployment = Path.Combine(Work, "partition-deploy-" + nonce); Directory.CreateDirectory(deployment);
             state = state with { Deployment = deployment }; Save(journal, state);
             var jobPath = Path.Combine(deployment, "partition-job.json");
-            await File.WriteAllTextAsync(jobPath, JsonSerializer.Serialize(new PartitionJob(request.Physical ? 2 : 1, nonce, request.Physical?"reviewed-physical-range":"new-virtual-disk-only", request.Kind, prepared.Identity, PhysicalPlan:physical, HomeCopy:homeCopy)), token);
-            var result = await RunHelperAsync(jobPath, nonce, text =>
+            using var boundJob = HelperRequestBinding.Create(jobPath, HelperRequestBinding.Partition, new PartitionJob(request.Physical ? 2 : 1, nonce, request.Physical?"reviewed-physical-range":"new-virtual-disk-only", request.Kind, prepared.Identity, PhysicalPlan:physical, HomeCopy:homeCopy), token);
+            var result = await RunHelperAsync(jobPath, boundJob.Digest, nonce, text =>
             {
                 if (state.Stage == "permission") Phase("writing", request.Physical?"正在写入已确认的磁盘空间…":"正在写入虚拟测试盘…", "04.00");
                 log(text + Environment.NewLine);
@@ -345,7 +345,7 @@ public static partial class InstallationController
         return state;
     }
     public static string EventName(string nonce) => @"Local\Oxp3Partition-" + nonce;
-    private static async Task<PartitionJobResult> RunHelperAsync(string path, string nonce, Action<string> log, CancellationToken token)
+    private static async Task<PartitionJobResult> RunHelperAsync(string path, string expectedDigest, string nonce, Action<string> log, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         using var signal = new EventWaitHandle(false, EventResetMode.ManualReset, EventName(nonce));
@@ -355,7 +355,7 @@ public static partial class InstallationController
         { UseShellExecute = !admin, CreateNoWindow = admin, WindowStyle = ProcessWindowStyle.Hidden };
         if (!admin) start.Verb = "runas";
         start.ArgumentList.Add(Backend.AppAssemblyPath);
-        start.ArgumentList.Add("--partition-helper"); start.ArgumentList.Add(path);
+        start.ArgumentList.Add("--partition-helper"); start.ArgumentList.Add(path); start.ArgumentList.Add(expectedDigest);
         using var process = Process.Start(start) ?? throw new IOException("无法启动分区写入助手。");
         var logPath = Path.Combine(Path.GetDirectoryName(path)!, "helper.jsonl"); long offset = 0; string pending = "";
         async Task ReadLog()
@@ -378,12 +378,11 @@ public static partial class InstallationController
         }
         finally { if (!process.HasExited) { signal.Set(); await process.WaitForExitAsync(); } }
     }
-    public static async Task<int> ExecuteHelperAsync(string path)
+    public static async Task<int> ExecuteHelperAsync(string path, string expectedDigest)
     {
         path = Path.GetFullPath(path); MediaSource.Ordinary(path, Work);
-        if (Path.GetFileName(path) != "partition-job.json" || new FileInfo(path).Length > 65536) throw new IOException("Invalid partition job path/size.");
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var job = await JsonSerializer.DeserializeAsync<PartitionJob>(file) ?? throw new IOException("Empty job.");
+        if (Path.GetFileName(path) != "partition-job.json") throw new IOException("Invalid partition job path.");
+        var job = HelperRequestBinding.Parse<PartitionJob>(HelperRequestBinding.ReadVerified(path, HelperRequestBinding.Partition, expectedDigest, HelperRequestBinding.SmallLimit));
         if (job.Schema is not (1 or 2) || job.Schema == 1 && job.HomeCopy != null
             || job.Schema == 2 && (job.Scope != "reviewed-physical-range" || job.HomeCopy == null)
             || job.Scope is not ("new-virtual-disk-only" or "resume-owned-vhd-only" or "reviewed-physical-range") || !Enum.IsDefined(job.Kind) || !Regex.IsMatch(job.Nonce, "^[0-9a-f]{32}$")
@@ -392,7 +391,19 @@ public static partial class InstallationController
         if (job.Scope == "new-virtual-disk-only" && job.RecoveryState != null
             || job.Scope == "resume-owned-vhd-only" && (string.IsNullOrEmpty(job.RecoveryState) || Path.GetFileName(job.RecoveryState) != "state.json"))
             throw new IOException("Unsupported recovery job.");
-        if (job.RecoveryState != null) MediaSource.Ordinary(job.RecoveryState, Work);
+        byte[]? recoverySnapshot = null;
+        if (job.RecoveryState != null)
+        {
+            MediaSource.Ordinary(job.RecoveryState, Work);
+            recoverySnapshot = HelperRequestBinding.ReadVerified(job.RecoveryState, HelperRequestBinding.Recovery, job.RecoveryDigest, HelperRequestBinding.SmallLimit);
+        }
+        else if (job.RecoveryDigest != null) throw new IOException("Unexpected recovery digest.");
+        // Do not create even a diagnostic log until both request commitments are
+        // verified. Pass these objects through; never re-read their paths to parse.
+        return await InstallationLog.CaptureHelperAsync(() => ExecuteVerifiedHelperAsync(path, job, recoverySnapshot));
+    }
+    private static async Task<int> ExecuteVerifiedHelperAsync(string path, PartitionJob job, byte[]? recoverySnapshot)
+    {
         using var signal = EventWaitHandle.OpenExisting(EventName(job.Nonce));
         using var cancellation = new CancellationTokenSource();
         if (signal.WaitOne(0)) cancellation.Cancel();
@@ -403,6 +414,7 @@ public static partial class InstallationController
         var result = new PartitionJobResult("failed", null);
         try
         {
+            cancellation.Token.ThrowIfCancellationRequested();
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) throw new IOException("Administrator helper required.");
             using var image = new PreparedDiskImage(job.Source.Path);
             if (image.Identity != job.Source) throw new IOException("Prepared image changed after review.");
@@ -410,7 +422,7 @@ public static partial class InstallationController
             Action<string> report = line => { lock (writer) writer.WriteLine(JsonSerializer.Serialize(line)); };
             if(job.PhysicalPlan!=null) await PhysicalInstallation.ApplyAsync(image,job.PhysicalPlan,directory,report,cancellation.Token,homeCopy:job.HomeCopy);
             else if (job.RecoveryState != null)
-                await ResumePreparedAsync(image, job.Kind, job.RecoveryState, report, cancellation.Token);
+                await ResumePreparedAsync(image, job.Kind, job.RecoveryState, report, cancellation.Token, recoverySnapshot);
             else await PartitionDeploymentChecks.WritePreparedAsync(job.Source.Path, job.Kind, directory, report, cancellation.Token);
             result = new("complete", null);
         }

@@ -11,38 +11,31 @@ public partial class App : Application
         base.OnStartup(e);
         if (e.Args.Length > 0 && e.Args[0] == "--format-remaining-helper")
         {
-            try { if (e.Args.Length != 2) throw new ArgumentException("Expected formatting request"); Shutdown(await RemainingSpaceFormat.ExecuteHelperAsync(e.Args[1])); }
+            try { if (e.Args.Length != 3) throw new ArgumentException("Expected formatting request"); Shutdown(await RemainingSpaceFormat.ExecuteHelperAsync(e.Args[1], e.Args[2])); }
             catch { Shutdown(1); }
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == "--delete-partition-helper")
         {
-            try { if (e.Args.Length != 2) throw new ArgumentException("Expected deletion request"); Shutdown(await PartitionDeletion.ExecuteHelperAsync(e.Args[1])); }
+            try { if (e.Args.Length != 3) throw new ArgumentException("Expected deletion request"); Shutdown(await PartitionDeletion.ExecuteHelperAsync(e.Args[1], e.Args[2])); }
             catch { Shutdown(1); }
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == "--partition-helper")
         {
-            try
-            {
-                Shutdown(await InstallationLog.CaptureHelperAsync(async () =>
-                {
-                    if (e.Args.Length != 2) throw new ArgumentException("Expected partition job");
-                    return await InstallationController.ExecuteHelperAsync(e.Args[1]);
-                }));
-            }
+            try { if (e.Args.Length != 3) throw new ArgumentException("Expected partition job"); Shutdown(await InstallationController.ExecuteHelperAsync(e.Args[1], e.Args[2])); }
             catch { Shutdown(1); }
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == "--usb-review-helper")
         {
-            try { if (e.Args.Length != 2) throw new ArgumentException("Expected read-only USB job path"); Shutdown(await UsbNativeReview.ExecuteAsync(e.Args[1])); }
+            try { if (e.Args.Length != 3) throw new ArgumentException("Expected read-only USB job path"); Shutdown(await UsbNativeReview.ExecuteAsync(e.Args[1], e.Args[2])); }
             catch { Shutdown(1); }
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == "--media-helper")
         {
-            try { if (e.Args.Length != 2) throw new ArgumentException("Expected media job path"); Shutdown(await MediaHelper.ExecuteAsync(e.Args[1])); }
+            try { if (e.Args.Length != 3) throw new ArgumentException("Expected media job path"); Shutdown(await MediaHelper.ExecuteAsync(e.Args[1], e.Args[2])); }
             catch { Shutdown(1); }
             return;
         }
@@ -53,7 +46,10 @@ public partial class App : Application
             Directory.CreateDirectory(Path.GetDirectoryName(resultFile)!);
             try
             {
-                if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
+                if (e.Args.Length == 2 && e.Args[1] == "normal-elevation-probe") { log.AppendLine(System.Text.Json.JsonSerializer.Serialize(new { elevated = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator), identity = System.Security.Principal.WindowsIdentity.GetCurrent().Name, scope = "Read-only token identity probe; no disk, firmware or system modifications." })); }
+                else if (e.Args.Length == 2 && e.Args[1] == "boiler-ui-checks") { log.AppendLine(await BoilerUiChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "helper-binding-checks") { log.AppendLine(await HelperBindingChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-image-checks") { log.AppendLine(await BoilerImageBuildChecks.RunAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-prepared-checks") { log.AppendLine(await BoilerImageBuildChecks.RecheckAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-model-checks") { log.AppendLine(await BoilerImageBuildChecks.ModelAsync(e.Args[2], e.Args[3])); }

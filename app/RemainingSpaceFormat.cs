@@ -113,21 +113,20 @@ public static class RemainingSpaceFormat
         return window;
     }
 
-    public static async Task<int> ExecuteHelperAsync(string path)
+    public static async Task<int> ExecuteHelperAsync(string path, string expectedDigest)
     {
+        path = Path.GetFullPath(path); MediaSource.Ordinary(path, InstallerWorkspace.DirectoryPath);
+        if (Path.GetFileName(path) != "format-request.json") throw new IOException("Invalid helper request path.");
+        var request = HelperRequestBinding.Parse<RemainingFormatRequest>(HelperRequestBinding.ReadVerified(path, HelperRequestBinding.Format, expectedDigest, HelperRequestBinding.SnapshotLimit));
         Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        path = Path.GetFullPath(path); MediaSource.Ordinary(path, InstallationController.Work);
-        if (Path.GetFileName(path) != "format-request.json" || new FileInfo(path).Length > 4 * 1024 * 1024) throw new IOException("Invalid formatting request.");
-        using var jobLock = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var request = await JsonSerializer.DeserializeAsync<RemainingFormatRequest>(jobLock) ?? throw new IOException("Empty formatting request.");
         InstallerI18n.SetLanguage(request.Language);
         try
         {
             if (request.Selection.Example || !new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) throw new IOException("Real formatting requires administrator access.");
             Plan(request.Selection);
-            await Backend.PowerShellAsync("format-remaining.ps1", ["-RequestPath", path, "-ValidateOnly"], _ => { }, CancellationToken.None);
+            await Backend.PowerShellAsync("format-remaining.ps1", ["-RequestPath", path, "-ExpectedDigest", expectedDigest, "-ValidateOnly"], _ => { }, CancellationToken.None);
             if (Confirmation(request).ShowDialog() != true) return 2;
-            await Backend.PowerShellAsync("format-remaining.ps1", ["-RequestPath", path], _ => { }, CancellationToken.None);
+            await Backend.PowerShellAsync("format-remaining.ps1", ["-RequestPath", path, "-ExpectedDigest", expectedDigest], _ => { }, CancellationToken.None);
             return 0;
         }
         catch (Exception error) { await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(path)!, "error.txt"), error.Message); return 1; }
@@ -138,9 +137,9 @@ public static class RemainingSpaceFormat
         if (request.Selection.Example) throw new InvalidOperationException("Example requests cannot reach the physical helper.");
         Plan(request.Selection);
         var directory = Path.Combine(InstallationController.Work, "partition-format-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, "format-request.json"); await File.WriteAllTextAsync(path, JsonSerializer.Serialize(request));
+        var path = Path.Combine(directory, "format-request.json"); using var boundJob = HelperRequestBinding.Create(path, HelperRequestBinding.Format, request);
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe")) { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden };
-        start.ArgumentList.Add(typeof(App).Assembly.Location); start.ArgumentList.Add("--format-remaining-helper"); start.ArgumentList.Add(path);
+        start.ArgumentList.Add(typeof(App).Assembly.Location); start.ArgumentList.Add("--format-remaining-helper"); start.ArgumentList.Add(path); start.ArgumentList.Add(boundJob.Digest);
         try
         {
             using var process = Process.Start(start) ?? throw new IOException("Formatting helper did not start.");

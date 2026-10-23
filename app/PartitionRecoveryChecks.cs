@@ -78,7 +78,14 @@ public static partial class PartitionDeploymentChecks
                 await ExpectRefusalAsync(() => Task.Run(() => { using var second = VirtualMediaDisk.ReopenOwned(path, image.Layout.Size, id); }), "file");
             }
             var messages = new List<string>();
-            await PartitionDeployment.ResumeOwnedAsync(image, kind, state, text => { messages.Add(text); log(text); }, CancellationToken.None);
+            var reviewedBytes = HelperRequestBinding.ReadBytes(state, HelperRequestBinding.SmallLimit);
+            var reviewedDigest = HelperRequestBinding.Compute(HelperRequestBinding.Recovery, reviewedBytes);
+            var approvedState = HelperRequestBinding.ReadVerified(state, HelperRequestBinding.Recovery, reviewedDigest, HelperRequestBinding.SmallLimit);
+            // The live journal may evolve after approval. Recovery must consume the
+            // verified snapshot at both read sites and still atomically write state.
+            File.WriteAllText(state, "invalid replacement after snapshot verification");
+            await PartitionDeployment.ResumeOwnedAsync(image, kind, state, text => { messages.Add(text); log(text); }, CancellationToken.None, approvedState);
+            events.Add(kind + ":verified-snapshot-used-at-both-read-sites-and-state-atomically-rewritten");
             if (!messages.Where(t => t.StartsWith("PARTITION_RECHECKED=")).SequenceEqual(["PARTITION_RECHECKED=esp"])
                 || messages.Count(t => t.StartsWith("PARTITION_DEPLOYED=")) != 7) throw new IOException("Wrong resume prefix or write count.");
             using (var reopened = VirtualMediaDisk.ReopenOwned(path, image.Layout.Size, id))

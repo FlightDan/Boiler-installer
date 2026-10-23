@@ -122,8 +122,8 @@ internal static class InstallationLogChecks
         }
         catch (InvalidOperationException error) when (error.Message.Contains("1")) { helperFailed = true; }
         var helperLogs = Directory.GetFiles(rootLogs, "installation-helper-*.log").Where(path => !helperBefore.Contains(path)).ToArray();
-        Require(helperFailed && helperLogs.Length == 1 && File.ReadAllText(helperLogs[0]).Contains("Expected partition job"),
-            "helper-startup-failure-persists-original-exception-before-job-or-journal");
+        Require(helperFailed && helperLogs.Length == 0,
+            "unbound-helper-startup-refused-before-global-log-job-or-journal");
 
         return events;
     }

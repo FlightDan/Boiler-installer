@@ -12,12 +12,11 @@ public static class MediaHelper
 {
     public static string EventName(string nonce) => @"Local\Oxp3Media-" + nonce;
     public static bool PhysicalUsbAccepted => false;
-    public static async Task<int> ExecuteAsync(string jobPath)
+    public static async Task<int> ExecuteAsync(string jobPath, string expectedDigest)
     {
         jobPath = Path.GetFullPath(jobPath); MediaSource.Ordinary(jobPath, InstallerWorkspace.DirectoryPath);
-        if (Path.GetFileName(jobPath) != "media-job.json" || new FileInfo(jobPath).Length > 64 * 1024) throw new IOException("Invalid media job path/size.");
-        using var jobFile = new FileStream(jobPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var job = await JsonSerializer.DeserializeAsync<MediaJob>(jobFile) ?? throw new IOException("Empty media job.");
+        if (Path.GetFileName(jobPath) != "media-job.json") throw new IOException("Invalid helper request path.");
+        var job = HelperRequestBinding.Parse<MediaJob>(HelperRequestBinding.ReadVerified(jobPath, HelperRequestBinding.Media, expectedDigest, HelperRequestBinding.SmallLimit));
         if (job.Schema != 1 || job.Kind != "virtual-media-validation" || job.Confirmation != "erase-new-virtual-medium"
             || !Regex.IsMatch(job.Nonce, "^[0-9a-f]{32}$") || Path.GetFileName(Path.GetDirectoryName(jobPath)!) != "media-" + job.Nonce)
             throw new IOException("Unsupported or unconfirmed media job. Physical USB execution remains unaccepted.");
@@ -33,6 +32,7 @@ public static class MediaHelper
         VirtualMediaDisk? owned = null;
         try
         {
+            if (cancellation.WaitOne(0)) throw new OperationCanceledException("Cancelled before target creation.");
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) throw new IOException("Administrator media helper required.");
             using var source = MediaSource.Open(job.Source.Path);
             if (MediaSource.FromHandle(job.Source.Path, source) != job.Source) throw new IOException("Source identity/size/time/GPT changed after review.");
@@ -76,7 +76,7 @@ public static class MediaWriterController
         var capacity = Math.Max(16L * 1024 * 1024, (source.Length + 1024 * 1024 - 1) / (1024 * 1024) * (1024 * 1024));
         MediaSpace.Require(directory, capacity); // Refuse an obviously full work volume before requesting UAC.
         var job = new MediaJob(1, "virtual-media-validation", nonce, source, capacity, "erase-new-virtual-medium");
-        var jobPath = Path.Combine(directory, "media-job.json"); await File.WriteAllTextAsync(jobPath, JsonSerializer.Serialize(job), token);
+        var jobPath = Path.Combine(directory, "media-job.json"); using var boundJob = HelperRequestBinding.Create(jobPath, HelperRequestBinding.Media, job, token);
         prepared?.Invoke(directory);
         using var signal = new EventWaitHandle(false, EventResetMode.ManualReset, MediaHelper.EventName(nonce));
         using var registration = token.Register(() => signal.Set());
@@ -84,7 +84,7 @@ public static class MediaWriterController
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe"))
         { UseShellExecute = !elevated, CreateNoWindow = elevated, WindowStyle = ProcessWindowStyle.Hidden };
         if (!elevated) start.Verb = "runas";
-        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(jobPath);
+        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(jobPath); start.ArgumentList.Add(boundJob.Digest);
         using var process = Process.Start(start) ?? throw new IOException("Media helper did not start.");
         var progressPath = Path.Combine(directory, "status.jsonl"); long position = 0; string pending = "";
         try

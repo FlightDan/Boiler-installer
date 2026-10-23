@@ -86,22 +86,21 @@ public static class PartitionDeletion
     }
 
     // The elevated process owns final confirmation; no command-line switch bypasses it.
-    public static async Task<int> ExecuteHelperAsync(string path)
+    public static async Task<int> ExecuteHelperAsync(string path, string expectedDigest)
     {
-        Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         path = Path.GetFullPath(path); MediaSource.Ordinary(path, InstallerWorkspace.DirectoryPath);
-        if (Path.GetFileName(path) != "delete-request.json" || new FileInfo(path).Length > 4 * 1024 * 1024) throw new IOException("Invalid deletion request.");
-        using var jobLock = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var request = await JsonSerializer.DeserializeAsync<PartitionDeleteRequest>(jobLock) ?? throw new IOException("Empty deletion request.");
+        if (Path.GetFileName(path) != "delete-request.json") throw new IOException("Invalid helper request path.");
+        var request = HelperRequestBinding.Parse<PartitionDeleteRequest>(HelperRequestBinding.ReadVerified(path, HelperRequestBinding.Delete, expectedDigest, HelperRequestBinding.SnapshotLimit));
+        Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         InstallerI18n.SetLanguage(request.Language);
         try
         {
             if (request.Example || !new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) throw new IOException("Real deletion requires administrator access.");
             Validate(request);
             // The script performs a read-only rebind before the dialog, then repeats it at deletion.
-            await Backend.PowerShellAsync("delete-partition.ps1", ["-RequestPath", path, "-ValidateOnly"], _ => { }, CancellationToken.None);
+            await Backend.PowerShellAsync("delete-partition.ps1", ["-RequestPath", path, "-ExpectedDigest", expectedDigest, "-ValidateOnly"], _ => { }, CancellationToken.None);
             if (Confirmation(request).ShowDialog() != true) return 2;
-            await Backend.PowerShellAsync("delete-partition.ps1", ["-RequestPath", path], _ => { }, CancellationToken.None);
+            await Backend.PowerShellAsync("delete-partition.ps1", ["-RequestPath", path, "-ExpectedDigest", expectedDigest], _ => { }, CancellationToken.None);
             return 0;
         }
         catch (Exception error)
@@ -117,9 +116,9 @@ public static class PartitionDeletion
         Validate(request);
         var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "partition-delete-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "delete-request.json");
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(request));
+        using var boundJob = HelperRequestBinding.Create(path, HelperRequestBinding.Delete, request);
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe")) { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden };
-        start.ArgumentList.Add(typeof(App).Assembly.Location); start.ArgumentList.Add("--delete-partition-helper"); start.ArgumentList.Add(path);
+        start.ArgumentList.Add(typeof(App).Assembly.Location); start.ArgumentList.Add("--delete-partition-helper"); start.ArgumentList.Add(path); start.ArgumentList.Add(boundJob.Digest);
         try
         {
             using var process = Process.Start(start) ?? throw new IOException("Deletion helper did not start.");

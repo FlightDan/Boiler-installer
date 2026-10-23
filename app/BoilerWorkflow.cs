@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 
@@ -15,6 +16,7 @@ public partial class MainWindow
 
     private void ShowBoilerHome()
     {
+        WizardShell.Visibility = Visibility.Collapsed;
         if (homeScreen != null) WindowRoot.Children.Remove(homeScreen);
         var panel = new StackPanel { MaxWidth = 760, Margin = new Thickness(28), VerticalAlignment = VerticalAlignment.Center };
         panel.Children.Add(new TextBlock { Text = "Boiler Installer", FontSize = 30, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
@@ -41,6 +43,7 @@ public partial class MainWindow
         }
         panel.Children.Add(languages);
         homeScreen = new Border { Background = new SolidColorBrush(Color.FromRgb(244, 246, 250)), Child = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        KeyboardNavigation.SetTabNavigation(homeScreen, KeyboardNavigationMode.Cycle);
         Panel.SetZIndex(homeScreen, 20); WindowRoot.Children.Add(homeScreen);
         Title = "Boiler Installer";
     }
@@ -58,6 +61,7 @@ public partial class MainWindow
         CreateDevicePanel();
         devicePanel!.Visibility = mode == "custom" ? Visibility.Visible : Visibility.Collapsed;
         if (homeScreen != null) { WindowRoot.Children.Remove(homeScreen); homeScreen = null; }
+        WizardShell.Visibility = Visibility.Visible;
         DownloadHost.Visibility = mode == "imported" ? Visibility.Collapsed : Visibility.Visible;
         ComponentOptionsHost.IsEnabled = mode != "imported";
         ShowStep(1);

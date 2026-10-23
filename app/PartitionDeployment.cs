@@ -430,10 +430,10 @@ public static class PartitionDeployment
     }
     // Recovery never guesses physical disk numbers or recreates a partial GPT.
     public static async Task ResumeOwnedAsync(PreparedDiskImage image, InstallationTargetKind kind,
-        string statePath, Action<string> log, CancellationToken token)
+        string statePath, Action<string> log, CancellationToken token, byte[]? approvedState = null)
     {
         MediaSource.Ordinary(statePath, InstallerWorkspace.DirectoryPath);
-        using var state = ReadState(statePath); var root = state.RootElement;
+        using var state = approvedState == null ? ReadState(statePath) : JsonDocument.Parse(approvedState); var root = state.RootElement;
         if (root.GetProperty("schema").GetInt32() != 2) throw new IOException("This journal predates recoverable owned VHDs.");
         var path = root.GetProperty("target_vhd").GetString() ?? throw new IOException("Missing target VHD.");
         if (Path.GetFullPath(statePath) != Path.Combine(Path.GetDirectoryName(path)!, "state.json"))
@@ -443,7 +443,7 @@ public static class PartitionDeployment
             throw new IOException("Recovery journal source or kind differs.");
         token.ThrowIfCancellationRequested();
         using var owned = VirtualMediaDisk.ReopenOwned(path, image.Layout.Size, root.GetProperty("target_id").GetGuid());
-        await ApplyOwnedAsync(image, owned, kind, statePath, log, token, resume: true);
+        await ApplyOwnedAsync(image, owned, kind, statePath, log, token, resume: true, approvedState: approvedState);
     }
     private static JsonDocument ReadState(string path)
     {
@@ -471,7 +471,7 @@ public static class PartitionDeployment
         token.ThrowIfCancellationRequested();
     }
     public static async Task ApplyOwnedAsync(PreparedDiskImage image, VirtualMediaDisk owned, InstallationTargetKind kind,
-        string statePath, Action<string> log, CancellationToken token, bool resume = false)
+        string statePath, Action<string> log, CancellationToken token, bool resume = false, byte[]? approvedState = null)
     {
         if (!Enum.IsDefined(kind)) throw new IOException("Unknown installation target kind.");
         image.Recheck(); token.ThrowIfCancellationRequested();
@@ -485,7 +485,7 @@ public static class PartitionDeployment
         long written = 0, verified = 0; var attempt = 1;
         if (resume)
         {
-            using var previous = ReadState(statePath); var root = previous.RootElement;
+            using var previous = approvedState == null ? ReadState(statePath) : JsonDocument.Parse(approvedState); var root = previous.RootElement;
             var recorded = root.GetProperty("completed").EnumerateArray().Select(p => p.GetString() ?? "").ToArray();
             if (root.GetProperty("schema").GetInt32() != 2 || root.GetProperty("kind").GetString() != kind.ToString()
                 || root.GetProperty("source").Deserialize<MediaSource>() != image.Identity

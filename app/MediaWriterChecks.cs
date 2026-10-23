@@ -79,10 +79,10 @@ public static class MediaWriterChecks
             var job = new MediaJob(1, variant == "physical-kind" ? "usb-image-write" : "virtual-media-validation", nonce, source,
                 variant == "insufficient-capacity" ? source.Length - 512 : source.Length,
                 variant == "missing-confirmation" ? "" : "erase-new-virtual-medium");
-            var path = Path.Combine(folder, "media-job.json"); File.WriteAllText(path, JsonSerializer.Serialize(job));
+            var path = Path.Combine(folder, "media-job.json"); using var boundJob = HelperRequestBinding.Create(path, HelperRequestBinding.Media, job);
             var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe"))
             { UseShellExecute = false, CreateNoWindow = true };
-            start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(path);
+            start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--media-helper"); start.ArgumentList.Add(path); start.ArgumentList.Add(boundJob.Digest);
             using var child = System.Diagnostics.Process.Start(start) ?? throw new IOException("Guard helper did not start.");
             await child.WaitForExitAsync();
             if (child.ExitCode == 0 || File.Exists(Path.Combine(folder, "media.vhd"))) throw new IOException("Unaccepted media job created a target: " + variant);

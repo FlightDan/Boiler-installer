@@ -130,7 +130,44 @@ unverified; firmware availability does not establish chipset support.
 The pre-refresh Release build passed 79 synthetic image and WPF checks, including
 the reproduced EOCD parser differential, valid ZIP64, byte/space limits, BZip2
 stdin, cancellation, source preservation and both partition layouts. These checks
-do not write physical disks or establish hardware acceptance. A further local
-hardening item remains: bind the exact reviewed job bytes across the UAC helper
-handoff; current protected-disk checks remain in force. Normal UAC startup and
-physical migration/reboot/recovery are still release gates.
+do not write physical disks or establish hardware acceptance.
+
+## UAC request commitment follow-up (2026-10-23)
+
+- All five elevated helper entry points require a purpose-specific SHA-256
+  commitment supplied separately from the request pathname. The parent computes
+  it from the original serialized bytes and retains a handle denying writes and
+  deletion until the helper exits. Missing or mismatched commitments fail closed.
+- Helpers verify one bounded byte snapshot before parsing or producing task
+  output. Delete/format PowerShell subprocesses independently verify the same
+  commitment before discovering disks or acting on the request.
+- Partition recovery binds the reviewed journal snapshot and carries those
+  verified bytes through both recovery reads. Normal atomic journal updates and
+  existing source, target, ownership and protected-partition checks remain active.
+- The standalone source now includes owned-VHD test scripts, the partition
+  deletion protection policy, the Linux filesystem probe and USB inventory
+  script. Missing sibling-checkout dependencies are explicitly whitelisted;
+  a non-destructive script check covers references, syntax and policy refusal.
+- New non-destructive CLI checks exercise helper tampering/cancellation and
+  Boiler's three installation routes in Chinese and English at multiple layout
+  sizes. Layout dimensions and programmatic focus traversal do not establish
+  operating-system DPI, physical keyboard or touchscreen acceptance.
+- The home page now hides the inactive wizard and keeps Tab traversal within
+  its visible controls. The previous overlay allowed focus to reach covered
+  wizard controls. All 24 language/size/route combinations pass 385 layout and
+  programmatic focus assertions after this fix.
+- Independent security review identified and closed pre-verification logging
+  and a bounded-read length race. The 149 helper checks and 120 script dependency
+  checks pass. Original-apphost administrator startup is separately confirmed;
+  it is not inferred from launching a DLL without UAC.
+- Administrator-owned 512 MiB VHD tests pass native partition writes, protected
+  NTFS sentinel preservation, process-exit recovery, byte rechecks, cancellation,
+  ownership refusal and the verified-snapshot recovery path. The journal can be
+  replaced after snapshot verification without changing the consumed recovery
+  state, and subsequent atomic journal updates still work. Pure physical-plan
+  validation and ordinary-file recovery comparisons also pass. These are not
+  physical-disk installations or actual power-loss tests.
+
+Physical migration, reboot, recovery and hardware validation remain separately
+recorded release gates. Windows-only changes do not replace the published Linux
+maintenance artifacts or their signing identity.

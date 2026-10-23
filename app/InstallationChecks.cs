@@ -21,20 +21,20 @@ public static class InstallationChecks
                 scenario == "physical-scope" ? "physical-disk" : scenario.StartsWith("resume-") ? "resume-owned-vhd-only" : "new-virtual-disk-only", InstallationTargetKind.ExternalDisk,
                 scenario == "changed-source" ? source.Identity with { WriteTime = source.Identity.WriteTime + 1 } : source.Identity,
                 scenario == "new-with-recovery" ? Path.Combine(directory, "state.json") : scenario == "resume-outside-work" ? Path.Combine(Backend.Root, "state.json") : null);
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(job));
+            using var boundJob = HelperRequestBinding.Create(path, HelperRequestBinding.Partition, job);
             using var signal = new EventWaitHandle(scenario == "cancel-before-target", EventResetMode.ManualReset, InstallationController.EventName(nonce));
             if (scenario is "physical-scope" or "wrong-nonce" or "new-with-recovery" or "resume-missing-state" or "resume-outside-work")
             {
-                var refused = false; try { await InstallationController.ExecuteHelperAsync(path); } catch (IOException) { refused = true; }
+                var refused = false; try { await InstallationController.ExecuteHelperAsync(path, boundJob.Digest); } catch (IOException) { refused = true; }
                 Require(refused && !File.Exists(Path.Combine(directory, "helper.jsonl")), scenario + "-refused-before-output");
             }
             else
             {
-                var exit = await InstallationController.ExecuteHelperAsync(path);
+                var exit = await InstallationController.ExecuteHelperAsync(path, boundJob.Digest);
                 var result = JsonSerializer.Deserialize<PartitionJobResult>(await File.ReadAllTextAsync(Path.Combine(directory, "helper-result.json")))!;
                 Require(exit == (scenario == "cancel-before-target" ? 2 : 1) && result.Status == (scenario == "cancel-before-target" ? "cancelled" : "failed"), scenario + "-explicit-terminal-status");
                 var original = await File.ReadAllTextAsync(Path.Combine(directory, "helper-result.json"));
-                var refused = false; try { await InstallationController.ExecuteHelperAsync(path); } catch (IOException) { refused = true; }
+                var refused = false; try { await InstallationController.ExecuteHelperAsync(path, boundJob.Digest); } catch (IOException) { refused = true; }
                 Require(refused && await File.ReadAllTextAsync(Path.Combine(directory, "helper-result.json")) == original, scenario + "-replay-refused-result-preserved");
             }
             Require(!File.Exists(Path.Combine(directory, "media.vhd")), scenario + "-no-created-target");

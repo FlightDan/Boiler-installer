@@ -1,6 +1,30 @@
-param([Parameter(Mandatory=$true)][string]$RequestPath, [switch]$ValidateOnly)
+param([Parameter(Mandatory=$true)][string]$RequestPath, [string]$ExpectedDigest, [switch]$ValidateOnly)
 $ErrorActionPreference = 'Stop'
-$request = Get-Content -LiteralPath $RequestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+# Verify the bounded bytes from one open handle before JSON parsing or disk discovery.
+if ($ExpectedDigest -cnotmatch '^[0-9a-f]{64}$') { throw 'Missing or invalid helper request digest.' }
+$inputFile = [System.IO.File]::Open($RequestPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+try {
+    $requestLength = $inputFile.Length
+    if ($requestLength -le 0 -or $requestLength -gt 4MB) { throw 'Invalid helper request size.' }
+    $requestBytes = New-Object byte[] ([int]$requestLength)
+    $position = 0
+    while ($position -lt $requestBytes.Length) {
+        $count = $inputFile.Read($requestBytes, $position, $requestBytes.Length - $position)
+        if ($count -le 0) { throw 'Truncated helper request.' }
+        $position += $count
+    }
+    if ($inputFile.ReadByte() -ne -1) { throw 'Helper request grew during read.' }
+} finally { $inputFile.Dispose() }
+$prefix = [System.Text.Encoding]::UTF8.GetBytes("BoilerHelperRequest:v1:format-remaining`0")
+$hash = [System.Security.Cryptography.SHA256]::Create()
+try {
+    [void]$hash.TransformBlock($prefix, 0, $prefix.Length, $prefix, 0)
+    [void]$hash.TransformFinalBlock($requestBytes, 0, $requestBytes.Length)
+    $actualDigest = [System.BitConverter]::ToString($hash.Hash).Replace('-', '').ToLowerInvariant()
+} finally { $hash.Dispose() }
+if ($actualDigest -cne $ExpectedDigest) { throw 'Helper request digest mismatch.' }
+$strictUtf8 = New-Object System.Text.UTF8Encoding($false, $true)
+$request = $strictUtf8.GetString($requestBytes) | ConvertFrom-Json
 $selection = $request.Selection
 if ($selection.Example -ne $false) { throw 'Example or incomplete requests cannot format real disks.' }
 # Missing placement is the legacy left-aligned request. Reject coerced strings/numbers.

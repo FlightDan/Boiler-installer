@@ -9,12 +9,11 @@ public sealed record UsbReviewResult(string Status, NativeDiskInfo? Device, Nati
 public sealed record UsbReviewOperation(string Directory, UsbReviewResult Result);
 public static class UsbNativeReview
 {
-    public static async Task<int> ExecuteAsync(string jobPath)
+    public static async Task<int> ExecuteAsync(string jobPath, string expectedDigest)
     {
         jobPath = Path.GetFullPath(jobPath); MediaSource.Ordinary(jobPath, InstallerWorkspace.DirectoryPath);
-        if (Path.GetFileName(jobPath) != "usb-review-job.json" || new FileInfo(jobPath).Length > 65536) throw new IOException("Invalid read-only USB job path/size.");
-        using var jobFile = new FileStream(jobPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var job = await JsonSerializer.DeserializeAsync<UsbReviewJob>(jobFile, new JsonSerializerOptions { RespectRequiredConstructorParameters = true }) ?? throw new IOException("Empty read-only USB job.");
+        if (Path.GetFileName(jobPath) != "usb-review-job.json") throw new IOException("Invalid helper request path.");
+        var job = HelperRequestBinding.Parse<UsbReviewJob>(HelperRequestBinding.ReadVerified(jobPath, HelperRequestBinding.UsbReview, expectedDigest, HelperRequestBinding.SmallLimit));
         if (job.Schema != 1 || job.Kind != "usb-native-readonly-review" || !Regex.IsMatch(job.Nonce, "^[0-9a-f]{32}$")
             || Path.GetFileName(Path.GetDirectoryName(jobPath)!) != "usb-review-" + job.Nonce || job.Source == null || job.Reviewed == null) throw new IOException("Invalid read-only USB review request.");
         NativeDiskInfo? device = null; NativeLayout? layout = null; NativeVolume? sourceVolume = null; NativeVolume[]? volumes = null; string? error = null;
@@ -52,11 +51,11 @@ public static class UsbNativeReview
     {
         token.ThrowIfCancellationRequested(); var source = MediaSource.Read(image); var nonce = Guid.NewGuid().ToString("N");
         var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "usb-review-" + nonce); Directory.CreateDirectory(directory);
-        var jobPath = Path.Combine(directory, "usb-review-job.json"); await File.WriteAllTextAsync(jobPath, JsonSerializer.Serialize(new UsbReviewJob(1, "usb-native-readonly-review", nonce, source, reviewed)), token);
+        var jobPath = Path.Combine(directory, "usb-review-job.json"); using var boundJob = HelperRequestBinding.Create(jobPath, HelperRequestBinding.UsbReview, new UsbReviewJob(1, "usb-native-readonly-review", nonce, source, reviewed), token);
         var admin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
         var start = new ProcessStartInfo(Path.Combine(Backend.Root, "runtime/dotnet/dotnet.exe")) { UseShellExecute = !admin, CreateNoWindow = admin, WindowStyle = ProcessWindowStyle.Hidden };
         if (!admin) start.Verb = "runas";
-        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--usb-review-helper"); start.ArgumentList.Add(jobPath);
+        start.ArgumentList.Add(Backend.AppAssemblyPath); start.ArgumentList.Add("--usb-review-helper"); start.ArgumentList.Add(jobPath); start.ArgumentList.Add(boundJob.Digest);
         using var process = Process.Start(start) ?? throw new IOException("Read-only USB helper did not start.");
         using var cancel = token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch (InvalidOperationException) { } });
         await process.WaitForExitAsync(); token.ThrowIfCancellationRequested();

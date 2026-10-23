@@ -47,10 +47,10 @@ public static partial class InstallationController
         { return false; }
     }
     public static async Task ResumePreparedAsync(PreparedDiskImage image, InstallationTargetKind kind, string statePath,
-        Action<string> log, CancellationToken token)
+        Action<string> log, CancellationToken token, byte[]? approvedState = null)
     {
         if (image.Layout.Size != Capacity) throw new IOException("恢复演练需要 80 GiB 系统镜像。");
-        await PartitionDeployment.ResumeOwnedAsync(image, kind, statePath, log, token);
+        await PartitionDeployment.ResumeOwnedAsync(image, kind, statePath, log, token, approvedState);
         // ResumeOwnedAsync has returned only after disposing and detaching its VHD.
         var directory = Path.GetDirectoryName(statePath)!;
         var resultPath = Path.Combine(directory, "result.json"); MediaSource.Ordinary(resultPath, Work, false);
@@ -108,9 +108,11 @@ public static partial class InstallationController
             var nonce = Guid.NewGuid().ToString("N");
             var attempt = Path.Combine(Work, "partition-deploy-" + nonce); Directory.CreateDirectory(attempt);
             var job = Path.Combine(attempt, "partition-job.json");
-            await File.WriteAllTextAsync(job, JsonSerializer.Serialize(new PartitionJob(1, nonce, "resume-owned-vhd-only", state.Kind, source, recovery)), token);
+            var recoveryBytes = HelperRequestBinding.ReadBytes(recovery, HelperRequestBinding.SmallLimit);
+            using var boundJob = HelperRequestBinding.Create(job, HelperRequestBinding.Partition, new PartitionJob(1, nonce, "resume-owned-vhd-only", state.Kind, source, recovery,
+                RecoveryDigest: HelperRequestBinding.Compute(HelperRequestBinding.Recovery, recoveryBytes)), token);
             log("RECOVERY_ATTEMPT=" + attempt + Environment.NewLine);
-            var result = await RunHelperAsync(job, nonce, text =>
+            var result = await RunHelperAsync(job, boundJob.Digest, nonce, text =>
             {
                 if (state.Stage == "permission") Phase("writing", "正在复查上次写入的内容…");
                 log(text + Environment.NewLine);
