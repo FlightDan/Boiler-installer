@@ -147,7 +147,10 @@ class ProtocolTests(unittest.TestCase):
                       'except ProtocolError as error: print(str(error))\n')
             result = subprocess.run([sys.executable, '-B', '-c', script, str(manifest)],
                                     cwd=Path(__file__).resolve().parents[1], capture_output=True,
-                                    text=True, timeout=5, check=True)
+                                    # TCG can spend over 10 seconds importing Python's
+                                    # protocol dependencies before reaching the FIFO.
+                                    # Keep the no-writer regression bounded nevertheless.
+                                    text=True, timeout=30, check=True)
             self.assertIn('regular file', result.stdout)
 
     def test_archive_atomic_and_bounded(self):

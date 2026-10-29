@@ -2,8 +2,9 @@
   "schema_version": 1,
   "kind": "ModelCatalogLock",
   "source": {
-    "repository": "FlightDan/Boiler-devices",
-    "commit": "d72035c81126b5149d70723a104b631835a4d037"
+    "repository": "FlightDan/Boiler-installer",
+    "commit": "5d2052eff35321462e92af9ac840251be1ee2cd3",
+    "subtree": "adaptations"
   },
   "files": [
     {
