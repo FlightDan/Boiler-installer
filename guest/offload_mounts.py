@@ -70,6 +70,9 @@ def mount_opt(root, mounts, readonly=False):
     override=root/'etc/systemd/system/opt.mount'
     if override.is_symlink() and str(override.readlink())=='/dev/null': return False
     if override.exists(): raise RuntimeError('Custom /opt mount requires review')
+    for dropins in (unit.with_name('opt.mount.d'), override.with_name('opt.mount.d')):
+        if dropins.exists() or dropins.is_symlink():
+            raise RuntimeError('Custom /opt mount requires review')
     source=root/'home/.steamos/offload/opt'
     target=root/'opt'
     if readonly:
@@ -78,7 +81,13 @@ def mount_opt(root, mounts, readonly=False):
         from safe_directories import ensure_directory
         ensure_directory(source,0o755)
         ensure_directory(target,0o755)
-    if source.is_symlink() or target.is_symlink(): raise RuntimeError('Unexpected offload symlink')
+    # The read-only verifier must reject redirected ancestors too. Checking
+    # only the leaf permits e.g. /home/.steamos to bind a host path into /opt.
+    from file_transaction import directory_fd
+    for path in (source,target):
+        try: descriptor=directory_fd(path)
+        except OSError as error: raise RuntimeError('Unexpected offload directory path') from error
+        os.close(descriptor)
     subprocess.run(['mount','--bind',str(source),str(target)],check=True)
     mounts.append(target)
     if readonly: subprocess.run(['mount','-o','remount,bind,ro',str(target)],check=True)

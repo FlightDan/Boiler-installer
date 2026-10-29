@@ -1,0 +1,1580 @@
+{
+  "components": {
+    "graphics:amd-780m": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/7000-series/amd-ryzen-7-7840u.html",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/8000-series/amd-ryzen-7-8840u.html"
+      ],
+      "files": [
+        {
+          "git_blob": "9b6add390362d5a89e787d735da587eeff745306",
+          "sha256": "48cd3b54ef38078acfd1362faab3a142b70382d9eaa5f167f8f471af7f7b3238",
+          "size": 350880,
+          "source": "graphics/amd-780m/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_1_4_dmcub.bin"
+        },
+        {
+          "git_blob": "df9b2b9cbc4c78820b869bf22db3034077564a09",
+          "sha256": "ac71f4eec713fc35b4a1fe27531e3eb04edd81eeac2cef64df01ac50d8510805",
+          "size": 132352,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_imu.bin"
+        },
+        {
+          "git_blob": "7b784b13dfdb92c0024a8c4466d6cd2691f815ae",
+          "sha256": "476db2ec7e33d1e126b1736649208443e3ccc68aa60e4978574cdbced2b26543",
+          "size": 263424,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_me.bin"
+        },
+        {
+          "git_blob": "353562f7cfa905e728d8d2c79fa1a84f96175e44",
+          "sha256": "505ae64eccb2e4b4751fe18ec1b584e1f6b4c81d0f5ec089afbcf378cad59711",
+          "size": 268160,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mec.bin"
+        },
+        {
+          "git_blob": "86dd865b5a612846068549b866c4ff1f772ab9a5",
+          "sha256": "4844bb3873ba1c141aa4f1374ab7ceca0c832f769e58efae82e25380bebfd5b9",
+          "size": 287712,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes.bin"
+        },
+        {
+          "git_blob": "59cafb3e6144b478175f946f433f33497fa4d924",
+          "sha256": "b081234c2b35d65c69f73a384f983b4f361639e0872d8f0dc9e804885e872ccd",
+          "size": 235312,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes1.bin"
+        },
+        {
+          "git_blob": "fe476bb5b233cad90156c38a62ea342bd33d15a0",
+          "sha256": "c0d012d71fac7a52d1a6a1c43565311a2148d53259eb946c99284fe9a9cb2b5d",
+          "size": 263616,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes_2.bin"
+        },
+        {
+          "git_blob": "e48445dbd989fc133883cb4ff437726bd6980108",
+          "sha256": "fb1ee527c05c55679c80a8bcf60fbb533724891baeb0eabc2917fc44e63a45dc",
+          "size": 263424,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_pfp.bin"
+        },
+        {
+          "git_blob": "64a27a1c626c97d426828fbf3eb26a0e5b64fe17",
+          "sha256": "9be553a5e0d62548197f2afc1250d3ad98cca514302f5c8cbe7906507a4365a4",
+          "size": 157040,
+          "source": "graphics/amd-780m/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-780m/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_ta.bin"
+        },
+        {
+          "git_blob": "301d671105a004181c66373f815a18bf20be1c69",
+          "sha256": "11e3529d748e2b6b204681183360a6ead80665b8deda996dfcf35973f789fc3d",
+          "size": 2560,
+          "source": "graphics/amd-780m/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_toc.bin"
+        },
+        {
+          "git_blob": "2d346a2a64bc6fe57605125be126a8e64f03a549",
+          "sha256": "708c2c2c45262c98ebe8e34e32c3f1ce8eb5b007bab560c9ea9b576a8e4d6768",
+          "size": 34560,
+          "source": "graphics/amd-780m/firmware/amdgpu/sdma_6_0_1.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_0_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_0_1.bin"
+        },
+        {
+          "git_blob": "c07ccdac34bafd795f19365136c5a77f82864dda",
+          "sha256": "0312642f73717256299524f9ace75320ceb098b43609c07ce90ba24b47e7c6a5",
+          "size": 395664,
+          "source": "graphics/amd-780m/firmware/amdgpu/vcn_4_0_2.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_2.bin"
+        }
+      ],
+      "id": "graphics:amd-780m",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-780m/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-780m/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Phoenix/Hawk Point candidate for the named 7840U/8840U models. GC 11.0.1, PSP 13.0.4, SDMA 6.0.1, VCN 4.0.2 and DCN 3.1.4. Marketing-name to IP mapping remains a provisional inference until target PCI/IP discovery and runtime evidence exist.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-880m": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-9-365.html"
+      ],
+      "files": [
+        {
+          "git_blob": "f58d53d368897013c6e778c19158727ee9e677ac",
+          "sha256": "542a65c32716537616a9b1a9a2644eb455de8eb2c464427eefd15452e475697c",
+          "size": 520480,
+          "source": "graphics/amd-880m/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_5_dmcub.bin"
+        },
+        {
+          "git_blob": "3867e4029ea4e535a4f913df90e382843ab7bc3e",
+          "sha256": "469add57cafead90ab1953d6039cd8e39bc50dfd78aa5fd78f019ccf66a0af41",
+          "size": 132352,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_imu.bin"
+        },
+        {
+          "git_blob": "9656b5e4b77895f3b68e1480b97848049ef9addb",
+          "sha256": "ca86b95b3812c4455efd435e4067816176acf61d065d856fbb64e09b136075cd",
+          "size": 263424,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_me.bin"
+        },
+        {
+          "git_blob": "7fa0daebbe84e74f2b653868ba7c7eebed82a1dc",
+          "sha256": "aef2e68c3a6d3c1335caf5e4df189f03c6123b84e2ee627fc99bc17476c80e59",
+          "size": 268160,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mec.bin"
+        },
+        {
+          "git_blob": "906ed2901c308fee7520bc044994f65988940bfd",
+          "sha256": "760ec45f7d98f2337c5580c22df262268efaba581fb43aac3cd476ea0f6af306",
+          "size": 238128,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes1.bin"
+        },
+        {
+          "git_blob": "e1f0623e7b01c9c1479461c9b74b192311770ede",
+          "sha256": "6c074d1e3824407fc48a5f1444bdc956081a54690fa61d3f25b69610fa25efbb",
+          "size": 258208,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes_2.bin"
+        },
+        {
+          "git_blob": "065643411fa9aadf6c88373b47b89ac49503c64a",
+          "sha256": "51628879a34e9382e22d1156d4104ab4037da7862368706834945b9b2a2d2b42",
+          "size": 263424,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_pfp.bin"
+        },
+        {
+          "git_blob": "bd8300263aa04e05b59f52dd6cb4f95a409e2c16",
+          "sha256": "0dc8b6ef5530a4a53938c8baa0d49cd458607d95233237859fa98d44feb3e985",
+          "size": 166528,
+          "source": "graphics/amd-880m/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-880m/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_ta.bin"
+        },
+        {
+          "git_blob": "03e15b7d99fbe859b89e2a05923383d6005265ec",
+          "sha256": "da82e510ba90b3939656ecd2092870e5eef1c1b71ad2a4b776bc9e57bae1f05f",
+          "size": 2560,
+          "source": "graphics/amd-880m/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_toc.bin"
+        },
+        {
+          "git_blob": "117d0e013cb7606fddf859a39bf6b18c14749447",
+          "sha256": "85f9f3714de68eee74cdf4852d709bc36a5c73a00e943b707bc2ce10d6b7bab4",
+          "size": 34560,
+          "source": "graphics/amd-880m/firmware/amdgpu/sdma_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_1_0.bin"
+        },
+        {
+          "git_blob": "7566746e6727aa50c7414d1fda0e8d275593c38e",
+          "sha256": "0317ff9e75c9feefaf7511913347522fd5e0543654b58ad48cf696e389178560",
+          "size": 395664,
+          "source": "graphics/amd-880m/firmware/amdgpu/vcn_4_0_5.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_5.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_5.bin"
+        },
+        {
+          "git_blob": "28ec488f716ff478e319d1882dd8c5e6158b7a7d",
+          "sha256": "468ea41f9385f8810f86658eddc46fc2f114b1e64af65151cbd0304706fbb0ad",
+          "size": 25984,
+          "source": "graphics/amd-880m/firmware/amdgpu/vpe_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/vpe_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vpe_6_1_0.bin"
+        }
+      ],
+      "id": "graphics:amd-880m",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-880m/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-880m/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Strix Point candidate for Ryzen AI 9 365: GC 11.5.0, PSP 14.0.0, SDMA 6.1.0, VCN 4.0.5, VPE 6.1.0 and DCN 3.5.0. Does not include Strix Halo, Krackan or later GC 11.5 variants; runtime hardware verification remains open.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-ai-z2-extreme": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "f58d53d368897013c6e778c19158727ee9e677ac",
+          "sha256": "542a65c32716537616a9b1a9a2644eb455de8eb2c464427eefd15452e475697c",
+          "size": 520480,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_5_dmcub.bin"
+        },
+        {
+          "git_blob": "3867e4029ea4e535a4f913df90e382843ab7bc3e",
+          "sha256": "469add57cafead90ab1953d6039cd8e39bc50dfd78aa5fd78f019ccf66a0af41",
+          "size": 132352,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_imu.bin"
+        },
+        {
+          "git_blob": "9656b5e4b77895f3b68e1480b97848049ef9addb",
+          "sha256": "ca86b95b3812c4455efd435e4067816176acf61d065d856fbb64e09b136075cd",
+          "size": 263424,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_me.bin"
+        },
+        {
+          "git_blob": "7fa0daebbe84e74f2b653868ba7c7eebed82a1dc",
+          "sha256": "aef2e68c3a6d3c1335caf5e4df189f03c6123b84e2ee627fc99bc17476c80e59",
+          "size": 268160,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mec.bin"
+        },
+        {
+          "git_blob": "906ed2901c308fee7520bc044994f65988940bfd",
+          "sha256": "760ec45f7d98f2337c5580c22df262268efaba581fb43aac3cd476ea0f6af306",
+          "size": 238128,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes1.bin"
+        },
+        {
+          "git_blob": "e1f0623e7b01c9c1479461c9b74b192311770ede",
+          "sha256": "6c074d1e3824407fc48a5f1444bdc956081a54690fa61d3f25b69610fa25efbb",
+          "size": 258208,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes_2.bin"
+        },
+        {
+          "git_blob": "065643411fa9aadf6c88373b47b89ac49503c64a",
+          "sha256": "51628879a34e9382e22d1156d4104ab4037da7862368706834945b9b2a2d2b42",
+          "size": 263424,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_pfp.bin"
+        },
+        {
+          "git_blob": "bd8300263aa04e05b59f52dd6cb4f95a409e2c16",
+          "sha256": "0dc8b6ef5530a4a53938c8baa0d49cd458607d95233237859fa98d44feb3e985",
+          "size": 166528,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_ta.bin"
+        },
+        {
+          "git_blob": "03e15b7d99fbe859b89e2a05923383d6005265ec",
+          "sha256": "da82e510ba90b3939656ecd2092870e5eef1c1b71ad2a4b776bc9e57bae1f05f",
+          "size": 2560,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_toc.bin"
+        },
+        {
+          "git_blob": "117d0e013cb7606fddf859a39bf6b18c14749447",
+          "sha256": "85f9f3714de68eee74cdf4852d709bc36a5c73a00e943b707bc2ce10d6b7bab4",
+          "size": 34560,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/sdma_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_1_0.bin"
+        },
+        {
+          "git_blob": "7566746e6727aa50c7414d1fda0e8d275593c38e",
+          "sha256": "0317ff9e75c9feefaf7511913347522fd5e0543654b58ad48cf696e389178560",
+          "size": 395664,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/vcn_4_0_5.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_5.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_5.bin"
+        },
+        {
+          "git_blob": "28ec488f716ff478e319d1882dd8c5e6158b7a7d",
+          "sha256": "468ea41f9385f8810f86658eddc46fc2f114b1e64af65151cbd0304706fbb0ad",
+          "size": 25984,
+          "source": "graphics/amd-ai-z2-extreme/firmware/amdgpu/vpe_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/vpe_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vpe_6_1_0.bin"
+        }
+      ],
+      "id": "graphics:amd-ai-z2-extreme",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-ai-z2-extreme/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-ai-z2-extreme/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Strix Point graphics candidate shared with Z2 Extreme; this graphics group excludes NPU firmware. Exact device PCI/IP discovery and runtime evidence remain unvalidated.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z1": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "9b6add390362d5a89e787d735da587eeff745306",
+          "sha256": "48cd3b54ef38078acfd1362faab3a142b70382d9eaa5f167f8f471af7f7b3238",
+          "size": 350880,
+          "source": "graphics/amd-z1/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_1_4_dmcub.bin"
+        },
+        {
+          "git_blob": "df9b2b9cbc4c78820b869bf22db3034077564a09",
+          "sha256": "ac71f4eec713fc35b4a1fe27531e3eb04edd81eeac2cef64df01ac50d8510805",
+          "size": 132352,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_imu.bin"
+        },
+        {
+          "git_blob": "24be96dc7979658781de080b6d6f34052832effc",
+          "sha256": "e4f1f6abcd213d54ad9e885d9f550083b0e2f67d983566015e8a53981e1cb155",
+          "size": 263424,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_me.bin"
+        },
+        {
+          "git_blob": "815e5c4ab1ce8d916f9e8a1500131bc866bde6ea",
+          "sha256": "5d89cf6b60354f3746c2cbd1ff0cb1a741556ca20d72745242cb69b553d0985c",
+          "size": 268160,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_mec.bin"
+        },
+        {
+          "git_blob": "86dd865b5a612846068549b866c4ff1f772ab9a5",
+          "sha256": "4844bb3873ba1c141aa4f1374ab7ceca0c832f769e58efae82e25380bebfd5b9",
+          "size": 287712,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_mes.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_mes.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_mes.bin"
+        },
+        {
+          "git_blob": "0ec79902459fadaf9de9d0b29df2f7445b8313be",
+          "sha256": "610a8620a3797e59e13e60a584a95a2e0e24a0acc78fb8f18b2d1f19cf841d74",
+          "size": 234640,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_mes1.bin"
+        },
+        {
+          "git_blob": "13ba3b08107c451b542135cf23b0ab1c9d0effb6",
+          "sha256": "fec36127fefc20d7c4b265f59e0bb073063c0d411c68f314277725736cd78e29",
+          "size": 257760,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_mes_2.bin"
+        },
+        {
+          "git_blob": "2508ff593a2544708315d7c45679da30f9df2b45",
+          "sha256": "5ae8b7bb6316f87ae8b978354c088e3bd8c890959382d72886377cda25b1ffd1",
+          "size": 263424,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_pfp.bin"
+        },
+        {
+          "git_blob": "f56d6fbf1bfb26721f5d6b6be60ff5511641dc9d",
+          "sha256": "257ced82d7bec41249b06592ee0c44fb8f9262de2c6af9c52dc6f6a8a702063e",
+          "size": 159152,
+          "source": "graphics/amd-z1/firmware/amdgpu/gc_11_0_4_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_4_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_4_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-z1/firmware/amdgpu/psp_13_0_11_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_11_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_11_ta.bin"
+        },
+        {
+          "git_blob": "301d671105a004181c66373f815a18bf20be1c69",
+          "sha256": "11e3529d748e2b6b204681183360a6ead80665b8deda996dfcf35973f789fc3d",
+          "size": 2560,
+          "source": "graphics/amd-z1/firmware/amdgpu/psp_13_0_11_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_11_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_11_toc.bin"
+        },
+        {
+          "git_blob": "2d346a2a64bc6fe57605125be126a8e64f03a549",
+          "sha256": "708c2c2c45262c98ebe8e34e32c3f1ce8eb5b007bab560c9ea9b576a8e4d6768",
+          "size": 34560,
+          "source": "graphics/amd-z1/firmware/amdgpu/sdma_6_0_1.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_0_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_0_1.bin"
+        },
+        {
+          "git_blob": "c07ccdac34bafd795f19365136c5a77f82864dda",
+          "sha256": "0312642f73717256299524f9ace75320ceb098b43609c07ce90ba24b47e7c6a5",
+          "size": 395664,
+          "source": "graphics/amd-z1/firmware/amdgpu/vcn_4_0_2.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_2.bin"
+        }
+      ],
+      "id": "graphics:amd-z1",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z1/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z1/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Phoenix 2 candidate: GC 11.0.4 and PSP 13.0.11, with the shared SDMA 6.0.1 / VCN 4.0.2 / DCN 3.1.4 group. The exact Z1 device IP discovery has not been observed; do not infer this from RDNA3 or CU count alone. Revise the group if a target identifies a different silicon variant.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z1-extreme": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "9b6add390362d5a89e787d735da587eeff745306",
+          "sha256": "48cd3b54ef38078acfd1362faab3a142b70382d9eaa5f167f8f471af7f7b3238",
+          "size": 350880,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_1_4_dmcub.bin"
+        },
+        {
+          "git_blob": "df9b2b9cbc4c78820b869bf22db3034077564a09",
+          "sha256": "ac71f4eec713fc35b4a1fe27531e3eb04edd81eeac2cef64df01ac50d8510805",
+          "size": 132352,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_imu.bin"
+        },
+        {
+          "git_blob": "7b784b13dfdb92c0024a8c4466d6cd2691f815ae",
+          "sha256": "476db2ec7e33d1e126b1736649208443e3ccc68aa60e4978574cdbced2b26543",
+          "size": 263424,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_me.bin"
+        },
+        {
+          "git_blob": "353562f7cfa905e728d8d2c79fa1a84f96175e44",
+          "sha256": "505ae64eccb2e4b4751fe18ec1b584e1f6b4c81d0f5ec089afbcf378cad59711",
+          "size": 268160,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mec.bin"
+        },
+        {
+          "git_blob": "86dd865b5a612846068549b866c4ff1f772ab9a5",
+          "sha256": "4844bb3873ba1c141aa4f1374ab7ceca0c832f769e58efae82e25380bebfd5b9",
+          "size": 287712,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes.bin"
+        },
+        {
+          "git_blob": "59cafb3e6144b478175f946f433f33497fa4d924",
+          "sha256": "b081234c2b35d65c69f73a384f983b4f361639e0872d8f0dc9e804885e872ccd",
+          "size": 235312,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes1.bin"
+        },
+        {
+          "git_blob": "fe476bb5b233cad90156c38a62ea342bd33d15a0",
+          "sha256": "c0d012d71fac7a52d1a6a1c43565311a2148d53259eb946c99284fe9a9cb2b5d",
+          "size": 263616,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes_2.bin"
+        },
+        {
+          "git_blob": "e48445dbd989fc133883cb4ff437726bd6980108",
+          "sha256": "fb1ee527c05c55679c80a8bcf60fbb533724891baeb0eabc2917fc44e63a45dc",
+          "size": 263424,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_pfp.bin"
+        },
+        {
+          "git_blob": "64a27a1c626c97d426828fbf3eb26a0e5b64fe17",
+          "sha256": "9be553a5e0d62548197f2afc1250d3ad98cca514302f5c8cbe7906507a4365a4",
+          "size": 157040,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_ta.bin"
+        },
+        {
+          "git_blob": "301d671105a004181c66373f815a18bf20be1c69",
+          "sha256": "11e3529d748e2b6b204681183360a6ead80665b8deda996dfcf35973f789fc3d",
+          "size": 2560,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_toc.bin"
+        },
+        {
+          "git_blob": "2d346a2a64bc6fe57605125be126a8e64f03a549",
+          "sha256": "708c2c2c45262c98ebe8e34e32c3f1ce8eb5b007bab560c9ea9b576a8e4d6768",
+          "size": 34560,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/sdma_6_0_1.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_0_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_0_1.bin"
+        },
+        {
+          "git_blob": "c07ccdac34bafd795f19365136c5a77f82864dda",
+          "sha256": "0312642f73717256299524f9ace75320ceb098b43609c07ce90ba24b47e7c6a5",
+          "size": 395664,
+          "source": "graphics/amd-z1-extreme/firmware/amdgpu/vcn_4_0_2.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_2.bin"
+        }
+      ],
+      "id": "graphics:amd-z1-extreme",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z1-extreme/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z1-extreme/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Phoenix candidate, separate from the non-Extreme Z1 Phoenix 2 group. Exact target PCI/IP discovery and runtime evidence remain unvalidated.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z2": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "9b6add390362d5a89e787d735da587eeff745306",
+          "sha256": "48cd3b54ef38078acfd1362faab3a142b70382d9eaa5f167f8f471af7f7b3238",
+          "size": 350880,
+          "source": "graphics/amd-z2/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_1_4_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_1_4_dmcub.bin"
+        },
+        {
+          "git_blob": "df9b2b9cbc4c78820b869bf22db3034077564a09",
+          "sha256": "ac71f4eec713fc35b4a1fe27531e3eb04edd81eeac2cef64df01ac50d8510805",
+          "size": 132352,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_imu.bin"
+        },
+        {
+          "git_blob": "7b784b13dfdb92c0024a8c4466d6cd2691f815ae",
+          "sha256": "476db2ec7e33d1e126b1736649208443e3ccc68aa60e4978574cdbced2b26543",
+          "size": 263424,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_me.bin"
+        },
+        {
+          "git_blob": "353562f7cfa905e728d8d2c79fa1a84f96175e44",
+          "sha256": "505ae64eccb2e4b4751fe18ec1b584e1f6b4c81d0f5ec089afbcf378cad59711",
+          "size": 268160,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mec.bin"
+        },
+        {
+          "git_blob": "86dd865b5a612846068549b866c4ff1f772ab9a5",
+          "sha256": "4844bb3873ba1c141aa4f1374ab7ceca0c832f769e58efae82e25380bebfd5b9",
+          "size": 287712,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes.bin"
+        },
+        {
+          "git_blob": "59cafb3e6144b478175f946f433f33497fa4d924",
+          "sha256": "b081234c2b35d65c69f73a384f983b4f361639e0872d8f0dc9e804885e872ccd",
+          "size": 235312,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes1.bin"
+        },
+        {
+          "git_blob": "fe476bb5b233cad90156c38a62ea342bd33d15a0",
+          "sha256": "c0d012d71fac7a52d1a6a1c43565311a2148d53259eb946c99284fe9a9cb2b5d",
+          "size": 263616,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_mes_2.bin"
+        },
+        {
+          "git_blob": "e48445dbd989fc133883cb4ff437726bd6980108",
+          "sha256": "fb1ee527c05c55679c80a8bcf60fbb533724891baeb0eabc2917fc44e63a45dc",
+          "size": 263424,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_pfp.bin"
+        },
+        {
+          "git_blob": "64a27a1c626c97d426828fbf3eb26a0e5b64fe17",
+          "sha256": "9be553a5e0d62548197f2afc1250d3ad98cca514302f5c8cbe7906507a4365a4",
+          "size": 157040,
+          "source": "graphics/amd-z2/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_0_1_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_0_1_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-z2/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_ta.bin"
+        },
+        {
+          "git_blob": "301d671105a004181c66373f815a18bf20be1c69",
+          "sha256": "11e3529d748e2b6b204681183360a6ead80665b8deda996dfcf35973f789fc3d",
+          "size": 2560,
+          "source": "graphics/amd-z2/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_13_0_4_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_13_0_4_toc.bin"
+        },
+        {
+          "git_blob": "2d346a2a64bc6fe57605125be126a8e64f03a549",
+          "sha256": "708c2c2c45262c98ebe8e34e32c3f1ce8eb5b007bab560c9ea9b576a8e4d6768",
+          "size": 34560,
+          "source": "graphics/amd-z2/firmware/amdgpu/sdma_6_0_1.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_0_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_0_1.bin"
+        },
+        {
+          "git_blob": "c07ccdac34bafd795f19365136c5a77f82864dda",
+          "sha256": "0312642f73717256299524f9ace75320ceb098b43609c07ce90ba24b47e7c6a5",
+          "size": 395664,
+          "source": "graphics/amd-z2/firmware/amdgpu/vcn_4_0_2.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_2.bin"
+        }
+      ],
+      "id": "graphics:amd-z2",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z2/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z2/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Hawk Point candidate sharing the named 780M/Phoenix firmware IP group. Exact Z2 target PCI/IP discovery and runtime evidence remain unvalidated.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z2-a": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "1a18db6f9a048e34e790a8332805cd31f8f3445f",
+          "sha256": "406e714cb8d4f11e4ec762ce528fe6a0686302d89367dab2abd308334ac30d46",
+          "size": 209408,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_asd.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_asd.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_asd.bin"
+        },
+        {
+          "git_blob": "b0f5c00ae23b6489f9fe3e7a307bbc3537adc883",
+          "sha256": "de39ff5c1f45a4a3d2b7e0760a2ff64a593e5f3e03e82600c62e18bc72f48e01",
+          "size": 263296,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_ce.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_ce.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_ce.bin"
+        },
+        {
+          "git_blob": "af7a518f2e7bca7cec320afa1cb8597f515ca544",
+          "sha256": "7e777abdfc513021963c1db6861979f331fbad9c8a0ab53090d29c595e7b4801",
+          "size": 85876,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_dmcub.bin"
+        },
+        {
+          "git_blob": "d6d27c505e662c11afbcf34dce034a2cff561305",
+          "sha256": "922444d873abfe592af8f3ea0faa61a053ce94269ad3dd19dbd72cb5a96eceeb",
+          "size": 263424,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_me.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_me.bin"
+        },
+        {
+          "git_blob": "edc1e161c2e3ea55b1bf09cc35df35e81e587cbe",
+          "sha256": "48ac7448a86f75dac168c19c0f4e10734cc2c5fa9fc7cb28aacfad5c59527170",
+          "size": 268160,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_mec.bin"
+        },
+        {
+          "git_blob": "edc1e161c2e3ea55b1bf09cc35df35e81e587cbe",
+          "sha256": "48ac7448a86f75dac168c19c0f4e10734cc2c5fa9fc7cb28aacfad5c59527170",
+          "size": 268160,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_mec2.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_mec2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_mec2.bin"
+        },
+        {
+          "git_blob": "bb35549c964dcbe33bce6df5c075cb9d94b217a0",
+          "sha256": "425359a89c32fa4b9ae7ce487f23a76e51c9003882185c30d7b167bbeefdc6ba",
+          "size": 263424,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_pfp.bin"
+        },
+        {
+          "git_blob": "af8c09784fbf90243b1ccde73502b453e97569dc",
+          "sha256": "a3512355132203d8aca122e246b3fa8dcf5aa13c064011e8ffedf5674656b58b",
+          "size": 45368,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_rlc.bin"
+        },
+        {
+          "git_blob": "77ceaebccd23fe86eeea882d38933a21aed4f858",
+          "sha256": "7e81b24cb357e3373bf0d7b94bff53c8b0225fd87d07d6940d98241d9ec572fd",
+          "size": 135424,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_sdma.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_sdma.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_sdma.bin"
+        },
+        {
+          "git_blob": "a4f575e9aa16a0d77094ea93260d2d97dfd0e727",
+          "sha256": "2ca90c91f7e1756d5c1bd5443007768c692fbe14a228eb5a87e47953c62f5d75",
+          "size": 1792,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_toc.bin"
+        },
+        {
+          "git_blob": "86b8e99f06a4c4c8707557349c7eab7a357fb4ce",
+          "sha256": "eafebdb4043b825b12826198a7d76d8acc4e251fb102329dc1c78cf7bdcc15e2",
+          "size": 572368,
+          "source": "graphics/amd-z2-a/firmware/amdgpu/vangogh_vcn.bin",
+          "target": "usr/lib/firmware/amdgpu/vangogh_vcn.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vangogh_vcn.bin"
+        }
+      ],
+      "id": "graphics:amd-z2-a",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z2-a/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z2-a/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Van Gogh graphics candidate for Z2 A. Zen2/RDNA2 and CU count alone do not establish the exact stepping or firmware group; retain this uncertainty until device PCI/IP discovery and runtime evidence exist.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z2-extreme": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "f58d53d368897013c6e778c19158727ee9e677ac",
+          "sha256": "542a65c32716537616a9b1a9a2644eb455de8eb2c464427eefd15452e475697c",
+          "size": 520480,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/dcn_3_5_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/dcn_3_5_dmcub.bin"
+        },
+        {
+          "git_blob": "3867e4029ea4e535a4f913df90e382843ab7bc3e",
+          "sha256": "469add57cafead90ab1953d6039cd8e39bc50dfd78aa5fd78f019ccf66a0af41",
+          "size": 132352,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_imu.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_imu.bin"
+        },
+        {
+          "git_blob": "9656b5e4b77895f3b68e1480b97848049ef9addb",
+          "sha256": "ca86b95b3812c4455efd435e4067816176acf61d065d856fbb64e09b136075cd",
+          "size": 263424,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_me.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_me.bin"
+        },
+        {
+          "git_blob": "7fa0daebbe84e74f2b653868ba7c7eebed82a1dc",
+          "sha256": "aef2e68c3a6d3c1335caf5e4df189f03c6123b84e2ee627fc99bc17476c80e59",
+          "size": 268160,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mec.bin"
+        },
+        {
+          "git_blob": "906ed2901c308fee7520bc044994f65988940bfd",
+          "sha256": "760ec45f7d98f2337c5580c22df262268efaba581fb43aac3cd476ea0f6af306",
+          "size": 238128,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes1.bin"
+        },
+        {
+          "git_blob": "e1f0623e7b01c9c1479461c9b74b192311770ede",
+          "sha256": "6c074d1e3824407fc48a5f1444bdc956081a54690fa61d3f25b69610fa25efbb",
+          "size": 258208,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_mes_2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_mes_2.bin"
+        },
+        {
+          "git_blob": "065643411fa9aadf6c88373b47b89ac49503c64a",
+          "sha256": "51628879a34e9382e22d1156d4104ab4037da7862368706834945b9b2a2d2b42",
+          "size": 263424,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_pfp.bin"
+        },
+        {
+          "git_blob": "bd8300263aa04e05b59f52dd6cb4f95a409e2c16",
+          "sha256": "0dc8b6ef5530a4a53938c8baa0d49cd458607d95233237859fa98d44feb3e985",
+          "size": 166528,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/gc_11_5_0_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/gc_11_5_0_rlc.bin"
+        },
+        {
+          "git_blob": "6b242caf4226c34e8d0d9992d5dbbc557a42ed80",
+          "sha256": "773401f9a1e9eaf45db4869ea08050fec9ce8d7807afb3bf406b55e27dccf750",
+          "size": 254976,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_ta.bin"
+        },
+        {
+          "git_blob": "03e15b7d99fbe859b89e2a05923383d6005265ec",
+          "sha256": "da82e510ba90b3939656ecd2092870e5eef1c1b71ad2a4b776bc9e57bae1f05f",
+          "size": 2560,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/psp_14_0_0_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/psp_14_0_0_toc.bin"
+        },
+        {
+          "git_blob": "117d0e013cb7606fddf859a39bf6b18c14749447",
+          "sha256": "85f9f3714de68eee74cdf4852d709bc36a5c73a00e943b707bc2ce10d6b7bab4",
+          "size": 34560,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/sdma_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/sdma_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/sdma_6_1_0.bin"
+        },
+        {
+          "git_blob": "7566746e6727aa50c7414d1fda0e8d275593c38e",
+          "sha256": "0317ff9e75c9feefaf7511913347522fd5e0543654b58ad48cf696e389178560",
+          "size": 395664,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/vcn_4_0_5.bin",
+          "target": "usr/lib/firmware/amdgpu/vcn_4_0_5.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vcn_4_0_5.bin"
+        },
+        {
+          "git_blob": "28ec488f716ff478e319d1882dd8c5e6158b7a7d",
+          "sha256": "468ea41f9385f8810f86658eddc46fc2f114b1e64af65151cbd0304706fbb0ad",
+          "size": 25984,
+          "source": "graphics/amd-z2-extreme/firmware/amdgpu/vpe_6_1_0.bin",
+          "target": "usr/lib/firmware/amdgpu/vpe_6_1_0.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/vpe_6_1_0.bin"
+        }
+      ],
+      "id": "graphics:amd-z2-extreme",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z2-extreme/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z2-extreme/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Strix Point candidate. Does not include GC 11.5.1/11.5.2 or a driver-wide union. Confirm exact Z2 Extreme PCI/IP discovery and runtime firmware requests before a hardware-support claim.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:amd-z2-go": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "amdgpu"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "files": [
+        {
+          "git_blob": "b427fd8180c34cafd8934f827633d4fecce1b7ed",
+          "sha256": "bd1fd7a357d7c9aa489469166435aa2d3e2ee1b324d4be35e9a648c794281674",
+          "size": 263296,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_ce.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_ce.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_ce.bin"
+        },
+        {
+          "git_blob": "4dadb1a6c975fa0cd056b6691ca00db9c3e70822",
+          "sha256": "4bcb91d58ba727684845b02a9cdd32f37cb5a9f71bd4b93d4e678094465cda47",
+          "size": 236048,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_dmcub.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_dmcub.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_dmcub.bin"
+        },
+        {
+          "git_blob": "cb6b870ea90d48da253c3ba79a8bd98f9185730a",
+          "sha256": "e2eeb8958a08231813943dabffd0e18ab65e7c0338a36155b9e6584ce55df31f",
+          "size": 263424,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_me.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_me.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_me.bin"
+        },
+        {
+          "git_blob": "1536befa3ac06addd906168569fb4d6d0b2ecd18",
+          "sha256": "9020014a34a9357b28058f4ecdf1f0d3ffbcac7265df04c544722ed5f7447e9b",
+          "size": 268160,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_mec.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_mec.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_mec.bin"
+        },
+        {
+          "git_blob": "1536befa3ac06addd906168569fb4d6d0b2ecd18",
+          "sha256": "9020014a34a9357b28058f4ecdf1f0d3ffbcac7265df04c544722ed5f7447e9b",
+          "size": 268160,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_mec2.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_mec2.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_mec2.bin"
+        },
+        {
+          "git_blob": "5f649b01d73b27001d7321e95346a988872200b4",
+          "sha256": "b817f15a37ae080d5037a159732d60be24dda0bed74b6a3ba609d7c38f4d29a7",
+          "size": 263424,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_pfp.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_pfp.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_pfp.bin"
+        },
+        {
+          "git_blob": "8b08105cd277e529a110094da74cb58f319773fb",
+          "sha256": "bf41c78ecf4f3444ee14c917358485e55bfc5c496779821f1cad643b25a3da7f",
+          "size": 178128,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_rlc.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_rlc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_rlc.bin"
+        },
+        {
+          "git_blob": "0a19d261e4bfe69180e33c639d2e3034f423e1b6",
+          "sha256": "c7e1cfd296079f13531a52c2a4497a0a9cc1d8181fd1edc60c96fb6d56e18774",
+          "size": 34048,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_sdma.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_sdma.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_sdma.bin"
+        },
+        {
+          "git_blob": "935c4b414e5c62c54c61bf3d577485c74f6b9c5c",
+          "sha256": "161de337921cfff50e6a5cb5cf984e972be51c940070363cb76c7af6b5bfb08a",
+          "size": 246784,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_ta.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_ta.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_ta.bin"
+        },
+        {
+          "git_blob": "21bb8c0e709032b98cd115f0705ac7af3d775fb4",
+          "sha256": "9fc8da2f6106bf657222ca4bcca687e66e657e5710278c694d9d0e862221758d",
+          "size": 1792,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_toc.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_toc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_toc.bin"
+        },
+        {
+          "git_blob": "b109c2dd452434d3c5d6438bd22da234861f5b9c",
+          "sha256": "3d873655b03ebf722d37c831bb718ac325677eab4f2b1783b667d7823c043a8c",
+          "size": 572368,
+          "source": "graphics/amd-z2-go/firmware/amdgpu/yellow_carp_vcn.bin",
+          "target": "usr/lib/firmware/amdgpu/yellow_carp_vcn.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amdgpu/yellow_carp_vcn.bin"
+        }
+      ],
+      "id": "graphics:amd-z2-go",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "c2004b11faa88e46ad3abaccad25d27785716de9",
+          "sha256": "572872598565dc3513470de971a32bf9db301f47afeef3636345eadae33b2eee",
+          "size": 2938,
+          "source": "graphics/amd-z2-go/licenses/LICENSE.amdgpu",
+          "target": "licenses/LICENSE.amdgpu",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amdgpu"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/amd-z2-go/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Rembrandt / Yellow Carp graphics candidate. Only the 11 paths declared by the audited target kernels are selected; WHENCE's additional yellow_carp_asd.bin is deliberately excluded. Z2 Go silicon identity and runtime requests still require target evidence.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:intel-g3": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "xe"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/xe/xe_uc_fw.c",
+        "https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/i915/display/intel_dmc.c",
+        "https://www.intel.com/content/www/us/en/products/sku/245626/intel-arc-g3-processor-12m-cache-up-to-4-60-ghz/specifications.html"
+      ],
+      "files": [
+        {
+          "git_blob": "69046a9b174d49fd12e32ed6c64703e30263a1de",
+          "sha256": "dbc2923b62a6fc9663b928719dd0504df6adba85a0f5b49e1482b7afbc4b36b7",
+          "size": 67772,
+          "source": "graphics/intel-g3/firmware/i915/xe3lpd_3002_dmc.bin",
+          "target": "usr/lib/firmware/i915/xe3lpd_3002_dmc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/i915/xe3lpd_3002_dmc.bin"
+        },
+        {
+          "git_blob": "b4f9894c5674fcbeb71a6ac5d15905fee5fc6d03",
+          "sha256": "be1d24f6262aef0a4b8a69e739d2025df2ba7e924a1697b20f5ab59a7977fc71",
+          "size": 95624,
+          "source": "graphics/intel-g3/firmware/i915/xe3lpd_dmc.bin",
+          "target": "usr/lib/firmware/i915/xe3lpd_dmc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/i915/xe3lpd_dmc.bin"
+        },
+        {
+          "git_blob": "4cae6b8cba7ac036a7f4e516823da6a0f3ba0811",
+          "sha256": "76e77660fa1a492aeef256eba65078a76f6801a8827cfd0758e8669d7462a465",
+          "size": 1171456,
+          "source": "graphics/intel-g3/firmware/xe/ptl_gsc_1.bin",
+          "target": "usr/lib/firmware/xe/ptl_gsc_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_gsc_1.bin"
+        },
+        {
+          "git_blob": "30c1410ea436741c111b6ab8a0fd298b78c7480c",
+          "sha256": "3124ed37369b072853ab813f4fcef021576e016a0124b32e54add0ddabaf9644",
+          "size": 361280,
+          "source": "graphics/intel-g3/firmware/xe/ptl_guc_70.bin",
+          "target": "usr/lib/firmware/xe/ptl_guc_70.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_guc_70.bin"
+        },
+        {
+          "git_blob": "5b67d55101be1952ae067f4a746971fecc49ffcf",
+          "sha256": "93e9aaf15362630441042a31fe864f9e4df76b401ada91de6df64e0f6b8adbca",
+          "size": 651264,
+          "source": "graphics/intel-g3/firmware/xe/ptl_huc.bin",
+          "target": "usr/lib/firmware/xe/ptl_huc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_huc.bin"
+        }
+      ],
+      "id": "graphics:intel-g3",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "2492b8d83d876279318ef535f27f8fe415d8f0c8",
+          "sha256": "8542aeabf2761935122d693561e16766ce1bcc2b0d003204f9040b7d6d929f2e",
+          "size": 2080,
+          "source": "graphics/intel-g3/licenses/LICENSE.i915",
+          "target": "licenses/LICENSE.i915",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.i915"
+        },
+        {
+          "git_blob": "9fd201d2254695b1f4c851fef80704143a6cc535",
+          "sha256": "26b3c946f1f378ff25bb3bb7c365d108a2bc0bf08619e5e08bc0e4f9aaa6ee1e",
+          "size": 2041,
+          "source": "graphics/intel-g3/licenses/LICENSE.xe",
+          "target": "licenses/LICENSE.xe",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.xe"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/intel-g3/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Panther Lake candidate. SteamOS 3.10 target xe module declares all five paths; its image already contains PTL GuC/HuC/GSC and xe3lpd_dmc, but lacks xe3lpd_3002_dmc. The two DMC alternatives correspond to display IP 3000/3002 and are retained as a narrow family candidate until exact display IP is known. xe3p_lpd_dmc belongs to display IP 3500 and is excluded. The 3.8.14 target declares only the legacy DMC path and no PTL GuC/HuC/GSC, so adding these bytes cannot establish PTL driver support. Exact G3/G3 Extreme PCI/display IP and runtime behavior remain unvalidated.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    },
+    "graphics:intel-g3-extreme": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+        "version": "0.1.0-baseline.1"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "xe"
+      ],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/xe/xe_uc_fw.c",
+        "https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/i915/display/intel_dmc.c",
+        "https://www.intel.com/content/www/us/en/products/sku/245625/intel-arc-g3-extreme-processor-12m-cache-up-to-4-70-ghz/specifications.html"
+      ],
+      "files": [
+        {
+          "git_blob": "69046a9b174d49fd12e32ed6c64703e30263a1de",
+          "sha256": "dbc2923b62a6fc9663b928719dd0504df6adba85a0f5b49e1482b7afbc4b36b7",
+          "size": 67772,
+          "source": "graphics/intel-g3-extreme/firmware/i915/xe3lpd_3002_dmc.bin",
+          "target": "usr/lib/firmware/i915/xe3lpd_3002_dmc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/i915/xe3lpd_3002_dmc.bin"
+        },
+        {
+          "git_blob": "b4f9894c5674fcbeb71a6ac5d15905fee5fc6d03",
+          "sha256": "be1d24f6262aef0a4b8a69e739d2025df2ba7e924a1697b20f5ab59a7977fc71",
+          "size": 95624,
+          "source": "graphics/intel-g3-extreme/firmware/i915/xe3lpd_dmc.bin",
+          "target": "usr/lib/firmware/i915/xe3lpd_dmc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/i915/xe3lpd_dmc.bin"
+        },
+        {
+          "git_blob": "4cae6b8cba7ac036a7f4e516823da6a0f3ba0811",
+          "sha256": "76e77660fa1a492aeef256eba65078a76f6801a8827cfd0758e8669d7462a465",
+          "size": 1171456,
+          "source": "graphics/intel-g3-extreme/firmware/xe/ptl_gsc_1.bin",
+          "target": "usr/lib/firmware/xe/ptl_gsc_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_gsc_1.bin"
+        },
+        {
+          "git_blob": "30c1410ea436741c111b6ab8a0fd298b78c7480c",
+          "sha256": "3124ed37369b072853ab813f4fcef021576e016a0124b32e54add0ddabaf9644",
+          "size": 361280,
+          "source": "graphics/intel-g3-extreme/firmware/xe/ptl_guc_70.bin",
+          "target": "usr/lib/firmware/xe/ptl_guc_70.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_guc_70.bin"
+        },
+        {
+          "git_blob": "5b67d55101be1952ae067f4a746971fecc49ffcf",
+          "sha256": "93e9aaf15362630441042a31fe864f9e4df76b401ada91de6df64e0f6b8adbca",
+          "size": 651264,
+          "source": "graphics/intel-g3-extreme/firmware/xe/ptl_huc.bin",
+          "target": "usr/lib/firmware/xe/ptl_huc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/ptl_huc.bin"
+        }
+      ],
+      "id": "graphics:intel-g3-extreme",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "2492b8d83d876279318ef535f27f8fe415d8f0c8",
+          "sha256": "8542aeabf2761935122d693561e16766ce1bcc2b0d003204f9040b7d6d929f2e",
+          "size": 2080,
+          "source": "graphics/intel-g3-extreme/licenses/LICENSE.i915",
+          "target": "licenses/LICENSE.i915",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.i915"
+        },
+        {
+          "git_blob": "9fd201d2254695b1f4c851fef80704143a6cc535",
+          "sha256": "26b3c946f1f378ff25bb3bb7c365d108a2bc0bf08619e5e08bc0e4f9aaa6ee1e",
+          "size": 2041,
+          "source": "graphics/intel-g3-extreme/licenses/LICENSE.xe",
+          "target": "licenses/LICENSE.xe",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.xe"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/intel-g3-extreme/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Provisional Panther Lake candidate. SteamOS 3.10 target xe module declares all five paths; its image already contains PTL GuC/HuC/GSC and xe3lpd_dmc, but lacks xe3lpd_3002_dmc. The two DMC alternatives correspond to display IP 3000/3002 and are retained as a narrow family candidate until exact display IP is known. xe3p_lpd_dmc belongs to display IP 3500 and is excluded. The 3.8.14 target declares only the legacy DMC path and no PTL GuC/HuC/GSC, so adding these bytes cannot establish PTL driver support. Exact G3/G3 Extreme PCI/display IP and runtime behavior remain unvalidated.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.1"
+    }
+  },
+  "kind": "GraphicsFirmwareBaseline",
+  "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+  "schema": 1,
+  "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
+  "version": "0.1.0-baseline.1"
+}

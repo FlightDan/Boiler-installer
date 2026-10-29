@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "kind": "GraphicsCandidateBaselineSpec",
+  "version": "0.1.0-baseline.1",
+  "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+  "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/",
+  "note": "Editable provisional file-test baseline. Patterns describe candidate families and do not prove hardware initialization, device identity, kernel support, or runtime requests. Regenerate a byte-hashed snapshot after changing the revision or groups. Preserve the existing target firmware by default.",
+  "profiles": {
+    "graphics:amd-780m": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_0_1_*.bin",
+        "amdgpu/psp_13_0_4_*.bin",
+        "amdgpu/sdma_6_0_1.bin",
+        "amdgpu/vcn_4_0_2.bin",
+        "amdgpu/dcn_3_1_4_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/7000-series/amd-ryzen-7-7840u.html",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/8000-series/amd-ryzen-7-8840u.html"
+      ],
+      "note": "Phoenix/Hawk Point candidate for the named 7840U/8840U models. GC 11.0.1, PSP 13.0.4, SDMA 6.0.1, VCN 4.0.2 and DCN 3.1.4. Marketing-name to IP mapping remains a provisional inference until target PCI/IP discovery and runtime evidence exist."
+    },
+    "graphics:amd-880m": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_5_0_*.bin",
+        "amdgpu/psp_14_0_0_*.bin",
+        "amdgpu/sdma_6_1_0.bin",
+        "amdgpu/vcn_4_0_5.bin",
+        "amdgpu/vpe_6_1_0.bin",
+        "amdgpu/dcn_3_5_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-9-365.html"
+      ],
+      "note": "Strix Point candidate for Ryzen AI 9 365: GC 11.5.0, PSP 14.0.0, SDMA 6.1.0, VCN 4.0.5, VPE 6.1.0 and DCN 3.5.0. Does not include Strix Halo, Krackan or later GC 11.5 variants; runtime hardware verification remains open."
+    },
+    "graphics:amd-z1": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_0_4_*.bin",
+        "amdgpu/psp_13_0_11_*.bin",
+        "amdgpu/sdma_6_0_1.bin",
+        "amdgpu/vcn_4_0_2.bin",
+        "amdgpu/dcn_3_1_4_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Phoenix 2 candidate: GC 11.0.4 and PSP 13.0.11, with the shared SDMA 6.0.1 / VCN 4.0.2 / DCN 3.1.4 group. The exact Z1 device IP discovery has not been observed; do not infer this from RDNA3 or CU count alone. Revise the group if a target identifies a different silicon variant."
+    },
+    "graphics:amd-z1-extreme": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_0_1_*.bin",
+        "amdgpu/psp_13_0_4_*.bin",
+        "amdgpu/sdma_6_0_1.bin",
+        "amdgpu/vcn_4_0_2.bin",
+        "amdgpu/dcn_3_1_4_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Phoenix candidate, separate from the non-Extreme Z1 Phoenix 2 group. Exact target PCI/IP discovery and runtime evidence remain unvalidated."
+    },
+    "graphics:amd-z2": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_0_1_*.bin",
+        "amdgpu/psp_13_0_4_*.bin",
+        "amdgpu/sdma_6_0_1.bin",
+        "amdgpu/vcn_4_0_2.bin",
+        "amdgpu/dcn_3_1_4_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Hawk Point candidate sharing the named 780M/Phoenix firmware IP group. Exact Z2 target PCI/IP discovery and runtime evidence remain unvalidated."
+    },
+    "graphics:amd-z2-extreme": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_5_0_*.bin",
+        "amdgpu/psp_14_0_0_*.bin",
+        "amdgpu/sdma_6_1_0.bin",
+        "amdgpu/vcn_4_0_5.bin",
+        "amdgpu/vpe_6_1_0.bin",
+        "amdgpu/dcn_3_5_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Strix Point candidate. Does not include GC 11.5.1/11.5.2 or a driver-wide union. Confirm exact Z2 Extreme PCI/IP discovery and runtime firmware requests before a hardware-support claim."
+    },
+    "graphics:amd-ai-z2-extreme": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/gc_11_5_0_*.bin",
+        "amdgpu/psp_14_0_0_*.bin",
+        "amdgpu/sdma_6_1_0.bin",
+        "amdgpu/vcn_4_0_5.bin",
+        "amdgpu/vpe_6_1_0.bin",
+        "amdgpu/dcn_3_5_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Strix Point graphics candidate shared with Z2 Extreme; this graphics group excludes NPU firmware. Exact device PCI/IP discovery and runtime evidence remain unvalidated."
+    },
+    "graphics:amd-z2-go": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/yellow_carp_ce.bin",
+        "amdgpu/yellow_carp_pfp.bin",
+        "amdgpu/yellow_carp_me.bin",
+        "amdgpu/yellow_carp_mec.bin",
+        "amdgpu/yellow_carp_mec2.bin",
+        "amdgpu/yellow_carp_rlc.bin",
+        "amdgpu/yellow_carp_sdma.bin",
+        "amdgpu/yellow_carp_toc.bin",
+        "amdgpu/yellow_carp_ta.bin",
+        "amdgpu/yellow_carp_vcn.bin",
+        "amdgpu/yellow_carp_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Rembrandt / Yellow Carp graphics candidate. Only the 11 paths declared by the audited target kernels are selected; WHENCE's additional yellow_carp_asd.bin is deliberately excluded. Z2 Go silicon identity and runtime requests still require target evidence."
+    },
+    "graphics:amd-z2-a": {
+      "drivers": [
+        "amdgpu"
+      ],
+      "patterns": [
+        "amdgpu/vangogh_asd.bin",
+        "amdgpu/vangogh_ce.bin",
+        "amdgpu/vangogh_pfp.bin",
+        "amdgpu/vangogh_me.bin",
+        "amdgpu/vangogh_mec.bin",
+        "amdgpu/vangogh_mec2.bin",
+        "amdgpu/vangogh_rlc.bin",
+        "amdgpu/vangogh_sdma.bin",
+        "amdgpu/vangogh_toc.bin",
+        "amdgpu/vangogh_vcn.bin",
+        "amdgpu/vangogh_dmcub.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/amdgpu/amdgpu_ucode.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/dc/core/dc_resource.c",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c",
+        "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html"
+      ],
+      "note": "Provisional Van Gogh graphics candidate for Z2 A. Zen2/RDNA2 and CU count alone do not establish the exact stepping or firmware group; retain this uncertainty until device PCI/IP discovery and runtime evidence exist."
+    },
+    "graphics:intel-g3-extreme": {
+      "drivers": [
+        "xe"
+      ],
+      "patterns": [
+        "xe/ptl_guc_70.bin",
+        "xe/ptl_huc.bin",
+        "xe/ptl_gsc_1.bin",
+        "i915/xe3lpd_dmc.bin",
+        "i915/xe3lpd_3002_dmc.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/xe/xe_uc_fw.c",
+        "https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/i915/display/intel_dmc.c",
+        "https://www.intel.com/content/www/us/en/products/sku/245625/intel-arc-g3-extreme-processor-12m-cache-up-to-4-70-ghz/specifications.html"
+      ],
+      "note": "Provisional Panther Lake candidate. SteamOS 3.10 target xe module declares all five paths; its image already contains PTL GuC/HuC/GSC and xe3lpd_dmc, but lacks xe3lpd_3002_dmc. The two DMC alternatives correspond to display IP 3000/3002 and are retained as a narrow family candidate until exact display IP is known. xe3p_lpd_dmc belongs to display IP 3500 and is excluded. The 3.8.14 target declares only the legacy DMC path and no PTL GuC/HuC/GSC, so adding these bytes cannot establish PTL driver support. Exact G3/G3 Extreme PCI/display IP and runtime behavior remain unvalidated."
+    },
+    "graphics:intel-g3": {
+      "drivers": [
+        "xe"
+      ],
+      "patterns": [
+        "xe/ptl_guc_70.bin",
+        "xe/ptl_huc.bin",
+        "xe/ptl_gsc_1.bin",
+        "i915/xe3lpd_dmc.bin",
+        "i915/xe3lpd_3002_dmc.bin"
+      ],
+      "extra_paths": [],
+      "evidence": [
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/xe/xe_uc_fw.c",
+        "https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/i915/display/intel_dmc.c",
+        "https://www.intel.com/content/www/us/en/products/sku/245626/intel-arc-g3-processor-12m-cache-up-to-4-60-ghz/specifications.html"
+      ],
+      "note": "Provisional Panther Lake candidate. SteamOS 3.10 target xe module declares all five paths; its image already contains PTL GuC/HuC/GSC and xe3lpd_dmc, but lacks xe3lpd_3002_dmc. The two DMC alternatives correspond to display IP 3000/3002 and are retained as a narrow family candidate until exact display IP is known. xe3p_lpd_dmc belongs to display IP 3500 and is excluded. The 3.8.14 target declares only the legacy DMC path and no PTL GuC/HuC/GSC, so adding these bytes cannot establish PTL driver support. Exact G3/G3 Extreme PCI/display IP and runtime behavior remain unvalidated."
+    }
+  }
+}

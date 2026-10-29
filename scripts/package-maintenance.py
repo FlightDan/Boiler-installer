@@ -29,12 +29,22 @@ PUBLIC_KEY_SHA256 = 'c3f443312c74bcdc3013d7a9deb306473dc6c3b21f6625319012c9dbdb9
 RUNTIME_FILES = (
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
     'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
-    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py',
-    'protocol/manifest.py', 'protocol/trusted-public-key.pem',
+    'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
+    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py',
+    'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',
+    'components/model-catalog/lock.json', 'components/model-catalog/snapshot/adaptations.json',
+    'components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json',
+    'components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json',
 )
 LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
             b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
             b'from maintenance.__main__ import main; raise SystemExit(main())\' "$@"\n')
+UI_LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
+               b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
+               b'from maintenance.model_ui import main; raise SystemExit(main())\' "$@"\n')
+DESKTOP = ('[Desktop Entry]\nType=Application\nName=Boiler Maintenance\nName[zh_CN]=Boiler 维护工具\n'
+           'Comment=Review, install and restore device adaptations\n'
+           'Exec=/usr/local/bin/boiler-maintenance-ui\nIcon=preferences-system\nTerminal=false\nCategories=System;Settings;\n').encode('utf-8')
 
 
 def sha256(data):
@@ -154,6 +164,11 @@ def package(root, output, source_commit, asset_url):
     payload[source] = LAUNCHER
     runtime.append(dict(source=source, target='usr/local/bin/boiler-maintenance',
                         size=len(LAUNCHER), sha256=sha256(LAUNCHER), mode=0o755))
+    for name,data,target,mode in (
+        ('boiler-maintenance-ui',UI_LAUNCHER,'usr/local/bin/boiler-maintenance-ui',0o755),
+        ('Boiler-Maintenance.desktop',DESKTOP,'usr/share/applications/Boiler-Maintenance.desktop',0o644)):
+        source='maintenance-runtime/'+name;payload[source]=data
+        runtime.append(dict(source=source,target=target,size=len(data),sha256=sha256(data),mode=mode))
     component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance',
                      version=release['version'], compatibility=release['compatibility'], files=runtime)
     payload['component.json'] = json_bytes(component)

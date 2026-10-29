@@ -35,6 +35,19 @@ def _fail(message):
     raise ProtocolError(message)
 
 
+def _filesystem_path(path):
+    """Use Win32 extended paths for I/O without changing logical package names."""
+    path = Path(path)
+    if os.name != 'nt':
+        return path
+    value = os.path.abspath(path)
+    if value.startswith('\\\\?\\'):
+        return Path(value)
+    if value.startswith('\\\\'):
+        return Path('\\\\?\\UNC\\' + value[2:])
+    return Path('\\\\?\\' + value)
+
+
 def relative_path(value):
     if (not isinstance(value, str) or not value or len(value) > 4096 or
             "\\" in value or ":" in value or "\x00" in value or
@@ -70,12 +83,24 @@ def _pairs(pairs):
     return out
 
 
+def _bounded_bytes(path, maximum, name="Manifest"):
+    """Enforce the limit on the opened input, before allocating its contents."""
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+    with os.fdopen(os.open(_filesystem_path(path), flags), "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode):
+            _fail(name + " must be a regular file")
+        if info.st_size > maximum:
+            _fail(name + " exceeds size limit")
+        raw = stream.read(maximum + 1)
+    if len(raw) > maximum:
+        _fail(name + " exceeds size limit")
+    return raw
+
+
 def load_json(path):
-    path = Path(path)
-    if path.stat().st_size > MAX_MANIFEST:
-        _fail("Manifest exceeds size limit")
     try:
-        return _decode_json(path.read_bytes())
+        return _decode_json(_bounded_bytes(path, MAX_MANIFEST))
     except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         raise ProtocolError("Invalid manifest JSON") from exc
 
@@ -129,7 +154,7 @@ def compatible(manifest, environment):
     if minimum and tuple(map(int, minimum.split('.'))) > tuple(map(int, ENGINE_VERSION.split('.'))):
         return False
     for key, actual in (("architectures", "architecture"), ("os_ids", "os_id"),
-                        ("device_ids", "device_id"), ("os_versions", "os_version")):
+                        ("os_versions", "os_version")):
         allowed = manifest.get("compatibility", {}).get(key)
         if allowed and environment.get(actual) not in allowed:
             return False
@@ -137,6 +162,16 @@ def compatible(manifest, environment):
     if kernels and (not environment.get("kernels") or any(kernel not in kernels for kernel in environment["kernels"])):
         return False
     return True
+
+
+def device_advisory(manifest, environment):
+    """Report a missing or different model identity without blocking execution."""
+    allowed = manifest.get("compatibility", {}).get("device_ids")
+    actual = environment.get("device_id")
+    if allowed and actual not in allowed:
+        return {"id": manifest.get("id"), "expected_device_ids": allowed,
+                "actual_device_id": actual, "message": "Device model may be incompatible."}
+    return None
 
 
 def _source(source):
@@ -254,7 +289,7 @@ def validate_manifest(obj, kind=None):
 
 def verify_file(path, expected):
     _digest(expected)
-    path=Path(path)
+    path=_filesystem_path(path)
     if path.is_symlink() or not path.is_file() or path.stat().st_size != expected["size"]:
         _fail("File missing or size mismatch")
     digest=hashlib.sha256()
@@ -265,16 +300,14 @@ def verify_file(path, expected):
 
 
 def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha256=None):
-    root=Path(directory).resolve()
+    root=_filesystem_path(directory).resolve()
     manifest_path=confined(root,"manifest.json")
     if expected_manifest_sha256 is not None:
         if not _HASH.fullmatch(expected_manifest_sha256): _fail("Invalid anchored manifest digest")
-        verify_file(manifest_path,{"sha256":expected_manifest_sha256,"size":manifest_path.stat().st_size})
     elif not allow_unsigned:
         _fail("Package requires a signed-index digest or explicit session developer trust")
     # Read and authenticate the same bytes that are parsed below.
-    raw=manifest_path.read_bytes()
-    if len(raw)>MAX_MANIFEST: _fail("Manifest exceeds size limit")
+    raw=_bounded_bytes(manifest_path,MAX_MANIFEST)
     if expected_manifest_sha256 is not None and hashlib.sha256(raw).hexdigest()!=expected_manifest_sha256:
         _fail("Anchored manifest digest changed")
     obj=validate_manifest(_decode_json(raw),"DevicePackage")
@@ -324,7 +357,9 @@ def resolve_plan(components, selected, environment, *, mode="normal"):
             if any(target==p or target.startswith(p+"/") or p.startswith(target+"/") for p in owners):
                 _fail("Component target collision")
             owners[target]=item["id"]
-    return {"schema_version":1,"kind":"InstallPlan","mode":mode,"components":ordered,"environment":environment}
+    warnings=[warning for item in ordered if (warning := device_advisory(item, environment))]
+    return {"schema_version":1,"kind":"InstallPlan","mode":mode,"components":ordered,"environment":environment,
+            "device_warnings":warnings}
 
 
 def safe_extract_archive(archive, destination, *, max_bytes=8*1024**3, max_files=100000):
@@ -374,9 +409,9 @@ def safe_extract_archive(archive, destination, *, max_bytes=8*1024**3, max_files
 def verify_signed_index(index_path, signature_path, public_key_path=None, *, openssl="openssl"):
     """Verify detached Ed25519 signature using the established project public key."""
     if public_key_path is None: public_key_path=Path(__file__).with_name("trusted-public-key.pem")
-    raw=Path(index_path).read_bytes()
-    signature=Path(signature_path).read_bytes()
-    if len(raw)>MAX_MANIFEST: _fail("Index too large")
+    raw=_bounded_bytes(index_path,MAX_MANIFEST,"Index")
+    signature=_bounded_bytes(signature_path,64,"Index signature")
+    if len(signature)!=64: _fail("Index signature rejected")
     try:
         from cryptography.hazmat.primitives.serialization import load_pem_public_key
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -401,11 +436,11 @@ class DeveloperTrustSession:
     def __init__(self): self._grants=set()
     def grant_local(self,directory):
         obj=validate_package(directory,allow_unsigned=True)
-        digest=hashlib.sha256((Path(directory)/"manifest.json").read_bytes()).hexdigest()
+        digest=hashlib.sha256(_bounded_bytes(Path(directory)/"manifest.json",MAX_MANIFEST)).hexdigest()
         self._grants.add((str(Path(directory).resolve()),digest))
         return obj
     def validate_local(self,directory):
-        digest=hashlib.sha256((Path(directory)/"manifest.json").read_bytes()).hexdigest()
+        digest=hashlib.sha256(_bounded_bytes(Path(directory)/"manifest.json",MAX_MANIFEST)).hexdigest()
         if (str(Path(directory).resolve()),digest) not in self._grants: _fail("Developer package has no session trust grant")
         return validate_package(directory,expected_manifest_sha256=digest)
     def github_source(self,repository,commit):

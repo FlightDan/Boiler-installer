@@ -8,7 +8,9 @@ internal static class ComponentOutcome
     internal static HashSet<string> Expected(SelectedOptions options)
     {
         var expected = options.Repairs.Concat(options.Plugins).ToHashSet();
-        foreach (var vendor in options.Wireless ?? []) expected.Add(vendor.StartsWith("wifi:") ? vendor : "wifi:" + vendor);
+        if (options.SetDeckPassword || options.EnableSsh || options.KdeLanguage != "system") expected.Add("core:system-presets");
+        if (options.GraphicsProfile != null) expected.Add(options.GraphicsProfile);
+        foreach (var vendor in options.Wireless ?? []) expected.Add(vendor.Contains(':') ? vendor : "wifi:" + vendor);
         var selected = options.DeviceComponents ?? [];
         if (selected.Length == 0) return expected;
         if (options.DevicePackage == null || options.DeviceManifestSha256 == null) throw new IOException("Device package identity is missing.");

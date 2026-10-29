@@ -2,6 +2,32 @@
 
 Status: development verification in progress; not a published production release.
 
+## Device-model compatibility advisory (2026-10-28)
+
+Device model matching is advisory. A different or unknown `device_id` no longer
+rejects component planning, installation, maintenance apply or update plans.
+Device selection and imported-package preview show a bilingual notice that the
+package may be incompatible and installation can continue. Installation plans,
+maintenance discovery and reviewed updates record model warnings. System,
+architecture, kernel, package integrity and managed-guest checks remain in place.
+
+The independent generic maintenance candidate advances to
+`0.1.0+maintenance.2`; the installer display version remains 0.1.0-preview.
+The generic integration payload was regenerated from current sources and locked
+Decky inputs and its 17 actual runtime/Decky files, sizes and hashes verified.
+The previous payload was preserved. Local Release build passed with no warnings
+or errors. The full source suite passed 318 tests with 36 environment skips;
+156 bilingual WPF behavior checks passed, including
+different/unknown model selection and language changes. WPF captures were empty
+in this desktop environment, so visual review remains incomplete. Independent
+review found and prompted correction of the missing new-install plan warning.
+
+This is a local candidate: a signed maintenance release, public download and
+upgrade/reboot acceptance, and the final Windows installer release remain subject
+to the existing Boiler release gates. No device installation or live upgrade was
+performed in this change. Legacy OXP3 maintenance and installer products have no
+corresponding code change. No unpublished power research is included.
+
 ## Implemented scope
 
 - Independent WPF installer and explicit dependency locks; no sibling checkout
@@ -171,3 +197,80 @@ do not write physical disks or establish hardware acceptance.
 Physical migration, reboot, recovery and hardware validation remain separately
 recorded release gates. Windows-only changes do not replace the published Linux
 maintenance artifacts or their signing identity.
+
+## Figma interaction implementation (2026-10-24)
+
+The three installation methods now occupy the full initial view. Their cards
+enter the native wizard directly, with a combined system-source page, an idle
+return-to-home action and the selected minimal boiler logo. The local entry opens
+single-IMG flashing directly: select a complete SteamOS disk image, then review
+the destination and capacity. Source size is not fixed at 64 GB. Complete A/B
+images retain their systems and data without a second image or component
+injection. Compressed IMG and Boiler packages use the same entry. The existing
+destination minimum remains 64 GiB; it must also fit the source system layout.
+Read-only inspection now reports that minimum, updates the target default and
+rejects insufficient capacity before installation. Raw-IMG workspace estimates
+scale with the input and include private copies; the controller checks available
+space before making its installation snapshot. Final source/image checks pass
+93 assertions and WPF checks pass 1,339. This correction does not establish
+physical installation or variable-size developer-rehearsal acceptance.
+
+The scope, verification boundaries and delivery checklist are recorded in
+[UI_IMPLEMENTATION_20261024.md](UI_IMPLEMENTATION_20261024.md). This remains a
+local 0.1.0-preview update; no production publication or physical-device acceptance
+is claimed.
+
+The connected-session follow-up produced nonempty app-rendered screenshots and
+fixed compact English home-action clipping plus the retained sidebar scroll
+position after returning home and choosing another entry. The updated WPF checks
+pass 1,387 assertions; direct remote-desktop input remains a separate scope.
+
+## Graphics model search (2026-10-26, local preview)
+
+The graphics model dropdown includes a search field for GPU/processor names,
+with case-insensitive multiword filtering and an empty-result message. The local
+graphics detection button sits to the right of the model field. Search and
+cancel preserve the current model; narrow layouts wrap model names. Detection
+and firmware delivery policy remain unchanged by this refinement.
+
+Final Windows build: zero warnings/errors. Graphics WPF checks: 100 passed,
+with Chinese/English captures at 1060x720 and 640x360. Independent review passed
+after fixing empty-query Enter selection retention. The local preview launchers
+are synchronized. Direct desktop input remains unverified because Windows
+denied Computer Use cursor access. No public archive, release or device update.
+See [the detailed UI delivery record](UI_GRAPHICS_20261025.md#searchable-model-dropdown-2026-10-26).
+
+## Device flow, source actions and defaults (2026-10-26, local preview)
+
+Choosing a model now enters System source directly after package verification.
+Browse/Download sit beside each source file area, and workspace appears only on
+that page. Device options use one default-checked “安装机型包内所有适配” choice.
+Short notes sit below the options; desktop language defaults to the Windows
+language and stays independent of the installer language toggle.
+
+Final Windows build has zero warnings/errors; 557 focused UI/state assertions
+pass. Independent review fixes cover the Vanilla device route and pending
+package navigation. Chinese/English wide/narrow captures and the delivery
+checklist are in [UI_SIMPLIFY_20261026.md](UI_SIMPLIFY_20261026.md). This remains a
+local 0.1.0-preview update, with no public release or physical-device changes.
+
+## Searchable devices and upgrade-source labels (2026-10-27, local preview)
+
+The device picker supports brand/model search and shows manufacturer before the
+model. Device compatibility fixes and generic maintenance default on. Package
+selection enters System source directly; Windows-language defaults and the single
+workspace card are retained. The upgrade card uses a general label and displays
+the RAUC manifest's declared version without widening supported installation
+versions. Raw rootfs version checks remain part of installation preparation.
+
+Validation, exact local build/package identity and publication boundaries are in
+[UI_DEVICE_SOURCE_20261027.md](UI_DEVICE_SOURCE_20261027.md) and the delivery sidecar.
+
+## Touch defaults and source MD5 (2026-10-29, local preview)
+
+Device adaptations default to all available items; model search no longer grabs
+text focus, and Vanilla goes directly to System source. Source review computes
+MD5 with visible progress and cancellation without copying images or starting a
+guest. Boot choices use larger type and compact descriptions. Current OXP3
+adaptation resources are also provided as a separate importable test ZIP.
+See [the scoped delivery record](RELEASE_0.1.0_TOUCH_FIX_20261029.md).

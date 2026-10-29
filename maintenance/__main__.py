@@ -27,6 +27,25 @@ def main(argv=None):
     command.add_argument("plan"); command.add_argument("index_cache"); command.add_argument("package_dir"); command.add_argument("--reviewed-sha256",required=True)
     command=commands.add_parser("inspect-legacy"); command.add_argument("state"); command.add_argument("public_key")
     command=commands.add_parser("adopt"); command.add_argument("receipt")
+    model=commands.add_parser('models',help='Pinned model guides and explicitly reviewed on-device adaptations')
+    actions=model.add_subparsers(dest='model_command',required=True)
+    command=actions.add_parser('list'); command.add_argument('--offline',action='store_true')
+    command=actions.add_parser('options'); command.add_argument('model_id'); command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('plan'); command.add_argument('model_id')
+    command.add_argument('--action',choices=('apply','verify','restore'),default='apply')
+    command.add_argument('--repair',action='append',default=[]); command.add_argument('--plugin',action='append',default=[])
+    command.add_argument('--trust-local-test',action='store_true'); command.add_argument('--acknowledge-update-hold',action='store_true')
+    command.add_argument('--installer-language',choices=('zh-CN','en-US'),default='en-US')
+    command.add_argument('--kde-language',default='system',help='system or an authenticated package-declared KDE locale')
+    command=actions.add_parser('execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
+    command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('shared-options'); command.add_argument('model_id'); command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('shared-plan'); command.add_argument('model_id')
+    command.add_argument('--action',choices=('apply','verify','restore'),default='apply')
+    command.add_argument('--repair',action='append',default=[]); command.add_argument('--plugin',action='append',default=[])
+    command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('shared-execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
+    command.add_argument('--trust-local-test',action='store_true')
     command=commands.add_parser("plugins",help="Maintain known Boiler Decky/plugin transactions without a payload cache")
     plugins=command.add_subparsers(dest="plugin_command",required=True)
     plugins.add_parser("list")
@@ -36,6 +55,22 @@ def main(argv=None):
     try:
         from .live_root import check_state_directory,pending
         check_state_directory(args.root,args.state_dir)
+        if args.command=='models':
+            from . import models
+            if args.model_command.startswith('shared-'):
+                from . import shared_models
+                if args.model_command=='shared-options': result=shared_models.options(args.root,args.model_id,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+                elif args.model_command=='shared-plan': result=shared_models.plan(args.root,args.model_id,args.repair,args.plugin,action=args.action,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+                else: result=shared_models.execute(args.root,args.plan,reviewed_sha256=args.reviewed_sha256,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+            elif args.model_command=='list': result=models.catalog(online=not args.offline)
+            elif args.model_command=='options': result=models.options(args.root,args.model_id,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+            elif args.model_command=='plan':
+                result=models.plan_model(args.root,args.model_id,args.repair,args.plugin,action=args.action,
+                    trust_local_test=args.trust_local_test,acknowledge_update_hold=args.acknowledge_update_hold,
+                    installer_language=args.installer_language,kde_language=args.kde_language,state_dir=args.state_dir)
+            else: result=models.execute_model(args.root,args.plan,reviewed_sha256=args.reviewed_sha256,
+                    trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+            print(json.dumps({'ok':True,'result':result})); return 0
         if args.command in ("inventory","discover","plan-update","execute-update"):
             from . import updates
             if args.command=="inventory": result=updates.inventory(args.root,args.state_dir,device_id=args.device_id)

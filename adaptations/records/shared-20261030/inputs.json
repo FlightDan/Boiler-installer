@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerSharedAdaptationsInputs",
+  "components": {
+    "battery": {
+      "oxp3": {
+        "version": "0.2.2",
+        "name": {
+          "en": "Battery 0.2.2: consistent charge and sleep sliders",
+          "zh": "Battery 0.2.2：统一充电与待机滑块"
+        },
+        "description": {
+          "en": "Charge limit, three charging modes and seven sleep choices use consistent slider sections. Existing preferences are preserved until changed. Saving never initiates sleep. X2 charge controls remain disabled.",
+          "zh": "充电上限、三档充电方式与七档待机统一使用滑块区块；调整前保留既有偏好，保存不会立即睡眠。X2 不启用充电控制。"
+        },
+        "files": [
+          {
+            "source": "battery/oxp3/000.bin",
+            "target": "var/lib/oxp3-battery/battery_control.py",
+            "size": 2616,
+            "sha256": "1ea349b1a679a9859a918459dd55d39716934746c5c52783e314daa4505decb3",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/001.bin",
+            "target": "var/lib/oxp3-battery/battery_provider.py",
+            "size": 4432,
+            "sha256": "33dbd7a324656c28abcfad841c3ba324ed03aeee18321a02f4c7d275f829ff57",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/002.bin",
+            "target": "var/lib/oxp3-battery/sleep_control.py",
+            "size": 8463,
+            "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/003.bin",
+            "target": "etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf",
+            "size": 171,
+            "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/004.bin",
+            "target": "etc/systemd/system/oxp3-battery.service",
+            "size": 618,
+            "sha256": "d5771cac38919a517f3ff228de56add0700fdac9e3e7f4d92c461f8ee2fe4767",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/005.bin",
+            "target": "etc/dbus-1/system.d/org.onexplayer.SteamOSManager.Battery.conf",
+            "size": 418,
+            "sha256": "df9acac75b4b2906c6c0d953460de16f6e7de30789ec74fdea00f2faffabef43",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/006.bin",
+            "target": "etc/steamos-manager/remotes.d/oxp3-battery.toml",
+            "size": 128,
+            "sha256": "98367b4ecf45d8a48c1349b9931cd192d55b462aed49b71f14d21f92d5ef1f48",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/007.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/main.py",
+            "size": 947,
+            "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/008.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/dist/index.js",
+            "size": 11336,
+            "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/009.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/plugin.json",
+            "size": 96,
+            "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668",
+            "mode": 420
+          },
+          {
+            "source": "battery/oxp3/010.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/package.json",
+            "size": 62,
+            "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f",
+            "mode": 420
+          }
+        ]
+      },
+      "x2-mini": {
+        "version": "0.2.2",
+        "name": {
+          "en": "Battery 0.2.2: consistent charge and sleep sliders",
+          "zh": "Battery 0.2.2：统一充电与待机滑块"
+        },
+        "description": {
+          "en": "Charge limit, three charging modes and seven sleep choices use consistent slider sections. Existing preferences are preserved until changed. Saving never initiates sleep. X2 charge controls remain disabled.",
+          "zh": "充电上限、三档充电方式与七档待机统一使用滑块区块；调整前保留既有偏好，保存不会立即睡眠。X2 不启用充电控制。"
+        },
+        "files": [
+          {
+            "source": "battery/x2-mini/000.bin",
+            "target": "var/lib/oxp3-battery/battery_control.py",
+            "size": 837,
+            "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/001.bin",
+            "target": "var/lib/oxp3-battery/sleep_control.py",
+            "size": 8463,
+            "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/002.bin",
+            "target": "etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf",
+            "size": 171,
+            "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/003.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/main.py",
+            "size": 947,
+            "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/004.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/dist/index.js",
+            "size": 11336,
+            "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/005.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/plugin.json",
+            "size": 96,
+            "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668",
+            "mode": 420
+          },
+          {
+            "source": "battery/x2-mini/006.bin",
+            "target": "home/deck/homebrew/plugins/OXP3-battery/package.json",
+            "size": 62,
+            "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f",
+            "mode": 420
+          }
+        ]
+      }
+    },
+    "microphone": {
+      "oxp3": {
+        "version": "0.1.0",
+        "name": {
+          "en": "Microphone native mute synchronization",
+          "zh": "麦克风原生静音联动"
+        },
+        "description": {
+          "en": "Event-driven ALSA Capture Switch synchronization; keeps source mute and gain settings. Restart the desktop session to activate.",
+          "zh": "按音频事件同步 ALSA 录音开关，保留原生静音和增益设置；重新登录桌面后启用。"
+        },
+        "files": [
+          {
+            "source": "microphone/oxp3/000.bin",
+            "target": "usr/local/lib/oxp-microphone/microphone.py",
+            "size": 9440,
+            "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269",
+            "mode": 420
+          },
+          {
+            "source": "microphone/oxp3/001.bin",
+            "target": "etc/systemd/user/oxp-microphone.service",
+            "size": 364,
+            "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a",
+            "mode": 420
+          },
+          {
+            "source": "microphone/oxp3/002.bin",
+            "target": "etc/systemd/user/default.target.d/90-oxp-microphone.conf",
+            "size": 36,
+            "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888",
+            "mode": 420
+          }
+        ]
+      },
+      "x2-mini": {
+        "version": "0.1.0",
+        "name": {
+          "en": "Microphone native mute synchronization",
+          "zh": "麦克风原生静音联动"
+        },
+        "description": {
+          "en": "Event-driven ALSA Capture Switch synchronization; keeps source mute and gain settings. Restart the desktop session to activate.",
+          "zh": "按音频事件同步 ALSA 录音开关，保留原生静音和增益设置；重新登录桌面后启用。"
+        },
+        "files": [
+          {
+            "source": "microphone/x2-mini/000.bin",
+            "target": "usr/local/lib/oxp-microphone/microphone.py",
+            "size": 9440,
+            "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269",
+            "mode": 420
+          },
+          {
+            "source": "microphone/x2-mini/001.bin",
+            "target": "etc/systemd/user/oxp-microphone.service",
+            "size": 364,
+            "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a",
+            "mode": 420
+          },
+          {
+            "source": "microphone/x2-mini/002.bin",
+            "target": "etc/systemd/user/default.target.d/90-oxp-microphone.conf",
+            "size": 36,
+            "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888",
+            "mode": 420
+          }
+        ]
+      }
+    }
+  }
+}

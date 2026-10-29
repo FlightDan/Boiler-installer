@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "DeviceIndex",
+  "id": "registry:boiler-devices",
+  "version": "0.1.0-preview.1",
+  "sequence": 0,
+  "generated_at": "2026-10-22T00:00:00Z",
+  "trust": {"status": "unsigned-development", "official_release": false},
+  "revocations": [],
+  "packages": [],
+  "devices": ["devices/oxp3.json"],
+  "note": "No production package is advertised before formal signing, publication and new-stack acceptance."
+}

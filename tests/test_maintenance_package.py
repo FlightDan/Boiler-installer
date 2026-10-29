@@ -91,7 +91,9 @@ class MaintenancePackageTests(unittest.TestCase):
                              (ROOT/'protocol/trusted-public-key.pem').read_bytes())
             self.assertFalse(any('unreviewed' in name or name.endswith('.key') for name in actual))
             component = json.loads(actual['component.json'])
-            expected_targets = {'usr/local/lib/boiler/'+name for name in builder.RUNTIME_FILES} | {'usr/local/bin/boiler-maintenance'}
+            expected_targets = {'usr/local/lib/boiler/'+name for name in builder.RUNTIME_FILES} | {
+                'usr/local/bin/boiler-maintenance','usr/local/bin/boiler-maintenance-ui',
+                'usr/share/applications/Boiler-Maintenance.desktop'}
             self.assertEqual({entry['target'] for entry in component['files']}, expected_targets)
             self.assertNotIn('hooks', component)
             self.assertEqual(component['version'], json.loads((self.source/'maintenance/release.json').read_text())['version'])

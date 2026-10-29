@@ -1,5 +1,24 @@
 {
   "schema": 1,
+  "system_presets": {
+    "id": "core:system-presets",
+    "source": "components/system_presets.py",
+    "selection": "language-password-ssh-controls",
+    "delivery": "generated-per-installation",
+    "default": false,
+    "dependencies": [],
+    "state": "source_and_native_transactions_verified_hardware_unverified"
+  },
+  "graphics_candidates": {
+    "source": "components/graphics-support.json",
+    "install_available": true,
+    "delivery": "on-demand",
+    "firmware_binary_count": 0,
+    "baseline": "components/graphics-baseline-spec.json",
+    "inventory": "components/graphics-firmware.json",
+    "state": "vm_file_initramfs_kernel_verified_hardware_unverified",
+    "runtime": "not_validated"
+  },
   "components": [
     {
       "id": "core:decky",
@@ -11,10 +30,13 @@
     },
     {
       "id": "core:maintenance",
-      "default": false,
+      "default": true,
       "dependencies": [],
-      "state": "source_implemented_hardware_unverified",
-      "source": "maintenance/"
+      "state": "native_model_choices_implemented_hardware_unverified",
+      "source": "maintenance/",
+      "model_catalog": "components/model-catalog/lock.json",
+      "model_options": "authenticated_package_legacy_capabilities",
+      "desktop_entry": "usr/share/applications/Boiler-Maintenance.desktop"
     },
     {
       "id": "wifi:intel",
@@ -39,6 +61,118 @@
       "state": "firmware_only_locked_payload_prepared_target_modules_required",
       "source": "explicit_local_lock",
       "available": true
+    },
+    {
+      "id": "bluetooth:intel",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_target_bluetooth_modules_required_runtime_unverified",
+      "source": "explicit_local_lock",
+      "available": true
+    },
+    {
+      "id": "bluetooth:realtek",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_target_bluetooth_modules_required_runtime_unverified",
+      "source": "explicit_local_lock",
+      "available": true
+    },
+    {
+      "id": "bluetooth:mediatek",
+      "default": false,
+      "dependencies": [],
+      "state": "firmware_only_target_bluetooth_modules_required_runtime_unverified",
+      "source": "explicit_local_lock",
+      "available": true
+    },
+    {
+      "id": "graphics:amd-780m",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-880m",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-ai-z2-extreme",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z1",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z1-extreme",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z2",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z2-a",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z2-extreme",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:amd-z2-go",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:intel-g3",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
+    },
+    {
+      "id": "graphics:intel-g3-extreme",
+      "default": false,
+      "dependencies": [],
+      "available": true,
+      "state": "vm_candidate_files_and_early_boot_verified_runtime_hardware_unverified",
+      "source": "components/graphics-baseline-spec.json"
     }
   ]
 }

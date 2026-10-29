@@ -36,8 +36,21 @@ internal static class BoilerChecks
             && delivered.All(file => File.ReadAllBytes(file.file).SequenceEqual(File.ReadAllBytes(Path.Combine(transport, file.relative)))), "payload-volumes-preserve-every-file-and-source");
         Require(PayloadVolumes.MountCommand(3).Contains("remount,ro") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-merge") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-2"), "payload-volumes-use-readonly-identified-mounts");
         await Reject(async () => { await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "too-small"), CancellationToken.None, 8192); }, "oversized-payload-file-refused");
+        if (OperatingSystem.IsWindows())
+        {
+            var longRoot = Path.Combine(directory, "long-" + new string('x', Math.Clamp(265 - directory.Length, 40, 200)));
+            Directory.CreateDirectory(Path.Combine(longRoot, "n"));
+            var longFile = Path.Combine(longRoot, "n/item.bin");
+            await File.WriteAllBytesAsync(longFile, [1, 2, 3]);
+            Require(Path.GetFullPath(longFile).Length >= 260, "vvfat-deep-path-fixture-reaches-maxpath");
+            var shortened = await PayloadVolumes.PrepareAsync(longRoot, Path.Combine(directory, "short-transport"), CancellationToken.None);
+            Require(shortened.Length == 1 && Path.GetFullPath(Path.Combine(shortened[0], "n/item.bin")).Length < 260
+                && File.ReadAllBytes(Path.Combine(shortened[0], "n/item.bin")).SequenceEqual(new byte[] { 1, 2, 3 }), "vvfat-relocates-small-deep-payload-without-changing-bytes");
+            await Reject(async () => { await PayloadVolumes.PrepareAsync(longRoot, Path.Combine(longRoot, "still-too-long"), CancellationToken.None); }, "vvfat-refuses-unexportable-destination-before-running-qemu");
+        }
         var source = Path.Combine(directory, "source.img");
         await File.WriteAllBytesAsync(source, RecoveryImageChecks.Fixture());
+        await OwnedImageFailureChecks(directory, source, checks);
         await ImportChecks(directory, source, checks);
         var before = SHA256.HashData(await File.ReadAllBytesAsync(source));
         Require(!RecoveryImage.IsPrepared(source), "five-partition-recovery-classification");
@@ -58,6 +71,37 @@ internal static class BoilerChecks
         await BoilerImage.ExportAsync(protectedSource, protectedZip, plan, CancellationToken.None);
         var abDirectory = Path.Combine(directory, "ab"); Directory.CreateDirectory(abDirectory);
         var ab = await BoilerImage.ImportAsync(protectedZip, abDirectory, _ => { }, CancellationToken.None);
+        using (var raw = new PreparedDiskImage(ab.Path))
+        {
+            Require(BoilerImage.RequiredTargetCapacity(raw.Layout) == PartitionInventory.Minimum, "small-layout-retains-target-minimum");
+            var first = raw.Layout.System[0].Offset;
+            var larger = raw.Layout with { Partitions = raw.Layout.Partitions.Select(p => p.Name == "home"
+                ? p with { Size = 96 * PartitionInventory.GiB - p.Offset + first } : p).ToArray() };
+            Require(BoilerImage.RequiredTargetCapacity(larger) == 96 * PartitionInventory.GiB, "target-minimum-follows-larger-source-layout");
+        }
+        Require(BoilerImage.RawImportBudget(32 * PartitionInventory.GiB, true) == 72ul * PartitionInventory.GiB
+            && BoilerImage.RawImportBudget(96 * PartitionInventory.GiB, true) == 200ul * PartitionInventory.GiB,
+            "raw-import-workspace-budget-scales-with-image-size");
+        Require(BoilerImage.RawImportBudget(96 * PartitionInventory.GiB, true, true) == 296ul * PartitionInventory.GiB,
+            "raw-import-workspace-budget-includes-pending-inspection-copy");
+        Require(BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 96 * PartitionInventory.GiB, true, true) == 202ul * PartitionInventory.GiB
+            && BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 96 * PartitionInventory.GiB, true) == 105ul * PartitionInventory.GiB,
+            "zip-workspace-budget-uses-expanded-size-and-retained-copies");
+        var localImages = new List<string> { ab.Path };
+        foreach (var capacityMiB in new[] { 8, 24 })
+        {
+            var rawImage = Path.Combine(directory, $"local-{capacityMiB}MiB.img");
+            await File.WriteAllBytesAsync(rawImage, RecoveryImageChecks.Fixture(prepared: true, capacityMiB: capacityMiB));
+            var digest = SHA256.HashData(await File.ReadAllBytesAsync(rawImage));
+            var importedDirectory = Path.Combine(directory, $"local-{capacityMiB}MiB"); Directory.CreateDirectory(importedDirectory);
+            BoilerImage.ValidateSelection(rawImage);
+            var rawImport = await BoilerImage.ImportAsync(rawImage, importedDirectory, _ => { }, CancellationToken.None);
+            Require(rawImport.Prepared && new FileInfo(rawImport.Path).Length == capacityMiB * 1024L * 1024
+                && SHA256.HashData(await File.ReadAllBytesAsync(rawImport.Path)).SequenceEqual(digest)
+                && SHA256.HashData(await File.ReadAllBytesAsync(rawImage)).SequenceEqual(digest),
+                $"raw-img-different-capacity-preserved-{capacityMiB}MiB");
+            localImages.Add(rawImage);
+        }
         Require(ab.Prepared, "eight-partition-export-import");
         using (var original = new PreparedDiskImage(protectedSource))
         using (var canonical = new PreparedDiskImage(ab.Path))
@@ -83,7 +127,7 @@ internal static class BoilerChecks
         var corrupt = Path.Combine(directory, "corrupt.img"); await File.WriteAllBytesAsync(corrupt, bytes);
         await Reject(() => Task.Run(() => RecoveryImage.ValidateRaw(corrupt, true)), "backup-gpt-corruption-refused");
         System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
-        var window = new MainWindow(rehearsal: true);
+        var window = new MainWindow(rehearsal: true) { DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()) };
         window.Width = 1060; window.Height = 720; window.WindowState = WindowState.Normal;
         window.Show(); window.UpdateLayout();
         await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
@@ -92,7 +136,41 @@ internal static class BoilerChecks
         {
             window.BoilerModeForChecks(mode);
             Require(window.CurrentOptions.InstallMode == mode, mode + "-mode-propagated");
-            Require(mode == "custom" || window.CurrentOptions.Repairs.Length + window.CurrentOptions.Plugins.Length == 0, mode + "-safe-defaults");
+            Require(mode == "custom" || window.CurrentOptions.Repairs.Length == 0
+                && window.CurrentOptions.Plugins.SequenceEqual(mode == "vanilla" ? ["core:maintenance"] : Array.Empty<string>()), mode + "-safe-defaults");
+            if (mode == "imported")
+            {
+                var upgrade = (System.Windows.Controls.CheckBox)window.FindName("Upgrade310");
+                Require(upgrade.IsChecked == false, "single-img-does-not-require-official-310");
+                var sourceIssue = typeof(MainWindow).GetMethod("SourceIssue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+                var imagePath = (System.Windows.Controls.TextBox)window.FindName("ImagePath");
+                foreach (var localImage in localImages)
+                {
+                    imagePath.Text = localImage;
+                    Require(sourceIssue.Invoke(window, [true, false]) == null, "single-img-source-valid-without-second-image-" + Path.GetFileName(localImage));
+                }
+                var selector = (PartitionPicker)window.FindName("PartitionSelector");
+                selector.AutomaticReadEnabled = false;
+                selector.LoadSnapshot(PartitionInventory.ExampleJson, true);
+                var partitions = (System.Windows.Controls.DataGrid)selector.FindName("Partitions");
+                partitions.SelectedItem = partitions.Items.Cast<PartitionRow>().First(p => p.Space?.Size >= 100 * PartitionInventory.GiB);
+                var capacityInput = (System.Windows.Controls.TextBox)selector.FindName("CapacityInput");
+                capacityInput.Text = "64";
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                typeof(MainWindow).GetField("inspectedSourceKey", flags)!.SetValue(window, typeof(MainWindow).GetMethod("SourceInfoKey", flags)!.Invoke(window, null));
+                typeof(MainWindow).GetField("inspectedSourceDigest", flags)!.SetValue(window, "synthetic-checked-source");
+                typeof(MainWindow).GetField("inspectedSourceCapacity", flags)!.SetValue(window, (long?)(96 * PartitionInventory.GiB));
+                var targetIssue = typeof(MainWindow).GetMethod("TargetIssue", flags)!;
+                Require((targetIssue.Invoke(window, null) as string)?.Contains("96 GiB") == true, "larger-img-rejects-64-GiB-target-before-install");
+                capacityInput.Text = "100";
+                Require(targetIssue.Invoke(window, null) == null, "larger-img-accepts-sufficient-target-before-install");
+                imagePath.Text = localImages[0];
+                Require(selector.DefaultCapacityGiB == 128
+                    && typeof(MainWindow).GetField("inspectedSourceCapacity", flags)!.GetValue(window) == null
+                    && typeof(MainWindow).GetField("inspectedSourceKey", flags)!.GetValue(window) == null,
+                    "replacement-img-clears-old-capacity-default-and-inspection");
+                imagePath.Clear();
+            }
             window.UpdateLayout();
             await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (!Capture(window, Path.Combine(directory, mode + ".png"))) visualFailures.Add(mode);
@@ -102,6 +180,52 @@ internal static class BoilerChecks
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
         return JsonSerializer.Serialize(result);
     }
+    private sealed class FailingExportPlan
+    {
+        private int reads;
+        public int schema_version => 1;
+        public string kind => "InstallPlan";
+        public string mode => ++reads == 1 ? "vanilla" : throw new IOException("Injected export metadata failure.");
+        public object[] components => [];
+    }
+
+    private static async Task OwnedImageFailureChecks(string directory, string source, List<string> checks)
+    {
+        void Require(bool value, string name) { if (!value) throw new IOException(name); checks.Add(name); }
+        var snapshotDirectory = Path.Combine(directory, "cancelled-snapshot");
+        using (var cancellation = new CancellationTokenSource())
+        {
+            cancellation.Cancel();
+            try { await BoilerImage.SnapshotAsync(source, snapshotDirectory, cancellation.Token); throw new IOException("Expected cancelled snapshot."); }
+            catch (OperationCanceledException) { }
+        }
+        Require(!Directory.Exists(snapshotDirectory) || Directory.GetFiles(snapshotDirectory).Length == 0,
+            "cancelled-source-snapshot-does-not-leave-untracked-image");
+        var sessionsBefore = Directory.GetDirectories(InstallationController.Work, "install-session-*").ToHashSet(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            await InstallationController.RunAsync(new(InstallationTargetKind.ExternalDisk, source, false,
+                Mode: "imported", ExpectedSourceSha256: new string('0', 64)), _ => { }, _ => { }, CancellationToken.None);
+            throw new IOException("Expected reviewed source mismatch.");
+        }
+        catch (IOException error) when (error.Message == "Source image changed after review; inspect and confirm again.") { }
+        var rejectedSessions = Directory.GetDirectories(InstallationController.Work, "install-session-*").Where(path => !sessionsBefore.Contains(path)).ToArray();
+        Require(rejectedSessions.Length == 1 && Directory.GetFiles(rejectedSessions[0]).Length == 0,
+            "rejected-source-digest-does-not-leave-untracked-image");
+        var export = Path.Combine(directory, "failed-export.boiler.zip");
+        try { await BoilerImage.ExportAsync(source, export, new FailingExportPlan(), CancellationToken.None); throw new IOException("Expected failed export."); }
+        catch (IOException error) when (error.Message == "Injected export metadata failure.") { }
+        Require(!File.Exists(export) && !File.Exists(export + ".partial"), "failed-export-cleans-owned-partial-and-allows-retry");
+        var plan = new { schema_version = 1, kind = "InstallPlan", mode = "vanilla", components = Array.Empty<object>() };
+        await BoilerImage.ExportAsync(source, export, plan, CancellationToken.None);
+        Require(File.Exists(export), "failed-export-can-retry-same-destination");
+        var existing = Path.Combine(directory, "existing-export.boiler.zip");
+        await File.WriteAllTextAsync(existing + ".partial", "preexisting");
+        try { await BoilerImage.ExportAsync(source, existing, plan, CancellationToken.None); throw new IOException("Expected occupied export refusal."); }
+        catch (IOException error) when (error.Message == "Export destination already exists.") { }
+        Require(await File.ReadAllTextAsync(existing + ".partial") == "preexisting", "failed-export-never-removes-unowned-existing-partial");
+    }
+
     private static async Task ImportChecks(string directory, string source, List<string> checks)
     {
         var input = await File.ReadAllBytesAsync(source);

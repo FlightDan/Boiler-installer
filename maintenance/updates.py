@@ -18,7 +18,7 @@ import stat
 import tempfile
 from urllib.parse import urlparse
 
-from protocol import compatible, resolve_plan, validate_package, validate_manifest
+from protocol import compatible, device_advisory, resolve_plan, validate_package, validate_manifest
 from protocol.fetch import _cache_lock, cached_index, fetch_index, fetch_package
 from protocol.manifest import confined, load_json, relative_path, _decode_json, MAX_MANIFEST
 from .engine import Engine, MaintenanceError, _json_write, _read
@@ -187,6 +187,7 @@ def discover(root, index_cache, state_dir=None, *, identity=None, device_id=None
             continue
         candidate = {key: entry[key] for key in ('id', 'version', 'source', 'sha256', 'size')}
         candidate['compatible'] = compatible(entry, current['environment'])
+        candidate['device_warning'] = device_advisory(entry, current['environment'])
         candidate['revoked'] = entry['sha256'] in index.get('revocations', [])
         candidate['installed_version'] = current['packages'].get(entry['id'], {}).get('version')
         candidates.append(candidate)
@@ -436,6 +437,8 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
             'package': {'id': identity, 'version': version, 'manifest_sha256': entry['sha256'], 'manifest_size': entry['size'],
                         'source': entry['source'], 'source_identity': source_identity, 'declared_source': package['source'], 'component_ids': sorted(package_ids)},
             'selected': selected, 'components': resolved['components'], 'actions': actions, 'scripted': scripted,
+            'device_warnings': [warning for warning in (device_advisory(entry, current['environment']),
+                                device_advisory(package, current['environment'])) if warning] + resolved['device_warnings'],
             'maintenance_entry': maintenance_entry, 'execution': execution, 'executable': execution != 'unsupported-model-entry',
             'scope': 'already-owned components; authenticated Engine apply/verify hooks only when declared; per-component transactions, no automatic rollback of a multi-component batch or arbitrary hook effects'}
     plan['review_sha256'] = _digest(plan)

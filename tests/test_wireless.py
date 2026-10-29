@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -8,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'components'))
 from payload_lock import record
-from wireless import resolve, selected, existing_firmware
+from wireless import resolve, selected, existing_firmware, native_matches
 
 
 class WirelessChecks(unittest.TestCase):
@@ -45,6 +46,20 @@ class WirelessChecks(unittest.TestCase):
         self.bundle('intel', 'intel.bin')
         next(self.root.rglob('iwlwifi.ko.zst')).unlink()
         with self.assertRaisesRegex(ValueError, 'no existing'): resolve(self.root, self.payload, self.manifest, ['intel'], self.probe)
+
+    def test_kernel_module_ancestors_resolve_inside_the_image(self):
+        self.bundle('intel', 'intel.bin')
+        library = self.root / 'usr/lib'
+        moved = self.root / 'guest-library'
+        shutil.move(str(library), moved)
+        try: library.symlink_to('/guest-library', target_is_directory=True)
+        except OSError: self.skipTest('Native symlink creation is unavailable')
+        writes, plans = resolve(self.root, self.payload, self.manifest, ['intel'], self.probe)
+        self.assertEqual(set(writes), {'usr/lib/firmware/intel.bin'})
+        self.assertTrue(all(path.startswith('guest-library/modules/') for path in plans['wifi:intel']['modules']))
+        library.unlink(); library.symlink_to('../../outside', target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, 'escapes'):
+            resolve(self.root, self.payload, self.manifest, ['intel'], self.probe)
 
     def test_missing_requirement_fails_closed(self):
         self.bundle('intel', 'other.bin')
@@ -132,6 +147,12 @@ class WirelessChecks(unittest.TestCase):
     def test_kernel_transplant_cannot_be_packaged_as_firmware(self):
         self.bundle('intel', 'driver.ko')
         with self.assertRaisesRegex(ValueError, 'firmware only'): resolve(self.root, self.payload, self.manifest, ['intel'], self.probe)
+
+    def test_exact_and_wildcard_firmware_paths_reject_directory_leaves(self):
+        directory = self.root / 'usr/lib/firmware/test.bin'
+        directory.mkdir(parents=True)
+        self.assertEqual([], native_matches(self.root, 'usr/lib/firmware/test.bin'))
+        self.assertEqual([], native_matches(self.root, 'usr/lib/firmware/test*.bin'))
 
     def test_selection_is_multi_vendor_and_normalizes_component_ids(self):
         self.assertEqual(['intel', 'mediatek', 'realtek'], selected({'wireless': ['intel', 'wifi:realtek'], 'repairs': ['wifi:mediatek']}))

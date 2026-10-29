@@ -40,6 +40,30 @@
       "default": false,
       "dependencies": [],
       "available": true
+    },
+    {
+      "id": "bluetooth:intel",
+      "zh": "Intel 蓝牙固件",
+      "en": "Intel Bluetooth firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "bluetooth:realtek",
+      "zh": "Realtek 蓝牙固件",
+      "en": "Realtek Bluetooth firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "bluetooth:mediatek",
+      "zh": "MediaTek 蓝牙固件",
+      "en": "MediaTek Bluetooth firmware",
+      "default": false,
+      "dependencies": [],
+      "available": true
     }
   ],
   "plugins": [
@@ -55,7 +79,7 @@
       "id": "core:maintenance",
       "zh": "Boiler 通用维护工具",
       "en": "Boiler generic maintenance",
-      "default": false,
+      "default": true,
       "dependencies": [],
       "available": true
     }

@@ -4966,6 +4966,74 @@
           "sha256": "c52a2b6997567830d573160c2c0cad665473320f08862133aaf4c1e96864fc48"
         }
       ]
+    },
+    {
+      "id": "alpine-findmnt",
+      "format": "raw",
+      "name": "findmnt-2.41.6-r1.apk",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/findmnt-2.41.6-r1.apk",
+      "size": 23897,
+      "sha256": "c945d34168299e6565827de065f87b9d0f63b8daa1e6bc7fe18901b9bfcaa269",
+      "members": [
+        {
+          "member": "findmnt-2.41.6-r1.apk",
+          "target": "runtime/payload/apks/findmnt-2.41.6-r1.apk",
+          "group": "guest-packages",
+          "size": 23897,
+          "sha256": "c945d34168299e6565827de065f87b9d0f63b8daa1e6bc7fe18901b9bfcaa269"
+        }
+      ]
+    },
+    {
+      "id": "alpine-lsblk",
+      "format": "raw",
+      "name": "lsblk-2.41.6-r1.apk",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/lsblk-2.41.6-r1.apk",
+      "size": 54899,
+      "sha256": "92364f997ff034321cf12919d40d548946df990097af6cddf1a3190760953358",
+      "members": [
+        {
+          "member": "lsblk-2.41.6-r1.apk",
+          "target": "runtime/payload/apks/lsblk-2.41.6-r1.apk",
+          "group": "guest-packages",
+          "size": 54899,
+          "sha256": "92364f997ff034321cf12919d40d548946df990097af6cddf1a3190760953358"
+        }
+      ]
+    },
+    {
+      "id": "alpine-libmount",
+      "format": "raw",
+      "name": "libmount-2.41.6-r1.apk",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libmount-2.41.6-r1.apk",
+      "size": 127345,
+      "sha256": "0f498b874fd1ce3a0a54c39829a4f33081358a7e6fed4c3710ebbcc4da0a5d62",
+      "members": [
+        {
+          "member": "libmount-2.41.6-r1.apk",
+          "target": "runtime/payload/apks/libmount-2.41.6-r1.apk",
+          "group": "guest-packages",
+          "size": 127345,
+          "sha256": "0f498b874fd1ce3a0a54c39829a4f33081358a7e6fed4c3710ebbcc4da0a5d62"
+        }
+      ]
+    },
+    {
+      "id": "alpine-blkid",
+      "format": "raw",
+      "name": "blkid-2.41.6-r1.apk",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/blkid-2.41.6-r1.apk",
+      "size": 19278,
+      "sha256": "8e965dfd93f0ea948ae26085c2d13dfabb23480bc601673441111afca2606122",
+      "members": [
+        {
+          "member": "blkid-2.41.6-r1.apk",
+          "target": "runtime/payload/apks/blkid-2.41.6-r1.apk",
+          "group": "guest-packages",
+          "size": 19278,
+          "sha256": "8e965dfd93f0ea948ae26085c2d13dfabb23480bc601673441111afca2606122"
+        }
+      ]
     }
   ],
   "profiles": {
@@ -5356,6 +5424,38 @@
       "source": "https://www.gnu.org/software/bash/bash.html",
       "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/bash-5.3.3-r1.apk",
       "bytes": 480971
+    },
+    {
+      "name": "findmnt",
+      "version": "2.41.6-r1",
+      "bytes": 23897,
+      "license": "GPL-2.0-or-later",
+      "source": "https://git.kernel.org/cgit/utils/util-linux/util-linux.git",
+      "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/findmnt-2.41.6-r1.apk"
+    },
+    {
+      "name": "lsblk",
+      "version": "2.41.6-r1",
+      "bytes": 54899,
+      "license": "GPL-2.0-or-later",
+      "source": "https://git.kernel.org/cgit/utils/util-linux/util-linux.git",
+      "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/lsblk-2.41.6-r1.apk"
+    },
+    {
+      "name": "libmount",
+      "version": "2.41.6-r1",
+      "bytes": 127345,
+      "license": "LGPL-2.1-or-later",
+      "source": "https://git.kernel.org/cgit/utils/util-linux/util-linux.git",
+      "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libmount-2.41.6-r1.apk"
+    },
+    {
+      "name": "blkid",
+      "version": "2.41.6-r1",
+      "bytes": 19278,
+      "license": "LGPL-1.0-only",
+      "source": "https://git.kernel.org/cgit/utils/util-linux/util-linux.git",
+      "download": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/blkid-2.41.6-r1.apk"
     }
   ],
   "limitations": [

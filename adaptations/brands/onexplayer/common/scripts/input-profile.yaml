@@ -1,0 +1,33 @@
+# Shared OXP3 / X2mini profile; source devices still match their interfaces.
+version: 1
+kind: CompositeDevice
+name: ONEXPLAYER 3
+single_source: false
+matches:
+  - udev:
+      sys_path: "/run/oxp3-input/no-device"
+source_devices:
+  - group: gamepad
+    evdev:
+      name: Microsoft X-Box 360 pad
+      handler: event*
+  - group: keyboard
+    unique: false
+    evdev:
+      name: HID 1a86:fe00
+      handler: event*
+  - group: gamepad
+    hidraw:
+      vendor_id: 0x1a86
+      product_id: 0xfe00
+      interface_num: 2
+  - group: imu
+    iio:
+      name: "{i2c-BMI0160:00,bmi260,bmi160}"
+options:
+  auto_manage: true
+target_devices:
+  - deck-uhid
+  - mouse
+  - keyboard
+capability_map_id: oxp3-installer

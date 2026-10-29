@@ -7,15 +7,17 @@ namespace OxpInstaller;
 
 public partial class MainWindow
 {
-    private readonly bool[] departedSteps = new bool[8];
+    private readonly bool[] departedSteps = new bool[9];
     private bool reviewSeen;
     private bool contentSeen;
     private bool checkedAllSteps;
 
     private void NavigateStep(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string tag } && int.TryParse(tag, out var destination) && destination is >= 0 and <= StorageStep)
+        if (deviceActionBusy) return;
+        if (sender is Button { Tag: string tag } && int.TryParse(tag, out var destination) && destination is >= 0 and <= AdaptationStep)
         {
+            if (destination is 1 or 2 && DeviceSupportIssue() != null) destination = AdaptationStep;
             if (destination == 1) sourceSection = 0;
             ShowStep(destination);
         }
@@ -24,6 +26,7 @@ public partial class MainWindow
     private void ConfigurationChanged()
     {
         if (!ready) return;
+        if (!inputAssociationBusy && inputAssociationApplied) { inputAssociationApplied = false; UpdateInputAssociationPlan(); }
         PhysicalConsent.IsChecked = false;
         reviewSeen = false;
         UpdateNavigationState();
@@ -38,6 +41,8 @@ public partial class MainWindow
             var selection = PartitionSelector.Selection;
             if (physicalInstallation && selection.Example)
                 return PartitionInventory.L("请选择真实磁盘的未分配空间。", "Select unallocated space on a real disk.");
+            if (CurrentImportedCapacity is long minimum && selection.Capacity < minimum)
+                return PartitionInventory.L($"此镜像至少需要 {PartitionInventory.SizeText(minimum)}，请增大安装容量或选择更大的目标空间。", $"This image needs at least {PartitionInventory.SizeText(minimum)}. Increase the installation capacity or choose a larger destination.");
             return null;
         }
         catch (Exception error) when (error is InvalidOperationException or IOException or ArgumentException)
@@ -47,6 +52,7 @@ public partial class MainWindow
     private string? SourceIssue(bool includeOfficial = true, bool requireInspection = false)
     {
         if (DownloadsBusy) return PartitionInventory.L("系统镜像仍在下载。", "The system image is still downloading.");
+        if (HasPendingSourceAssociation) return PartitionInventory.L("请先处理拖入文件的关联或移除未完成项。", "Associate the dropped files or remove the pending items first.");
         try
         {
             if (!File.Exists(ImagePath.Text)) return PartitionInventory.L("请选择存在的系统镜像。", "Select an existing system image.");
@@ -58,16 +64,31 @@ public partial class MainWindow
             }
             else if (installMode == "imported") BoilerImage.ValidateSelection(ImagePath.Text);
             else RecoveryImage.ValidateSelection(ImagePath.Text);
-            if (includeOfficial && installMode != "imported" && UsePrepared.IsChecked != true && Upgrade310.IsChecked == true) OfficialSystem.RequirePreparedSource();
-            if (requireInspection && CurrentSourceDigest == null) return PartitionInventory.L("请在系统来源页点击下一步，完成镜像只读检查。", "Continue from System source to complete the read-only image inspection.");
+            if (installMode == "imported" && physicalInstallation) MediaSpace.RequireAvailable(Directory.Exists(InstallationController.Work) ? InstallationController.Work : Path.GetPathRoot(InstallationController.Work)!,
+                BoilerImage.WorkspaceBudget(ImagePath.Text, physicalInstallation));
+            if (includeOfficial && installMode != "imported" && UsePrepared.IsChecked != true && Upgrade310.IsChecked == true
+                && OfficialSourceIssue(requireInspection) is string officialIssue) return officialIssue;
+            if (requireInspection && CurrentSourceDigest == null) return PartitionInventory.L("请在系统来源页点击下一步，计算镜像 MD5。", "Continue from System source to calculate the image MD5.");
             return null;
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException or UnauthorizedAccessException)
         { return error.Message; }
     }
 
+    private string? DeviceSupportIssue()
+    {
+        if (installMode is "custom" or "vanilla")
+        {
+            if (adaptationBranch == null) return PartitionInventory.L("请选择机型适配或通用安装。", "Choose a device package or generic installation.");
+            if (adaptationBranch == "device" && HasPendingDevicePreview) return PartitionInventory.L("请确认并选用当前预览的机型包，或移除该预览。", "Confirm and use the previewed device package, or remove the preview.");
+            if (adaptationBranch == "device" && selectedDevicePackage == null) return PartitionInventory.L("请先确认来源并选用机型包。", "Confirm the source and select a device package first.");
+        }
+        return null;
+    }
+
     private string? ContentIssue()
     {
+        if (DeviceSupportIssue() is string issue) return issue;
         try { InstallerOptions.Validate(CurrentOptions); return null; }
         catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
         { return error.Message; }
@@ -75,6 +96,8 @@ public partial class MainWindow
 
     private string SystemVersionSummary() => installMode == "imported"
         ? PartitionInventory.L("保留导入镜像的 A/B 系统及已有内容，不注入组件、不升级。", "Preserve the imported A/B systems and existing contents; no component injection or upgrade.")
+        : installMode == "local"
+        ? PartitionInventory.L("使用本地恢复镜像与 SteamOS 3.10 系统镜像，不添加设备包或组件。", "Use the local recovery and SteamOS 3.10 images, without injecting device packages or components.")
         : UsePrepared.IsChecked == true
         ? PartitionInventory.L("安装版本：沿用已准备镜像中的系统，不再替换版本。", "Installed version: keep the system in the prepared image.")
         : Upgrade310.IsChecked == true
@@ -84,8 +107,9 @@ public partial class MainWindow
     private void UpdateSystemVersion()
     {
         UpgradeLabel.Text = PartitionInventory.L("目标系统：", "Target system: ") + $"SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}";
-        Upgrade310.IsEnabled = UsePrepared.IsChecked != true && installMode != "imported";
+        Upgrade310.IsEnabled = UsePrepared.IsChecked != true && installMode is not ("imported" or "local");
         OfficialDownloadHost.Visibility = Upgrade310.IsChecked == true && installMode != "imported" ? Visibility.Visible : Visibility.Collapsed;
+        OfficialSourceSection.Visibility = installMode != "imported" && UsePrepared.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
         SystemVersionNote.Text = UsePrepared.IsChecked == true ? SystemVersionSummary() : Upgrade310.IsChecked == true
             ? PartitionInventory.L("先在本页下载并缓存此版本，安装时替换恢复镜像内的系统，匹配设备适配。", "Download and cache this version here first; installation replaces the recovery image system to match device support.")
             : PartitionInventory.L("保留恢复镜像内的系统。部分设备修复/适配需要上方版本，版本不匹配的项目无法安装。", "Keep the recovery image system. Some device repairs require the version above; incompatible items cannot be installed.");
@@ -98,6 +122,7 @@ public partial class MainWindow
         var targetIssue = TargetIssue();
         var sourceIssue = SourceIssue(requireInspection: true);
         var contentIssue = ContentIssue();
+        var supportIssue = DeviceSupportIssue();
         UpdateSystemVersion();
         var reviewed = targetIssue == null && sourceIssue == null && contentIssue == null && (physicalInstallation
             ? PhysicalConsent.IsChecked == true && acknowledgedSelection == PartitionSelector.Selection
@@ -117,11 +142,17 @@ public partial class MainWindow
             var incomplete = !complete[i] && (departedSteps[i] || checkedAllSteps);
             var configured = complete[i] && (finished || i <= 1 || i == 2 && contentSeen || i == 3 && reviewed || i == 4 && (departedSteps[i] || session != null) || i is 5 or 6);
             labels[i].Foreground = new SolidColorBrush(incomplete ? Color.FromRgb(255, 139, 139) : configured ? Color.FromRgb(134, 239, 172) : i == step ? Colors.White : Color.FromRgb(148, 169, 195));
-            tabs[i].Background = i == step ? new SolidColorBrush(Color.FromRgb(37, 63, 95)) : Brushes.Transparent;
+            tabs[i].Background = i == step ? new SolidColorBrush(Color.FromRgb(41, 104, 217)) : Brushes.Transparent;
             labels[i].FontWeight = i == step ? FontWeights.Bold : FontWeights.Normal;
             labels[i].ToolTip = incomplete ? (i == 0 ? targetIssue : i == 1 ? sourceIssue : i == 2 ? contentIssue : null)
                 ?? PartitionInventory.L("未完成，可点击返回配置。", "Incomplete. Select to finish setup.") : configured ? PartitionInventory.L("已完成配置。", "Setup complete.") : null;
         }
+        var supportComplete = supportIssue == null;
+        var supportIncomplete = !supportComplete && (departedSteps[AdaptationStep] || checkedAllSteps);
+        NavAdaptation.Foreground = new SolidColorBrush(supportIncomplete ? Color.FromRgb(255, 139, 139) : supportComplete ? Color.FromRgb(134, 239, 172) : step == AdaptationStep ? Colors.White : Color.FromRgb(148, 169, 195));
+        NavAdaptation.FontWeight = step == AdaptationStep ? FontWeights.Bold : FontWeights.Normal;
+        NavAdaptation.ToolTip = supportIssue;
+        AdaptationTab.Background = step == AdaptationStep ? new SolidColorBrush(Color.FromRgb(41, 104, 217)) : Brushes.Transparent;
 
         var missing = new List<string>();
         if (targetIssue != null) missing.Add(PartitionInventory.L("安装位置：", "Location: ") + targetIssue);
@@ -139,7 +170,7 @@ public partial class MainWindow
         IncompleteHeading.Text = PartitionInventory.L("还有项目未完成", "Some items are incomplete");
         IncompleteItems.Text = string.Join("\n", missing.Select(item => "• " + item));
 
-        var idle = operation == null;
+        var idle = operation == null && !deviceActionBusy;
         var written = session?.Physical == true && finished;
         ResultCard.Background = new SolidColorBrush(finished ? Color.FromRgb(236, 253, 243) : Colors.White);
         ResultCard.BorderBrush = new SolidColorBrush(finished ? Color.FromRgb(117, 199, 148) : Color.FromRgb(222, 229, 239));
@@ -148,19 +179,22 @@ public partial class MainWindow
         RestartButton.IsEnabled = written && idle && !DownloadsBusy;
         RestartButton.Content = PartitionInventory.L("重启到 SteamOS", "Restart to SteamOS");
         BrowseWorkspaceButton.IsEnabled = idle && !DownloadsBusy && !PartitionSelector.IsBusy;
-        WorkspaceCard.Visibility = step <= 4 ? Visibility.Visible : Visibility.Collapsed;
+        WorkspaceCard.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
         RefreshWorkspace();
         TargetPage.IsEnabled = idle;
         SourcePage.IsEnabled = idle;
+        AdaptationPage.IsEnabled = idle;
+        RecoverySourceSection.IsEnabled = OfficialSourceSection.IsEnabled = idle && !inputInspectionBusy && !inputAssociationBusy;
         ContentPage.IsEnabled = idle;
         StoragePage.IsEnabled = false;
         BootPage.IsEnabled = idle;
         PhysicalConsent.IsEnabled = idle;
-        NextButton.IsEnabled = BackButton.IsEnabled = InstallerLanguage.IsEnabled = idle && !DownloadsBusy;
+        BackButton.IsEnabled = InstallerLanguage.IsEnabled = idle && !DownloadsBusy;
+        NextButton.IsEnabled = idle && !DownloadsBusy && (step != 1 || SourceIssue() == null) && (step != 3 || contentIssue == null);
         UsePrepared.IsEnabled = optionsPanel.IsEnabled = !DownloadsBusy;
-        Upgrade310.IsEnabled = idle && !DownloadsBusy && UsePrepared.IsChecked != true && installMode != "imported";
-        downloadPanel.IsEnabled = !officialDownloadPanel.IsBusy;
-        officialDownloadPanel.IsEnabled = !downloadPanel.IsBusy;
+        Upgrade310.IsEnabled = idle && !DownloadsBusy && UsePrepared.IsChecked != true && installMode is not ("imported" or "local");
+        downloadPanel.IsEnabled = idle && !officialDownloadPanel.IsBusy && !sourceInspectionBusy;
+        officialDownloadPanel.IsEnabled = idle && !downloadPanel.IsBusy && !sourceInspectionBusy;
         officialDownloadPanel.SetRequired(UsePrepared.IsChecked != true && Upgrade310.IsChecked == true);
         StopButton.IsEnabled = operation != null && !operation.IsCancellationRequested;
         ExportLogButton.Content = PartitionInventory.L("导出详细日志…", "Export logs…");

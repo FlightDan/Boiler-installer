@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace OxpInstaller;
 
-public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null);
+public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null);
 public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null);
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
@@ -47,8 +47,16 @@ public static partial class InstallationController
     public static string SessionDirectory(InstallationSession state) => Path.Combine(Work, "install-session-" + state.Id);
     public static void ValidateRequest(InstallationRequest request)
     {
-        if (request.Mode is not ("custom" or "vanilla" or "imported")) throw new IOException("Unknown installation mode.");
+        if (request.Mode is not ("custom" or "vanilla" or "imported" or "local")) throw new IOException("Unknown installation mode.");
         if (request.Mode == "imported" && request.UpgradeTo310) throw new IOException("Imported images cannot be silently upgraded.");
+        if (request.Mode == "local" && (!request.UpgradeTo310 || request.Prepared || request.OfficialSource == null
+            || !Regex.IsMatch(request.ExpectedSourceSha256 ?? "", "^[0-9a-f]{64}$")))
+            throw new IOException(PartitionInventory.L("本地安装需要检查并确认官方恢复镜像和 SteamOS 3.10 系统镜像两个文件。", "Local installation requires reviewed official recovery and SteamOS 3.10 system image files."));
+        if (request.OfficialSource != null)
+        {
+            if (!request.UpgradeTo310 || request.Prepared || request.Mode == "imported") throw new IOException("Unexpected SteamOS 3.10 source binding.");
+            OfficialSystem.ValidateBinding(request.OfficialSource);
+        }
         if (request.Options != null && request.Options.InstallMode != request.Mode) throw new IOException("Installation mode and component plan disagree.");
         if (request.Physical && request.Options is null)
             throw new IOException("实际安装缺少配置，请重新选择安装内容。 / Physical installation options are required for system update protection.");
@@ -60,7 +68,11 @@ public static partial class InstallationController
             request.PlannedPartition.Target();
         }
         if(request.Physical && (request.PlannedPartition==null || request.PlannedPartition.Example)) throw new IOException("实际安装必须选择真实磁盘的未分配空间。 / Select real unallocated disk space.");
-        if (request.Options != null) InstallerOptions.Validate(request.Options);
+        if (request.Options != null)
+        {
+            InstallerOptions.Validate(request.Options);
+            InstallerOptions.ValidateDeploymentPolicy(request.Options);
+        }
         SharedStorage.ValidateSelection(request.Options?.StorageMounts, request.PlannedPartition?.Snapshot);
         if (request.Options?.SetDeckPassword == true)
         {
@@ -79,9 +91,11 @@ public static partial class InstallationController
         }
         else if (request.Mode == "imported") BoilerImage.ValidateSelection(request.Source);
         else RecoveryImage.ValidateSelection(request.Source);
-        if (!request.Prepared && request.UpgradeTo310) OfficialSystem.RequirePreparedSource();
+        if (!request.Prepared && request.UpgradeTo310 && request.OfficialSource == null) OfficialSystem.RequirePreparedSource();
         Directory.CreateDirectory(Work);
-        MediaSpace.RequireAvailable(Work, MediaSpace.InstallationBudget(request.Physical, request.Prepared));
+        MediaSpace.RequireAvailable(Work, request.Mode == "imported"
+            ? BoilerImage.WorkspaceBudget(request.Source, request.Physical)
+            : MediaSpace.InstallationBudget(request.Physical, request.Prepared));
     }
     public static async Task<InstallationSession> RunAsync(InstallationRequest request, Action<InstallationProgress> report, Action<string> log,
         CancellationToken token, Action<InstallationSession>? created = null)
@@ -122,7 +136,10 @@ public static partial class InstallationController
         var id = Guid.NewGuid().ToString("N"); var directory = Path.Combine(Work, "install-session-" + id); Directory.CreateDirectory(directory);
         var snapshot = await BoilerImage.SnapshotAsync(request.Source, directory, token);
         if (request.ExpectedSourceSha256 != null && snapshot.Sha256 != request.ExpectedSourceSha256)
+        {
+            ImageImportStreams.RemoveOwned(snapshot.Path);
             throw new IOException("Source image changed after review; inspect and confirm again.");
+        }
         request = request with { Source = snapshot.Path };
         var journal = Path.Combine(directory, "session.json");
         using var sessionLease = LeaseSession(directory);
@@ -170,7 +187,7 @@ public static partial class InstallationController
                         step = update.Step;
                         report(new("preparing", update.Message,
                             progress.Advance("preparing", (2 + 10 * update.Fraction) / 32), update.Step));
-                    });
+                    }, request.OfficialSource);
                 }
                 progress.Advance("preparing", 12d / 32);
                 Phase("preparing", "正在创建独立测试盘…", "01.03");
@@ -185,7 +202,7 @@ public static partial class InstallationController
             }
             progress.Advance("preparing", 1);
             token.ThrowIfCancellationRequested();
-            if (request.Options != null && request.Mode != "imported")
+            if (request.Options != null && request.Mode is not ("imported" or "local"))
             {
                 Phase("components", InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…"), "02.01");
                 var expected = Math.Max(1, 2 * ComponentOutcome.Expected(request.Options).Count);
@@ -215,9 +232,10 @@ public static partial class InstallationController
                     await RawImageStaging.ConvertAsync(image, selectedImage, log, token);
                 }
                 MediaSpace.RequireAvailable(directory, 8ul * 1024 * 1024 * 1024);
+                var firmwarePayload = await FirmwareDownloads.PrepareAsync(selectedImage, directory, repairSelection, ComponentLog, token);
                 var resultFile = await Backend.GuestAsync("integration", selectedImage, true, ComponentLog, token,
                     selection: repairSelection,
-                    secureInput: request.Options.SetDeckPassword ? request.InitialDeckPassword : null);
+                    secureInput: request.Options.SetDeckPassword ? request.InitialDeckPassword : null, integrationPayload: firmwarePayload);
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.log"), resultFile, token);
                 var componentResults = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("OXP_COMPONENT_RESULT=", StringComparison.Ordinal)).Select(x => JsonDocument.Parse(x[21..]).RootElement.Clone()).ToArray();
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.json"), JsonSerializer.Serialize(componentResults, new JsonSerializerOptions { WriteIndented = true }), token);
@@ -238,7 +256,7 @@ public static partial class InstallationController
                     componentMessage = PartitionInventory.L("正在独立复核 A/B 系统槽的组件…", "Independently verifying components on both system slots…");
                     Phase("components", componentMessage, "02.03");
                     await Backend.GuestAsync("integration-verify",selectedImage,false,ComponentLog,token,
-                        selection:repairSelection);
+                        selection:repairSelection, integrationPayload:firmwarePayload);
                 }
                 image = selectedImage;
             }
@@ -261,7 +279,11 @@ public static partial class InstallationController
                 image = await PreparedCapacity.ExpandAsync(image, directory, request.PlannedPartition!.Capacity, log, token);
             }
             JsonElement exportPlan;
-            if (request.Mode == "imported")
+            if (request.Mode == "local")
+                exportPlan = JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "InstallPlan", mode = "vanilla", source_mode = "local",
+                    components = Array.Empty<object>(), upgrade_to_310 = true, build_version = ReleaseInfo.DisplayVersion,
+                    source_sha256 = request.ExpectedSourceSha256, official_source_sha256 = request.OfficialSource!.Sha256 });
+            else if (request.Mode == "imported")
                 exportPlan = importedManifest is { } importedMetadata && importedMetadata.TryGetProperty("install_plan", out var prior)
                     ? prior.Clone() : JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "InstallPlan", mode = "imported", components = Array.Empty<object>(), component_ownership = "unknown-preserved" });
             else

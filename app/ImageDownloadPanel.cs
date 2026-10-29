@@ -21,10 +21,23 @@ public sealed class ImageDownloadPanel : UserControl
     private readonly ProgressBar progress = new() { Height = 7, Margin = new(0, 12, 0, 0), Visibility = Visibility.Collapsed };
     private readonly DownloadOrigin[] origins = AriaDownload.Origins();
     private CancellationTokenSource? operation;
+    private bool sourceCardLayout;
+    internal event Action? SourceReady;
     public bool IsBusy => operation != null;
     public void RefreshWorkspace() { if (!IsBusy) { status.Text = ""; progress.Value = 0; Choose(); } }
     public event Action<bool>? BusyChanged;
     public event Action<string>? Completed;
+    internal void UseSourceCardLayout()
+    {
+        sourceCardLayout = true; heading.FontSize = 14; heading.FontWeight = FontWeights.SemiBold;
+        copyAddress.MinHeight = sources.MinHeight = address.MinHeight = action.MinHeight = restart.MinHeight = 44;
+        address.TextWrapping = TextWrapping.NoWrap; address.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+        agreement.MinHeight = terms.MinHeight = 32; agreement.FontSize = terms.FontSize = note.FontSize = status.FontSize = 12;
+        sources.Style = TryFindResource("SourceDropdown") as Style; address.Style = TryFindResource("SourceAddress") as Style;
+        action.Background = new SolidColorBrush(Color.FromRgb(41, 104, 217)); action.Foreground = Brushes.White;
+        restart.Background = copyAddress.Background = terms.Background = Brushes.Transparent; terms.Foreground = new SolidColorBrush(Color.FromRgb(41, 104, 217));
+        RefreshLanguage();
+    }
     private static string L(string zh, string en) => InstallerI18n.Language == "en-US" ? en : zh;
     public ImageDownloadPanel()
     {
@@ -65,10 +78,10 @@ public sealed class ImageDownloadPanel : UserControl
     public void RefreshLanguage()
     {
         var index = Math.Max(0, sources.SelectedIndex); var custom = address.Text;
-        heading.Text = L("下载恢复镜像", "Download a recovery image");
+        heading.Text = sourceCardLayout ? L("下载来源", "Download source") : L("下载恢复镜像", "Download a recovery image");
         agreement.Content = L("我已阅读并同意 SteamOS 下载条款", "I have read and accept the SteamOS download terms");
         terms.Content = L("查看 Valve 下载条款 ↗", "View Valve download terms ↗");
-        copyAddress.Content = L("复制地址 · 手动下载", "Copy URL · download manually");
+        copyAddress.Content = sourceCardLayout ? L("复制地址", "Copy URL") : L("复制地址 · 手动下载", "Copy URL · download manually");
         copyAddress.ToolTip = L("复制当前下载地址，使用浏览器或下载工具手动下载", "Copy the current URL to download with your browser or download manager");
         sources.Items.Clear();
         foreach (var origin in origins) sources.Items.Add(origin);
@@ -101,6 +114,7 @@ public sealed class ImageDownloadPanel : UserControl
         operation = new CancellationTokenSource(); sources.IsEnabled = address.IsEnabled = restart.IsEnabled = agreement.IsEnabled = false;
         action.Content = L("暂停下载", "Pause"); progress.Visibility = Visibility.Visible; progress.IsIndeterminate = true;
         BusyChanged?.Invoke(true);
+        var completed = false;
         try
         {
             status.Text = L("正在检查下载来源…", "Checking the download source…");
@@ -113,6 +127,7 @@ public sealed class ImageDownloadPanel : UserControl
                 status.Text = $"{p.Completed / 1048576d:F1} / {p.Total / 1048576d:F1} MiB  ·  {p.Speed / 1048576d:F1} MiB/s  ·  " + L("剩余 ", "Remaining ") + eta;
             }), operation.Token);
             Completed?.Invoke(AriaDownload.ResultPath(result));
+            completed = true;
             status.Text = L("下载完成，已选为下方的系统镜像。可以继续下一步。", "Downloaded and selected below. Continue to the next step.");
         }
         catch (OperationCanceledException) { status.Text = L("下载已暂停。再次点击“下载 / 继续”可续传。", "Paused. Click Download / resume to continue."); }
@@ -122,6 +137,7 @@ public sealed class ImageDownloadPanel : UserControl
             operation.Dispose(); operation = null; progress.IsIndeterminate = false;
             sources.IsEnabled = address.IsEnabled = restart.IsEnabled = agreement.IsEnabled = action.IsEnabled = true;
             action.Content = L("下载 / 继续", "Download / resume"); BusyChanged?.Invoke(false);
+            if (completed) SourceReady?.Invoke();
         }
     }
 }

@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import tarfile
 import tempfile
 import unittest
 import zipfile
@@ -114,13 +115,49 @@ class DependencyBootstrapTests(unittest.TestCase):
                          'runtime/desync/desync.exe', 'runtime/aria2/aria2c.exe', 'components/refind/manage.py', 'components/refind/refind_x64.efi'):
             self.assertIn(required, members)
         self.assertTrue(all(not name.startswith(('research/', 'cache/integration/', 'components/controls/')) for name in members))
-        self.assertEqual(len(lock['offline_packages']), 44)
+        self.assertEqual(len(lock['offline_packages']), 48)
+        self.assertTrue({'findmnt','lsblk','libmount','blkid'} <= {item['name'] for item in lock['offline_packages']})
         inventory = {item['target']: item for archive in lock['archives'] for item in archive.get('members', [])}
         for package in lock['offline_packages']:
             name = 'runtime/payload/apks/'+package['name']+'-'+package['version']+'.apk'
             self.assertIn(name, inventory)
             self.assertEqual(inventory[name]['size'], package['bytes'])
         self.assertEqual(lock['versions']['dotnet_sdk'], json.loads((ROOT/'global.json').read_text())['sdk']['version'])
+
+    def test_official_blkid_metadata_and_offline_raw_bootstrap(self):
+        lock = json.loads((ROOT/'scripts/runtime-dependencies.lock.json').read_text(encoding='utf-8'))
+        entry = next(item for item in lock['archives'] if item['id'] == 'alpine-blkid')
+        metadata = next(item for item in lock['offline_packages'] if item['name'] == 'blkid')
+        self.assertEqual(entry['format'], 'raw')
+        self.assertEqual(entry['name'], 'blkid-2.41.6-r1.apk')
+        self.assertEqual(entry['url'], 'https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/'+entry['name'])
+        self.assertEqual(entry['size'], metadata['bytes'])
+        self.assertEqual(entry['sha256'], '8e965dfd93f0ea948ae26085c2d13dfabb23480bc601673441111afca2606122')
+        self.assertEqual(metadata['license'], 'LGPL-1.0-only')
+        cache = ROOT/'cache/bootstrap'
+        source = cache/entry['name']
+        if not source.exists():
+            self.skipTest('The optional official Alpine APK cache is not present')
+        bootstrap.verify(source, entry)
+        # APK v2 uses concatenated gzip/tar streams for signature, control and
+        # payload. Read metadata and ELF bytes without extracting or running it.
+        with tarfile.open(source, 'r:gz', ignore_zeros=True) as archive:
+            package_info = archive.extractfile('.PKGINFO').read().decode('utf-8')
+            executable = archive.extractfile('sbin/blkid').read(4)
+        for field in ('pkgname = blkid', 'pkgver = 2.41.6-r1', 'arch = x86_64',
+                      'origin = util-linux', 'license = LGPL-1.0-only', 'depend = so:libblkid.so.1'):
+            self.assertIn(field, package_info.splitlines())
+        self.assertEqual(executable, b'\x7fELF')
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            subset = dict(schema_version=1, kind='BoilerDependencyLock', versions={},
+                          profiles={'guest': ['guest-packages']}, archives=[entry])
+            lock_path = work/'lock.json'
+            lock_path.write_text(json.dumps(subset), encoding='utf-8')
+            result = bootstrap.prepare(work/'prepared', 'guest', cache=cache, lock_path=lock_path, offline=True)
+            self.assertEqual(result['created'], 1)
+            self.assertEqual(result['files'][0]['sha256'], entry['sha256'])
+            self.assertEqual((work/'prepared'/entry['members'][0]['target']).read_bytes(), source.read_bytes())
 
     def test_raw_locked_dependency_preserves_tampered_target(self):
         with tempfile.TemporaryDirectory() as temporary:

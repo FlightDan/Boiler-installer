@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {"source": "microphone.py", "target": "/usr/local/lib/oxp-microphone/microphone.py", "mode": "0644", "owner": "root:root"},
+    {"source": "oxp-microphone.service", "target": "/etc/systemd/user/oxp-microphone.service", "mode": "0644", "owner": "root:root"},
+    {"source": "90-oxp-microphone.conf", "target": "/etc/systemd/user/default.target.d/90-oxp-microphone.conf", "mode": "0644", "owner": "root:root"}
+  ]
+}

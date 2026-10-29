@@ -12,61 +12,44 @@ public partial class MainWindow
     private string installMode = "custom";
     private Border? homeScreen;
     private string? selectedDevicePackage;
-    private readonly int[] boilerRoute = [1, 2, 0, 4, 3, 5, 6];
-
-    private void ShowBoilerHome()
-    {
-        WizardShell.Visibility = Visibility.Collapsed;
-        if (homeScreen != null) WindowRoot.Children.Remove(homeScreen);
-        var panel = new StackPanel { MaxWidth = 760, Margin = new Thickness(28), VerticalAlignment = VerticalAlignment.Center };
-        panel.Children.Add(new TextBlock { Text = "Boiler Installer", FontSize = 30, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
-        panel.Children.Add(new TextBlock { Text = PartitionInventory.L("选择这次安装的方式", "Choose how to install SteamOS"), FontSize = 18, Margin = new Thickness(0, 0, 0, 28) });
-        foreach (var entry in new[] {
-            ("custom", "构建并安装自定义 SteamOS", "Build a custom SteamOS image", "默认准备 3.10，也可保留基础版本；选择机型适配和预装内容。", "Use 3.10 or keep the base version; select device support and components."),
-            ("imported", "导入并安装预制镜像", "Install a prebuilt image", "导入 IMG 或 Boiler 镜像包，保留已有系统、软件和数据。", "Import an IMG or Boiler package, preserving its systems, software and data."),
-            ("vanilla", "Vanilla 原版安装", "Vanilla SteamOS", "使用官方系统；可自行选择无线固件、Decky 和维护器。", "Use an official system, with optional wireless firmware, Decky and maintenance.") })
-        {
-            var content = new StackPanel();
-            content.Children.Add(new TextBlock { Text = PartitionInventory.L(entry.Item2, entry.Item3), FontSize = 19, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
-            content.Children.Add(new TextBlock { Text = PartitionInventory.L(entry.Item4, entry.Item5), Foreground = new SolidColorBrush(Color.FromRgb(75, 94, 117)), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
-            var button = new Button { Content = content, Tag = entry.Item1, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Padding = new Thickness(20, 16, 20, 16), Margin = new Thickness(0, 0, 0, 14), MinHeight = 96, Background = Brushes.White };
-            button.Click += (_, _) => ChooseBoilerMode((string)button.Tag);
-            panel.Children.Add(button);
-        }
-        var languages = new WrapPanel();
-        foreach (var language in new[] { ("zh-CN", "中文"), ("en-US", "English") })
-        {
-            var button = new Button { Content = language.Item2, MinHeight = 48, Margin = new Thickness(0, 0, 12, 0) };
-            button.Click += (_, _) => { if (language.Item1 == "en-US") EnglishLanguage.IsChecked = true; else ChineseLanguage.IsChecked = true; ShowBoilerHome(); };
-            languages.Children.Add(button);
-        }
-        panel.Children.Add(languages);
-        homeScreen = new Border { Background = new SolidColorBrush(Color.FromRgb(244, 246, 250)), Child = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
-        KeyboardNavigation.SetTabNavigation(homeScreen, KeyboardNavigationMode.Cycle);
-        Panel.SetZIndex(homeScreen, 20); WindowRoot.Children.Add(homeScreen);
-        Title = "Boiler Installer";
-    }
+    private readonly int[] boilerRoute = [AdaptationStep, 1, 2, 0, 4, 3, 5, 6];
 
     private void ChooseBoilerMode(string mode)
     {
+        if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
+        if (operation != null || DownloadsBusy || deviceActionBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
+        deviceActionError = null;
+        ResetInputAssociationSession();
         deviceComponentChoices.Clear();
+        ClearLegacyDeviceOptions();
+        deviceAdaptationsChoice = null;
         if (deviceComponentsPanel != null) { ComponentOptionsHost.Children.Remove(deviceComponentsPanel); deviceComponentsPanel = null; }
         session = null; reviewSeen = false; acknowledgedSelection = null; PhysicalConsent.IsChecked = false;
+        Array.Clear(departedSteps); contentSeen = checkedAllSteps = false;
+        ResetOfficialSourceInspection();
         sourceSection = 0; UsePrepared.IsChecked = false; ImagePath.Clear();
-        Upgrade310.IsChecked = mode == "custom";
+        ResetImageInspection();
+        Upgrade310.IsChecked = mode is "custom" or "local";
         optionsPanel.SetMode(mode);
-        if (devicePanel != null) RecoverySourceSection.Children.Remove(devicePanel);
+        skipUpgradeChosen = false;
+        RecoverySourceCard.ResetDisclosure(); UpgradeSourceCard.ResetDisclosure();
+        ResetAdaptationFlow();
+        if (devicePanel?.Parent is Panel priorParent) priorParent.Children.Remove(devicePanel);
         CreateDevicePanel();
         devicePanel!.Visibility = mode == "custom" ? Visibility.Visible : Visibility.Collapsed;
         if (homeScreen != null) { WindowRoot.Children.Remove(homeScreen); homeScreen = null; }
         WizardShell.Visibility = Visibility.Visible;
-        DownloadHost.Visibility = mode == "imported" ? Visibility.Collapsed : Visibility.Visible;
-        ComponentOptionsHost.IsEnabled = mode != "imported";
-        ShowStep(1);
+        RecoveryDownloadCard.Visibility = mode is "imported" or "local" ? Visibility.Collapsed : Visibility.Visible;
+        DownloadHost.Visibility = Visibility.Visible;
+        officialDownloadPanel.SetLocalOnly(mode == "local");
+        ComponentOptionsHost.IsEnabled = mode is not ("imported" or "local");
+        if (mode == "vanilla") ChooseGenericInstallation();
+        else ShowStep(mode is "imported" or "local" ? 1 : AdaptationStep);
         if (physicalInstallation && !bootPrerequisitesAcknowledged) ShowBootPrerequisites(null, null);
     }
+
+    private void ChoosePreparedImageMode(object sender, RoutedEventArgs e) => ChooseBoilerMode("imported");
 
     private void AddImageExport()
     {
@@ -96,25 +79,50 @@ public partial class MainWindow
     private void RefreshBoilerNavigation()
     {
         Title = "Boiler Installer";
+        var pairedOrPrepared = installMode is "local" or "imported";
+        NavAdaptation.Text = PartitionInventory.L("01   设备适配", "01   Device support");
         NavSource.Text = PartitionInventory.L("01   系统来源", "01   System source");
-        NavContent.Text = PartitionInventory.L("02   安装内容", "02   Components");
-        NavTarget.Text = PartitionInventory.L("03   安装位置", "03   Destination");
-        NavBoot.Text = PartitionInventory.L("04   启动设置", "04   Boot settings");
-        NavReview.Text = PartitionInventory.L("05   确认方案", "05   Review");
+        NavContent.Text = PartitionInventory.L("02   安装选项", "02   Installation options");
+        NavTarget.Text = pairedOrPrepared ? PartitionInventory.L("02   安装位置", "02   Destination") : PartitionInventory.L("03   安装位置", "03   Destination");
+        NavBoot.Text = pairedOrPrepared ? PartitionInventory.L("03   启动设置", "03   Boot settings") : PartitionInventory.L("04   启动设置", "04   Boot settings");
+        NavReview.Text = pairedOrPrepared ? PartitionInventory.L("04   确认方案", "04   Review") : PartitionInventory.L("05   确认方案", "05   Review");
+        NavProgress.Text = pairedOrPrepared ? PartitionInventory.L("05   安装进度", "05   Progress") : PartitionInventory.L("06   安装进度", "06   Progress");
+        NavResult.Text = pairedOrPrepared ? PartitionInventory.L("06   安装结果", "06   Result") : PartitionInventory.L("07   安装结果", "07   Result");
         var nav = (Panel)TargetTab.Parent;
-        foreach (var child in new UIElement[] { SourceTab, SourceSubitems, ContentTab, TargetTab, BootTab, ReviewTab, ProgressTab, ResultTab })
-        { nav.Children.Remove(child); nav.Children.Add(child); }
-        BackButton.Visibility = step is 0 or 1 or 2 or 3 or 4 ? Visibility.Visible : Visibility.Hidden;
-        NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : PartitionInventory.L("下一步", "Next");
+        var ordered = new UIElement[] { AdaptationTab, SourceTab, SourceSubitems, ContentTab, TargetTab, BootTab, ReviewTab, ProgressTab, ResultTab };
+        for (var index = 0; index < ordered.Length; index++)
+            if (nav.Children.IndexOf(ordered[index]) != index) { nav.Children.Remove(ordered[index]); nav.Children.Insert(index, ordered[index]); }
+        SourceSubitems.Visibility = Visibility.Collapsed;
+        ContentTab.Visibility = pairedOrPrepared ? Visibility.Collapsed : Visibility.Visible;
+        AdaptationTab.Visibility = Visibility.Collapsed;
+        BackHomeButton.Content = PartitionInventory.L("返回安装方式", "Back to home");
+        BackHomeButton.IsEnabled = operation == null && !DownloadsBusy && !PartitionSelector.IsBusy;
+        BackButton.Visibility = step is 0 or 2 or 3 or 4 or AdaptationStep || step == 1 && !pairedOrPrepared ? Visibility.Visible : Visibility.Collapsed;
+        SourceFooterHint.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
+        SourceFooterHint.Text = installMode == "local" ? PartitionInventory.L("两个镜像均选择并校验后继续。", "Select and verify both images to continue.") : PartitionInventory.L("选择并核对镜像后继续。", "Select and verify the image to continue.");
+        NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : step == 1 ? pairedOrPrepared ? PartitionInventory.L("下一步：安装位置", "Next: destination") : PartitionInventory.L("下一步：安装选项", "Next: installation options") : PartitionInventory.L("下一步", "Next");
+        SourceVersionOptions.Visibility = pairedOrPrepared ? Visibility.Collapsed : Visibility.Visible;
+        RecoveryDownloadDetails.Header = PartitionInventory.L("下载官方恢复镜像", "Download the official recovery image");
+        RecoveryImageHeading.Text = installMode == "imported" ? PartitionInventory.L("本地 IMG 镜像", "Local IMG image") : installMode == "local" ? PartitionInventory.L("1  官方恢复镜像", "1  Official recovery image") : PartitionInventory.L("SteamOS 官方恢复镜像", "SteamOS official recovery image");
+        RecoveryImageNote.Text = installMode == "imported" ? PartitionInventory.L("选择一份完整的 SteamOS 磁盘镜像，下一步选择要刷入的目标空间。", "Choose a complete SteamOS disk image, then select the destination space in the next step.") : installMode == "local" ? PartitionInventory.L("提供恢复环境与基础布局；请选择官方 SteamOS 恢复镜像。", "Provides the recovery environment and base layout; select an official SteamOS recovery image.") : PartitionInventory.L("下载官方恢复镜像，或选择已下载的本地文件。", "Download the official recovery image or choose a local file.");
+        RecoveryImageHint.Text = installMode == "imported" ? PartitionInventory.L("支持不同容量的 SteamOS .img、.img.bz2、.img.zip 与 Boiler 包；目标空间须能容纳镜像内的系统布局。", "Accepts SteamOS .img, .img.bz2, .img.zip and Boiler packages of different sizes; the destination must fit the system layout.") : PartitionInventory.L("支持 .img、.img.bz2 和 .img.zip。", "Accepts .img, .img.bz2 and .img.zip.");
+        ImportPreparedImageButton.Content = PartitionInventory.L("已有 Boiler 预制镜像包？使用镜像包安装…", "Have a Boiler image package? Install the package…");
+        ImportPreparedImageButton.Visibility = installMode == "local" ? Visibility.Visible : Visibility.Collapsed;
+        SidebarSubtitle.Text = installMode switch { "local" => PartitionInventory.L("本地双镜像", "Local image pair"), "imported" => PartitionInventory.L("本地 IMG 刷入", "Local IMG flashing"), "vanilla" => PartitionInventory.L("Vanilla 原版", "Vanilla SteamOS"), _ => PartitionInventory.L("自定义构建", "Custom build") };
         if (installMode == "imported")
         {
             ContentTab.Visibility = Visibility.Collapsed;
             SourceSubitems.Visibility = Visibility.Collapsed;
             OfficialSourceSection.Visibility = Visibility.Collapsed;
             RecoverySourceSection.Visibility = Visibility.Visible;
-            if (step == 1) { PageTitle.Text = PartitionInventory.L("导入预制镜像", "Import a prebuilt image"); PageSubtitle.Text = PartitionInventory.L("支持标准 SteamOS IMG 与 Boiler 包；保留双槽、软件和用户数据。", "Standard SteamOS IMG and Boiler packages; preserve both slots, software and user data."); }
+            if (step == 1) { PageTitle.Text = PartitionInventory.L("刷入本地 IMG 镜像", "Flash a local IMG"); PageSubtitle.Text = PartitionInventory.L("核对镜像后选择安装位置；完整 A/B 镜像沿用其中的系统、软件和用户数据。", "Review the image, then choose the destination; complete A/B images retain their systems, software and user data."); }
         }
-        else ContentTab.Visibility = Visibility.Visible;
+        else if (installMode == "local")
+        {
+            RecoverySourceSection.Visibility = OfficialSourceSection.Visibility = Visibility.Visible;
+            if (step == 1) { PageTitle.Text = PartitionInventory.L("导入本地镜像", "Import local images"); PageSubtitle.Text = PartitionInventory.L("分别选择官方恢复镜像与 SteamOS 3.10 系统镜像，核对后继续。", "Select the official recovery image and the SteamOS 3.10 system image separately, then continue."); }
+        }
+        RefreshSystemSourceCards(); RefreshAdaptationPage();
     }
 }
 
@@ -122,12 +130,20 @@ public partial class InstallerOptionsPanel
 {
     internal void SetMode(string mode)
     {
-        // Boiler v1 exposes only implemented generic components. Do not submit hidden legacy settings.
-        for (var i = 3; i < Children.Count; i++) Children[i].Visibility = Visibility.Collapsed;
+        // Set group visibility explicitly so adding a section cannot hide presets.
+        foreach (var section in GenericSections) section.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
+        SystemPresetsPanel.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
+        OptionsNotesPanel.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
         foreach (var item in catalog.Repairs.Concat(catalog.Plugins))
-            if (boxes.TryGetValue(item.Id, out var box)) box.IsChecked = mode == "custom" && item.Available && item.Default;
-        kde.SelectedItem = kde.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == "system");
-        kdeChanged = true; setDeckPassword.IsChecked = false; enableSsh.IsChecked = false;
+            if (boxes.TryGetValue(item.Id, out var box)) box.IsChecked = item.Available && item.Default
+                && (mode == "custom" || mode == "vanilla" && item.Id == "core:maintenance");
+        applyingLanguageDefault = true;
+        try { kde.SelectedItem = kde.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == (mode is "custom" or "vanilla" ? InstallerOptions.DefaultKdeLanguage : "system")); }
+        finally { applyingLanguageDefault = false; }
+        kdeChanged = mode is "local" or "imported"; setDeckPassword.IsChecked = false; enableSsh.IsChecked = false;
+        ClearSensitiveInputs();
+        ResetGraphicsChoice();
+        SetWirelessContext(mode, hasPackage: false);
         UpdateRepairSummary();
     }
 }

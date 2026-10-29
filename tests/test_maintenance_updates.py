@@ -132,6 +132,21 @@ class MaintenanceUpdateTests(unittest.TestCase):
     def target_bytes(self):
         return {path.relative_to(self.root).as_posix(): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
 
+    def test_device_mismatch_warns_in_discovery_plan_and_still_updates(self):
+        package = self.package()
+        package[1]['compatibility']['device_ids'] = ['known']
+        package[1]['components'][0]['compatibility']['device_ids'] = ['known']
+        (package[0]/'manifest.json').write_text(json.dumps(package[1]))
+        self.sign_index(package)
+        discovery = updates.discover(self.root, self.cache, device_id='other', public_key=self.public_key,
+                                     openssl=self.openssl or 'openssl')
+        self.assertTrue(discovery['candidates'][0]['compatible'])
+        self.assertEqual(discovery['candidates'][0]['device_warning']['actual_device_id'], 'other')
+        plan = self.plan(package, device_id='other')
+        self.assertTrue(plan['executable'])
+        self.assertTrue(plan['device_warnings'])
+        self.assertEqual(self.execute(plan, package)['status'], 'committed')
+
     def install_owned_receipt(self):
         import copy
         component = copy.deepcopy(self.old_component)

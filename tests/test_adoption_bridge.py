@@ -1,7 +1,8 @@
-"""Optional integration with the separately checked-out model adapter.
+"""Legacy receipt integration with the adapter source bundled in this project.
 
-Set BOILER_MODEL_SOURCE to the model repository directory to run. The ordinary
-generic-installer suite remains usable with no model checkout or network.
+The default fixture is adaptations/brands/onexplayer/oxp3/bridge/adapter.py.
+BOILER_MODEL_SOURCE may select an explicit alternate adapter/package directory;
+no sibling checkout, device, network or installed legacy runtime is required.
 """
 import base64
 import hashlib
@@ -20,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from maintenance import Engine, MaintenanceError
 from maintenance import engine as implementation
 
-MODEL = Path(os.environ['BOILER_MODEL_SOURCE']) if os.environ.get('BOILER_MODEL_SOURCE') else None
+MODEL = Path(os.environ.get('BOILER_MODEL_SOURCE') or ROOT/'adaptations/brands/onexplayer/oxp3/bridge')
 
 
 class AdoptionReceiptIntakeTests(unittest.TestCase):
@@ -124,7 +125,6 @@ class AdoptionReceiptIntakeTests(unittest.TestCase):
         self.assertEqual(base64.b64decode(journal['operations'][0]['before']['data']), b'original configuration\n')
 
 
-@unittest.skipUnless(MODEL and (MODEL/'adapter.py').is_file(), 'Set BOILER_MODEL_SOURCE to run the independent model adoption integration')
 class AdoptionBridgeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

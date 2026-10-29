@@ -2,10 +2,14 @@
 import json
 from pathlib import Path
 import re
+import os
+import stat
 import subprocess
 import sys
 sys.path.insert(0,'/mnt/payload/components')
+sys.path.insert(0,'/mnt/payload')
 from integration import stage, validate_options
+from system_presets import selected as presets_selected
 from offload_mounts import mount_opt, mount_etc
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip()!='QEMU': raise RuntimeError('Managed VM required')
 if Path('/sys/class/block/vdc/ro').read_text().strip()!='0': raise RuntimeError('Prepared image must be writable')
@@ -17,7 +21,7 @@ validate_options(options)
 if options.get('install_mode')=='imported':
     print('OXP_INTEGRATION_PRESERVED=imported-image',flush=True)
     raise SystemExit(0)
-if not any(options.get(key) for key in ('repairs','plugins','wireless','device_components')):
+if not any(options.get(key) for key in ('repairs','plugins','wireless','device_components','graphics_profile')) and not presets_selected(options):
     probe=Path('/mnt/boiler-plan-source'); probe.mkdir(exist_ok=True)
     for slot in ('A','B'):
         subprocess.run(['mount','-t','btrfs','-o','ro,rescue=nologreplay',parts['rootfs-'+slot],str(probe)],check=True)
@@ -32,8 +36,12 @@ target_disk=options.pop('_target_disk',None)
 password_file=Path('/tmp/oxp-deck-initial-password')
 password_hash=None
 if options.get('set_deck_password',False):
-    if not password_file.is_file(): raise RuntimeError('The selected deck password was not received securely')
-    password=bytearray(password_file.read_bytes())
+    descriptor = os.open(password_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != 0 or info.st_mode & 0o077:
+            raise RuntimeError('The selected deck password was not received securely')
+        password=bytearray(stream.read(256))
     try:
         if not password or len(password)>255 or any(value in password for value in (0,10,13)):
             raise RuntimeError('Invalid deck password input')

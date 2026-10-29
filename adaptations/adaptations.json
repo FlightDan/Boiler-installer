@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "AdaptationSourceCatalog",
+  "version": "0.1.0-layout.1",
+  "installable": false,
+  "documentation": "ADAPTATIONS.md",
+  "models": [
+    "brands/onexplayer/oxp3/manifest.json",
+    "brands/onexplayer/x2-mini/manifest.json"
+  ]
+}

@@ -239,9 +239,10 @@ public static class Backend
         return ProcessAsync(executable, new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(Root, "scripts", script) }.Concat(arguments), log, token);
     }
     public static async Task<string> ProcessAsync(string executable, IEnumerable<string> arguments, Action<string> log, CancellationToken token,
-        IReadOnlyDictionary<string, string>? environment = null)
+        IReadOnlyDictionary<string, string>? environment = null, Encoding? outputEncoding = null)
     {
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        if (outputEncoding != null) { start.StandardOutputEncoding = outputEncoding; start.StandardErrorEncoding = outputEncoding; }
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         if (environment != null) foreach (var entry in environment) start.Environment[entry.Key] = entry.Value;
         using var process = new Process { StartInfo = start };
@@ -312,7 +313,7 @@ public static class Backend
         using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
         await source.CopyToAsync(target, token); await target.FlushAsync(token);
     }
-    public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null)
+    public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null)
     {
         if (secureInput != null && (task is not ("integration" or "secret-input-check") || string.IsNullOrEmpty(secureInput))) throw new ArgumentException("Secure input is available only for integration or its isolated handshake check.", nameof(secureInput));
         byte[]? secureBytes = null;
@@ -321,8 +322,8 @@ public static class Backend
         if (fixture != null) fixture = Path.GetFullPath(fixture);
         if (stateDisk != null) stateDisk = Path.GetFullPath(stateDisk);
         if (task is "build" or "refine-preview") throw new InvalidOperationException("旧 OXP3 预览构建入口已迁移到机型包；请使用 Boiler 三种安装流程。 / Legacy model preview builders are disabled; use the Boiler installation workflow.");
-        if (task is not ("source-info" or "home-copy-plan" or "home-copy-plan-checks" or "secret-input-check" or "resize-prepared" or "capacity-check" or "refind-image" or "physical-readiness" or "upgrade-source" or "integration-delta-check" or "integration-verify" or "integration-check" or "integration" or "smoke" or "inspect" or "build" or "verify" or "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" or "refine-preview")) throw new ArgumentException("Unknown task");
-        if (task is "integration" or "refind-image" or "resize-prepared" or "capacity-check")
+        if (task is not ("firmware-plan" or "source-info" or "home-copy-plan" or "home-copy-plan-checks" or "secret-input-check" or "resize-prepared" or "capacity-check" or "refind-image" or "physical-readiness" or "upgrade-source" or "model-maintenance-check" or "integration-delta-check" or "integration-verify" or "integration-check" or "integration" or "smoke" or "inspect" or "build" or "verify" or "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" or "refine-preview")) throw new ArgumentException("Unknown task");
+        if (task is "model-maintenance-check" or "integration" or "refind-image" or "resize-prepared" or "capacity-check")
         {
             if (image == null) throw new ArgumentException("Missing independent prepared image.");
             MediaSource.Ordinary(image, InstallerWorkspace.DirectoryPath);
@@ -331,13 +332,21 @@ public static class Backend
             throw new ArgumentException("Unsupported intent fault boundary");
         var requiresStateDisk = task is "ui-bootstrap-seed" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover";
         if (requiresStateDisk != (stateDisk != null)) throw new ArgumentException("This task requires its own persistent staging disk");
-        if (writable != (task is "build" or "refine-preview" or "integration" or "upgrade-source" or "refind-image" or "resize-prepared" or "capacity-check")) throw new ArgumentException("Only build tasks can modify an output image");
+        if (writable != (task is "build" or "refine-preview" or "integration" or "upgrade-source" or "refind-image" or "resize-prepared" or "capacity-check" or "model-maintenance-check")) throw new ArgumentException("Only build tasks can modify an output image");
         if (task == "refine-preview" && (image == null || !Path.GetFullPath(image).StartsWith(Path.Combine(Root, "output") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException("开发预览更新只允许工具工作区内的输出副本。");
         if (image != null && (!File.Exists(image) || !string.Equals(Path.GetExtension(image), ".img", StringComparison.OrdinalIgnoreCase) || Path.GetFullPath(image).StartsWith(@"\\.\", StringComparison.Ordinal))) throw new InvalidOperationException("虚拟机只接收普通 .img 文件。");
         if ((task == "upgrade-source") != (updateRoot != null)) throw new IOException("Upgrade task requires a root partition image.");
         if (task == "upgrade-source") RecoveryImage.ValidateRaw(image ?? throw new IOException("Missing recovery image."));
         if (updateRoot != null) { MediaSource.Ordinary(updateRoot, InstallerWorkspace.DirectoryPath); MediaSource.Ordinary(image!,InstallerWorkspace.DirectoryPath); }
+        if (task == "firmware-plan" && (image == null || selection == null)) throw new IOException("Firmware planning requires an image and explicit selection.");
+        if (integrationPayload != null)
+        {
+            if (task is not ("integration" or "integration-verify")) throw new IOException("Private component payload is only valid for integration.");
+            MediaSource.Ordinary(integrationPayload, InstallerWorkspace.DirectoryPath, false);
+        }
+        if (task == "integration" && integrationPayload == null && selection != null)
+            integrationPayload = await FirmwareDownloads.PrepareAsync(image!, Path.Combine(InstallerWorkspace.DirectoryPath, "firmware-session-" + Guid.NewGuid().ToString("N")), selection, log, token);
         var id = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + "-" + task;
         var work = Path.Combine(InstallerWorkspace.DirectoryPath, id); Directory.CreateDirectory(work);
         var payload = Path.Combine(work, "payload"); Directory.CreateDirectory(payload);
@@ -352,7 +361,7 @@ public static class Backend
             }
         }
         CopyDirectory(Path.Combine(Root, "guest"), Path.Combine(payload, "tasks"));
-        if (task is "integration" or "integration-verify" or "integration-check" or "integration-delta-check" or "physical-readiness")
+        if (task is "firmware-plan" or "integration" or "integration-verify" or "integration-check" or "integration-delta-check" or "physical-readiness")
         {
             CopyDirectory(Path.Combine(Root, "protocol"), Path.Combine(payload, "protocol"));
             CopyDirectory(Path.Combine(Root, "maintenance"), Path.Combine(payload, "maintenance"));
@@ -376,27 +385,22 @@ public static class Backend
                             throw new IOException("机型包已撤销或已不在当前目录中，请重新选择。 / Device package revoked or absent from current index; select it again.");
                     }
                     await BoilerProtocol.RunAsync(["package", from, "--manifest-sha256", digest], token);
-                    CopyDirectory(from, target);
+                    await BoilerProtocol.RunAsync(["import-device", from, target, "--developer"], token);
                     await BoilerProtocol.RunAsync(["package", target, "--manifest-sha256", digest], token);
                 }
             }
         }
         if (task == "refind-image") CopyDirectory(Path.Combine(Root, "components/refind"), Path.Combine(payload, "refind"));
-        if (task is "integration" or "integration-verify" or "integration-check" or "integration-delta-check")
+        if (task is "firmware-plan" or "integration" or "integration-verify" or "integration-check" or "integration-delta-check")
         {
             CopyDirectory(Path.Combine(Root, "components"), Path.Combine(payload, "components"));
             // Missing optional resources are reported by the component installer.
             // Copy/write errors still propagate: the payload must be trustworthy.
-            foreach (var (source, target) in new[] { ("cache/integration", "integration"), ("cache/plugins", "plugins"), ("cache/components/waydroid", "waydroid") })
-            {
-                var from = Path.Combine(Root, source); var to = Path.Combine(payload, target);
-                if (Directory.Exists(from)) CopyDirectory(from, to);
-                else { Directory.CreateDirectory(to); log($"Optional resource unavailable: {source}\n"); }
-            }
+            CopyIntegrationPayload(integrationPayload, payload, metadataOnly: task == "firmware-plan");
         }
         if (task is "build" or "refine-preview")
             CopyDirectory(Path.Combine(Root, "runtime/console"), Path.Combine(payload, "console"));
-        if (task is "build" or "refine-preview" or "hdr-test" or "shared-state-test" or "firstboot-prepare")
+        if (task is "model-maintenance-check" or "build" or "refine-preview" or "hdr-test" or "shared-state-test" or "firstboot-prepare")
             CopyDirectory(Path.Combine(Root, "components"), Path.Combine(payload, "components"));
         if (task == "plugin-test")
         {
@@ -430,7 +434,10 @@ public static class Backend
                 }
             }
         }
-        var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, Path.Combine(work, "payload-volumes"), token);
+        var transport = Path.Combine(InstallerWorkspace.DirectoryPath, ".p-" + Guid.NewGuid().ToString("N")[..12]);
+        var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, transport, token);
+        await File.WriteAllTextAsync(Path.Combine(work, "payload-transport.json"),
+            System.Text.Json.JsonSerializer.Serialize(new { source = payload, volumes = payloadVolumes }), token);
         var payloadMount = PayloadVolumes.MountCommand(payloadVolumes.Length);
         var scratch = Path.Combine(work, "scratch.raw");
         using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task == "home-copy-plan-checks" ? 4L * 1024 * 1024 * 1024 : task == "integration-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
@@ -479,11 +486,11 @@ public static class Backend
             arguments.AddRange(["-drive", $"file={Option(merge)},format=raw,if=none,id=payload-merge", "-device", "virtio-blk-pci,drive=payload-merge,serial=boiler-payload-merge"]);
         }
         var qemu = Path.Combine(Root, "runtime/qemu-min/qemu-system-x86_64.exe");
-        if (task is "integration" or "integration-check") arguments[arguments.IndexOf("-m") + 1] = "2048";
+        if (task is "model-maintenance-check" or "firmware-plan" or "integration" or "integration-check") arguments[arguments.IndexOf("-m") + 1] = "2048";
         var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = start };
-        var taskTimeout = TimeSpan.FromMinutes(task is "home-copy-plan-checks" or "refind-image" or "integration" or "integration-check" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
+        var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task is "home-copy-plan-checks" or "refind-image" or "integration" or "integration-check" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
         using var timeout = new CancellationTokenSource(taskTimeout);
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
         // Open the log before starting QEMU: an unwritable/full log disk must
@@ -586,6 +593,54 @@ public static class Backend
             await liveLog.FlushAsync();
         }
     }
+    internal static void CopyIntegrationPayload(string? privatePayload, string payload, bool metadataOnly = false)
+    {
+        var source = privatePayload == null ? Path.Combine(Root, "cache/integration") : Path.Combine(privatePayload, "integration");
+        var manifestPath = Path.Combine(source, "manifest.json");
+        var manifestBytes = File.ReadAllBytes(manifestPath);
+        var currentBytes = File.ReadAllBytes(Path.Combine(Root, "cache/integration/manifest.json"));
+        if (!manifestBytes.SequenceEqual(currentBytes)) throw new IOException("Component payload catalogue changed after planning.");
+        using var manifest = System.Text.Json.JsonDocument.Parse(manifestBytes);
+        var inventory = new Dictionary<string, (long Size, string Sha256)>();
+        foreach (var component in manifest.RootElement.GetProperty("components").EnumerateObject())
+        {
+            if (InstallerOptions.WirelessComponents.Contains(component.Name)
+                && (component.Value.GetProperty("delivery").GetString() != "on-demand" || component.Value.GetProperty("payload_cached").GetBoolean()))
+                throw new IOException("A full firmware cache cannot enter an installation payload.");
+            if (component.Name.StartsWith("graphics:", StringComparison.Ordinal) && component.Value.GetProperty("delivery").GetString() != "on-demand")
+                throw new IOException("Graphics candidates require per-installation preparation.");
+            foreach (var category in new[] { "files", "licenses", "notices" })
+                if (component.Value.TryGetProperty(category, out var entries))
+                    foreach (var entry in entries.EnumerateArray())
+                        inventory[entry.GetProperty("source").GetString()!] = (entry.GetProperty("size").GetInt64(), entry.GetProperty("sha256").GetString()!);
+        }
+        var files = new List<(string Source, string Relative)>();
+        if (!metadataOnly)
+            foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(source, file).Replace('\\', '/');
+                if (relative == "manifest.json") continue;
+                MediaSource.Ordinary(file, source);
+                if (!inventory.TryGetValue(relative, out var expected) || new FileInfo(file).Length != expected.Size)
+                    throw new IOException("Unexpected or changed component payload file.");
+                using var stream = File.OpenRead(file);
+                var digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)).ToLowerInvariant();
+                if (digest != expected.Sha256) throw new IOException("Component payload hash differs.");
+                if (privatePayload == null && (relative.StartsWith("wireless/", StringComparison.Ordinal) || relative.StartsWith("graphics/", StringComparison.Ordinal)))
+                    throw new IOException("Firmware binaries must be acquired into a private download plan.");
+                files.Add((file, relative));
+            }
+        var destination = Path.Combine(payload, "integration"); Directory.CreateDirectory(destination);
+        File.WriteAllBytes(Path.Combine(destination, "manifest.json"), manifestBytes);
+        foreach (var file in files)
+        {
+            var target = Path.Combine(destination, file.Relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!); File.Copy(file.Source, target);
+        }
+        if (privatePayload != null && File.Exists(Path.Combine(privatePayload, "firmware-plan.json")))
+            File.Copy(Path.Combine(privatePayload, "firmware-plan.json"), Path.Combine(payload, "firmware-plan.json"));
+    }
+
     internal static void CopyDirectory(string from, string to)
     {
         Directory.CreateDirectory(to);

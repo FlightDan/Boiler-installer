@@ -51,7 +51,7 @@ def release_values(root):
 def inspect_source(root):
     root = Path(root)
     values = release_values(root)
-    modules = root / 'usr/lib/modules'
+    modules = image_path(root, 'usr/lib/modules')
     if modules.is_symlink() or not modules.is_dir(): raise ValueError('Source kernel modules missing')
     kernels = sorted(path.name for path in modules.iterdir() if path.is_dir() and not path.is_symlink())
     if not kernels: raise ValueError('Source has no installed kernel')

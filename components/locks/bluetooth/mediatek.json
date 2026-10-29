@@ -1,0 +1,96 @@
+{
+  "files": [
+    {
+      "git_blob": "f509d0b97d0d74ac0e2928c0d5d96fd1c9476e22",
+      "sha256": "4f53b5e02fbd933172e18caf952bda410a877eaad00561781528cb4aff58dc38",
+      "size": 509320,
+      "source": "mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "ef69acd85b3473df4e23813939155cf08efef5fe",
+      "sha256": "f7376b11fe3c4dd67a6f8db6eb2c9690f708174f578b92211ac5ae700a9a2813",
+      "size": 517142,
+      "source": "mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin"
+    },
+    {
+      "git_blob": "7fe2337fc22a4a0020129b850ef5e28265002bb2",
+      "sha256": "7a440a0f7404c73a2f03d8cc0475ac9f7fdc931b494dce37705e7d578153dbae",
+      "size": 533870,
+      "source": "mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin"
+    },
+    {
+      "git_blob": "7a4f2c6508f346350b9c1897514123b644d69e4c",
+      "sha256": "671d18fd594a73bc4747c1922b17271878c8bb26fa8fd122238e797d52e337e9",
+      "size": 494705,
+      "source": "mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/BT_RAM_CODE_MT7961_1a_2_hdr.bin"
+    },
+    {
+      "git_blob": "06bae379be2f9cd45074076bc5100725e1076a82",
+      "sha256": "48c919e6ea243485f5092e63fd5558d03a5b9075e79c14447e3705ca42c14b53",
+      "size": 78158,
+      "source": "mediatek/mt7622pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7622pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7622pr2h.bin"
+    },
+    {
+      "git_blob": "97314ea146e9ab08860dfccbb4d3e92c15997736",
+      "sha256": "534f2152f9b0f48dfcec9c1727b0bab9a3727a655d76d5ec818cc39a55602336",
+      "size": 278558,
+      "source": "mediatek/mt7663pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7663pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7663pr2h.bin"
+    },
+    {
+      "git_blob": "223c0f92f685226b52870ecf89b3f5162e3a4810",
+      "sha256": "465ed634c61b46b34bb21240736f33d3d347fefec7cbfbd1cb6e63334aec4cc9",
+      "size": 170990,
+      "source": "mediatek/mt7668pr2h.bin",
+      "target": "usr/lib/firmware/mediatek/mt7668pr2h.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7668pr2h.bin"
+    },
+    {
+      "git_blob": "5c65f0be10617dbfe24e3e8f529e7f400eb97416",
+      "sha256": "d6423564bc4ffbaa5c5252844942f77a6163f3b1ff22cb51d9adf829916f7b53",
+      "size": 446831,
+      "source": "mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin",
+      "target": "usr/lib/firmware/mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin"
+    }
+  ],
+  "kind": "firmware-only",
+  "licenses": [
+    {
+      "git_blob": "6886c61bab1bec4c1a653abd2324adac4f296fcb",
+      "sha256": "a90d3f66704d85889945fec5525ea77622549da83aced1aac99828383f8f1805",
+      "size": 561,
+      "source": "LICENSES/LICENCE.mediatek",
+      "target": "licenses/LICENCE.mediatek",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.mediatek"
+    },
+    {
+      "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+      "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+      "size": 451055,
+      "source": "WHENCE",
+      "target": "licenses/WHENCE",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+    }
+  ],
+  "provenance": {
+    "license": "LICENCE.mediatek",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+  },
+  "schema": 1,
+  "transport": "bluetooth",
+  "vendor": "mediatek",
+  "version": "linux-firmware-2ab4ce216003"
+}

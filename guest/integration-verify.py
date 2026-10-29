@@ -10,7 +10,10 @@ sys.path.insert(0, '/mnt/payload')
 from offload_mounts import mount_etc, mount_opt
 from maintenance import Engine
 from payload_lock import checked
-from integration import verify_device_components
+from integration import verify_device_components, validate_options
+import system_presets
+import graphics
+import graphics_boot
 
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU':
     raise RuntimeError('Managed VM required')
@@ -26,10 +29,11 @@ def guest_marker(name, content):
             raise RuntimeError('Untrusted managed guest marker')
         os.fchmod(stream.fileno(), 0o600); stream.truncate(0); stream.write(content)
 options = json.loads(Path('/mnt/payload/selection.json').read_text())
+validate_options(options)
 if options.get('install_mode') == 'imported':
     print('OXP_INTEGRATION_VERIFIED=preserved-image', flush=True)
     raise SystemExit(0)
-empty = not any(options.get(key) for key in ('repairs','plugins','wireless','device_components'))
+empty = not any(options.get(key) for key in ('repairs','plugins','wireless','device_components','graphics_profile')) and not system_presets.selected(options)
 table = json.loads(subprocess.check_output(['sfdisk', '--json', '/dev/vdc']))['partitiontable']
 parts = {p.get('name'): p['node'] for p in table['partitions']}
 root = Path('/mnt/integration-verify-root'); root.mkdir(exist_ok=True)
@@ -64,7 +68,14 @@ for slot in ('A', 'B'):
         result = json.loads((root / 'home/.boiler/integration' / slot / 'result.json').read_text())
         if result['options'] != {key: value for key,value in options.items() if key != '_target_disk'}:
             raise RuntimeError('Verification selection differs from installed request')
+        graphics_profile = graphics.selected(options)
+        if graphics_profile:
+            if graphics_profile not in result['components']:
+                raise RuntimeError('Selected graphics profile is missing from installed results')
+            graphics.verify_inventory(root, result['components'][graphics_profile])
+            graphics_boot.verify(root, result['components'][graphics_profile]['early_boot_proof'])
         device_ids = verify_device_components(root, '/mnt/payload', options, slot, result['components'])
+        system_presets.verify(root, options, Engine(root, root / 'var/lib/boiler/maintenance', read_only=True))
         for identity, component in result['components'].items():
             if component['status'] != 'files_installed': raise RuntimeError('Component was not installed: ' + identity)
             if identity == 'core:decky':

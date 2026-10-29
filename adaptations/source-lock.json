@@ -1,0 +1,635 @@
+{
+  "schema_version": 1,
+  "kind": "AdaptationSourceInventory",
+  "source": {
+    "kind": "github",
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "72f864e0498c10366493c74608c5ffed62cc99ca"
+  },
+  "files": [
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/gyro_binding.py",
+      "upstream_path": "steamos-maintenance/oxp3_maintenance/gyro_binding.py",
+      "size": 11894,
+      "sha256": "967701d1cbb3ba274acb459a87df9de81309f33530f582b995bdb9f1fa298926"
+    },
+    {
+      "path": "common/scripts/licenses/upstream-fixes-MIT.txt",
+      "upstream_path": "windows-installer/licenses/upstream-fixes-MIT.txt",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
+      "upstream_path": "windows-installer/components/autoflatpaks-compat/README.txt",
+      "size": 1235,
+      "sha256": "5232445a5ddbda2d4e860f0a256a0cc0fb2388b609348472906c971881d2d730"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/poll-battery-state.js",
+      "upstream_path": "windows-installer/components/autoflatpaks-compat/poll-battery-state.js",
+      "size": 453,
+      "sha256": "d691feb61253ce11e72bdd3e3649c7c23cdb6ef4c106ae26cf61d41ba9aacb33"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/boot_repairs.py",
+      "upstream_path": "windows-installer/components/boot_repairs.py",
+      "size": 1926,
+      "sha256": "3084c2cfceddd6e4545597a702290caeae063eaed1bdf345fdb291b3aa78ea8d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/catalog.json",
+      "upstream_path": "windows-installer/components/catalog.json",
+      "size": 11279,
+      "sha256": "b3c03e44a74b76de87bdab235a9b606e7fc9f34e4eb8c9ed75cfc86dd0f27c13"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/README.md",
+      "upstream_path": "windows-installer/components/controls/README.md",
+      "size": 2598,
+      "sha256": "3343250b4557d0ea47538185704caba83702b2f7d8b719f4788c48c56e5ced39"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/compatibility.py",
+      "upstream_path": "windows-installer/components/controls/compatibility.py",
+      "size": 1789,
+      "sha256": "c8225f4facc43fff072bd6f47847722f8e96d9c5162bac30d9bc7e8754ddae8e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-index.js",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu-plugin-index.js",
+      "size": 12203,
+      "sha256": "a1cd67a64fc69b4f279b17ffe8fc5948b37fb7f4a233a10745fa01698492fa44"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-main.py",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu-plugin-main.py",
+      "size": 1911,
+      "sha256": "36e6ceacda689a4856486c5fe2fd541094b4f603b8282b79886ad7519f30736b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu_control.py",
+      "size": 6473,
+      "sha256": "7dabf1846c473fbd3a17f4453e835fd5116d74abe6d0e3aee528bc74dcaa4872"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/deploy-cpu.py",
+      "upstream_path": "windows-installer/components/controls/cpu/deploy-cpu.py",
+      "size": 3236,
+      "sha256": "3120cfd39c794d5475ee400acb90cb000842269fef71388c31783221913e9352"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+      "upstream_path": "windows-installer/components/controls/cpu/power_control.py",
+      "size": 4266,
+      "sha256": "d5c5efd2f847d443bbff04dd30a3af847576d867eebcfb9b25c94d8e2b31654f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/allow-read.py",
+      "upstream_path": "windows-installer/components/controls/overlay/allow-read.py",
+      "size": 1542,
+      "sha256": "2ef406da7c88d6706e5ab307b0c2a717df1e294dc89b554f91bde39ddb16aeec"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/telemetry.py",
+      "upstream_path": "windows-installer/components/controls/overlay/telemetry.py",
+      "size": 6440,
+      "sha256": "d127b107a02168e3095a34b3ebed8b7a2e5d11193c2b71206adc961d1fb201cb"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/profile.json",
+      "upstream_path": "windows-installer/components/controls/profile.json",
+      "size": 3753,
+      "sha256": "0adb8851e4a880a6aeb03d267ae48925c69c631d4c415503d0e3f54fe8f8359e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+      "upstream_path": "windows-installer/components/controls/rapl/provider.py",
+      "size": 22758,
+      "sha256": "11af7da8d69a59b3e6413380a6516468da2d50248043cf6a93cf813381f2116b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/decky_order.py",
+      "upstream_path": "windows-installer/components/decky_order.py",
+      "size": 3021,
+      "sha256": "8361e9e94946303cfe94fc9645a1d553de5bb378c5c71425748f50e697ff1b4e"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
+      "upstream_path": "windows-installer/components/desktop-hdr/hdr_trial.py",
+      "size": 23848,
+      "sha256": "b93a4d3bf9ef2036b991ea563fb78599a3f5be18c6327f36dcf18636c18347d9"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh",
+      "upstream_path": "windows-installer/components/desktop-hdr/install-x2mini-hdr.sh",
+      "size": 372,
+      "sha256": "7ae7075ac726a0a969f55373feebd179dc89ce5a22309a10c4f792d4f08a1cf1"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh",
+      "upstream_path": "windows-installer/components/desktop-hdr/launch.sh",
+      "size": 1651,
+      "sha256": "4f30461153d65c07d2bd4b9ec66f522e3593390a2c1a4ea77bbc5f74781e2c50"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
+      "upstream_path": "windows-installer/components/desktop-hdr/x2mini_device.py",
+      "size": 39391,
+      "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
+    },
+    {
+      "path": "common/scripts/directory_transaction.py",
+      "upstream_path": "windows-installer/components/directory_transaction.py",
+      "size": 6236,
+      "sha256": "098ce024ae4a57698741b235a15503977b29c10730b195f00dc4f07c3f557adc"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/download-sources.json",
+      "upstream_path": "windows-installer/components/download-sources.json",
+      "size": 1089,
+      "sha256": "fd978e899d7e1791f09029a70939e0f81b941b4e4412afbb1901a04516cb4e66"
+    },
+    {
+      "path": "common/scripts/file_transaction.py",
+      "upstream_path": "windows-installer/components/file_transaction.py",
+      "size": 10276,
+      "sha256": "491dce0a0b753295d2466adb44780595055ba4cc96ad004ba25a04cf1df1c786"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot.py",
+      "upstream_path": "windows-installer/components/firstboot.py",
+      "size": 7965,
+      "sha256": "c324c084f4785862beb2d871c7cfbcc1ea7896e90480e387826d9ffe9443e9d5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot_stage.py",
+      "upstream_path": "windows-installer/components/firstboot_stage.py",
+      "size": 5326,
+      "sha256": "c8db6f7c377b7ab034504dac433dc7e71e5ae0443116abaf13d5aab0bb552564"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/flathub.flatpakrepo",
+      "upstream_path": "windows-installer/components/flathub.flatpakrepo",
+      "size": 4040,
+      "sha256": "3371dd250e61d9e1633630073fefda153cd4426f72f4afa0c3373ae2e8fea03a"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/Makefile",
+      "upstream_path": "windows-installer/components/gyro/Makefile",
+      "size": 23,
+      "sha256": "6fed206b92d43604d3ef666034373e76dbdae380c2858c58ff1566955838747d"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/bmi270.h",
+      "upstream_path": "windows-installer/components/gyro/bmi270.h",
+      "size": 614,
+      "sha256": "14d9457dd5aae818db61bf9247c6f395520aeb0bcdbf6ab2abbb8f0d8aed9cb8"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/inputplumber.conf",
+      "upstream_path": "windows-installer/components/gyro/inputplumber.conf",
+      "size": 119,
+      "sha256": "7f63d87e14553a7c274d99eb58d4ae292e56bc8a873f7b29a56d5ed3e0b1506e"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/launch.sh",
+      "upstream_path": "windows-installer/components/gyro/launch.sh",
+      "size": 287,
+      "sha256": "57d5822fd1bc56c6dbba01d9775a30cffeb3ab3f47bfbfc778478edcba5bce95"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/load.sh",
+      "upstream_path": "windows-installer/components/gyro/load.sh",
+      "size": 369,
+      "sha256": "6457a8d68a16e6f68481b7e9173cb64878e9579ae86affbb002de4f81c512314"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/onexplayer3-bmi260.patch",
+      "upstream_path": "windows-installer/components/gyro/onexplayer3-bmi260.patch",
+      "size": 2400,
+      "sha256": "d869d7c3e67815c4c44ea508c8ae32a30de4af021f1a59475172638c817c4fa5"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/oxp3-gyro.service",
+      "upstream_path": "windows-installer/components/gyro/oxp3-gyro.service",
+      "size": 384,
+      "sha256": "5aeea94e5e7c999cd90058c88101c174e23f6317b14d1eca3af201ac5badf66b"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c",
+      "upstream_path": "windows-installer/components/gyro/oxp3_bmi260.c",
+      "size": 1906,
+      "sha256": "6d5db91566ac5d6fbf0838d87d6a3e611be4ebd7cc7f373f6dad557bcd831939"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/unload.sh",
+      "upstream_path": "windows-installer/components/gyro/unload.sh",
+      "size": 83,
+      "sha256": "370f22b1be7b537169238f809ba66ef9f83d19e551a073df20f6a3e68b7d62e9"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE",
+      "upstream_path": "windows-installer/components/hdr/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/generate.py",
+      "upstream_path": "windows-installer/components/hdr/generate.py",
+      "size": 1173,
+      "sha256": "3f9d645a6a341ffe900dd06104dc351953b3bcb5ee9a3005d8b83c6694b9d828"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/installer.py",
+      "upstream_path": "windows-installer/components/hdr/installer.py",
+      "size": 10942,
+      "sha256": "12061f567e42f0c445d4ffc4ec222797870348d11f1745b5bfdea8ef178bd780"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/profile.json",
+      "upstream_path": "windows-installer/components/hdr/profile.json",
+      "size": 1232,
+      "sha256": "417f244c5819b50f24acdf125c0bbd6d849279243629476d9b24be6a259f25ed"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+      "upstream_path": "windows-installer/components/hdr/upstream.lua",
+      "size": 5836,
+      "sha256": "a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/i18n/en-US.json",
+      "upstream_path": "windows-installer/components/i18n/en-US.json",
+      "size": 21192,
+      "sha256": "f24059910e16d09132b6d3eb2a4f5e5b0dd103e92bf2faad6972aeca653831f3"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.conf",
+      "upstream_path": "windows-installer/components/input-profile.conf",
+      "size": 150,
+      "sha256": "6b3ecd1d286426cc2af8e1f876de7984fb9763875b817148fda16fcd327947af"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.yaml",
+      "upstream_path": "windows-installer/components/input-profile.yaml",
+      "size": 702,
+      "sha256": "c9a5c593c26465a3513a02a0a656ed78a3c4869a4ad534350294a82f8835a60f"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input_profile.py",
+      "upstream_path": "windows-installer/components/input_profile.py",
+      "size": 7925,
+      "sha256": "fd41a0d19bafdbca7e6450f1db292c187e2c8cac2743edb215c7d889244997fd"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration.py",
+      "upstream_path": "windows-installer/components/integration.py",
+      "size": 57362,
+      "sha256": "93b99edc1c13652542a8afb740306a137fedd1919515164aaff2025ad1ad79fc"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration_runtime.py",
+      "upstream_path": "windows-installer/components/integration_runtime.py",
+      "size": 7897,
+      "sha256": "fda76ccd5f1b9d9e0194b8469d01ac64dca3605d8b5b286a415776ebfe3c85d8"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE",
+      "upstream_path": "windows-installer/components/light/LICENSE",
+      "size": 1569,
+      "sha256": "64652b7b9cf04a6db179fe2d28f044d83eca118fbcdc6d8ce57680f9c78ef583"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HHD",
+      "upstream_path": "windows-installer/components/light/LICENSE-HHD",
+      "size": 26518,
+      "sha256": "6d9bb3b7fc818a8facc4cc296060a0883fef8710d6498f86165335846e82ee9d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HueSync",
+      "upstream_path": "windows-installer/components/light/LICENSE-HueSync",
+      "size": 1569,
+      "sha256": "64652b7b9cf04a6db179fe2d28f044d83eca118fbcdc6d8ce57680f9c78ef583"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/README.md",
+      "upstream_path": "windows-installer/components/light/README.md",
+      "size": 5555,
+      "sha256": "d854ce3906f001e766b736b96814666e7454d41653262e38f0dd6a435e0d28df"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/THIRD_PARTY_NOTICES.md",
+      "upstream_path": "windows-installer/components/light/THIRD_PARTY_NOTICES.md",
+      "size": 4967,
+      "sha256": "1f2562cfab971bbb7a3ee6efafbb8e02b4da79e1cdc1bf4709bd8d9e32816cfd"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/dist/index.js",
+      "upstream_path": "windows-installer/components/light/dist/index.js",
+      "size": 7523,
+      "sha256": "de696025fc07b7d1b0b0e975122d86574ac23d40f758a8720e0bb4aee4894b45"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/light_control.py",
+      "upstream_path": "windows-installer/components/light/light_control.py",
+      "size": 12676,
+      "sha256": "03f47da99bad10a1760f94a99e84a92cee2a5e2effade0089e4564097152ee09"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/main.py",
+      "upstream_path": "windows-installer/components/light/main.py",
+      "size": 803,
+      "sha256": "5198ab5cb8a7a64b61e96540f6e105f9f9ef4e43408a6fc47453af1ab93c719a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/package.json",
+      "upstream_path": "windows-installer/components/light/package.json",
+      "size": 296,
+      "sha256": "154c63735f8e57ae0d137a22c6c67a04778c8bebb6de966c4e39623241da60c4"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/plugin.json",
+      "upstream_path": "windows-installer/components/light/plugin.json",
+      "size": 289,
+      "sha256": "7a10bab8e93e67cd22dd74558feaabd9b688665c4ed08bc25ac319a2690d467c"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/maintenance_tool.py",
+      "upstream_path": "windows-installer/components/maintenance_tool.py",
+      "size": 1809,
+      "sha256": "e624ec3bb39dcb60d87b601e63da1779e543114c76efffce7bc113153b47f232"
+    },
+    {
+      "path": "common/scripts/ntfs_steam.py",
+      "upstream_path": "windows-installer/components/ntfs_steam.py",
+      "size": 25270,
+      "sha256": "fad68844c876b4c80097250d73be67c3714865cbe821c41a19bfa85a66ebaf4c"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/options.json",
+      "upstream_path": "windows-installer/components/options.json",
+      "size": 6300,
+      "sha256": "3b6a8544ac91074d824797d20eb8e8f737dcf8d8da10edbbadf438f606a815ce"
+    },
+    {
+      "path": "common/scripts/partition-mount/desktop.py",
+      "upstream_path": "windows-installer/components/partition-mount/desktop.py",
+      "size": 10783,
+      "sha256": "c08bfe84313399dfd196c98b99937e0a58b391c9498ffbfd875ca6a7d3ebf326"
+    },
+    {
+      "path": "common/scripts/partition-mount/mounts.py",
+      "upstream_path": "windows-installer/components/partition-mount/mounts.py",
+      "size": 18225,
+      "sha256": "e297f1159f490b3928a7e1043392382a5aaf409cdf4d334dfdb974836befc94a"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount",
+      "upstream_path": "windows-installer/components/partition-mount/oxp3-partition-mount",
+      "size": 81,
+      "sha256": "08cfc11c3caab4ca1e938b797610933e2ee6738c317646491dc562bff015148f"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount.desktop",
+      "upstream_path": "windows-installer/components/partition-mount/oxp3-partition-mount.desktop",
+      "size": 421,
+      "sha256": "455b9cb677cf76cdfc60e67ca03ca74dfa84dded6f6c4d2e0b7bcf4f53cd9ed5"
+    },
+    {
+      "path": "common/scripts/partition_mount.py",
+      "upstream_path": "windows-installer/components/partition_mount.py",
+      "size": 4348,
+      "sha256": "c48d500e11f41802aa9f2c283993dae96ac226f662ff88ed78a681a3aeb1fbf4"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/plugin_installer.py",
+      "upstream_path": "windows-installer/components/plugin_installer.py",
+      "size": 11741,
+      "sha256": "b3f75faa83d68a867ea5923aa9eb6ee87fedff8300733c383112e822adbcb461"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release.json",
+      "upstream_path": "windows-installer/components/release.json",
+      "size": 154,
+      "sha256": "d84f548a635cf197d8d6540d7fe4eb66e36563747534510cd8b1f0304d2399f6"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release_notes.py",
+      "upstream_path": "windows-installer/components/release_notes.py",
+      "size": 200,
+      "sha256": "44ec7247db226636155d474588eef71227454b0e7c4865da1abae27488f48bcf"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/runtime_access.py",
+      "upstream_path": "windows-installer/components/runtime_access.py",
+      "size": 3962,
+      "sha256": "4e593d969e5290675c5c7a360a2c892b2b491bca5646751e1e30cc41cc4de43f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/serial_console.py",
+      "upstream_path": "windows-installer/components/serial_console.py",
+      "size": 651,
+      "sha256": "52011057bfc61b172a4773415c2fe5939c86be87673033d3e1b883eb471b5c30"
+    },
+    {
+      "path": "common/scripts/shared_state.py",
+      "upstream_path": "windows-installer/components/shared_state.py",
+      "size": 1512,
+      "sha256": "a79885a87e2fd923c3c3013092ee4c229efc1cdbffc88631396b0d1e874da938"
+    },
+    {
+      "path": "common/scripts/shared_storage.py",
+      "upstream_path": "windows-installer/components/shared_storage.py",
+      "size": 18228,
+      "sha256": "66d3722db2175da6fae270013632d88b8d18d5ba3d77c76d310f150aae6802ac"
+    },
+    {
+      "path": "common/scripts/slot-switch/49-oxp3-slot-switch.rules",
+      "upstream_path": "windows-installer/components/slot-switch/49-oxp3-slot-switch.rules",
+      "size": 298,
+      "sha256": "f95d37f73f87532e6827a2e50cd03f86703a2def50fe036f9e54a280f155c317"
+    },
+    {
+      "path": "common/scripts/slot-switch/boot.py",
+      "upstream_path": "windows-installer/components/slot-switch/boot.py",
+      "size": 20555,
+      "sha256": "94d98f74d6025d79d2f6af07d59657117c6a80316e591e235d4e4e9ab75dcf85"
+    },
+    {
+      "path": "common/scripts/slot-switch/desktop.py",
+      "upstream_path": "windows-installer/components/slot-switch/desktop.py",
+      "size": 9643,
+      "sha256": "ebfc65ff86e4dcf33011d1884e487fee00b072c134fb1fc0815d7d841cf0294d"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-slot-switch.desktop",
+      "upstream_path": "windows-installer/components/slot-switch/oxp3-slot-switch.desktop",
+      "size": 236,
+      "sha256": "05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-switch-slot",
+      "upstream_path": "windows-installer/components/slot-switch/oxp3-switch-slot",
+      "size": 75,
+      "sha256": "4d58916cc7d5d31405d0d189e2ea7963c8d8a29776242bf8dd967e38c421dd46"
+    },
+    {
+      "path": "common/scripts/slot_switch.py",
+      "upstream_path": "windows-installer/components/slot_switch.py",
+      "size": 3881,
+      "sha256": "f3d4c188a5c3e206e819b0f864052fb495d1b7d0fa2a16c0bce0fcf720312d4e"
+    },
+    {
+      "path": "common/scripts/split-lock/README.md",
+      "upstream_path": "windows-installer/components/split-lock/README.md",
+      "size": 3156,
+      "sha256": "5f22a2d53aa485a4cd5da7c34f6c31444898457b0c9db3fbe1ba6157760f4a32"
+    },
+    {
+      "path": "common/scripts/split-lock/UPSTREAM_LICENSE",
+      "upstream_path": "windows-installer/components/split-lock/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/scripts/split_lock.py",
+      "upstream_path": "windows-installer/components/split_lock.py",
+      "size": 8828,
+      "sha256": "ad1602db2d380734ac9d28a77a4c3764c2704197784bb0ddcec20ce5179ddbd9"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/system_update_policy.py",
+      "upstream_path": "windows-installer/components/system_update_policy.py",
+      "size": 5024,
+      "sha256": "1fd7ca3315cca3258c9365797be214523fb2913d41721f150cab4530186dc6ec"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold.py",
+      "upstream_path": "windows-installer/components/update_hold.py",
+      "size": 13626,
+      "sha256": "6084f00b5d82dbf78c8b3b6282aff1f532a8ec3e655d6bb9b56e2b16c56baf67"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold_verify.py",
+      "upstream_path": "windows-installer/components/update_hold_verify.py",
+      "size": 1367,
+      "sha256": "aecadad126b8e9b416052f7999767be03c21f4c9944d925894d978355a3ed78f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/compatibility.py",
+      "upstream_path": "windows-installer/components/waydroid/compatibility.py",
+      "size": 1875,
+      "sha256": "8369c483bc6462e51b5ade5f8f61d4681c8c7c0ff5e6c36da471ea702f29d76b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/profile.json",
+      "upstream_path": "windows-installer/components/waydroid/profile.json",
+      "size": 1363,
+      "sha256": "c21ffe582ce8e880f0e77fcfeacb8475f369614d19634884c321bdc75670372a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid_setup.py",
+      "upstream_path": "windows-installer/components/waydroid_setup.py",
+      "size": 4212,
+      "sha256": "92f4c74294ff95a68749a805beccb0d24fac4330417054e79b75473c3e154619"
+    },
+    {
+      "path": "common/scripts/windows-reboot/49-oxp3-restart-windows.rules",
+      "upstream_path": "windows-installer/components/windows-reboot/49-oxp3-restart-windows.rules",
+      "size": 209,
+      "sha256": "9eee2dfdb85d94026d22f9c89ed98d591f2356869062c230742de38a96a1cd83"
+    },
+    {
+      "path": "common/scripts/windows-reboot/boot.py",
+      "upstream_path": "windows-installer/components/windows-reboot/boot.py",
+      "size": 7866,
+      "sha256": "d530864f1ecb9de59005a9fd0b66a8821bf5b9c8f72d772d2f31224a90256ff5"
+    },
+    {
+      "path": "common/scripts/windows-reboot/desktop.py",
+      "upstream_path": "windows-installer/components/windows-reboot/desktop.py",
+      "size": 2184,
+      "sha256": "8443df12f2784d05a72bd85c4041f20b9113e51a652095d4b9655a8beac3f104"
+    },
+    {
+      "path": "common/scripts/windows-reboot/dist/index.js",
+      "upstream_path": "windows-installer/components/windows-reboot/dist/index.js",
+      "size": 7412,
+      "sha256": "0e7ae2fd1b0cd2193248b8128fd2f4b2fa2acb1e22bbbf814c0cf1396c7c2747"
+    },
+    {
+      "path": "common/scripts/windows-reboot/main.py",
+      "upstream_path": "windows-installer/components/windows-reboot/main.py",
+      "size": 1961,
+      "sha256": "3a014ce4e4b8055d2ca2af3362cb6e471fb6f48a10a43fc928239228e47ef5a1"
+    },
+    {
+      "path": "common/scripts/windows-reboot/org.oxp3.restart-windows.policy",
+      "upstream_path": "windows-installer/components/windows-reboot/org.oxp3.restart-windows.policy",
+      "size": 705,
+      "sha256": "58a5dfb5c560e892cf3b4687aafa434e57ab90c9ecb85ce186a32de5f8ada54a"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows",
+      "upstream_path": "windows-installer/components/windows-reboot/oxp3-reboot-windows",
+      "size": 86,
+      "sha256": "2c12b51f165f75a08907a351dda24283432383145fee2c77d4683d56435d6fdf"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows.desktop",
+      "upstream_path": "windows-installer/components/windows-reboot/oxp3-reboot-windows.desktop",
+      "size": 378,
+      "sha256": "fc4752c0fe804e1cdb9de9064188890dc1f564c08b8cbeafdc9f70ebd4510d26"
+    },
+    {
+      "path": "common/scripts/windows-reboot/package.json",
+      "upstream_path": "windows-installer/components/windows-reboot/package.json",
+      "size": 382,
+      "sha256": "1329ea0286ff93f649f35050eda05327e6b43998e985a45c8f0cc3dbd24888a1"
+    },
+    {
+      "path": "common/scripts/windows-reboot/plugin.json",
+      "upstream_path": "windows-installer/components/windows-reboot/plugin.json",
+      "size": 249,
+      "sha256": "3590186cca290a7f4b4d4819d22139c2838549d2a9ce1694b3ea3616b9bca448"
+    },
+    {
+      "path": "common/scripts/windows-reboot/pnpm-lock.yaml",
+      "upstream_path": "windows-installer/components/windows-reboot/pnpm-lock.yaml",
+      "size": 38526,
+      "sha256": "9811ac6fb24c854abcd12c7b5e945a5599c76998697f1045a9d9a121f02232c0"
+    },
+    {
+      "path": "common/scripts/windows-reboot/rollup.config.js",
+      "upstream_path": "windows-installer/components/windows-reboot/rollup.config.js",
+      "size": 73,
+      "sha256": "1323141cd5f9afc3cafdd174301aaec69840dd354c157b2f77d2e1307c34f0e0"
+    },
+    {
+      "path": "common/scripts/windows-reboot/src/index.tsx",
+      "upstream_path": "windows-installer/components/windows-reboot/src/index.tsx",
+      "size": 6276,
+      "sha256": "7298da0e04c1b11525139e8573a2a64da92b9caa6b1bd84b09532c55236be29d"
+    },
+    {
+      "path": "common/scripts/windows-reboot/tsconfig.json",
+      "upstream_path": "windows-installer/components/windows-reboot/tsconfig.json",
+      "size": 267,
+      "sha256": "6d39571803cb2799a2859e1fbbc1add243b2ab9d27504a2a1aba7087d3fdb214"
+    },
+    {
+      "path": "common/scripts/windows_reboot.py",
+      "upstream_path": "windows-installer/components/windows_reboot.py",
+      "size": 2638,
+      "sha256": "9d7a5ba9152cefd818b8f63f8a839502197f9939678dbab49a8c6a73df0e18a9"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/x2mini_hdr_device.py",
+      "upstream_path": "windows-installer/components/x2mini_hdr_device.py",
+      "size": 39391,
+      "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
+    }
+  ]
+}

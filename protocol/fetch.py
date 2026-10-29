@@ -8,6 +8,7 @@ import shutil
 import tempfile
 from urllib.parse import urlparse, quote
 from urllib.request import Request, urlopen
+from urllib.error import URLError
 
 from .manifest import (ProtocolError, validate_package, verify_signed_index,
                        safe_extract_archive, confined, relative_path, _source)
@@ -31,13 +32,13 @@ def _cache_lock(cache):
             finally: fcntl.flock(stream.fileno(),fcntl.LOCK_UN)
 
 
-def download(url,path,*,maximum,expected=None):
+def download(url,path,*,maximum,expected=None,timeout=60):
     parsed=urlparse(url)
     if parsed.scheme!="https" or not parsed.hostname or parsed.username or parsed.password:
         raise ProtocolError("Source must be credential-free HTTPS")
     request=Request(url,headers={"User-Agent":"Boiler-installer/0.1","Accept":"application/vnd.github+json"})
     digest=hashlib.sha256(); size=0
-    with urlopen(request,timeout=60) as response,Path(path).open("xb") as stream:
+    with urlopen(request,timeout=timeout) as response,Path(path).open("xb") as stream:
         if urlparse(response.url).scheme!="https": raise ProtocolError("Source redirected away from HTTPS")
         while True:
             block=response.read(1024*1024)
@@ -51,13 +52,13 @@ def download(url,path,*,maximum,expected=None):
     return {"sha256":digest.hexdigest(),"size":size}
 
 
-def fetch_index(url,signature_url,cache,*,public_key=None,openssl="openssl"):
+def fetch_index(url,signature_url,cache,*,public_key=None,openssl="openssl",timeout=60):
     cache=Path(cache); cache.mkdir(parents=True,exist_ok=True)
     # A directory rename publishes an immutable generation. `current.json` is
     # the sole atomic pointer, so crashes never pair a new index with old sig.
     with tempfile.TemporaryDirectory(prefix=".index-",dir=cache) as temp:
-        temp=Path(temp); download(url,temp/"index.json",maximum=8*1024**2)
-        download(signature_url,temp/"index.sig",maximum=64)
+        temp=Path(temp); download(url,temp/"index.json",maximum=8*1024**2,timeout=timeout)
+        download(signature_url,temp/"index.sig",maximum=64,timeout=timeout)
         index=verify_signed_index(temp/"index.json",temp/"index.sig",public_key,openssl=openssl)
         digest=hashlib.sha256((temp/"index.json").read_bytes()).hexdigest()
         pointer=cache/"current.json"
@@ -96,6 +97,23 @@ def cached_index(cache,*,public_key=None,openssl="openssl"):
     digest=hashlib.sha256((generation/"index.json").read_bytes()).hexdigest()
     if digest!=pointer["sha256"] or index["sequence"]!=pointer["sequence"]: raise ProtocolError("Index cache pointer mismatch")
     return index
+
+
+def load_index(url,signature_url,cache,*,public_key=None,openssl="openssl"):
+    """Refresh automatically; only transport failure permits a verified cache.
+
+    Invalid signatures, rollback attempts and malformed snapshots remain errors.
+    A cached snapshot never claims knowledge of current revocations.
+    """
+    try:
+        result=fetch_index(url,signature_url,cache,public_key=public_key,openssl=openssl,timeout=12)
+        return dict(result,offline=False)
+    except (URLError, TimeoutError, ConnectionError) as network_error:
+        try:
+            index=cached_index(cache,public_key=public_key,openssl=openssl)
+        except FileNotFoundError:
+            raise ProtocolError("Cannot reach GitHub and no verified device index is cached. Retry or import a local device package.") from network_error
+        return {"index":index,"offline":True}
 
 
 def _package_from_archive(archive,destination,source,*,expected=None,developer=False,identity=None,version=None,manifest_size=None):

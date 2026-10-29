@@ -9,8 +9,41 @@ internal sealed record ImportedImage(string Path, bool Prepared, string Sha256, 
 
 internal static class BoilerImage
 {
+    internal static long RequiredTargetCapacity(PreparedDisk layout)
+    {
+        var system = layout.System;
+        var span = checked(system[^1].Offset + system[^1].Size - system[0].Offset);
+        return Math.Max(PartitionInventory.Minimum, checked((span + PartitionInventory.MiB - 1) / PartitionInventory.MiB * PartitionInventory.MiB));
+    }
+
+    internal static ulong RawImportBudget(long imageBytes, bool physical, bool includeInspection = false) =>
+        Math.Max(MediaSpace.InstallationBudget(physical, false), checked((ulong)imageBytes * (includeInspection ? 3ul : 2ul) + 8ul * PartitionInventory.GiB));
+
+    internal static ulong ArchiveImportBudget(long compressedBytes, long expandedBytes, bool physical, bool includeInspection = false) =>
+        Math.Max(MediaSpace.InstallationBudget(physical, false),
+            checked(((ulong)compressedBytes + (ulong)expandedBytes) * (includeInspection ? 2ul : 1ul) + 8ul * PartitionInventory.GiB));
+
+    internal static ulong WorkspaceBudget(string input, bool physical, bool includeInspection = false)
+    {
+        if (File.Exists(input))
+        {
+            if (input.EndsWith(".img", StringComparison.OrdinalIgnoreCase))
+                return RawImportBudget(new FileInfo(input).Length, physical, includeInspection);
+            if (input.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                using var archive = ImageImportStreams.OpenZip(input, allowManifest: true);
+                var (image, _) = ImageImportStreams.ZipEntries(archive, allowManifest: true);
+                return ArchiveImportBudget(new FileInfo(input).Length, image.Length, physical, includeInspection);
+            }
+        }
+        // BZip2 does not declare its expanded length. Its expansion and each
+        // subsequent stage enforce actual byte/space limits while streaming.
+        return MediaSpace.InstallationBudget(physical, false);
+    }
+
     internal static async Task<(string Path, string Sha256)> SnapshotAsync(string input, string directory, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         var suffix = input.EndsWith(".img.bz2", StringComparison.OrdinalIgnoreCase) ? ".img.bz2" : input.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? ".img.zip" : ".img";
         Directory.CreateDirectory(directory);
         var output = System.IO.Path.Combine(directory, "source-" + Guid.NewGuid().ToString("N") + suffix);
@@ -19,14 +52,20 @@ internal static class BoilerImage
         // while that handle is open, so never reopen the input by path afterward.
         using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
         MediaSpace.RequireAvailable(directory, checked((ulong)source.Length + PartitionInventory.GiB));
-        using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var buffer = new byte[1024 * 1024]; int size;
-        while ((size = await source.ReadAsync(buffer, token)) != 0)
-        { hash.AppendData(buffer, 0, size); await target.WriteAsync(buffer.AsMemory(0, size), token); }
-        await target.FlushAsync(token);
-        if (target.Length != source.Length) throw new IOException("Source size changed during snapshot.");
-        return (output, Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant());
+        var owned = false;
+        try
+        {
+            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            owned = true;
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var buffer = new byte[1024 * 1024]; int size;
+            while ((size = await source.ReadAsync(buffer, token)) != 0)
+            { hash.AppendData(buffer, 0, size); await target.WriteAsync(buffer.AsMemory(0, size), token); }
+            await target.FlushAsync(token);
+            if (target.Length != source.Length) throw new IOException("Source size changed during snapshot.");
+            return (output, Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant());
+        }
+        catch { if (owned) ImageImportStreams.RemoveOwned(output); throw; }
     }
     internal static void ValidateSelection(string path)
     {
@@ -99,6 +138,7 @@ internal static class BoilerImage
 
     internal static async Task<string> ExportAsync(string image, string destination, object plan, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         if (File.Exists(destination) || File.Exists(destination + ".partial")) throw new IOException("Export destination already exists.");
         bool prepared;
         try { RecoveryImage.ValidateRaw(image, true); prepared = RecoveryImage.IsPrepared(image); }
@@ -112,13 +152,21 @@ internal static class BoilerImage
         await File.WriteAllTextAsync(validation, JsonSerializer.Serialize(manifest), token);
         try { await BoilerProtocol.RunAsync(["validate", validation], token); }
         finally { File.Delete(validation); }
-        using (var file = new FileStream(destination + ".partial", FileMode.CreateNew))
-        using (var archive = new ZipArchive(file, ZipArchiveMode.Create))
+        var partial = destination + ".partial";
+        var partialOwned = false;
+        try
         {
-            using (var entry = archive.CreateEntry("system.img", CompressionLevel.Fastest).Open()) await source.CopyToAsync(entry, token);
-            using (var entry = archive.CreateEntry("image-manifest.json").Open()) await JsonSerializer.SerializeAsync(entry, manifest, cancellationToken: token);
+            using (var file = new FileStream(partial, FileMode.CreateNew))
+            {
+                partialOwned = true;
+                using var archive = new ZipArchive(file, ZipArchiveMode.Create);
+                using (var entry = archive.CreateEntry("system.img", CompressionLevel.Fastest).Open()) await source.CopyToAsync(entry, token);
+                using (var entry = archive.CreateEntry("image-manifest.json").Open()) await JsonSerializer.SerializeAsync(entry, manifest, cancellationToken: token);
+            }
+            token.ThrowIfCancellationRequested();
+            File.Move(partial, destination);
+            return destination;
         }
-        File.Move(destination + ".partial", destination);
-        return destination;
+        catch { if (partialOwned) File.Delete(partial); throw; }
     }
 }

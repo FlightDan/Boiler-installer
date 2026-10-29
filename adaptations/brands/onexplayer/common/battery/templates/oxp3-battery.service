@@ -1,0 +1,19 @@
+[Unit]
+Description=OXP3 native battery charge limit
+Requires=dbus.socket
+After=dbus.socket oxp3-fan-module.service
+Wants=oxp3-fan-module.service
+[Service]
+ExecCondition=/usr/bin/python3 -I -B /usr/local/lib/oxp3-integration/integration_runtime.py guard
+Type=dbus
+BusName=org.onexplayer.SteamOSManager.Battery
+ExecStart=/usr/bin/python3 -I -B /var/lib/oxp3-battery/battery_provider.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelModules=yes
+ReadWritePaths=/run/lock /sys/class/power_supply/BAT0/charge_control_end_threshold
+[Install]
+WantedBy=multi-user.target

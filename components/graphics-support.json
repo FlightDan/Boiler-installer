@@ -1,0 +1,466 @@
+{
+  "schema": 1,
+  "kind": "GraphicsCandidateCatalogue",
+  "reviewed_date": "2026-10-25",
+  "delivery": {
+    "mode": "on-demand",
+    "installer_bundled_binaries": false,
+    "preserve_existing": true,
+    "selection_scope": "generic-without-device-package",
+    "plan_source": "fresh-profile-and-image-bound-plan"
+  },
+  "firmware_origin": {
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "scope": "editable-test-baseline"
+  },
+  "requests": [
+    {
+      "token": "Radeon 780M",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:amd-780m"
+      ]
+    },
+    {
+      "token": "Radeon 880M",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:amd-880m"
+      ]
+    },
+    {
+      "token": "Z1",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:amd-z1",
+        "graphics:amd-z1-extreme"
+      ]
+    },
+    {
+      "token": "Z2",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:amd-z2",
+        "graphics:amd-z2-extreme",
+        "graphics:amd-ai-z2-extreme",
+        "graphics:amd-z2-go",
+        "graphics:amd-z2-a"
+      ]
+    },
+    {
+      "token": "G3E series",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:intel-g3-extreme",
+        "graphics:intel-g3"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "graphics:amd-780m",
+      "name": {
+        "zh": "Radeon 780M · 7840U / 8840U 显卡固件候选",
+        "en": "Radeon 780M · 7840U / 8840U graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen 7 7840U",
+        "AMD Ryzen 7 8840U"
+      ],
+      "graphics_name": "AMD Radeon 780M",
+      "architecture": "RDNA3",
+      "compute_units": 12,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/laptop/ryzen/7000-series/amd-ryzen-7-7840u.html",
+          "scope": "hardware-identity-only"
+        },
+        {
+          "url": "https://www.amd.com/en/products/processors/laptop/ryzen/8000-series/amd-ryzen-7-8840u.html",
+          "scope": "hardware-identity-only"
+        },
+        {
+          "url": "https://rocmdocs.amd.com/en/develop/reference/gpu-specs.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-880m",
+      "name": {
+        "zh": "Radeon 880M · Ryzen AI 9 365 显卡固件候选",
+        "en": "Radeon 880M · Ryzen AI 9 365 graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen AI 9 365"
+      ],
+      "graphics_name": "AMD Radeon 880M",
+      "architecture": "RDNA3.5",
+      "compute_units": 12,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-9-365.html",
+          "scope": "hardware-identity-only"
+        },
+        {
+          "url": "https://rocmdocs.amd.com/en/develop/reference/gpu-specs.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z1",
+      "name": {
+        "zh": "Ryzen Z1 显卡固件候选",
+        "en": "Ryzen Z1 graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z1"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA3",
+      "compute_units": 4,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z1-extreme",
+      "name": {
+        "zh": "Ryzen Z1 Extreme 显卡固件候选",
+        "en": "Ryzen Z1 Extreme graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z1 Extreme"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA3",
+      "compute_units": 12,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z2",
+      "name": {
+        "zh": "Ryzen Z2 显卡固件候选",
+        "en": "Ryzen Z2 graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z2"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA3",
+      "compute_units": 12,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z2-extreme",
+      "name": {
+        "zh": "Ryzen Z2 Extreme 显卡固件候选",
+        "en": "Ryzen Z2 Extreme graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z2 Extreme"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA3.5",
+      "compute_units": 16,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-ai-z2-extreme",
+      "name": {
+        "zh": "Ryzen AI Z2 Extreme 显卡固件候选",
+        "en": "Ryzen AI Z2 Extreme graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen AI Z2 Extreme"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA3.5",
+      "compute_units": 16,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z2-go",
+      "name": {
+        "zh": "Ryzen Z2 Go 显卡固件候选",
+        "en": "Ryzen Z2 Go graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z2 Go"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA2",
+      "compute_units": 12,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:amd-z2-a",
+      "name": {
+        "zh": "Ryzen Z2 A 显卡固件候选",
+        "en": "Ryzen Z2 A graphics firmware candidate"
+      },
+      "processors": [
+        "AMD Ryzen Z2 A"
+      ],
+      "graphics_name": "AMD integrated graphics (model not assigned by this catalogue)",
+      "architecture": "RDNA2",
+      "compute_units": 8,
+      "pci_ids": [],
+      "drivers": [
+        "amdgpu"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.amd.com/en/products/processors/handhelds/ryzen-z-series.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:intel-g3-extreme",
+      "name": {
+        "zh": "Intel Arc G3 Extreme · B390 显卡固件候选",
+        "en": "Intel Arc G3 Extreme · B390 graphics firmware candidate"
+      },
+      "processors": [
+        "Intel Arc G3 Extreme"
+      ],
+      "graphics_name": "Intel Arc B390",
+      "architecture": "Xe3 / Panther Lake",
+      "compute_units": 12,
+      "pci_ids": [
+        "8086:b080",
+        "8086:b082"
+      ],
+      "drivers": [
+        "xe"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.intel.com/content/www/us/en/products/sku/245625/intel-arc-g3-extreme-processor-12m-cache-up-to-4-70-ghz/specifications.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:intel-g3",
+      "name": {
+        "zh": "Intel Arc G3 · B370 显卡固件候选",
+        "en": "Intel Arc G3 · B370 graphics firmware candidate"
+      },
+      "processors": [
+        "Intel Arc G3"
+      ],
+      "graphics_name": "Intel Arc B370",
+      "architecture": "Xe3 / Panther Lake",
+      "compute_units": 10,
+      "pci_ids": [
+        "8086:b081",
+        "8086:b083"
+      ],
+      "drivers": [
+        "xe"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.intel.com/content/www/us/en/products/sku/245626/intel-arc-g3-processor-12m-cache-up-to-4-60-ghz/specifications.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.1",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    }
+  ]
+}
