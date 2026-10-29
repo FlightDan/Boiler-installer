@@ -1,3 +1,4 @@
-* text eol=lf
-# Preserve the supplementary license document's exact inventoried bytes.
-licenses/GPL-2.0.txt -text
+# Preserve the exact reviewed source and payload-lock bytes on every host.
+* -text whitespace=cr-at-eol
+**/*.patch -whitespace
+licenses/** whitespace=cr-at-eol,-blank-at-eof
