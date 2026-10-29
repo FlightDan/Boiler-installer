@@ -1,0 +1,427 @@
+{
+  "schema_version": 1,
+  "kind": "AdaptationSourcePlan",
+  "source": {
+    "kind": "github",
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "72f864e0498c10366493c74608c5ffed62cc99ca"
+  },
+  "files": [
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/gyro_binding.py",
+      "upstream_path": "steamos-maintenance/oxp3_maintenance/gyro_binding.py"
+    },
+    {
+      "path": "common/scripts/licenses/upstream-fixes-MIT.txt",
+      "upstream_path": "windows-installer/licenses/upstream-fixes-MIT.txt"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
+      "upstream_path": "windows-installer/components/autoflatpaks-compat/README.txt"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/poll-battery-state.js",
+      "upstream_path": "windows-installer/components/autoflatpaks-compat/poll-battery-state.js"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/boot_repairs.py",
+      "upstream_path": "windows-installer/components/boot_repairs.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/catalog.json",
+      "upstream_path": "windows-installer/components/catalog.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/README.md",
+      "upstream_path": "windows-installer/components/controls/README.md"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/compatibility.py",
+      "upstream_path": "windows-installer/components/controls/compatibility.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-index.js",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu-plugin-index.js"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-main.py",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu-plugin-main.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
+      "upstream_path": "windows-installer/components/controls/cpu/cpu_control.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/deploy-cpu.py",
+      "upstream_path": "windows-installer/components/controls/cpu/deploy-cpu.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+      "upstream_path": "windows-installer/components/controls/cpu/power_control.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/allow-read.py",
+      "upstream_path": "windows-installer/components/controls/overlay/allow-read.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/telemetry.py",
+      "upstream_path": "windows-installer/components/controls/overlay/telemetry.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/profile.json",
+      "upstream_path": "windows-installer/components/controls/profile.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+      "upstream_path": "windows-installer/components/controls/rapl/provider.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/decky_order.py",
+      "upstream_path": "windows-installer/components/decky_order.py"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
+      "upstream_path": "windows-installer/components/desktop-hdr/hdr_trial.py"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh",
+      "upstream_path": "windows-installer/components/desktop-hdr/install-x2mini-hdr.sh"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh",
+      "upstream_path": "windows-installer/components/desktop-hdr/launch.sh"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
+      "upstream_path": "windows-installer/components/desktop-hdr/x2mini_device.py"
+    },
+    {
+      "path": "common/scripts/directory_transaction.py",
+      "upstream_path": "windows-installer/components/directory_transaction.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/download-sources.json",
+      "upstream_path": "windows-installer/components/download-sources.json"
+    },
+    {
+      "path": "common/scripts/file_transaction.py",
+      "upstream_path": "windows-installer/components/file_transaction.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot.py",
+      "upstream_path": "windows-installer/components/firstboot.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot_stage.py",
+      "upstream_path": "windows-installer/components/firstboot_stage.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/flathub.flatpakrepo",
+      "upstream_path": "windows-installer/components/flathub.flatpakrepo"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/Makefile",
+      "upstream_path": "windows-installer/components/gyro/Makefile"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/bmi270.h",
+      "upstream_path": "windows-installer/components/gyro/bmi270.h"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/inputplumber.conf",
+      "upstream_path": "windows-installer/components/gyro/inputplumber.conf"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/launch.sh",
+      "upstream_path": "windows-installer/components/gyro/launch.sh"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/load.sh",
+      "upstream_path": "windows-installer/components/gyro/load.sh"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/onexplayer3-bmi260.patch",
+      "upstream_path": "windows-installer/components/gyro/onexplayer3-bmi260.patch"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/oxp3-gyro.service",
+      "upstream_path": "windows-installer/components/gyro/oxp3-gyro.service"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c",
+      "upstream_path": "windows-installer/components/gyro/oxp3_bmi260.c"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/gyro/unload.sh",
+      "upstream_path": "windows-installer/components/gyro/unload.sh"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE",
+      "upstream_path": "windows-installer/components/hdr/UPSTREAM_LICENSE"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/generate.py",
+      "upstream_path": "windows-installer/components/hdr/generate.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/installer.py",
+      "upstream_path": "windows-installer/components/hdr/installer.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/profile.json",
+      "upstream_path": "windows-installer/components/hdr/profile.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+      "upstream_path": "windows-installer/components/hdr/upstream.lua"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/i18n/en-US.json",
+      "upstream_path": "windows-installer/components/i18n/en-US.json"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.conf",
+      "upstream_path": "windows-installer/components/input-profile.conf"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.yaml",
+      "upstream_path": "windows-installer/components/input-profile.yaml"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input_profile.py",
+      "upstream_path": "windows-installer/components/input_profile.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration.py",
+      "upstream_path": "windows-installer/components/integration.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration_runtime.py",
+      "upstream_path": "windows-installer/components/integration_runtime.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE",
+      "upstream_path": "windows-installer/components/light/LICENSE"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HHD",
+      "upstream_path": "windows-installer/components/light/LICENSE-HHD"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HueSync",
+      "upstream_path": "windows-installer/components/light/LICENSE-HueSync"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/README.md",
+      "upstream_path": "windows-installer/components/light/README.md"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/THIRD_PARTY_NOTICES.md",
+      "upstream_path": "windows-installer/components/light/THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/dist/index.js",
+      "upstream_path": "windows-installer/components/light/dist/index.js"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/light_control.py",
+      "upstream_path": "windows-installer/components/light/light_control.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/main.py",
+      "upstream_path": "windows-installer/components/light/main.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/package.json",
+      "upstream_path": "windows-installer/components/light/package.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/plugin.json",
+      "upstream_path": "windows-installer/components/light/plugin.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/maintenance_tool.py",
+      "upstream_path": "windows-installer/components/maintenance_tool.py"
+    },
+    {
+      "path": "common/scripts/ntfs_steam.py",
+      "upstream_path": "windows-installer/components/ntfs_steam.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/options.json",
+      "upstream_path": "windows-installer/components/options.json"
+    },
+    {
+      "path": "common/scripts/partition-mount/desktop.py",
+      "upstream_path": "windows-installer/components/partition-mount/desktop.py"
+    },
+    {
+      "path": "common/scripts/partition-mount/mounts.py",
+      "upstream_path": "windows-installer/components/partition-mount/mounts.py"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount",
+      "upstream_path": "windows-installer/components/partition-mount/oxp3-partition-mount"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount.desktop",
+      "upstream_path": "windows-installer/components/partition-mount/oxp3-partition-mount.desktop"
+    },
+    {
+      "path": "common/scripts/partition_mount.py",
+      "upstream_path": "windows-installer/components/partition_mount.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/plugin_installer.py",
+      "upstream_path": "windows-installer/components/plugin_installer.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release.json",
+      "upstream_path": "windows-installer/components/release.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release_notes.py",
+      "upstream_path": "windows-installer/components/release_notes.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/runtime_access.py",
+      "upstream_path": "windows-installer/components/runtime_access.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/serial_console.py",
+      "upstream_path": "windows-installer/components/serial_console.py"
+    },
+    {
+      "path": "common/scripts/shared_state.py",
+      "upstream_path": "windows-installer/components/shared_state.py"
+    },
+    {
+      "path": "common/scripts/shared_storage.py",
+      "upstream_path": "windows-installer/components/shared_storage.py"
+    },
+    {
+      "path": "common/scripts/slot-switch/49-oxp3-slot-switch.rules",
+      "upstream_path": "windows-installer/components/slot-switch/49-oxp3-slot-switch.rules"
+    },
+    {
+      "path": "common/scripts/slot-switch/boot.py",
+      "upstream_path": "windows-installer/components/slot-switch/boot.py"
+    },
+    {
+      "path": "common/scripts/slot-switch/desktop.py",
+      "upstream_path": "windows-installer/components/slot-switch/desktop.py"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-slot-switch.desktop",
+      "upstream_path": "windows-installer/components/slot-switch/oxp3-slot-switch.desktop"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-switch-slot",
+      "upstream_path": "windows-installer/components/slot-switch/oxp3-switch-slot"
+    },
+    {
+      "path": "common/scripts/slot_switch.py",
+      "upstream_path": "windows-installer/components/slot_switch.py"
+    },
+    {
+      "path": "common/scripts/split-lock/README.md",
+      "upstream_path": "windows-installer/components/split-lock/README.md"
+    },
+    {
+      "path": "common/scripts/split-lock/UPSTREAM_LICENSE",
+      "upstream_path": "windows-installer/components/split-lock/UPSTREAM_LICENSE"
+    },
+    {
+      "path": "common/scripts/split_lock.py",
+      "upstream_path": "windows-installer/components/split_lock.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/system_update_policy.py",
+      "upstream_path": "windows-installer/components/system_update_policy.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold.py",
+      "upstream_path": "windows-installer/components/update_hold.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold_verify.py",
+      "upstream_path": "windows-installer/components/update_hold_verify.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/compatibility.py",
+      "upstream_path": "windows-installer/components/waydroid/compatibility.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/profile.json",
+      "upstream_path": "windows-installer/components/waydroid/profile.json"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid_setup.py",
+      "upstream_path": "windows-installer/components/waydroid_setup.py"
+    },
+    {
+      "path": "common/scripts/windows-reboot/49-oxp3-restart-windows.rules",
+      "upstream_path": "windows-installer/components/windows-reboot/49-oxp3-restart-windows.rules"
+    },
+    {
+      "path": "common/scripts/windows-reboot/boot.py",
+      "upstream_path": "windows-installer/components/windows-reboot/boot.py"
+    },
+    {
+      "path": "common/scripts/windows-reboot/desktop.py",
+      "upstream_path": "windows-installer/components/windows-reboot/desktop.py"
+    },
+    {
+      "path": "common/scripts/windows-reboot/dist/index.js",
+      "upstream_path": "windows-installer/components/windows-reboot/dist/index.js"
+    },
+    {
+      "path": "common/scripts/windows-reboot/main.py",
+      "upstream_path": "windows-installer/components/windows-reboot/main.py"
+    },
+    {
+      "path": "common/scripts/windows-reboot/org.oxp3.restart-windows.policy",
+      "upstream_path": "windows-installer/components/windows-reboot/org.oxp3.restart-windows.policy"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows",
+      "upstream_path": "windows-installer/components/windows-reboot/oxp3-reboot-windows"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows.desktop",
+      "upstream_path": "windows-installer/components/windows-reboot/oxp3-reboot-windows.desktop"
+    },
+    {
+      "path": "common/scripts/windows-reboot/package.json",
+      "upstream_path": "windows-installer/components/windows-reboot/package.json"
+    },
+    {
+      "path": "common/scripts/windows-reboot/plugin.json",
+      "upstream_path": "windows-installer/components/windows-reboot/plugin.json"
+    },
+    {
+      "path": "common/scripts/windows-reboot/pnpm-lock.yaml",
+      "upstream_path": "windows-installer/components/windows-reboot/pnpm-lock.yaml"
+    },
+    {
+      "path": "common/scripts/windows-reboot/rollup.config.js",
+      "upstream_path": "windows-installer/components/windows-reboot/rollup.config.js"
+    },
+    {
+      "path": "common/scripts/windows-reboot/src/index.tsx",
+      "upstream_path": "windows-installer/components/windows-reboot/src/index.tsx"
+    },
+    {
+      "path": "common/scripts/windows-reboot/tsconfig.json",
+      "upstream_path": "windows-installer/components/windows-reboot/tsconfig.json"
+    },
+    {
+      "path": "common/scripts/windows_reboot.py",
+      "upstream_path": "windows-installer/components/windows_reboot.py"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/x2mini_hdr_device.py",
+      "upstream_path": "windows-installer/components/x2mini_hdr_device.py"
+    }
+  ]
+}

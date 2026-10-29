@@ -105,7 +105,7 @@ public static class PartitionPickerChecks
         InstallerI18n.SetLanguage("zh-CN");
         var window = new MainWindow(rehearsal: true) { ShowActivated = false, WindowState = WindowState.Normal };
         ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
-        window.Show();
+        window.Show(); window.PreviewStep(0);
         T Find<T>(string name) => (T)window.FindName(name);
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var picker = Find<PartitionPicker>("PartitionSelector");
@@ -184,7 +184,7 @@ public static class PartitionPickerChecks
             "use-all-entry-is-hidden");
         picker.CapacityInput.Text = "128.5";
         Require(picker.Selection.Capacity == 128 * PartitionInventory.GiB + 512 * PartitionInventory.MiB, "fractional-gib-supported");
-        Click("NextButton"); Require(Find<StackPanel>("SourcePage").Visibility == Visibility.Visible, "valid-target-reaches-source");
+        Click("NextButton"); Require(Find<StackPanel>("BootPage").Visibility == Visibility.Visible, "valid-target-reaches-boot-options");
         Click("BackButton"); Require(picker.CapacityInput.Text == "128.5", "back-retains-selection");
         Find<RadioButton>("EnglishLanguage").IsChecked = true;
         Require(picker.Selection.Capacity == 128 * PartitionInventory.GiB + 512 * PartitionInventory.MiB && picker.Heading.Text == "Choose disk and installation space", "language-switch-preserves-selection");

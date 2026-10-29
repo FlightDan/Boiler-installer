@@ -1,6 +1,9 @@
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -83,7 +86,13 @@ class ProtocolTests(unittest.TestCase):
 
     def test_compatibility_and_modes(self):
         c=component(); c["compatibility"]={"device_ids":["known"]}
-        with self.assertRaises(ProtocolError): resolve_plan([c],[c["id"]],{})
+        for environment in ({}, {"device_id":"other"}):
+            plan = resolve_plan([c], [c["id"]], environment)
+            self.assertEqual([item['id'] for item in plan['components']], [c['id']])
+            self.assertEqual(plan['device_warnings'][0]['expected_device_ids'], ['known'])
+        self.assertEqual(resolve_plan([c], [c['id']], {'device_id':'known'})['device_warnings'], [])
+        c['compatibility']['os_ids'] = ['steamos']
+        with self.assertRaises(ProtocolError): resolve_plan([c], [c['id']], {'device_id':'other','os_id':'other'})
         self.assertEqual(resolve_plan([c],[c["id"]],{},mode="imported")["components"],[])
         self.assertEqual(len(resolve_plan([component()],["core:decky"],{},mode="vanilla")["components"]),1)
 
@@ -111,6 +120,35 @@ class ProtocolTests(unittest.TestCase):
             p=Path(temp)/"x"; p.write_text('{"a":1,"a":2}')
             with self.assertRaises(ProtocolError): load_json(p)
         with self.assertRaises(ProtocolError): DeveloperTrustSession().github_source("owner/repo","main")
+
+    def test_manifest_size_limits_precede_hashing_and_signature_verification(self):
+        from protocol.manifest import MAX_MANIFEST
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / 'manifest.json'
+            with manifest.open('wb') as stream: stream.truncate(MAX_MANIFEST + 1)
+            for action in (lambda: load_json(manifest),
+                           lambda: validate_package(root, expected_manifest_sha256='0'*64),
+                           lambda: verify_signed_index(manifest, root / 'missing.sig')):
+                with self.assertRaisesRegex(ProtocolError, 'size limit'): action()
+            manifest.write_bytes(b'{}')
+            signature = root / 'index.sig'
+            with signature.open('wb') as stream: stream.truncate(MAX_MANIFEST)
+            with self.assertRaisesRegex(ProtocolError, 'signature exceeds size limit'):
+                verify_signed_index(manifest, signature)
+
+    @unittest.skipUnless(os.name == 'posix', 'Nonblocking special-file checks require Linux')
+    def test_manifest_fifo_is_rejected_without_waiting_for_a_writer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = Path(temporary) / 'manifest.json'
+            os.mkfifo(manifest)
+            script = ('import sys\nfrom protocol import load_json, ProtocolError\n'
+                      'try: load_json(sys.argv[1])\n'
+                      'except ProtocolError as error: print(str(error))\n')
+            result = subprocess.run([sys.executable, '-B', '-c', script, str(manifest)],
+                                    cwd=Path(__file__).resolve().parents[1], capture_output=True,
+                                    text=True, timeout=5, check=True)
+            self.assertIn('regular file', result.stdout)
 
     def test_archive_atomic_and_bounded(self):
         with tempfile.TemporaryDirectory() as temp:

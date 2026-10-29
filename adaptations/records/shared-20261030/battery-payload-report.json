@@ -1,0 +1,80 @@
+{
+  "component": "charging",
+  "plugin_version": "0.2.2",
+  "default_mode": "system",
+  "default_auto_delay_minutes": 120,
+  "automatic_sleep_during_prepare": false,
+  "files": [
+    {
+      "target": "var/lib/oxp3-battery/battery_control.py",
+      "source": "charging/000.bin",
+      "size": 2616,
+      "sha256": "1ea349b1a679a9859a918459dd55d39716934746c5c52783e314daa4505decb3"
+    },
+    {
+      "target": "var/lib/oxp3-battery/battery_provider.py",
+      "source": "charging/001.bin",
+      "size": 4432,
+      "sha256": "33dbd7a324656c28abcfad841c3ba324ed03aeee18321a02f4c7d275f829ff57"
+    },
+    {
+      "target": "var/lib/oxp3-battery/sleep_control.py",
+      "source": "charging/002.bin",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "target": "etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf",
+      "source": "charging/003.bin",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "target": "etc/systemd/system/oxp3-battery.service",
+      "source": "charging/004.bin",
+      "size": 618,
+      "sha256": "d5771cac38919a517f3ff228de56add0700fdac9e3e7f4d92c461f8ee2fe4767"
+    },
+    {
+      "target": "etc/dbus-1/system.d/org.onexplayer.SteamOSManager.Battery.conf",
+      "source": "charging/005.bin",
+      "size": 418,
+      "sha256": "df9acac75b4b2906c6c0d953460de16f6e7de30789ec74fdea00f2faffabef43"
+    },
+    {
+      "target": "etc/steamos-manager/remotes.d/oxp3-battery.toml",
+      "source": "charging/006.bin",
+      "size": 128,
+      "sha256": "98367b4ecf45d8a48c1349b9931cd192d55b462aed49b71f14d21f92d5ef1f48"
+    },
+    {
+      "target": "home/deck/homebrew/plugins/OXP3-battery/main.py",
+      "source": "charging/007.bin",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "target": "home/deck/homebrew/plugins/OXP3-battery/dist/index.js",
+      "source": "charging/008.bin",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "target": "home/deck/homebrew/plugins/OXP3-battery/plugin.json",
+      "source": "charging/009.bin",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "target": "home/deck/homebrew/plugins/OXP3-battery/package.json",
+      "source": "charging/010.bin",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    }
+  ],
+  "battery_source_archive": "oxp3-battery-20261030-battery.2.zip",
+  "battery_source_archive_size": 24737,
+  "battery_source_archive_sha256": "8051344c4cb996e14779338e6a0f72d4dc353ef1986b30d622e462d4b351efda",
+  "battery_source_archive_distribution": "local_candidate_only",
+  "real_sleep_acceptance": "not_performed_user_requested_no_sleep"
+}

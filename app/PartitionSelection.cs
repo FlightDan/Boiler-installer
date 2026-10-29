@@ -19,7 +19,7 @@ public sealed record PartitionSelection(string Snapshot, bool Example, int Disk,
     }
 }
 
-public sealed record PartitionRow(int Disk, long Start, long Size, string Name, string Type, long? Free, string Status, SpaceChoice? Space = null, bool CanDelete = false)
+public sealed record PartitionRow(int Disk, long Start, long Size, string Name, string Type, long? Free, string Status, SpaceChoice? Space = null, bool CanDelete = false, string? SteamOsRole = null)
 {
     public string CapacityText => PartitionInventory.SizeText(Size);
     public string FreeText => Free.HasValue ? PartitionInventory.SizeText(Free.Value) : "—";
@@ -74,6 +74,7 @@ public static class PartitionInventory
                 result.Add(new(number, model, size, bus, style, rows.ToArray()));
                 continue;
             }
+            var steamOs = reason.Length == 0 ? SteamOsPartitions.Detect(disk) : [];
             foreach (var part in disk.GetProperty("partitions").EnumerateArray().OrderBy(p => p.GetProperty("offset").GetInt64()))
             {
                 var start = part.GetProperty("offset").GetInt64(); var bytes = part.GetProperty("size").GetInt64();
@@ -82,6 +83,8 @@ public static class PartitionInventory
                 AddGap(cursor, start);
                 var letter = Str(part, "letter").Trim('\0'); var label = Str(part, "label");
                 var name = $"{L("分区", "Partition")} {part.GetProperty("number").GetInt32()}" + (letter.Length > 0 ? $" · {letter}:" : "") + (label.Length > 0 ? $" · {label}" : "");
+                var steamOsRole = steamOs.GetValueOrDefault(start);
+                if (steamOsRole != null) name += " · SteamOS / " + steamOsRole;
                 var type = Str(part, "type") switch { "System" => "EFI", "Reserved" => "MSR", "Recovery" => L("恢复分区", "Recovery"), _ => Str(part, "filesystem") };
                 if (type.Length == 0) type = L("未知文件系统", "Unknown filesystem");
                 if (part.TryGetProperty("isBoot", out var boot) && boot.ValueKind == JsonValueKind.True) type += " · Windows";
@@ -89,7 +92,7 @@ public static class PartitionInventory
                 var canDelete = reason.Length == 0 && PartitionDeletion.Allowed(disk, part);
                 rows.Add(new(number, start, bytes, name, type, free, canDelete
                     ? L("可删除以释放空间（清空数据）", "Can delete to free space (erases data)")
-                    : L("受保护 / 不支持删除", "Protected / deletion unavailable"), CanDelete: canDelete));
+                    : L("受保护 / 不支持删除", "Protected / deletion unavailable"), CanDelete: canDelete, SteamOsRole: steamOsRole));
                 cursor = checked(start + bytes);
             }
             AddGap(cursor, size / MiB * MiB - MiB);

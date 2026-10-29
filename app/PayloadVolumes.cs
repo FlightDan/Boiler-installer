@@ -15,8 +15,13 @@ internal static class PayloadVolumes
         if (files.Where(path => Path.GetRelativePath(root, path).StartsWith("apks" + Path.DirectorySeparatorChar, StringComparison.Ordinal)).Sum(Weight) > limit)
             throw new IOException("Bootstrap packages exceed one readonly transport volume.");
         if (files.Any(path => Weight(path) > limit)) throw new IOException("A payload file exceeds the readonly transport limit; split the package's large payload file.");
-        if (files.Sum(Weight) < limit) return [root];
+        // Windows QEMU vvfat can silently omit files at MAX_PATH even when
+        // .NET and Python can read them. Relocate deep roots before export.
+        bool Exportable(string path) => !OperatingSystem.IsWindows() || Path.GetFullPath(path).Length < 260;
+        if (files.Sum(Weight) < limit && files.All(Exportable)) return [root];
         if (Directory.Exists(destination)) throw new IOException("Payload volume staging already exists.");
+        if (files.Any(path => !Exportable(Path.Combine(destination, "0", Path.GetRelativePath(root, path)))))
+            throw new IOException("载荷路径过长，请选择较短的工作目录（例如 C:\\BoilerWork）。 / Payload paths are too long; choose a shorter workspace such as C:\\BoilerWork.");
         var volumes = new List<string>(); long size = 0;
         string NewVolume()
         {

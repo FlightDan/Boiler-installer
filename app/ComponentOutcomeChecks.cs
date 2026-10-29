@@ -17,6 +17,26 @@ internal static class ComponentOutcomeChecks
         Reject([..rows[..^1], Row("B", "core:decky", "not_installed")]);
         Reject([..rows[..^1], Row("B", "core:decky", "failed")]);
         Reject([..rows, Row("A", "system-update-hold"), Row("B", "system-update-hold")]);
+        var gpuOptions = new SelectedOptions(1, [], [], "en-US", "system", GraphicsProfile: "graphics:amd-780m");
+        ComponentOutcome.Validate([Row("A", "graphics:amd-780m"), Row("B", "graphics:amd-780m")], gpuOptions);
+        var missingGpuRefused = false;
+        try { ComponentOutcome.Validate([], gpuOptions); } catch (IOException) { missingGpuRefused = true; }
+        if (!missingGpuRefused) throw new IOException("Missing GPU candidate reports accepted.");
+        foreach (var preset in new[] {
+            new SelectedOptions(1, [], [], "en-US", "zh_CN"),
+            new SelectedOptions(1, [], [], "en-US", "system", EnableSsh: true),
+            new SelectedOptions(1, [], [], "en-US", "system", SetDeckPassword: true) })
+        {
+            var presetRows = new[] { Row("A", "core:system-presets"), Row("B", "core:system-presets") };
+            ComponentOutcome.Validate(presetRows, preset);
+            foreach (var invalid in new[] { Array.Empty<JsonElement>(), presetRows[..1],
+                new[] { presetRows[0], Row("B", "core:system-presets", "failed") } })
+            {
+                var refused = false;
+                try { ComponentOutcome.Validate(invalid, preset); } catch (IOException) { refused = true; }
+                if (!refused) throw new IOException("Incomplete system preset reports accepted.");
+            }
+        }
         return "Exact selected component coverage on both slots; empty Vanilla requires no implicit policy. Missing, duplicate, failed, skipped and unexpected results block deployment.";
     }
 }

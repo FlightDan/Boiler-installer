@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 import uuid
 
-from protocol import validate_manifest, verify_file, validate_package, compatible
+from protocol import validate_manifest, verify_file, validate_package, compatible, device_advisory
 from protocol.manifest import confined, relative_path, ProtocolError
 
 
@@ -46,8 +46,12 @@ def _legacy_lock_required(journal):
 RUNTIME_FILES = (
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
     'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
-    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py',
-    'protocol/manifest.py', 'protocol/trusted-public-key.pem',
+    'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
+    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py',
+    'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',
+    'components/model-catalog/lock.json', 'components/model-catalog/snapshot/adaptations.json',
+    'components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json',
+    'components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json',
 )
 
 
@@ -320,7 +324,9 @@ class Engine:
             return observe(self,path)
         return _snapshot(path)
 
-    def _recover(self,*,allow_adoption=False,legacy_locked=False):
+    def _recover(self,*,allow_adoption=False,legacy_locked=False,allow_model_action=None):
+        from .models import check_pending
+        check_pending(self, allow_model_action)
         if not allow_adoption and os.path.lexists(self.state_dir/'adoption-pending.json'):
             raise MaintenanceError('Pending adoption migration requires explicit receipt resume')
         if not legacy_locked:
@@ -331,7 +337,7 @@ class Engine:
                         _legacy_lock_required(journal)):
                     from .adoption_blobs import _legacy_lock
                     with _legacy_lock(self):
-                        return self._recover(allow_adoption=allow_adoption,legacy_locked=True)
+                        return self._recover(allow_adoption=allow_adoption,legacy_locked=True,allow_model_action=allow_model_action)
         recovered=[]
         for path in sorted(self.journals.glob("*.json")):
             if path.is_symlink(): raise MaintenanceError("Unsafe journal")
@@ -440,7 +446,10 @@ class Engine:
                 legacy_required=_legacy_lock_required(prior)
             from .adoption_blobs import _legacy_lock
             with _legacy_lock(self) if legacy_required else contextlib.nullcontext():
-                return self._apply_locked(component,payload_root,hooks,state,identity,hook_environment,legacy_required)
+                result = self._apply_locked(component,payload_root,hooks,state,identity,hook_environment,legacy_required)
+                warning = device_advisory(component, environment or {})
+                if warning: result['device_warning'] = warning
+                return result
 
     def _apply_locked(self,component,payload_root,hooks,state,identity,hook_environment,legacy_required):
         from .adoption_blobs import capture, payload_snapshot, observe, _hash_file, MAX_FILE, MAX_TOTAL, MAX_OPERATIONS

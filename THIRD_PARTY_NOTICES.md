@@ -20,11 +20,15 @@ runtime. Their licenses do not change to AGPL through inclusion here.
 
 Decky Loader's pinned official binary, corresponding source archive and license
 are selected by `components/locks/decky.json` and the preparation script.
-Intel/Realtek/MediaTek firmware uses a pinned linux-firmware commit and per-file
+Intel/Realtek/MediaTek Wi-Fi and Bluetooth firmware uses a pinned linux-firmware commit and per-file
 hashes in `components/locks/`. The prepared payload retains its vendor license
 files; installed firmware licenses are placed under
 `/usr/share/licenses/boiler-firmware/`. No new kernel module is built or included
 by the generic wireless feature.
+Bluetooth locks are under `components/locks/bluetooth/`. Intel Bluetooth retains
+`LICENCE.ibt_firmware`; Realtek and MediaTek retain their respective upstream
+notices. Firmware aliases declared by the fixed upstream tree and WHENCE are
+materialized as ordinary files with the original source evidence retained.
 
 SteamOS, Steam and their system packages are supplied by Valve and other
 rights holders under their own terms. System images are obtained separately

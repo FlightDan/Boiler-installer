@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerRetainedBuildInputs",
+  "public_installer": {
+    "path": "inputs/public-installer/oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+    "url": "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/v1.0.6%2Binstaller.20261022.220437/oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+    "name": "oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+    "size": 555684389,
+    "sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4"
+  },
+  "shared_base": {
+    "path": "inputs/oxp3-base",
+    "manifest_sha256": "c442eef2039779be8e3f432a65bb5cc46c432f8cd7b51734ea76168ab07136e2",
+    "manifest_size": 138976,
+    "files": 499,
+    "id": "device:oxp3",
+    "version": "0.1.0-localtest.20261029.6"
+  },
+  "source_only": false,
+  "public_source_export": false,
+  "note": "Retain these authenticated local build inputs in the independent root and its private backups; no old workspace lookup is needed. The shared base includes the published Opti 0.3.0 update; final current Opti updates have a separate pinned workflow."
+}

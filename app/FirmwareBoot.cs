@@ -85,12 +85,46 @@ public static class FirmwareBoot
     {
         var order=read("BootOrder") ?? throw new IOException("Cannot read firmware boot order.");var entry=LoadOption(esp);
         if (order.Data.Length % 2 != 0) throw new IOException("Invalid firmware boot order.");
+        var backupPath = Path.Combine(directory, "firmware-before.json");
+        var resultPath = Path.Combine(directory, "firmware-result.json");
+        MediaSource.Ordinary(backupPath, InstallationController.Work, false);
+        MediaSource.Ordinary(resultPath, InstallationController.Work, false);
+        if (File.Exists(resultPath)) throw new IOException("Firmware registration already has a result; review it before recovery.");
+        if (File.Exists(backupPath))
+        {
+            // Physical installation/recovery holds the session and disk leases.
+            // Retry only a proven clean rollback, preserving the complete prior
+            // receipt. Partial or externally changed firmware needs manual review.
+            try
+            {
+                using var priorFile = new FileStream(backupPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                if (priorFile.Length <= 0 || priorFile.Length > 256 * 1024) throw new IOException("Invalid previous firmware receipt size.");
+                using var prior = JsonDocument.Parse(priorFile);
+                var value = prior.RootElement;
+                var previousName = value.GetProperty("name").GetString();
+                if (previousName == null || !System.Text.RegularExpressions.Regex.IsMatch(previousName, "^Boot6[0-9A-F]{3}$"))
+                    throw new IOException("Invalid previous firmware entry name.");
+                var previousNumber = Convert.ToUInt16(previousName[4..], 16);
+                var original = Convert.FromBase64String(value.GetProperty("originalBootOrder").GetString()!);
+                var previousEntry = Convert.FromBase64String(value.GetProperty("entry").GetString()!);
+                var previousAfter = Convert.FromBase64String(value.GetProperty("newBootOrder").GetString()!);
+                if (value.GetProperty("makeDefault").GetBoolean() != makeDefault || !previousEntry.SequenceEqual(entry)
+                    || value.GetProperty("attributes").GetUInt32() != order.Attributes || !original.SequenceEqual(order.Data)
+                    || !previousAfter.SequenceEqual(RegistrationOrder(original, previousNumber, makeDefault)) || read(previousName) != null)
+                    throw new IOException("Previous firmware registration was not cleanly rolled back or its reviewed plan changed.");
+            }
+            catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or ArgumentException or OverflowException)
+            { throw new IOException("Invalid previous firmware receipt; review it before recovery.", error); }
+            var archived = Path.Combine(directory, "firmware-before.retry-" + Guid.NewGuid().ToString("N") + ".json");
+            MediaSource.Ordinary(archived, InstallationController.Work, false);
+            File.Move(backupPath, archived, false);
+        }
         var ordered=Enumerable.Range(0,order.Data.Length/2).Select(i=>BinaryPrimitives.ReadUInt16LittleEndian(order.Data.AsSpan(i*2,2))).ToHashSet();
         ushort chosen=0;
         for(ushort i=0x6000;i<0x7000;i++){if(!ordered.Contains(i) && read("Boot"+i.ToString("X4"))==null){chosen=i;break;}}
         if(chosen==0)throw new IOException("No unused firmware entry available.");
         var name="Boot"+chosen.ToString("X4");var after=RegistrationOrder(order.Data,chosen,makeDefault);
-        using(var backup=new FileStream(Path.Combine(directory,"firmware-before.json"),FileMode.CreateNew,FileAccess.Write,FileShare.Read))
+        using(var backup=new FileStream(backupPath,FileMode.CreateNew,FileAccess.Write,FileShare.Read))
         {JsonSerializer.Serialize(backup,new {name,originalBootOrder=Convert.ToBase64String(order.Data),attributes=order.Attributes,entry=Convert.ToBase64String(entry),newBootOrder=Convert.ToBase64String(after),makeDefault});backup.Flush(true);}
         if(read("BootOrder")?.Data.SequenceEqual(order.Data)!=true||read(name)!=null)throw new IOException("Firmware changed before registration.");
         try
@@ -108,6 +142,6 @@ public static class FirmwareBoot
             if(read("BootOrder")?.Data.SequenceEqual(order.Data)==true && read(name)?.Data.SequenceEqual(entry)==true)write(name,[],7);
             throw;
         }
-        File.WriteAllText(Path.Combine(directory,"firmware-result.json"),JsonSerializer.Serialize(new {status="registered",name,defaultPreserved=!makeDefault,makeDefault,path="\\EFI\\BOOT\\BOOTX64.EFI"}));
+        File.WriteAllText(resultPath,JsonSerializer.Serialize(new {status="registered",name,defaultPreserved=!makeDefault,makeDefault,path="\\EFI\\BOOT\\BOOTX64.EFI"}));
     }
 }

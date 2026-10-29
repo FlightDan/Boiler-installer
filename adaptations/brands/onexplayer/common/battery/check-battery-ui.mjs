@@ -1,0 +1,20 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const events={},timers=new Map(),calls=[],effects=[];let id=0;
+globalThis.setTimeout=(fn,ms)=>{timers.set(++id,{fn,ms});return id;};
+globalThis.clearTimeout=i=>timers.delete(i);
+globalThis.setInterval=()=>99;globalThis.clearInterval=()=>{};
+const state={limit:80,mode:'auto',capacity:'80',status:'Not charging',ac:true};
+const R={createElement:(type,props,...children)=>({type,props:props||{},children}),useState:v=>[v,()=>{}],useRef:v=>({current:v}),useEffect:fn=>effects.push(fn)};
+globalThis.window={SP_REACT:R,DFL:{PanelSection:'section',PanelSectionRow:'row',SliderField:'slider',DropdownItem:'dropdown',ButtonItem:'button'},addEventListener:(n,fn)=>events[n]=fn,removeEventListener:()=>{},__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit:{connect:()=>({callable:n=>async v=>{if(n.startsWith('set_'))calls.push([n,v]);return state;}})}};
+const source=fs.readFileSync(new URL('./battery-plugin-index.js',import.meta.url),'utf8');
+const mod=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const tree=mod.default().content.type();effects.forEach(fn=>fn());await Promise.resolve();
+function find(t,type){if(!t||typeof t!=='object')return null;if(t.type===type)return t;for(const c of t.children||[]){const found=find(c,type);if(found)return found;}return null;}
+const slider=find(tree,'slider');assert.equal(slider.props.min,60);
+const wrapper=tree.children.find(r=>r?.children?.[0]?.props?.onPointerDownCapture).children[0];
+wrapper.props.onPointerDownCapture();slider.props.onChange(70);slider.props.onChange(75);assert.equal(timers.size,0,'must not write while dragging');
+events.pointerup();assert.equal(timers.size,1);let job=[...timers.values()][0];assert.equal(job.ms,1000);timers.clear();await job.fn();assert.deepEqual(calls,[['set_limit',75]]);
+slider.props.onChange(85);slider.props.onChange(90);assert.equal(timers.size,1);job=[...timers.values()][0];timers.clear();await job.fn();assert.deepEqual(calls[1],['set_limit',90]);
+const buttons=tree.children.filter(r=>r?.children?.[0]?.type==='button').map(r=>r.children[0]);assert.equal(buttons.length,3);await buttons[1].props.onClick();assert.deepEqual(calls[2],['set_mode','inhibit-charge-awake']);
+console.log('Passed: 60% minimum, drag release + 1 second, latest value debounce, three direct mode buttons.');

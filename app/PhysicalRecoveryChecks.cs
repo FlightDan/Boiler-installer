@@ -39,6 +39,7 @@ internal static class PhysicalRecoveryChecks
         Refuse(()=>PhysicalInstallation.RequireLayout(plan,appended with{Partitions=appended.Partitions.Skip(1).ToArray()},true),"missing-existing-partition-refused");
         Refuse(()=>PhysicalInstallation.RequireLayout(plan,appended with{Partitions=appended.Partitions.Where(p=>p.Id!=plan.Added[7].Id).ToArray()},true),"missing-home-refused");
         var directory=Path.Combine(InstallationController.Work,"physical-recovery-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+        CheckFirmwareRetry(directory, events);
         using var a=new FileStream(Path.Combine(directory,"source.bin"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None);
         using var b=new FileStream(Path.Combine(directory,"target.bin"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None);
         a.SetLength(8*mib);b.SetLength(9*mib);
@@ -51,7 +52,59 @@ internal static class PhysicalRecoveryChecks
         using var cancel=new CancellationTokenSource();cancel.Cancel();refused=false;
         try{await PhysicalInstallation.CompareCompletedAsync(a,b,0,mib,8*mib,cancel.Token);}catch(OperationCanceledException){refused=true;}
         if(!refused)throw new IOException("Cancellation ignored.");events.Add("comparison-cancellation");
-        var result=JsonSerializer.Serialize(new{passed=true,events,scope="Pure recovery validation and complete ordinary-file comparison; no physical disk writes."},new JsonSerializerOptions{WriteIndented=true});
+        var result=JsonSerializer.Serialize(new{passed=true,events,scope="Pure recovery validation, in-memory firmware rollback/retry and complete ordinary-file comparison; no physical disk or firmware writes."},new JsonSerializerOptions{WriteIndented=true});
         File.WriteAllText(Path.Combine(directory,"result.json"),result);return result;
+    }
+
+    private static void CheckFirmwareRetry(string directory, List<string> events)
+    {
+        var run = Path.Combine(directory, "firmware-retry"); Directory.CreateDirectory(run);
+        var esp = new PreparedPartition(17, "esp", new Guid("c12a7328-f81f-11d2-ba4b-00a0c93ec93b"), Guid.NewGuid(), 1048576, 64 * 1048576, 0);
+        var store = new Dictionary<string, (byte[] Data, uint Attributes)> { ["BootOrder"] = (new byte[] { 1, 0 }, 7), ["Boot0001"] = (new byte[] { 42 }, 7) };
+        (byte[] Data, uint Attributes)? Read(string name) => store.TryGetValue(name, out var value) ? (value.Data.ToArray(), value.Attributes) : null;
+        var reject = true;
+        void Write(string name, byte[] data, uint attributes)
+        {
+            if (name == "BootOrder" && reject) throw new IOException("Injected firmware order failure.");
+            if (data.Length == 0) store.Remove(name); else store[name] = (data.ToArray(), attributes);
+        }
+        try { FirmwareBoot.RegisterCore(esp, run, false, Read, Write); throw new IOException("Expected firmware failure."); }
+        catch (IOException error) when (error.Message == "Injected firmware order failure.") { }
+        if (!store["BootOrder"].Data.SequenceEqual(new byte[] { 1, 0 }) || store.ContainsKey("Boot6000"))
+            throw new IOException("Firmware failure did not roll back.");
+        events.Add("firmware-failed-attempt-rolled-back-in-memory");
+        var originalReceipt = File.ReadAllBytes(Path.Combine(run, "firmware-before.json"));
+        foreach (var fault in new[] { "outside-order", "outside-attributes", "leftover-entry", "changed-esp", "changed-choice", "malformed", "oversized", "outside-entry-range", "success-result" })
+        {
+            var refusedRun = Path.Combine(directory, "firmware-refuse-" + fault); Directory.CreateDirectory(refusedRun);
+            var receipt = Path.Combine(refusedRun, "firmware-before.json");
+            File.WriteAllBytes(receipt, originalReceipt);
+            var currentOrder = store["BootOrder"];
+            if (fault == "outside-order") store["BootOrder"] = (new byte[] { 7, 0 }, 7);
+            if (fault == "outside-attributes") store["BootOrder"] = (new byte[] { 1, 0 }, 3);
+            if (fault == "leftover-entry") store["Boot6000"] = (FirmwareBoot.LoadOption(esp), 7);
+            if (fault == "malformed") File.WriteAllText(receipt, "{}");
+            if (fault == "oversized") File.WriteAllBytes(receipt, new byte[256 * 1024 + 1]);
+            if (fault == "outside-entry-range") File.WriteAllText(receipt, File.ReadAllText(receipt).Replace("Boot6000", "Boot0002", StringComparison.Ordinal));
+            if (fault == "success-result") File.WriteAllText(Path.Combine(refusedRun, "firmware-result.json"), "{}");
+            var beforeReceipt = File.ReadAllBytes(receipt);
+            var writes = 0; var refused = false;
+            try { FirmwareBoot.RegisterCore(fault == "changed-esp" ? esp with { Id = Guid.NewGuid() } : esp, refusedRun, fault == "changed-choice", Read, (_, _, _) => writes++); }
+            catch (IOException) { refused = true; }
+            if (!refused || writes != 0 || !File.ReadAllBytes(receipt).SequenceEqual(beforeReceipt)
+                || Directory.GetFiles(refusedRun, "firmware-before.retry-*.json").Length != 0)
+                throw new IOException("Unsafe firmware retry: " + fault);
+            events.Add("firmware-retry-refuses-" + fault + "-before-archive-or-write");
+            store["BootOrder"] = currentOrder; store.Remove("Boot6000");
+        }
+        reject = false;
+        FirmwareBoot.RegisterCore(esp, run, false, Read, Write);
+        if (!File.Exists(Path.Combine(run, "firmware-result.json")) || store.Count != 3 || !store["Boot0001"].Data.SequenceEqual(new byte[] { 42 }))
+            throw new IOException("Firmware retry did not register exactly one entry.");
+        events.Add("firmware-retry-after-rollback-uses-same-deployment-directory");
+        var archives = Directory.GetFiles(run, "firmware-before.retry-*.json");
+        if (archives.Length != 1 || !File.ReadAllBytes(archives[0]).SequenceEqual(originalReceipt))
+            throw new IOException("Previous firmware receipt evidence was lost during retry.");
+        events.Add("firmware-retry-preserves-original-receipt-exact-bytes");
     }
 }

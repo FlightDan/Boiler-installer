@@ -9,8 +9,8 @@ namespace OxpInstaller;
 // Installed on the new SteamOS ESP; the existing firmware registration points to its fallback loader.
 public sealed class BootOptionsPanel : StackPanel
 {
-    internal CheckBox InstallChoice { get; } = new() { IsChecked = true };
-    internal CheckBox MakeDefaultChoice { get; } = new() { IsChecked = true };
+    internal CheckBox InstallChoice { get; } = new() { IsChecked = true, FontSize = 18 };
+    internal CheckBox MakeDefaultChoice { get; } = new() { IsChecked = true, FontSize = 18 };
     private readonly TextBlock firmwareNote = new() { TextWrapping = TextWrapping.Wrap, Foreground = new SolidColorBrush(Color.FromRgb(97, 114, 138)), Margin = new Thickness(0, 4, 0, 12), LineHeight = 22 };
     private bool firmwareAvailable;
     internal bool MakeDefaultBoot => firmwareAvailable && MakeDefaultChoice.IsChecked == true;
@@ -30,11 +30,9 @@ public sealed class BootOptionsPanel : StackPanel
     {
         foreach (var choice in new[] { SteamOsChoice, WindowsChoice, ForeverChoice, TimedChoice })
             choice.SetResourceReference(FrameworkElement.StyleProperty, "TouchChoice");
-        Children.Add(Label("BIOS / UEFI 启动顺序", "BIOS / UEFI boot order", true));
         Children.Add(MakeDefaultChoice);
         Children.Add(firmwareNote);
         Children.Add(InstallChoice);
-        Children.Add(Label("安装到新建的 SteamOS EFI 分区，并备份原启动文件。", "Installs on the new SteamOS EFI partition and backs up its original loader."));
         Children.Add(settings);
         settings.Children.Add(Label("rEFInd 菜单默认系统", "Default system in the rEFInd menu", true));
         settings.Children.Add(Pair(SteamOsChoice, WindowsChoice));
@@ -44,7 +42,11 @@ public sealed class BootOptionsPanel : StackPanel
         var unit = Label("秒", "seconds"); unit.Margin = new Thickness(12, 0, 0, 0); unit.VerticalAlignment = VerticalAlignment.Center;
         timer.Children.Add(unit); settings.Children.Add(timer);
         settings.Children.Add(error);
-        settings.Children.Add(Label("勾选安装后随系统写入生效；Windows 入口按 EFI 分区识别。启动菜单使用手柄十字键或左摇杆选择，A / Start 确认，B 返回；OXP3 开机手柄支持待实机验证，也可用键盘。", "When selected, these settings are applied with the system. Windows uses its identified EFI partition. Use the D-pad or left stick to select, A / Start to confirm, B to return. OXP3 controller input at boot awaits device verification; keyboard input is also available."));
+        var details = new StackPanel();
+        details.Children.Add(Label("安装到新建的 SteamOS EFI 分区，并备份原启动文件。", "Installs on the new SteamOS EFI partition and backs up its original loader."));
+        details.Children.Add(Label("更改启动顺序前，请保存 BitLocker 恢复密钥。原启动顺序会备份，Windows 启动项保留。", "Save your BitLocker recovery key before changing boot order. The original order is backed up and the Windows entry is retained."));
+        details.Children.Add(Label("菜单可用键盘操作。手柄使用十字键或左摇杆选择，A / Start 确认，B 返回；开机手柄支持待实机验证。", "Use the keyboard, or the controller D-pad / left stick to select, A / Start to confirm and B to return. Controller input at boot awaits device verification."));
+        settings.Children.Add(new Expander { Header = Label("启动说明", "Boot details"), Content = details, MinHeight = 48 });
         InstallChoice.Checked += (_, _) => Update(); InstallChoice.Unchecked += (_, _) => Update();
         foreach (var radio in new[] { SteamOsChoice, WindowsChoice, ForeverChoice, TimedChoice }) radio.Checked += (_, _) => Update();
         Seconds.TextChanged += (_, _) => Update();
@@ -58,12 +60,12 @@ public sealed class BootOptionsPanel : StackPanel
         RefreshFirmwareNote();
     }
     private void RefreshFirmwareNote() => firmwareNote.Text = !firmwareAvailable
-        ? PartitionInventory.L("外部盘安装或虚拟盘演练不修改当前电脑的默认启动项。请在目标设备的 UEFI 启动菜单中选择安装盘。", "External installation and rehearsal keep this PC's boot order. Select the installation disk in the target device's UEFI boot menu.")
-        : PartitionInventory.L("默认勾选。安装完成后将 SteamOS (OXP3) 排到固件启动列表首位；安装 rEFInd 时重启先进入其菜单，否则直接进入 SteamOS。取消勾选则保留原顺序，可能仍先进入 Windows。原启动顺序会备份，Windows Boot Manager 保留。更改启动顺序可能触发 BitLocker 恢复，请提前保存恢复密钥并暂停保护。", "Selected by default. After installation, SteamOS (OXP3) becomes the first firmware boot entry. With rEFInd installed, restart opens its menu; otherwise it boots SteamOS directly. Uncheck to keep the original order, which may boot Windows first. The original order is backed up and Windows Boot Manager is retained. Boot order changes may trigger BitLocker recovery; save the recovery key and suspend protection first.");
+        ? PartitionInventory.L("在目标设备的启动菜单中选择安装盘。", "Choose the installation disk from the target device's boot menu.")
+        : PartitionInventory.L("重启进入 rEFInd 菜单；不安装菜单则直接进入 SteamOS。", "Restart opens rEFInd, or SteamOS directly if the menu is not installed.");
     private TextBlock Label(string zh, string en, bool heading = false)
     {
         var label = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = heading ? new SolidColorBrush(Color.FromRgb(25, 43, 67)) : Brushes.SlateGray,
-            FontWeight = heading ? FontWeights.SemiBold : FontWeights.Normal, FontSize = heading ? 16 : 14, Margin = new Thickness(0, heading ? 20 : 4, 0, 10), LineHeight = 22 };
+            FontWeight = heading ? FontWeights.SemiBold : FontWeights.Normal, FontSize = heading ? 17 : 14, Margin = new Thickness(0, heading ? 8 : 4, 0, heading ? 4 : 8), LineHeight = 22 };
         labels.Add((label, zh, en)); return label;
     }
     private static Grid Pair(UIElement first, UIElement second)
@@ -105,8 +107,8 @@ public sealed class BootOptionsPanel : StackPanel
     }
     public void Refresh()
     {
-        InstallChoice.Content = new TextBlock { Text = PartitionInventory.L("安装 rEFInd 双系统启动菜单", "Install rEFInd dual-boot menu"), TextWrapping = TextWrapping.Wrap };
-        MakeDefaultChoice.Content = new TextBlock { Text = PartitionInventory.L("将启动管理器设为默认启动项（推荐）", "Make the boot manager the default boot entry (recommended)"), TextWrapping = TextWrapping.Wrap };
+        InstallChoice.Content = new TextBlock { Text = PartitionInventory.L("安装 rEFInd 双系统启动菜单", "Install rEFInd dual-boot menu"), FontSize = 18, TextWrapping = TextWrapping.Wrap };
+        MakeDefaultChoice.Content = new TextBlock { Text = PartitionInventory.L("将启动管理器设为默认启动项", "Make the boot manager the default boot entry"), FontSize = 18, TextWrapping = TextWrapping.Wrap };
         RefreshFirmwareNote();
         SteamOsChoice.Content = "SteamOS"; WindowsChoice.Content = "Windows";
         ForeverChoice.Content = new TextBlock { Text = PartitionInventory.L("一直等待选择", "Wait for selection"), TextWrapping = TextWrapping.Wrap };

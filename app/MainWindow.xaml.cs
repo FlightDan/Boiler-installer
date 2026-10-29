@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace OxpInstaller;
 public partial class MainWindow : Window
@@ -22,19 +24,19 @@ public partial class MainWindow : Window
     }
     private void UpdateSourceSection()
     {
-        SourceSubitems.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
-        RecoverySourceSection.Visibility = sourceSection == 0 ? Visibility.Visible : Visibility.Collapsed;
-        OfficialSourceSection.Visibility = sourceSection == 1 ? Visibility.Visible : Visibility.Collapsed;
+        SourceSubitems.Visibility = Visibility.Collapsed;
+        RecoverySourceSection.Visibility = Visibility.Visible;
+        OfficialSourceSection.Visibility = installMode != "imported" && UsePrepared.IsChecked != true ? Visibility.Visible : Visibility.Collapsed;
         RecoverySourceTab.Background = new SolidColorBrush(sourceSection == 0 ? Color.FromRgb(37,63,95) : Colors.Transparent);
         OfficialSourceTab.Background = new SolidColorBrush(sourceSection == 1 ? Color.FromRgb(37,63,95) : Colors.Transparent);
         NavRecoverySource.Text = PartitionInventory.L("恢复镜像", "Recovery image");
-        NavOfficialSource.Text = PartitionInventory.L("3.10 镜像", "3.10 image");
+        NavOfficialSource.Text = PartitionInventory.L("升级包", "Upgrade bundle");
         NavRecoverySource.FontWeight = sourceSection == 0 ? FontWeights.SemiBold : FontWeights.Normal;
         NavOfficialSource.FontWeight = sourceSection == 1 ? FontWeights.SemiBold : FontWeights.Normal;
         if (step == 1)
         {
-            PageTitle.Text = sourceSection == 0 ? PartitionInventory.L("准备恢复镜像", "Prepare a recovery image") : PartitionInventory.L("准备 SteamOS 3.10 镜像", "Prepare the SteamOS 3.10 image");
-            PageSubtitle.Text = sourceSection == 0 ? PartitionInventory.L("下载或选择官方恢复镜像；可保留基础版本或选择升级 3.10。", "Download or select an official recovery image; keep its version or optionally upgrade to 3.10.") : PartitionInventory.L("下载或选择本地 3.10 镜像，安装时整合到恢复镜像中。", "Download or select a local 3.10 image to integrate into the recovery image during installation.");
+            PageTitle.Text = PartitionInventory.L("系统来源", "System source");
+            PageSubtitle.Text = PartitionInventory.L("准备官方恢复镜像和 SteamOS 升级包。拖入或选择文件后，对应卡片会自动收起；rootfs.img 版本将在后续安装准备中检查。", "Prepare the official recovery image and a SteamOS update bundle. Cards collapse after association; rootfs.img version is checked during installation preparation.");
         }
     }
     private CancellationTokenSource? operation;
@@ -49,10 +51,11 @@ public partial class MainWindow : Window
     private InstallerOptionsPanel optionsPanel = null!;
     private ImageDownloadPanel downloadPanel = null!;
     private OfficialDownloadPanel officialDownloadPanel = null!;
-    private bool DownloadsBusy => sourceInspectionBusy || deviceActionBusy || downloadPanel.IsBusy || officialDownloadPanel.IsBusy;
+    private bool DownloadsBusy => sourceInspectionBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || downloadPanel.IsBusy || officialDownloadPanel.IsBusy;
     private BootOptionsPanel bootPanel = null!;
     // Keep existing step identifiers stable for recovery and preview entry points.
     internal const int StorageStep = 7;
+    internal const int AdaptationStep = 8;
     public MainWindow(bool rehearsal = false)
     {
         physicalInstallation = !rehearsal;
@@ -61,11 +64,13 @@ public partial class MainWindow : Window
         PartitionSelector.DefaultCapacityGiB = physicalInstallation ? 64 : 128;
         PartitionSelector.AllowPhysicalDeletion = physicalInstallation;
         optionsPanel = new InstallerOptionsPanel(); ComponentOptionsHost.Children.Add(optionsPanel);
+        if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.Checked += CoreDeckyProviderChecked;
         optionsPanel.Changed += (_, _) => { if (ready) ConfigurationChanged(); };
         bootPanel = new BootOptionsPanel(); BootOptionsHost.Children.Add(bootPanel);
         downloadPanel = new ImageDownloadPanel(); DownloadHost.Children.Add(downloadPanel);
         officialDownloadPanel = new OfficialDownloadPanel(); OfficialDownloadHost.Children.Add(officialDownloadPanel);
         officialDownloadPanel.BusyChanged += _ => UpdateNavigationState();
+        officialDownloadPanel.SourceChanged += () => { ResetOfficialSourceInspection(); ConfigurationChanged(); };
         downloadPanel.Completed += path => { UsePrepared.IsChecked = false; ImagePath.Text = path; };
         downloadPanel.BusyChanged += busy =>
         {
@@ -75,10 +80,10 @@ public partial class MainWindow : Window
         EnglishLanguage.IsChecked = InstallerI18n.Language == "en-US";
         InstallerI18n.Apply(this); PartitionSelector.RefreshLanguage(); ready = true; UpdateTargetMode();
         PartitionSelector.Changed += () => { acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false; if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); } };
-        ImagePath.TextChanged += (_, _) => ConfigurationChanged();
-        SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
-        SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
-        SourcePage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, _) => ConfigurationChanged()));
+        ImagePath.TextChanged += (_, _) => { ResetImageInspection(); ConfigurationChanged(); RefreshWorkspace(); };
+        SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
+        SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
+        SourcePage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
         ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
         ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
         ContentPage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, _) => ConfigurationChanged()));
@@ -97,7 +102,8 @@ public partial class MainWindow : Window
                 "cancelled" => InstallerI18n.T("上次任务已停止。可以查看记录，再开始一次新的演练。"),
                 _ => InstallerI18n.T("上次任务未完成。可以查看记录，排查问题后重新演练。") };
         }
-        AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
+        CreateInputAssociationPanel(); CreateSystemSourceCards(); CreateAdaptationFlow(); AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
+        Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/boiler-app-icon.png"));
         RefreshBootPrerequisites();
         BootPrerequisitesCard.Visibility = physicalInstallation ? Visibility.Visible : Visibility.Collapsed;
         ShowBoilerHome();
@@ -106,11 +112,12 @@ public partial class MainWindow : Window
     private InstallationTargetKind Kind => ExternalTarget.IsChecked == true ? InstallationTargetKind.ExternalDisk : InstallationTargetKind.InternalShared;
     // Shared partition mounting is temporarily unavailable in the installer UI.
     // Explicitly clear persisted options so hiding the page cannot submit them.
-    internal SelectedOptions CurrentOptions => installMode == "imported"
-        ? new(1, [], [], InstallerI18n.Language, "system", InstallMode: "imported")
+    internal SelectedOptions CurrentOptions => installMode is "imported" or "local"
+        ? new(1, [], [], InstallerI18n.Language, "system", InstallMode: installMode)
         : optionsPanel.Selection with { StorageMounts = null, InstallMode = installMode, DevicePackage = selectedDevicePackage,
             DeviceManifestSha256 = selectedDeviceDigest, DeviceTrust = selectedDeviceTrust,
-            DeviceComponents = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray() };
+            DeviceComponents = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray(),
+            DeviceLegacyOptions = CurrentDeviceLegacyOptions };
     private InstallationRequest Request
     {
         get
@@ -119,18 +126,20 @@ public partial class MainWindow : Window
             return new(Kind, ImagePath.Text, UsePrepared.IsChecked == true, CurrentOptions,
                 Kind == InstallationTargetKind.InternalShared || physicalInstallation ? PartitionSelector.Selection : null,
                 physicalInstallation, Upgrade310.IsChecked == true, step == 3 ? bootPanel.Selection : null,
-                optionsPanel.InitialDeckPassword, bootPanel.MakeDefaultBoot, installMode, CurrentSourceDigest);
+                optionsPanel.InitialDeckPassword, bootPanel.MakeDefaultBoot, installMode, CurrentSourceDigest,
+                OfficialSource: Upgrade310.IsChecked == true && installMode != "imported" && UsePrepared.IsChecked != true ? CurrentOfficialSourceBinding : null);
         }
     }
     private void ShowStep(int value)
     {
         if (value == StorageStep) value = 3;
+        if (value != 2) optionsPanel.CancelPendingWirelessDetection();
         if (value != step) departedSteps[step] = true;
         step = value;
-        var pages = new[] { TargetPage, SourcePage, ContentPage, ReviewPage, BootPage, ProgressPage, ResultPage, StoragePage };
+        var pages = new[] { TargetPage, SourcePage, ContentPage, ReviewPage, BootPage, ProgressPage, ResultPage, StoragePage, AdaptationPage };
         for (var i = 0; i < pages.Length; i++) pages[i].Visibility = i == step ? Visibility.Visible : Visibility.Collapsed;
-        PageTitle.Text = new[] { InstallerI18n.T("SteamOS，装在你选择的位置"), InstallerI18n.T("准备你的 SteamOS 系统"), InstallerI18n.T("选择安装内容"), InstallerI18n.T("开始前，核对这次方案"), InstallerI18n.T("启动器安装"), InstallerI18n.T("正在完成安装演练"), InstallerI18n.T("本次演练结果"), PartitionInventory.L("挂载分区到 SteamOS", "Mount partitions in SteamOS") }[step];
-        PageSubtitle.Text = new[] { InstallerI18n.T("保留 Windows 双系统，或把完整系统装进外部设备。"), InstallerI18n.T("选好镜像，后面的系统准备交给安装助手。"), PartitionInventory.L("选择设备适配和插件。", "Choose device support and plugins."), InstallerI18n.T("只创建本工具自己的测试盘；所有结果都会记录。"), InstallerI18n.T("rEFInd 启动菜单与配置。"), InstallerI18n.T("保持电脑接通电源，完成前请不要移动工作目录。"), InstallerI18n.T("查看已完成的步骤，以及下一步需要处理的事项。"), PartitionInventory.L("可选步骤：访问两个系统共用的文件空间。", "Optional: access file storage shared by both systems.") }[step];
+        PageTitle.Text = new[] { InstallerI18n.T("SteamOS，装在你选择的位置"), InstallerI18n.T("准备你的 SteamOS 系统"), InstallerI18n.T("选择安装内容"), InstallerI18n.T("开始前，核对这次方案"), InstallerI18n.T("启动器安装"), InstallerI18n.T("正在完成安装演练"), InstallerI18n.T("本次演练结果"), PartitionInventory.L("挂载分区到 SteamOS", "Mount partitions in SteamOS"), PartitionInventory.L("选择设备适配方式", "Choose device support") }[step];
+        PageSubtitle.Text = new[] { InstallerI18n.T("保留 Windows 双系统，或把完整系统装进外部设备。"), InstallerI18n.T("选好镜像，后面的系统准备交给安装助手。"), PartitionInventory.L("选择设备适配和插件。", "Choose device support and plugins."), InstallerI18n.T("只创建本工具自己的测试盘；所有结果都会记录。"), InstallerI18n.T("rEFInd 启动菜单与配置。"), InstallerI18n.T("保持电脑接通电源，完成前请不要移动工作目录。"), InstallerI18n.T("查看已完成的步骤，以及下一步需要处理的事项。"), PartitionInventory.L("可选步骤：访问两个系统共用的文件空间。", "Optional: access file storage shared by both systems."), PartitionInventory.L("选择机型适配，或按通用配置安装。", "Choose a device package or use generic installation.") }[step];
         BackButton.Visibility = step is 1 or 2 or 3 or 4 ? Visibility.Visible : Visibility.Hidden;
         NextButton.Visibility = step == 5 ? Visibility.Collapsed : Visibility.Visible;
         StopButton.Visibility = step == 5 ? Visibility.Visible : Visibility.Collapsed;
@@ -146,6 +155,7 @@ public partial class MainWindow : Window
         bootPanel.SetFirmwareContext(physicalInstallation && Kind == InstallationTargetKind.InternalShared);
         UpdateNavigationState();
         RefreshBoilerNavigation();
+        BringActiveNavigationTargetIntoView(step);
         if (step == 5 && operation == null && session == null)
         {
             PageTitle.Text = ProgressTitle.Text = PartitionInventory.L("尚未开始安装", "Installation has not started");
@@ -165,6 +175,31 @@ public partial class MainWindow : Window
             ResultScope.Text = "";
         }
     }
+
+    private void BringActiveNavigationTargetIntoView(int requestedStep)
+    {
+        var target = requestedStep switch
+        {
+            0 => (FrameworkElement)TargetTab,
+            1 => SourceTab,
+            2 => ContentTab,
+            3 => ReviewTab,
+            4 => BootTab,
+            5 => ProgressTab,
+            6 => ResultTab,
+            AdaptationStep => AdaptationTab,
+            _ => null
+        };
+        if (target?.IsVisible != true) return;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+        {
+            if (step != requestedStep || homeScreen != null || WizardShell.Visibility != Visibility.Visible
+                || !target.IsVisible) return;
+            target.BringIntoView();
+        }));
+    }
+
     private void UpdateReview()
     {
         ReviewPartitionHost.Children.Clear();
@@ -176,8 +211,10 @@ public partial class MainWindow : Window
             if(!physicalInstallation) ReviewPartitionHost.Children.Add(new TextBlock { Text = PartitionInventory.L("以上为安装规划。以下演练使用独立 80 GiB 测试盘，规划不会写入所选设备。", "The layout above is a plan. The rehearsal below uses a separate 80 GiB test disk; it does not write this plan to the selected device."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,12,0,0) });
         }
         ReviewTarget.Text = Kind == InstallationTargetKind.InternalShared ? InstallerI18n.T("内置硬盘共存方案 · 80 GiB 虚拟测试盘") : InstallerI18n.T("外部完整系统方案 · 80 GiB 虚拟测试盘");
-        ReviewSource.Text = (installMode == "imported" ? PartitionInventory.L("预制镜像：", "Prebuilt image: ") : UsePrepared.IsChecked == true ? InstallerI18n.T("已准备系统：") : InstallerI18n.T("恢复镜像：")) + ImagePath.Text;
+        ReviewSource.Text = (installMode == "imported" ? PartitionInventory.L("本地 IMG 镜像：", "Local IMG: ") : UsePrepared.IsChecked == true ? InstallerI18n.T("已准备系统：") : InstallerI18n.T("恢复镜像：")) + ImagePath.Text;
         ReviewSource.Text += "\n" + SystemVersionSummary();
+        if (CurrentOfficialSourceBinding is { } officialSource && Upgrade310.IsChecked == true)
+            ReviewSource.Text += "\n" + OfficialSourceVersionDescription(officialSource.Path) + "\n" + officialSource.Path + "\nSHA-256: " + officialSource.Sha256;
         if (CurrentSourceDigest != null && inspectedSourceInfo is { } sourceInfo) ReviewSource.Text += "\n" + DescribeSourceInfo(sourceInfo);
         ReviewLayout.Text = Kind == InstallationTargetKind.InternalShared
             ? InstallerI18n.T("保留：测试盘已有的 EFI / NTFS 分区与数据。\n新增：SteamOS 启动分区、A/B 系统和独立数据空间。\n测试盘中没有真正的 Windows 操作系统。")
@@ -195,12 +232,19 @@ public partial class MainWindow : Window
         ReviewExecutionNote.Text = physicalInstallation
             ? PartitionInventory.L("安装会格式化目标范围内新建的 SteamOS 分区，原有内容将被清空。请保存好重要数据。开始写入时将请求管理员权限。", "Installation formats the new SteamOS partitions in the target range, erasing their contents. Back up important data. Administrator permission is requested before writing.")
             : PartitionInventory.L("演练只写入独立虚拟盘，不会写入所选实际设备。", "Rehearsal writes only an independent virtual disk, not the selected physical device.");
-        if (installMode != "imported") ReviewLayout.Text += "\n\n" + optionsPanel.Describe();
+        if (installMode is not ("imported" or "local")) ReviewLayout.Text += "\n\n" + optionsPanel.Describe();
         if (selectedDevicePackage != null)
         {
             using var package = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(BoilerProtocol.PackageRoot, selectedDevicePackage, "manifest.json")));
             ReviewSource.Text += "\n" + package.RootElement.GetProperty("id").GetString() + " · " + package.RootElement.GetProperty("version").GetString()
                 + "\nSHA-256: " + selectedDeviceDigest + "\n" + string.Join(", ", CurrentOptions.DeviceComponents ?? []);
+            if (CurrentOptions.DeviceLegacyOptions is { } legacy)
+                ReviewLayout.Text += "\n\n" + PartitionInventory.L("OXP3 适配：", "OXP3 adaptations: ")
+                    + string.Join(", ", deviceLegacyChoices.Where(pair => pair.Value.IsChecked == true)
+                        .Select(pair => PreviewText((System.Text.Json.JsonElement)pair.Value.Tag, "name", pair.Key)))
+                    + "\n" + (legacy.AcknowledgeLegacyUpdateHold
+                        ? PartitionInventory.L("为保留适配，已选择暂停安装后进入系统时的首次更新。", "The first system update after installation will be paused to preserve device support.")
+                        : PartitionInventory.L("尚未选择暂停安装后进入系统时的首次更新。", "The first system update pause is not selected."));
         }
         RefreshWorkspace();
     }
@@ -210,11 +254,16 @@ public partial class MainWindow : Window
         BrowseWorkspaceButton.Content = PartitionInventory.L("选择文件夹…", "Choose folder…");
         WorkspacePath.Text = InstallerWorkspace.DirectoryPath;
         WorkspaceNote.Text = PartitionInventory.L("工作空间至少 45 GiB，建议预留 64 GiB。下载与临时镜像存放于此；旧任务和额外下载需另留空间。", "Workspace: at least 45 GiB; 64 GiB recommended. Downloads and temporary images are stored here; allow extra space for old tasks and additional downloads.");
+        if (installMode == "imported") WorkspaceNote.Text = PartitionInventory.L("镜像检查与安装副本存放于此，所需空间随镜像大小变化；启动配置与扩容可能需要额外空间。", "Image inspection and installation copies are stored here. Space needs depend on image size; boot configuration and expansion may need additional space.");
+        var unknownExpandedSize = installMode == "imported" && ImagePath.Text.EndsWith(".img.bz2", StringComparison.OrdinalIgnoreCase);
+        if (unknownExpandedSize) WorkspaceNote.Text = PartitionInventory.L("BZ2 未提供展开大小，当前仅显示基础空间要求；解压与安装各阶段将核对实际需求，请另留副本空间。", "BZ2 does not declare its expanded size. Only the base workspace requirement is shown; expansion and installation check actual needs at each stage. Allow extra space for copies.");
         if (InstallerWorkspace.LoadError != null) WorkspaceNote.Text = PartitionInventory.L("无法读取之前的工作目录，已使用默认目录；请重新选择。", "The saved workspace could not be loaded. Using the default; choose a folder again.");
         try {
             var available = MediaSpace.Available(Directory.Exists(InstallerWorkspace.DirectoryPath) ? InstallerWorkspace.DirectoryPath : Path.GetPathRoot(InstallerWorkspace.DirectoryPath)!);
-            var estimate = MediaSpace.InstallationBudget(physicalInstallation, UsePrepared.IsChecked == true);
+            var estimate = installMode == "imported" ? BoilerImage.WorkspaceBudget(ImagePath.Text, physicalInstallation)
+                : MediaSpace.InstallationBudget(physicalInstallation, UsePrepared.IsChecked == true);
             SpaceText.Text = PartitionInventory.L($"可用 {available / 1073741824d:F1} GiB · 本次最低可用空间 {estimate / 1073741824d:F1} GiB{(physicalInstallation ? "" : "（含 80 GiB 演练盘）")}；每阶段会再次核对实际需求。", $"Available {available / 1073741824d:F1} GiB · Minimum free space for this run: {estimate / 1073741824d:F1} GiB{(physicalInstallation ? "" : " (includes an 80 GiB rehearsal disk)")}; actual needs are checked at each stage.");
+            if (unknownExpandedSize) SpaceText.Text = PartitionInventory.L($"可用 {available / 1073741824d:F1} GiB · 基础工作空间 {estimate / 1073741824d:F1} GiB；不含 BZ2 展开与安装副本的全部空间。", $"Available {available / 1073741824d:F1} GiB · Base workspace {estimate / 1073741824d:F1} GiB; excludes the full space for BZ2 expansion and installation copies.");
         } catch (Exception error) { SpaceText.Text = error.Message; }
     }
     private void BrowseWorkspace(object sender, RoutedEventArgs e)
@@ -230,6 +279,7 @@ public partial class MainWindow : Window
             if (UsePrepared.IsChecked == true) ImagePath.Clear();
             downloadPanel.RefreshWorkspace();
             officialDownloadPanel.RefreshWorkspace();
+            ResetOfficialSourceInspection();
             UpdateRecovery(); ConfigurationChanged(); ValidationMessage.Text = "";
         } catch (Exception error) { ValidationMessage.Text = error.Message; }
         RefreshWorkspace();
@@ -239,7 +289,13 @@ public partial class MainWindow : Window
         if (!ready || sender is not RadioButton item || operation != null || DownloadsBusy) return;
         var previousAcknowledgement = acknowledgedSelection;
         InstallerI18n.SetLanguage((string)item.Tag); InstallerI18n.Apply(this); optionsPanel.Refresh(); bootPanel.Refresh(); downloadPanel.RefreshLanguage(); officialDownloadPanel.RefreshLanguage(); PartitionSelector.RefreshLanguage(); UpdateTargetMode(); ShowStep(step);
+        BuildAdaptationCards();
+        if (previewDeviceName != null) RenderPackageOptionPreview();
+        RefreshDeviceOptionLabels();
         RefreshBootPrerequisites();
+        RefreshDeviceLanguage();
+        RefreshInputAssociationLanguage();
+        RefreshSystemSourceCards();
         if (previousAcknowledgement != null && previousAcknowledgement == PartitionSelector.Selection) acknowledgedSelection = previousAcknowledgement;
         if (step == 6 && session != null && operation == null) ShowResult(session);
     }
@@ -261,37 +317,53 @@ public partial class MainWindow : Window
     private void BrowseImage(object sender, RoutedEventArgs e)
     {
         if (DownloadsBusy) return;
-        var dialog = new OpenFileDialog { Filter = installMode == "imported" ? "SteamOS / Boiler|*.img;*.img.bz2;*.zip" : UsePrepared.IsChecked == true ? InstallerI18n.T("已准备系统镜像|prepared.img") : InstallerI18n.T("SteamOS 恢复镜像|*.img;*.img.bz2;*.img.zip"), InitialDirectory = InstallerWorkspace.DirectoryPath };
+        var dialog = new OpenFileDialog { Filter = installMode == "imported" ? PartitionInventory.L("SteamOS IMG 镜像|*.img|压缩镜像或 Boiler 包|*.img.bz2;*.zip", "SteamOS IMG image|*.img|Compressed image or Boiler package|*.img.bz2;*.zip") : UsePrepared.IsChecked == true ? InstallerI18n.T("已准备系统镜像|prepared.img") : InstallerI18n.T("SteamOS 恢复镜像|*.img;*.img.bz2;*.img.zip"), InitialDirectory = InstallerWorkspace.DirectoryPath };
         if (dialog.ShowDialog(this) == true) { ImagePath.Text = dialog.FileName; ValidationMessage.Text = ""; }
     }
     private void Back(object sender, RoutedEventArgs e)
     {
-        if (operation != null || DownloadsBusy) return;
-        if (step == 1 && sourceSection == 1) { sourceSection = 0; ShowStep(1); }
-        else { var route = installMode == "imported" ? boilerRoute.Where(value => value != 2).ToArray() : boilerRoute; var index = Array.IndexOf(route, step); if (index > 0) ShowStep(route[index - 1]); else ShowBoilerHome(); }
+        if (operation != null || DownloadsBusy || deviceActionBusy) return;
+        if (BackWithinAdaptation()) return;
+        var route = installMode is "imported" or "local" ? boilerRoute.Where(value => value is not (2 or AdaptationStep)).ToArray() : boilerRoute;
+        var index = Array.IndexOf(route, step); if (index > 0) ShowStep(route[index - 1]); else ShowBoilerHome();
     }
     private async void Next(object sender, RoutedEventArgs e)
     {
-        if (operation != null || DownloadsBusy) return;
+        if (operation != null || DownloadsBusy || deviceActionBusy) return;
         if (physicalInstallation && (!bootPrerequisitesAcknowledged || BootPrerequisitesOverlay.Visibility == Visibility.Visible)) { ShowBootPrerequisites(null, null); return; }
         try
         {
-            if (step == 0)
+            if (step == 3 && ContentIssue() is string invalidContent) throw new IOException(invalidContent);
+            if (step == AdaptationStep)
+            {
+                if (DeviceSupportIssue() is string supportIssue) throw new IOException(supportIssue);
+                ShowStep(1);
+            }
+            else if (step == 0)
             {
                 if (Kind == InstallationTargetKind.InternalShared || physicalInstallation) _ = PartitionSelector.Selection;
+                if (TargetIssue() is string targetIssue) throw new IOException(targetIssue);
                 if (physicalInstallation) OpenSafetyConfirmation(); else ShowStep(4);
             }
             else if (step == 1)
             {
-                if (SourceIssue(includeOfficial: sourceSection == 1) is string issue) throw new IOException(issue);
-                if (sourceSection == 0 && UsePrepared.IsChecked != true && installMode != "imported") { await InspectSourceAsync(); sourceSection = 1; ShowStep(1); }
-                else { await InspectSourceAsync(); ShowStep(installMode == "imported" ? 0 : 2); }
+                if (DeviceSupportIssue() is string supportIssue) { ShowStep(AdaptationStep); ValidationMessage.Text = supportIssue; return; }
+                if (SourceIssue() is string issue) throw new IOException(issue);
+                await InspectSourceAsync(includeOfficial: UsePrepared.IsChecked != true && installMode != "imported" && Upgrade310.IsChecked == true);
+                if (installMode is "imported" or "local") ShowStep(0); else EnterInstallationOptionsAfterSource();
             }
-            else if (step == 2) { InstallerOptions.Validate(CurrentOptions); optionsPanel.ValidateDeckPassword(); ShowStep(0); }
+            else if (step == 2)
+            {
+                if (ContentIssue() is string issue) throw new IOException(issue);
+                optionsPanel.ValidateDeckPassword();
+                if (SourceIssue(requireInspection: true) is string sourceIssue) { ShowStep(1); ValidationMessage.Text = sourceIssue; return; }
+                ShowStep(0);
+            }
             else if (step == 4) { ShowStep(3); }
             else if (step == 3) { if (SourceIssue(requireInspection: true) is string problem) throw new IOException(problem); RequirePhysicalConsent(); InstallationController.ValidateRequest(Request); if(physicalInstallation && (PhysicalConsent.IsChecked!=true || acknowledgedSelection != PartitionSelector.Selection)) throw new IOException(PartitionInventory.L("请返回安装位置，核对目标范围并确认备份，然后确认安装方案。","Return to installation location, confirm the target range and backup, then approve the installation plan.")); var request = Request; optionsPanel.ClearSensitiveInputs(); await StartAsync(request); }
             else if (step == 6) { ShowBoilerHome(); }
         }
+        catch (OperationCanceledException) { ValidationMessage.Text = PartitionInventory.L("MD5 计算已取消，可重试。", "MD5 calculation cancelled. You can retry."); }
         catch (Exception error) { ValidationMessage.Text = error.Message; }
     }
     private void RequirePhysicalConsent()
@@ -351,11 +423,24 @@ public partial class MainWindow : Window
     {
         if (MainContent == null || TargetChoices == null) return;
         var width = WindowRoot.ActualWidth > 0 ? WindowRoot.ActualWidth : Width;
+        var height = WindowRoot.ActualHeight > 0 ? WindowRoot.ActualHeight : Height;
         var compact = width < 960;
         var stackedChoices = width < 800;
-        SidebarColumn.Width = new GridLength(compact ? 152 : 176);
-        MainContent.Margin = compact ? new Thickness(14,12,14,10) : new Thickness(20,16,20,12);
-        PageTitle.FontSize = compact ? 20 : 22;
+        var shortSidebar = height < 420;
+        SidebarColumn.Width = new GridLength(compact ? 152 : 216);
+        SidebarBody.Margin = shortSidebar ? new Thickness(12,8,12,8)
+            : compact ? new Thickness(12,16,12,12) : new Thickness(24,32,24,24);
+        var sidebarHeader = SidebarBody.Children.OfType<StackPanel>().FirstOrDefault(child => Grid.GetRow(child) == 0);
+        if (sidebarHeader?.Children.Count >= 3)
+        {
+            var secondaryHeaderVisibility = shortSidebar ? Visibility.Collapsed : Visibility.Visible;
+            if (sidebarHeader.Children[1] is FrameworkElement subtitle) subtitle.Visibility = secondaryHeaderVisibility;
+            if (sidebarHeader.Children[2] is FrameworkElement releaseVersion) releaseVersion.Visibility = secondaryHeaderVisibility;
+        }
+        SidebarTitle.FontSize = compact ? 20 : 24;
+        SidebarLogo.Width = SidebarLogo.Height = compact ? 28 : 36;
+        MainContent.Margin = compact ? new Thickness(16,16,16,16) : new Thickness(40,32,32,32);
+        PageTitle.FontSize = compact ? 22 : 28;
         // Keep one vertical gesture surface; do not nest a scrollable disk table inside it.
         PartitionSelector.FreeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         PartitionSelector.TypeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
@@ -363,6 +448,8 @@ public partial class MainWindow : Window
         Grid.SetColumnSpan(InternalTarget, stackedChoices ? 2 : 1);
         Grid.SetColumn(ExternalTarget, stackedChoices ? 0 : 1); Grid.SetRow(ExternalTarget, stackedChoices ? 1 : 0); Grid.SetColumnSpan(ExternalTarget, stackedChoices ? 2 : 1);
         InternalTarget.Margin = new Thickness(0,0,stackedChoices ? 0 : 10,12);
+        UpdateBoilerHomeLayout();
+        UpdateAdaptationLayout();
         UpdateLogLayout();
     }
     private void ToggleFullscreen(object sender, RoutedEventArgs e)
@@ -457,6 +544,8 @@ public partial class MainWindow : Window
             {
                 var failed = group.Where(x => x.GetProperty("status").GetString() != "files_installed").ToArray();
                 var label = names.TryGetValue(group.Key, out var item) ? (InstallerI18n.Language == "en-US" ? item.En : item.Zh)
+                : group.Key.StartsWith("graphics:", StringComparison.Ordinal) ? GraphicsCatalogue.Read().FirstOrDefault(profile => profile.Id == group.Key)?.Label ?? group.Key
+                : group.Key == "core:system-presets" ? PartitionInventory.L("系统语言与账户预设", "System language and account presets")
                 : group.Key == "deck-access" ? PartitionInventory.L("账户与 SSH 设置", "Account and SSH settings")
                 : group.Key == "shared-storage" ? PartitionInventory.L("共享分区挂载", "Shared partition mounts")
                 : group.Key == "maintenance-tool" ? PartitionInventory.L("修复与更新工具", "Repairs and project updates")
@@ -469,6 +558,8 @@ public partial class MainWindow : Window
                 if (uncovered.Length > 0 && failed.Length == 0) return label + ": " + PartitionInventory.L(
                     "部分固件已预装；以下需求尚未覆盖，相关硬件不可据此认定受支持：", "Partial firmware preinstallation; these requirements remain uncovered and affected hardware is not verified: ")
                     + string.Join(", ", uncovered);
+                if (group.Key.StartsWith("graphics:", StringComparison.Ordinal) && failed.Length == 0)
+                    return label + ": " + PartitionInventory.L("固件与启动文件已部署并复核；硬件效果需实机确认。", "Firmware and boot files were installed and verified; hardware behavior needs device testing.");
                 if (group.Key == "system-update-hold" && failed.Length == 0) return label + ": " + PartitionInventory.L(
                     "本次安装暂缓 SteamOS 系统更新；Steam 客户端与游戏更新不受影响。",
                     "This installation holds SteamOS system updates; Steam client and game updates are unaffected.");
@@ -557,10 +648,12 @@ public partial class MainWindow : Window
     private void OpenFolder(string path)
     { try { Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { path }, UseShellExecute = true }); } catch (Exception e) { ValidationMessage.Text = e.Message; } }
     private void OnClosing(object? sender, CancelEventArgs e)
-    { if (PartitionSelector.IsBusy) { e.Cancel = true; } else if (DownloadsBusy) { e.Cancel = true; if (officialDownloadPanel.IsBusy) officialDownloadPanel.Pause(); else downloadPanel.Pause(); } else if (operation != null) { e.Cancel = true; closeAfterCleanup = true; Stop(this, new RoutedEventArgs()); } }
+    { if (PartitionSelector.IsBusy) { e.Cancel = true; } else if (inputInspectionBusy || inputAssociationBusy) { e.Cancel = true; inputCancellation?.Cancel(); } else if (DownloadsBusy) { e.Cancel = true; if (officialDownloadPanel.IsBusy) officialDownloadPanel.Pause(); else downloadPanel.Pause(); } else if (operation != null) { e.Cancel = true; closeAfterCleanup = true; Stop(this, new RoutedEventArgs()); } }
     internal void PreviewStep(int previewStep)
     {
-        if (previewStep is < 0 or > StorageStep) throw new ArgumentOutOfRangeException(nameof(previewStep));
+        if (previewStep is < 0 or > AdaptationStep) throw new ArgumentOutOfRangeException(nameof(previewStep));
+        if (homeScreen != null) { WindowRoot.Children.Remove(homeScreen); homeScreen = null; }
+        WizardShell.Visibility = Visibility.Visible;
         ShowStep(previewStep);
         if (previewStep == 5)
         {

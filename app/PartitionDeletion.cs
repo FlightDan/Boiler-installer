@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace OxpInstaller;
 
-public sealed record PartitionDeleteRequest(string Snapshot, bool Example, int Disk, long Start, string Language);
+public sealed record PartitionDeleteRequest(string Snapshot, bool Example, int Disk, long Start, string Language, long[]? SteamOsStarts = null);
 
 public static class PartitionDeletion
 {
@@ -41,41 +41,53 @@ public static class PartitionDeletion
 
     internal static (InventoryDisk Disk, PartitionRow Row) Validate(PartitionDeleteRequest request)
     {
+        var (disk, rows) = ValidateTargets(request);
+        return (disk, rows[0]);
+    }
+    internal static (InventoryDisk Disk, PartitionRow[] Rows) ValidateTargets(PartitionDeleteRequest request)
+    {
         var disk = PartitionInventory.Read(request.Snapshot).Single(d => d.Number == request.Disk);
-        var row = disk.Rows.Single(r => r.Start == request.Start);
-        if (!row.CanDelete) throw new InvalidOperationException(L("此分区受保护或无法安全识别，不能删除。", "This partition is protected or cannot be safely identified for deletion."));
-        return (disk, row);
+        var starts = request.SteamOsStarts ?? [request.Start];
+        if (starts.Length is < 1 or > 128 || starts.Distinct().Count() != starts.Length || starts.Min() != request.Start)
+            throw new InvalidOperationException("Invalid deletion selection.");
+        var rows = starts.Order().Select(start => disk.Rows.SingleOrDefault(r => r.Start == start)
+            ?? throw new InvalidOperationException("Selected partition is missing.")).ToArray();
+        if (rows.Any(r => !r.CanDelete || request.SteamOsStarts != null && r.SteamOsRole == null))
+            throw new InvalidOperationException(L("所选分区受保护，或无法确认属于 SteamOS 布局。请刷新后重新选择。", "A selected partition is protected or cannot be identified as part of a SteamOS layout. Refresh and select again."));
+        return (disk, rows);
     }
 
     internal static string Simulate(PartitionDeleteRequest request)
     {
         if (!request.Example) throw new InvalidOperationException("Simulation requires an example layout.");
-        Validate(request);
+        var (_, rows) = ValidateTargets(request);
         var root = JsonNode.Parse(request.Snapshot)!.AsArray();
         var disk = root.Single(d => (int)d!["number"]! == request.Disk)!;
         var parts = disk["partitions"]!.AsArray();
-        parts.Remove(parts.Single(p => (long)p!["offset"]! == request.Start));
+        foreach (var row in rows) parts.Remove(parts.Single(p => (long)p!["offset"]! == row.Start));
         return root.ToJsonString();
     }
 
     internal static Window Confirmation(PartitionDeleteRequest request)
     {
-        var (disk, row) = Validate(request);
-        var window = new Window { Title = L("删除选定分区", "Delete selected partition"), Width = 580, SizeToContent = SizeToContent.Height,
+        var (disk, rows) = ValidateTargets(request);
+        var bulk = request.SteamOsStarts != null;
+        var window = new Window { Title = bulk ? L("删除 SteamOS 分区", "Delete SteamOS partitions") : L("删除选定分区", "Delete selected partition"), Width = 580, SizeToContent = SizeToContent.Height,
             MaxHeight = SystemParameters.WorkArea.Height, WindowStartupLocation = WindowStartupLocation.CenterScreen,
             ResizeMode = ResizeMode.NoResize, FontSize = 15, Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(25,43,67)) };
         var panel = new StackPanel { Margin = new Thickness(24) };
         void Text(string value, bool title = false) => panel.Children.Add(new TextBlock { Text = value, TextWrapping = TextWrapping.Wrap,
             FontSize = title ? 21 : 15, FontWeight = title ? FontWeights.SemiBold : FontWeights.Normal, Margin = new Thickness(0,0,0,16) });
-        Text(request.Example ? L("模拟删除 · 不影响真实磁盘", "Simulate deletion · no real disk changes") : L("此分区中的所有文件都将丢失", "All files in this partition will be lost"), true);
-        Text(disk.Title + "\n" + row.Name + " · " + row.Type + " · " + row.CapacityText);
-        Text(L($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）。未识别文件系统不代表没有数据；可能包含 Linux 或其他系统。", $"Byte range: {row.Start}–{checked(row.Start + row.Size)} (exclusive end). An unrecognized filesystem may contain data, Linux or another OS."));
-        Text(L("删除的是整个分区，包括已用和可用空间。确认后立即删除，不会等到开始安装；返回或退出安装助手都不能撤销。其他分区将保留。", "The entire partition is deleted, including used and free space. Deletion happens immediately, before installation. Going back or exiting cannot undo it. Other partitions are kept."));
-        var consent = new CheckBox { Name = "DeleteConsent", Content = new TextBlock { Text = L("我已备份需要的文件，确认清空上面选定的分区。", "I have backed up my files and agree to erase the partition shown above."), TextWrapping = TextWrapping.Wrap } };
+        Text(request.Example ? L("模拟删除 · 不影响真实磁盘", "Simulate deletion · no real disk changes") : L("所选分区中的所有文件都将丢失", "All files in the selected partitions will be lost"), true);
+        Text(disk.Title + "\n" + L($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total"));
+        foreach (var row in rows) Text(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + L($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
+        Text(L("删除的是整个分区，包括系统、游戏和个人文件。确认后立即删除，不会等到开始安装；返回或退出不能撤销。", "Whole partitions are erased, including their system, games and personal files. Deletion happens immediately, before installation. Going back or exiting cannot undo it."));
+        if (bulk) Text(L("未选分区及受保护的 EFI / Windows / 恢复分区将保留。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "Unselected partitions and protected EFI / Windows / recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
+        var consent = new CheckBox { Name = "DeleteConsent", Content = new TextBlock { Text = L("我已备份需要的文件，确认清空以上全部所选分区。", "I have backed up my files and agree to erase every selected partition shown above."), TextWrapping = TextWrapping.Wrap } };
         panel.Children.Add(consent);
         var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0,16,0,0) };
         var cancel = new Button { Content = L("取消", "Cancel"), IsCancel = true, IsDefault = true };
-        var confirm = new Button { Name = "DeleteConfirm", Content = request.Example ? L("模拟删除", "Simulate deletion") : L("立即删除此分区", "Delete partition now"), IsEnabled = false,
+        var confirm = new Button { Name = "DeleteConfirm", Content = request.Example ? L("模拟删除", "Simulate deletion") : bulk ? L($"立即删除 {rows.Length} 个分区", $"Delete {rows.Length} partitions now") : L("立即删除此分区", "Delete partition now"), IsEnabled = false,
             Background = new SolidColorBrush(Color.FromRgb(163,47,35)), Foreground = Brushes.White };
         consent.Checked += (_, _) => confirm.IsEnabled = true; consent.Unchecked += (_, _) => confirm.IsEnabled = false;
         confirm.Click += (_, _) => { if (consent.IsChecked == true) window.DialogResult = true; };

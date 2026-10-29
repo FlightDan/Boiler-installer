@@ -1,0 +1,3 @@
+* text eol=lf
+# Preserve the supplementary license document's exact inventoried bytes.
+licenses/GPL-2.0.txt -text

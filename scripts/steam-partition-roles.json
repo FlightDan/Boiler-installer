@@ -1,0 +1,10 @@
+[
+  { "name": "esp", "gptType": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" },
+  { "name": "efi-A", "gptType": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7" },
+  { "name": "efi-B", "gptType": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7" },
+  { "name": "rootfs-A", "gptType": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709" },
+  { "name": "rootfs-B", "gptType": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709" },
+  { "name": "var-A", "gptType": "4d21b016-b534-45c2-a9fb-5c16e091fd2d" },
+  { "name": "var-B", "gptType": "4d21b016-b534-45c2-a9fb-5c16e091fd2d" },
+  { "name": "home", "gptType": "933ac7e1-2eb4-4f13-b844-0e14e2aef915" }
+]

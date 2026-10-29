@@ -111,7 +111,7 @@ public static class OptionsChecks
         CheckAcceptedReview(window, events);
         return JsonSerializer.Serialize(new { passed = true, events, desktopLanguageDefaults }, new JsonSerializerOptions { WriteIndented = true });
     }
-    private static List<JsonElement> CheckDesktopLanguageDefaults(List<string> events)
+    internal static List<JsonElement> CheckDesktopLanguageDefaults(List<string> events)
     {
         var original = InstallerI18n.Language;
         var defaults = new List<JsonElement>();
@@ -125,22 +125,23 @@ public static class OptionsChecks
                 Require(!panel.Children.OfType<TextBlock>().Any(x => x.Text.Contains("系统更新") || x.Text.Contains("system updates"))
                     && !panel.Describe().Contains("系统更新") && !panel.Describe().Contains("system updates"),
                     "no-system-update-pause-disclosure-" + language);
-                var expected = language == "zh-CN" ? "zh_CN" : "en_US";
+                var expected = InstallerOptions.DefaultKdeLanguage;
                 Require(panel.Selection.KdeLanguage == expected && InstallerOptions.Defaults.KdeLanguage == expected,
-                    "desktop-default-follows-installer-" + language);
+                    "desktop-default-follows-windows-" + language);
                 var selection = panel.Selection;
                 InstallerOptions.Validate(selection);
                 defaults.Add(JsonSerializer.SerializeToElement(selection, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
                 var changes = 0; panel.Changed += (_, _) => changes++;
                 InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN"); panel.Refresh();
-                Require(panel.Selection.KdeLanguage == (language == "zh-CN" ? "en_US" : "zh_CN"),
-                    "untouched-desktop-follows-language-switch-" + language);
-                Require(changes == 1, "automatic-desktop-language-notifies-plan-" + language);
+                Require(panel.Selection.KdeLanguage == expected,
+                    "untouched-desktop-keeps-windows-language-" + language);
+                Require(changes == 0, "installer-language-does-not-edit-desktop-plan-" + language);
                 changes = 0;
                 foreach (var manual in new[] { "system", "zh_TW", "zh_CN", "en_US" })
                 {
+                    var previous = panel.Selection.KdeLanguage;
                     panel.KdeChoice.SelectedItem = panel.KdeChoice.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == manual);
-                    Require(changes > 0, "manual-desktop-language-notifies-plan-" + language + "-" + manual);
+                    Require(previous == manual ? changes == 0 : changes > 0, "manual-desktop-language-notifies-plan-" + language + "-" + manual);
                     changes = 0;
                     InstallerI18n.SetLanguage("zh-CN"); panel.Refresh();
                     InstallerI18n.SetLanguage("en-US"); panel.Refresh();

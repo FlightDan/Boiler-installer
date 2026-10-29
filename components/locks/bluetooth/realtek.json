@@ -1,0 +1,535 @@
+{
+  "files": [
+    {
+      "git_blob": "7e5bcc0e6060732578ad8b6e7b0694e93100eef8",
+      "sha256": "40b7a23507f4190758bc616e0293c4e5bae43a8216a89f79272a654018b8e430",
+      "size": 38764,
+      "source": "rtl_bt/rtl8192ee_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8192ee_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8192ee_fw.bin"
+    },
+    {
+      "git_blob": "7a13280cc2e845c0a48e40e293c4da911e3d9651",
+      "sha256": "7dcaafe1ff55322f04c100780d05f99bba434a4d584288ae10bfcc41ad52adf8",
+      "size": 37904,
+      "source": "rtl_bt/rtl8192eu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8192eu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8192eu_fw.bin"
+    },
+    {
+      "git_blob": "b736f91e830de3571eb44bb1f964823cce37d6fa",
+      "sha256": "756951ee36e417c0714b00547a6175d5d5decbe1e4cf7585f211019150c7cd10",
+      "size": 24548,
+      "source": "rtl_bt/rtl8723a_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723a_fw.bin"
+    },
+    {
+      "git_blob": "49b2a26f83d1724d5fb6d6d516522821bcb6fbbd",
+      "sha256": "c9c8a9f6ebd90b7449a7e4d38ee39952dc7cc47d6c1d054e42cfbb5e4d818853",
+      "size": 45048,
+      "source": "rtl_bt/rtl8723b_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723b_fw.bin"
+    },
+    {
+      "git_blob": "c20970a3f8940cc9f1aba513576d67535c343232",
+      "sha256": "a6319ce368257b45820fcf11f8821b6eea7ddcc649f59a282498bf7a33210103",
+      "size": 64,
+      "source": "rtl_bt/rtl8723bs_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723bs_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723bs_config.bin"
+    },
+    {
+      "git_blob": "5f77f80ab922de4f090cbd48fd7d3d752528bf01",
+      "sha256": "580b240cac28ff0f47bcbf5e32c1ada9c82541707732d4d78a6bce6540a9c2b3",
+      "size": 52116,
+      "source": "rtl_bt/rtl8723bs_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723bs_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723bs_fw.bin"
+    },
+    {
+      "git_blob": "0f507eddc70330b267bff501b1ebb96432b2887e",
+      "sha256": "492531d5a0a44ed5d0e174476543735eafe2cacc5ff5ce9e8e10092d303b563c",
+      "size": 63,
+      "source": "rtl_bt/rtl8723cs_xx_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723cs_xx_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723cs_xx_config.bin"
+    },
+    {
+      "git_blob": "972087ad1710d340bb37c9b93d4b6d5837fccae3",
+      "sha256": "4c6e0f8a356cadf19ee5de355f2a980c2335d0cbdf5b61945c8f5f57f754d6f0",
+      "size": 19732,
+      "source": "rtl_bt/rtl8723cs_xx_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723cs_xx_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723cs_xx_fw.bin"
+    },
+    {
+      "git_blob": "0997fd766c2a25beea7b74d1c09d14ffdbfa6cf9",
+      "sha256": "6b70723b2db9b658cd9535fe36f1494b4494699e1ad07920c9356f8bd90d9263",
+      "size": 52080,
+      "source": "rtl_bt/rtl8723d_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723d_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723d_fw.bin"
+    },
+    {
+      "git_blob": "ee4f20180b8b24333ed7caf5aeb3b10e3f8111c1",
+      "sha256": "581e5e81f5b51a29f475f8a276be95ad3210b3e3065987541c508e7f7a83a462",
+      "size": 74488,
+      "source": "rtl_bt/rtl8761a_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761a_fw.bin"
+    },
+    {
+      "git_blob": "99475ee3bad9502dca3dd92c38b47a229aecd36b",
+      "sha256": "6ddeb15f23588053e00cb08d25588bd7cf98d60fa93d9478efcef4ae8064a7ac",
+      "size": 25,
+      "source": "rtl_bt/rtl8761b_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761b_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761b_config.bin"
+    },
+    {
+      "git_blob": "aa99594136c73bb115c6d14af879cd4276bb559f",
+      "sha256": "4c50dac2714bad1a75944d1b770304fa3fbf84cd898942489c7eb2ef497ad53b",
+      "size": 45444,
+      "source": "rtl_bt/rtl8761b_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761b_fw.bin"
+    },
+    {
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761bu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin"
+    },
+    {
+      "git_blob": "1dc433ef281d4b76317b18c9707e087dbc170bc5",
+      "sha256": "1d7a9597349ad89344fa16c1913d3e39e9a12e966e417ca16871bc79bbe59edb",
+      "size": 44484,
+      "source": "rtl_bt/rtl8761bu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761bu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_fw.bin"
+    },
+    {
+      "git_blob": "018dcf93b1cbad5e865dfe6f27598382c90b4973",
+      "sha256": "3142c2732470e4edcdb68edf58cc505b581e38d56b3ec09c64eddcb1d5099507",
+      "size": 11,
+      "source": "rtl_bt/rtl8761cu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761cu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761cu_config.bin"
+    },
+    {
+      "git_blob": "475320d0bd5c982cc472422cb37d263f785a24f3",
+      "sha256": "525bfa5ab9a3ed74b788f9ac494467c522a436c1bc5290ebcb05c7f920533c09",
+      "size": 10296,
+      "source": "rtl_bt/rtl8761cu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761cu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761cu_fw.bin"
+    },
+    {
+      "git_blob": "8aca8d28f71d669eb69cd16f215ff6a11e1d97d0",
+      "sha256": "94e521c4c995d1e55b1d6e712b86d13894c258aab5e20a72b48881a8bbae196a",
+      "size": 40520,
+      "source": "rtl_bt/rtl8812ae_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8812ae_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8812ae_fw.bin"
+    },
+    {
+      "git_blob": "c7dffe993885108f847b8f695c6f4415cee4f937",
+      "sha256": "3ed5077f8f02ff2b06be257691dc72061efac976cd2dc174057833624c820b9d",
+      "size": 37420,
+      "source": "rtl_bt/rtl8821a_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821a_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821a_fw.bin"
+    },
+    {
+      "git_blob": "bb15fcd4312379eb7d2ebc26ad2240dc87031faf",
+      "sha256": "292717b0610ce920f66b734c299d349ea59a4c4400044078d8fc65625f17e382",
+      "size": 10,
+      "source": "rtl_bt/rtl8821c_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821c_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821c_config.bin"
+    },
+    {
+      "git_blob": "e1e78206a3165cfde920152d91d79ef2f98869f2",
+      "sha256": "dfe7ef772d078ec09490c02190a32fcd40b3eaf3b040049d8930eb80e6d5743c",
+      "size": 54636,
+      "source": "rtl_bt/rtl8821c_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821c_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821c_fw.bin"
+    },
+    {
+      "git_blob": "657c5c038d1af80ff5c0c997d93c5870dfa8b3b5",
+      "sha256": "3baa2eeaa43c959054687a67771e7435e73b2ff3e79dfb765121d8b7dc719391",
+      "size": 56648,
+      "source": "rtl_bt/rtl8821cs_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821cs_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821cs_fw.bin"
+    },
+    {
+      "git_blob": "b00270edca74c0bcd0234ceb8fe313a61ee28416",
+      "sha256": "ea082136d5285655372e3805cd50d961bd7d42085c6fc1058a115a7e844df9c1",
+      "size": 14,
+      "source": "rtl_bt/rtl8822b_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822b_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8822b_config.bin"
+    },
+    {
+      "git_blob": "5a464614ff4a339aa463d11ee6739153a7098237",
+      "sha256": "eecef2c3b2ff03c3a41292a93a25eca6f4ec38eb4a7491a3651b530be89a04fc",
+      "size": 51176,
+      "source": "rtl_bt/rtl8822b_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822b_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8822b_fw.bin"
+    },
+    {
+      "git_blob": "33ee243d8d0ca0004c44c529c4fc1a628da9a5d7",
+      "sha256": "dbdc0a455f628337509afbdb6e1fb42e1622e3e876fc2aa962cc1b754709131c",
+      "size": 33,
+      "source": "rtl_bt/rtl8822cs_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822cs_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8822cs_config.bin"
+    },
+    {
+      "git_blob": "ce6b51d0eb809b369ee5ac21a535d45ff516ab2f",
+      "sha256": "42db5218c54b0638e1bafdbc7d0986172288e55a9e1c879080d41206bb87dfa2",
+      "size": 63340,
+      "source": "rtl_bt/rtl8822cs_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822cs_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8822cs_fw.bin"
+    },
+    {
+      "git_blob": "0938a9975abdfa58f1718a3880ccbc50bb2cc736",
+      "sha256": "bb8b1221b62749baebfa3e60271d6d90b1db5e3a480e3255be82c9fb58fe9577",
+      "size": 37327,
+      "source": "rtl_bt/rtl8822cu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822cu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8822cu_fw.bin"
+    },
+    {
+      "git_blob": "6bcd03bb19f845fffb828ad30d0500d125b6819a",
+      "sha256": "7fcf88c00b2548a5ff157102a35722db5e4be655dab1ce8d9bddb6df85f88f24",
+      "size": 49760,
+      "source": "rtl_bt/rtl8851bu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8851bu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8851bu_fw.bin"
+    },
+    {
+      "git_blob": "2b681bd0ac5ed12f57af27b382b6bbab2be369e0",
+      "sha256": "fb52f72e986d4c96dbf7263650d3766abcbcf10c0a4f23a065ba2c388b19c125",
+      "size": 63352,
+      "source": "rtl_bt/rtl8852au_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852au_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8852au_fw.bin"
+    },
+    {
+      "git_blob": "5a2043c341ac4330ce24e3088e3402683b78b04b",
+      "sha256": "bd162fd3b70e805cf7a8098f22f4ddf5d89da58fafff97d87da1a1e2e0cbeb80",
+      "size": 128140,
+      "source": "rtl_bt/rtl8852btu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852btu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8852btu_fw.bin"
+    },
+    {
+      "git_blob": "c45c68047017e5ec63cba74bacaa06304f8faed0",
+      "sha256": "c2b0d34a4ff8a8ea136993f0dc4ba657522d84231b4094c2a53cda39afc91c57",
+      "size": 129733,
+      "source": "rtl_bt/rtl8852bu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852bu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8852bu_fw.bin"
+    },
+    {
+      "git_blob": "fa61830450e8e7c2cb39e8bec2467f32612402bc",
+      "sha256": "9b8b27741a914c1cecc1ab9837194236890522101a57ba1898eb55f8d538dae0",
+      "size": 113336,
+      "source": "rtl_bt/rtl8852cu_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852cu_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8852cu_fw.bin"
+    },
+    {
+      "git_blob": "61987b7cae78f5632f75803372de58e82873d05b",
+      "sha256": "d1314df53b8f4282f9db57a727ba77c180bc6fd05bf2c306e960326a4ef48660",
+      "size": 112953,
+      "source": "rtl_bt/rtl8852cu_fw_v2.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852cu_fw_v2.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8852cu_fw_v2.bin"
+    },
+    {
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8922au_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8922au_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8922au_config.bin"
+    },
+    {
+      "git_blob": "5fbecb47d205803482187cd0ae45bc7be93d7348",
+      "sha256": "112290ca9dc3985034f572594812f0deb8530dd031686461b55cac43a1c35a79",
+      "size": 71360,
+      "source": "rtl_bt/rtl8922au_fw.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8922au_fw.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8922au_fw.bin"
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8723b_config.bin -> rtl8723bs_config.bin",
+          "line": 4236,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8723bs_config.bin",
+      "git_blob": "c20970a3f8940cc9f1aba513576d67535c343232",
+      "sha256": "a6319ce368257b45820fcf11f8821b6eea7ddcc649f59a282498bf7a33210103",
+      "size": 64,
+      "source": "rtl_bt/rtl8723bs_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723b_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8723bs_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8723d_config.bin -> rtl8821c_config.bin",
+          "line": 4255,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8821c_config.bin",
+      "git_blob": "bb15fcd4312379eb7d2ebc26ad2240dc87031faf",
+      "sha256": "292717b0610ce920f66b734c299d349ea59a4c4400044078d8fc65625f17e382",
+      "size": 10,
+      "source": "rtl_bt/rtl8821c_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8723d_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821c_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8761a_config.bin -> rtl8761bu_config.bin",
+          "line": 4242,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8761a_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8821a_config.bin -> rtl8821c_config.bin",
+          "line": 4251,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8821c_config.bin",
+      "git_blob": "bb15fcd4312379eb7d2ebc26ad2240dc87031faf",
+      "sha256": "292717b0610ce920f66b734c299d349ea59a4c4400044078d8fc65625f17e382",
+      "size": 10,
+      "source": "rtl_bt/rtl8821c_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821a_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8821c_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8821cs_config.bin -> rtl8761b_config.bin",
+          "line": 4259,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761b_config.bin",
+      "git_blob": "99475ee3bad9502dca3dd92c38b47a229aecd36b",
+      "sha256": "6ddeb15f23588053e00cb08d25588bd7cf98d60fa93d9478efcef4ae8064a7ac",
+      "size": 25,
+      "source": "rtl_bt/rtl8761b_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8821cs_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761b_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8822cu_config.bin -> rtl8761bu_config.bin",
+          "line": 4261,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8822cu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8851bu_config.bin -> rtl8761bu_config.bin",
+          "line": 4272,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8851bu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8852au_config.bin -> rtl8761bu_config.bin",
+          "line": 4265,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852au_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8852btu_config.bin -> rtl8761bu_config.bin",
+          "line": 4274,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852btu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8852bu_config.bin -> rtl8761bu_config.bin",
+          "line": 4267,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852bu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    },
+    {
+      "alias_evidence": [
+        {
+          "declaration": "Link: rtl_bt/rtl8852cu_config.bin -> rtl8761bu_config.bin",
+          "line": 4270,
+          "source": "WHENCE"
+        }
+      ],
+      "alias_of": "rtl_bt/rtl8761bu_config.bin",
+      "git_blob": "91d3f4402289e7b0efd395c7fcc8b4789465aba6",
+      "sha256": "6c28a3f07c6a30ed208c4b64862a23f02b7d93543ea980edd24df16bab45095f",
+      "size": 6,
+      "source": "rtl_bt/rtl8761bu_config.bin",
+      "target": "usr/lib/firmware/rtl_bt/rtl8852cu_config.bin",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/rtl_bt/rtl8761bu_config.bin",
+      "whence": {
+        "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+        "source": "WHENCE",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+      }
+    }
+  ],
+  "kind": "firmware-only",
+  "licenses": [
+    {
+      "git_blob": "d70921f493795acb9af2a38f405193ba7a1b28a3",
+      "sha256": "a61351665b4f264f6c631364f85b907d8f8f41f8b369533ef4021765f9f3b62e",
+      "size": 2115,
+      "source": "LICENSES/LICENCE.rtlwifi_firmware.txt",
+      "target": "licenses/LICENCE.rtlwifi_firmware.txt",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.rtlwifi_firmware.txt"
+    },
+    {
+      "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+      "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+      "size": 451055,
+      "source": "WHENCE",
+      "target": "licenses/WHENCE",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+    }
+  ],
+  "provenance": {
+    "license": "LICENCE.rtlwifi_firmware.txt",
+    "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+  },
+  "schema": 1,
+  "transport": "bluetooth",
+  "vendor": "realtek",
+  "version": "linux-firmware-2ab4ce216003"
+}

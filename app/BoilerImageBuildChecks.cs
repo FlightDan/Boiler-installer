@@ -7,6 +7,32 @@ namespace OxpInstaller;
 /// <summary>Disposable image tests. This path never invokes a physical disk helper.</summary>
 internal static class BoilerImageBuildChecks
 {
+    internal static async Task<string> LinuxModelAsync(string image)
+    {
+        image=Path.GetFullPath(image);
+        MediaSource.Ordinary(image,InstallationController.Work);
+        var directory=Path.GetDirectoryName(image)!;
+        using var original=JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(directory,"result.json")));
+        if (!original.RootElement.GetProperty("passed").GetBoolean()
+            || Path.GetFullPath(original.RootElement.GetProperty("image").GetString()!) != image
+            || original.RootElement.GetProperty("package").GetProperty("id").GetString()!="device:oxp3")
+            throw new IOException("Linux model checks require the owned disposable model image result.");
+        using var progress=new StreamWriter(new FileStream(Path.Combine(directory,"linux-model-progress.log"),FileMode.CreateNew,FileAccess.Write,FileShare.Read)){AutoFlush=true};
+        var packageBytes=await File.ReadAllBytesAsync(Path.Combine(Backend.Root,"cache/model-bundles/packages/oxp3/manifest.json"));
+        if (Convert.ToHexString(SHA256.HashData(packageBytes)).ToLowerInvariant()!=original.RootElement.GetProperty("package").GetProperty("manifest_sha256").GetString())
+            throw new IOException("Prepared model payload differs from the final package.");
+        var selection=await File.ReadAllTextAsync(Path.Combine(directory,"selection.json"));
+        var verified=await Backend.GuestAsync("integration-verify",image,false,progress.Write,CancellationToken.None,selection);
+        await File.WriteAllTextAsync(Path.Combine(directory,"linux-model-readonly-recheck.log"),verified);
+        var output=await Backend.GuestAsync("model-maintenance-check",image,true,progress.Write,CancellationToken.None);
+        var line=output.Split('\n').Select(x=>x.Trim()).Single(x=>x.StartsWith("BOILER_LINUX_MODEL_CHECK=",StringComparison.Ordinal));
+        using var result=JsonDocument.Parse(line["BOILER_LINUX_MODEL_CHECK=".Length..]);
+        if (!result.RootElement.GetProperty("passed").GetBoolean()) throw new IOException("Linux model lifecycle checks failed.");
+        var json=JsonSerializer.Serialize(result.RootElement,new JsonSerializerOptions{WriteIndented=true});
+        await File.WriteAllTextAsync(Path.Combine(directory,"linux-model-result.json"),json);
+        return json;
+    }
+
     internal static async Task<string> RunAsync(string source, string mode)
     {
         if (mode is not ("vanilla" or "custom" or "wireless")) throw new IOException("Expected vanilla, custom or wireless image test mode.");
@@ -156,9 +182,21 @@ internal static class BoilerImageBuildChecks
                 await BoilerProtocol.RunAsync(["package", cached, "--manifest-sha256", digest], token);
             });
             await Check("fresh-sparse-image-conversion", () => RawImageStaging.ConvertAsync(fixture, image, Log, token));
+            DeviceLegacySelection? legacySelection = null;
+            if (package.TryGetProperty("selection_contract", out var contract)
+                && contract.GetProperty("kind").GetString() == "oxp3-legacy-options-v1")
+            {
+                var defaults = package.GetProperty("legacy_capabilities").EnumerateArray()
+                    .Where(item => item.GetProperty("available").GetBoolean() && item.GetProperty("default").GetBoolean()).ToArray();
+                string[] Selected(string category) => defaults.Where(item => item.GetProperty("category").GetString() == category)
+                    .Select(item => item.GetProperty("id").GetString()!).ToArray();
+                // This explicit disposable-image QA invocation accepts the package's
+                // recorded policy, while the interactive UI requires user consent.
+                legacySelection = new(1, Selected("repairs"), Selected("plugins"), true);
+            }
             var options = new SelectedOptions(1, [], ["core:decky", "core:maintenance"], "en-US", "system",
                 InstallMode: "custom", DevicePackage: cacheKey, DeviceManifestSha256: digest,
-                DeviceTrust: "developer-session", DeviceComponents: ["oxp3:legacy-adaptation"]);
+                DeviceTrust: "developer-session", DeviceComponents: ["oxp3:legacy-adaptation"], DeviceLegacyOptions: legacySelection);
             var selection = JsonSerializer.Serialize(options, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower });
             await File.WriteAllTextAsync(Path.Combine(directory, "selection.json"), selection);
             string output = "", outcome = "", readiness = "";

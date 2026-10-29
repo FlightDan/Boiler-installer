@@ -11,7 +11,7 @@ public sealed class OfficialDownloadPanel : UserControl
 {
     private readonly TextBlock heading = new() { FontSize = 19, FontWeight = FontWeights.SemiBold };
     private readonly ComboBox sources = new() { MinHeight = 48, Margin = new(0, 8, 0, 8) };
-    private readonly TextBox address = new() { IsReadOnly = true, MinHeight = 48, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 8), Text = OfficialSystem.BaseUrl + ".raucb" };
+    private readonly TextBox address = new() { IsReadOnly = true, Height = 48, MinHeight = 48, TextWrapping = TextWrapping.NoWrap, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalContentAlignment = VerticalAlignment.Center, Margin = new(0, 0, 0, 8), Text = OfficialSystem.BaseUrl + ".raucb" };
     private readonly Button copyAddress = new() { Margin = new(8, 0, 0, 8), VerticalAlignment = VerticalAlignment.Top };
     private readonly CheckBox agreement = new() { Margin = new(0, 4, 0, 8) };
     private readonly Button terms = new() { HorizontalAlignment = HorizontalAlignment.Left, Margin = new(8, 0, 0, 0) };
@@ -26,10 +26,64 @@ public sealed class OfficialDownloadPanel : UserControl
     private readonly Button action = new() { HorizontalAlignment = HorizontalAlignment.Left, MinHeight = 48 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new(0, 10, 0, 0) };
     private readonly ProgressBar progress = new() { Height = 7, Margin = new(0, 12, 0, 0), Visibility = Visibility.Collapsed };
+    private readonly Border downloadCard;
     private CancellationTokenSource? operation;
     private bool required = true;
+    private bool localOnly;
+    private bool sourceCardLayout;
+    private DiscoveredInput? associatedInspection;
     public bool IsBusy => operation != null;
+    internal string? AssociatedSourcePath { get; private set; }
+    internal DiscoveredInput? CurrentAssociatedInspection
+    {
+        get
+        {
+            if (AssociatedSourcePath == null || associatedInspection == null) return null;
+            try
+            {
+                if (!string.Equals(Path.GetFullPath(AssociatedSourcePath), Path.GetFullPath(associatedInspection.Path), StringComparison.OrdinalIgnoreCase)) return null;
+                InputDiscovery.VerifyStamp(associatedInspection);
+                return associatedInspection;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
+        }
+    }
+    internal RaucManifestInfo? AssociatedRaucManifest => CurrentAssociatedInspection?.RaucManifest;
+    internal string? SelectedSourcePath => AssociatedSourcePath ?? (string.IsNullOrWhiteSpace(localPath.Text) ? null : localPath.Text);
+    internal event Action? SourceReady;
+    internal void UseSourceCardLayout()
+    {
+        if (sourceCardLayout) return;
+        sourceCardLayout = true;
+        var download = downloadCard.Child; downloadCard.Child = null; Content = download;
+        heading.FontSize = 14; heading.FontWeight = FontWeights.SemiBold;
+        copyAddress.MinHeight = sources.MinHeight = address.MinHeight = action.MinHeight = restart.MinHeight = 44; address.Height = 44;
+        agreement.MinHeight = terms.MinHeight = 32; agreement.FontSize = terms.FontSize = note.FontSize = status.FontSize = 12;
+        sources.Style = TryFindResource("SourceDropdown") as Style; address.Style = TryFindResource("SourceAddress") as Style;
+        action.Background = new SolidColorBrush(Color.FromRgb(41, 104, 217)); action.Foreground = Brushes.White;
+        restart.Background = copyAddress.Background = terms.Background = Brushes.Transparent; terms.Foreground = new SolidColorBrush(Color.FromRgb(41, 104, 217));
+        RefreshLanguage();
+    }
+    internal void AssociateLocalSource(string path, DiscoveredInput? inspected = null)
+    {
+        AssociatedSourcePath = Path.GetFullPath(path);
+        associatedInspection = null;
+        if (inspected?.Stamp != null)
+        {
+            try
+            {
+                InputDiscovery.VerifyStamp(inspected);
+                var targetStamp = InputDiscovery.ReadStamp(AssociatedSourcePath);
+                if (targetStamp.Length == inspected.Stamp.Length && targetStamp.HeaderSha256 == inspected.Stamp.HeaderSha256)
+                    associatedInspection = inspected with { Path = AssociatedSourcePath, Stamp = targetStamp };
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { }
+        }
+        localStatus.Visibility = Visibility.Visible;
+        RefreshStatus(); SourceChanged?.Invoke();
+    }
     public event Action<bool>? BusyChanged;
+    public event Action? SourceChanged;
     private static string L(string zh, string en) => PartitionInventory.L(zh, en);
     private static Border Card(UIElement content) => new()
     {
@@ -48,7 +102,7 @@ public sealed class OfficialDownloadPanel : UserControl
         addressRow.Children.Add(copyAddress); addressRow.Children.Add(address); download.Children.Add(addressRow); download.Children.Add(note);
         var consent = new WrapPanel(); consent.Children.Add(agreement); consent.Children.Add(terms); download.Children.Add(consent);
         var buttons = new WrapPanel(); action.Margin = new(0, 0, 10, 0); buttons.Children.Add(action); buttons.Children.Add(restart); download.Children.Add(buttons);
-        download.Children.Add(progress); download.Children.Add(status); body.Children.Add(Card(download));
+        download.Children.Add(progress); download.Children.Add(status); downloadCard = Card(download); body.Children.Add(downloadCard);
         var local = new StackPanel(); local.Children.Add(localHeading); local.Children.Add(localNote);
         var localRow = new DockPanel { Margin = new(0, 8, 0, 8) }; DockPanel.SetDock(browse, Dock.Right);
         localRow.Children.Add(browse); localRow.Children.Add(localPath); local.Children.Add(localRow); local.Children.Add(localHint);
@@ -58,7 +112,7 @@ public sealed class OfficialDownloadPanel : UserControl
         restart.Click += async (_, _) => { if (!IsBusy) await DownloadAsync(fresh: true); };
         browse.Click += async (_, _) =>
         {
-            var dialog = new OpenFileDialog { Filter = L("SteamOS 3.10 系统镜像|*.img;*.raucb", "SteamOS 3.10 system image|*.img;*.raucb") };
+            var dialog = new OpenFileDialog { Filter = L("SteamOS 系统升级源|*.img;*.raucb", "SteamOS system upgrade source|*.img;*.raucb") };
             if (dialog.ShowDialog(Window.GetWindow(this)) == true) await DownloadAsync(dialog.FileName);
         };
         copyAddress.Click += (_, _) =>
@@ -79,27 +133,41 @@ public sealed class OfficialDownloadPanel : UserControl
         required = value;
         if (!IsBusy) { SetControls(); if (changed) RefreshStatus(); }
     }
+    public void SetLocalOnly(bool value)
+    {
+        if (localOnly == value) return;
+        localOnly = value;
+        downloadCard.Visibility = value ? Visibility.Collapsed : Visibility.Visible;
+        if (Content is StackPanel body && body.Children.OfType<Border>().LastOrDefault() is { } localCard)
+        {
+            localCard.Padding = new(value ? 24 : 16);
+            localCard.Margin = new(0, 0, 0, value ? 24 : 12);
+        }
+        RefreshLanguage();
+    }
     private void SetControls()
     {
         action.IsEnabled = required;
         browse.IsEnabled = restart.IsEnabled = agreement.IsEnabled = required && !IsBusy;
         sources.IsEnabled = !IsBusy;
     }
-    public void RefreshWorkspace() { if (!IsBusy) { localPath.Text = ""; localStatus.Visibility = Visibility.Collapsed; progress.Visibility = Visibility.Collapsed; RefreshStatus(); } }
+    public void RefreshWorkspace() { if (!IsBusy) { AssociatedSourcePath = null; associatedInspection = null; localPath.Text = ""; localStatus.Visibility = Visibility.Collapsed; progress.Visibility = Visibility.Collapsed; RefreshStatus(); SourceChanged?.Invoke(); } }
     public void RefreshLanguage()
     {
-        heading.Text = L("下载 3.10 镜像", "Download the 3.10 image");
+        heading.Text = sourceCardLayout ? L("下载来源", "Download source") : L("下载官方系统升级源", "Download the official system upgrade source");
         sources.Items.Clear(); sources.Items.Add(L("Valve 官方系统镜像 · 3.10 · build 20260924.1000（推荐）", "Valve system image · 3.10 · build 20260924.1000 (Recommended)")); sources.SelectedIndex = 0;
-        copyAddress.Content = L("复制地址 · 手动下载", "Copy URL · download manually");
+        copyAddress.Content = sourceCardLayout ? L("复制地址", "Copy URL") : L("复制地址 · 手动下载", "Copy URL · download manually");
         note.Text = L("下载 .raucb 更新包后即可继续。开始安装后，再联网获取系统数据并重建镜像。", "Download the .raucb update bundle to continue. System data is downloaded and the image rebuilt after installation starts.");
         agreement.Content = L("我已阅读并同意 SteamOS 下载条款", "I have read and accept the SteamOS download terms");
         terms.Content = L("查看 Valve 下载条款 ↗", "View Valve download terms ↗");
         restart.Content = L("重新下载", "Start fresh");
-        localHeading.Text = L("选择本地 3.10 镜像", "Select a local 3.10 image");
-        localNote.Text = L("使用本地 SteamOS 3.10 系统镜像；导入后，安装时使用工作空间中的副本。", "Import a local SteamOS 3.10 system image for installation from your workspace.");
+        localHeading.Text = localOnly ? L("2  SteamOS 系统升级源", "2  SteamOS system upgrade source") : L("选择本地系统升级源", "Select a local system upgrade source");
+        localNote.Text = localOnly
+            ? L("第二个文件：SteamOS 系统升级源，与上方官方恢复镜像配合使用。", "Second file: a SteamOS system upgrade source, used together with the official recovery image above.")
+            : L("使用本地 SteamOS 系统升级源；导入后，安装时使用工作空间中的副本。", "Import a local SteamOS system upgrade source for installation from your workspace.");
         browse.Content = L("选择文件…", "Choose file…");
-        localHint.Text = L("支持 .raucb 更新包或已重建的 rootfs.img。请选择 build 20260924.1000；更新包会在开始安装后联网重建。", "Accepts a .raucb bundle or a rebuilt rootfs.img. Select build 20260924.1000; bundles are rebuilt online after installation starts.");
-        System.Windows.Automation.AutomationProperties.SetName(localPath, L("3.10 镜像路径", "3.10 image path"));
+        localHint.Text = L("支持 .raucb 更新包或 rootfs.img。升级包版本会自动识别；rootfs.img 版本将在安装准备时识别。", "Accepts a .raucb bundle or rootfs.img. Upgrade package versions are identified automatically; rootfs.img is identified during installation preparation.");
+        System.Windows.Automation.AutomationProperties.SetName(localPath, L("系统升级源路径", "System upgrade source path"));
         System.Windows.Automation.AutomationProperties.SetName(sources, heading.Text);
         RefreshStatus();
     }
@@ -107,13 +175,29 @@ public sealed class OfficialDownloadPanel : UserControl
     private void RefreshStatus()
     {
         if (IsBusy) return;
+        if (AssociatedSourcePath != null)
+        {
+            localPath.Text = AssociatedSourcePath;
+            action.Content = L("下载 / 继续", "Download / resume"); SetControls();
+            var inspected = CurrentAssociatedInspection;
+            var status = inspected?.RaucManifest is { } manifest
+                ? manifest.IsSupportedByCurrentInstaller
+                    ? L($"检测到 SteamOS {manifest.Version} 更新包；继续后将完成内容校验。", $"SteamOS {manifest.Version} update bundle detected; continue for complete content checks.")
+                    : L($"检测到 SteamOS {manifest.Version} 更新包；当前安装流程不支持此版本。", $"SteamOS {manifest.Version} update bundle detected; this installer does not support it.")
+                : inspected?.Kind == InputKind.UpgradeRoot
+                    ? L("已选择 rootfs.img，版本将在安装准备时识别。", "rootfs.img selected; its version will be identified during installation preparation.")
+                    : L("本地文件已关联。继续时检查其声明版本与内容。", "Local file associated. Its declared version and contents will be checked when you continue.");
+            SetStatus(status);
+            return;
+        }
         var cached = OfficialSystem.HasPreparedSource();
         localPath.Text = cached ? OfficialSystem.RequirePreparedSource() : "";
         action.Content = L("下载 / 继续", "Download / resume");
         SetControls();
         SetStatus(cached ? ""
-            : required ? L("尚未准备。请下载镜像或选择本地文件。", "Not ready. Download the image or select a local file.")
-            : L("当前方案无需下载官方 3.10。", "This configuration does not need the official 3.10 download."));
+            : required ? localOnly ? L("请选择第二个文件：SteamOS 系统升级源。", "Select the second file: a SteamOS system upgrade source.")
+                : L("尚未准备。请下载镜像或选择本地文件。", "Not ready. Download the image or select a local file.")
+            : L("当前方案无需准备官方系统升级源。", "This configuration does not need an official system upgrade source."));
     }
     public void Pause()
     {
@@ -122,11 +206,12 @@ public sealed class OfficialDownloadPanel : UserControl
     }
     internal async Task DownloadAsync(string? local = null, bool fresh = false)
     {
-        if (IsBusy || !required) return;
+        if (IsBusy || !required || localOnly && local == null) return;
         var importing = local != null && local.EndsWith(".img", StringComparison.OrdinalIgnoreCase);
         localStatus.Visibility = local != null ? Visibility.Visible : Visibility.Collapsed;
         if (local == null && agreement.IsChecked != true) { SetStatus(L("请先阅读并接受下载条款。", "Read and accept the download terms first.")); return; }
         operation = new CancellationTokenSource();
+        SourceChanged?.Invoke();
         if (local != null)
         {
             localPath.Text = local;
@@ -136,6 +221,7 @@ public sealed class OfficialDownloadPanel : UserControl
         progress.Value = 0; progress.Visibility = Visibility.Visible; progress.IsIndeterminate = true;
         BusyChanged?.Invoke(true);
         var logPath = Path.Combine(InstallerWorkspace.DirectoryPath, "official-3.10-download.log");
+        var completed = false;
         try
         {
             Directory.CreateDirectory(InstallerWorkspace.DirectoryPath);
@@ -151,6 +237,9 @@ public sealed class OfficialDownloadPanel : UserControl
             localPath.Text = importing
                 ? await OfficialSystem.ImportRootAsync(local!, operation.Token, Report)
                 : await OfficialSystem.StageBundleAsync(line => { lock (log) log.WriteLine(line); }, operation.Token, Report, local, fresh);
+            AssociatedSourcePath = null;
+            associatedInspection = null;
+            completed = true;
             progress.IsIndeterminate = false; progress.Value = 100;
             SetStatus(L("文件已就绪，可以点击“下一步”。", "File ready. Click Next to continue."));
         }
@@ -162,10 +251,12 @@ public sealed class OfficialDownloadPanel : UserControl
         finally
         {
             operation.Dispose(); operation = null; progress.IsIndeterminate = false;
-            localPath.Text = OfficialSystem.HasPreparedSource() ? OfficialSystem.RequirePreparedSource() : "";
+            localPath.Text = AssociatedSourcePath ?? (OfficialSystem.HasPreparedSource() ? OfficialSystem.RequirePreparedSource() : "");
             action.Content = L("下载 / 继续", "Download / resume");
             SetControls();
+            SourceChanged?.Invoke();
             BusyChanged?.Invoke(false);
+            if (completed) SourceReady?.Invoke();
             if (local != null) localStatus.BringIntoView();
         }
     }

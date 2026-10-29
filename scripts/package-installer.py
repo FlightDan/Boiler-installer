@@ -14,23 +14,34 @@ def digest(path):
     return h.hexdigest()
 
 
-def validate_integration(root, integration):
+def validate_integration(root, integration, *, local_test=False):
     """Derive the permitted inventory from reviewed locks and current source."""
+    root=Path(root)
     components=integration['components']
-    if set(components)!={'core:decky','core:maintenance','wifi:intel','wifi:realtek','wifi:mediatek'}:
-        raise ValueError('Unapproved integration component')
+    wireless={transport+':'+vendor for transport in ('wifi','bluetooth') for vendor in ('intel','realtek','mediatek')}
     def inventory(entries):
         return sorted((e['source'],e['size'],e['sha256'],e.get('target')) for e in entries)
-    for vendor in ('intel','realtek','mediatek'):
-        item=components['wifi:'+vendor]
-        if not item.get('available'):continue
-        lock=json.loads((root/('components/locks/'+vendor+'.json')).read_text())
-        for key in ('schema','kind','vendor','version','provenance'):
-            if item.get(key)!=lock.get(key):raise ValueError('Firmware provenance differs from reviewed lock')
-        files=[dict(e,source='wireless/'+vendor+'/firmware/'+e['target'].removeprefix('usr/lib/firmware/')) for e in lock['files']]
-        licenses=[dict(e,source='wireless/'+vendor+'/'+e['target']) for e in lock['licenses']]
-        if inventory(item['files'])!=inventory(files) or inventory(item['licenses'])!=inventory(licenses) or item.get('notices'):
-            raise ValueError('Firmware inventory differs from reviewed lock')
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('boiler_preparation',root/'scripts/prepare-integration.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    expected_graphics=module.graphics_firmware_metadata(root)
+    if set(components)!={'core:decky','core:maintenance'} | wireless | set(expected_graphics):
+        raise ValueError('Unapproved integration component')
+    expected_wireless=module.firmware_metadata(root)
+    if integration.get('graphics_candidates') != module.graphics_metadata(root):
+        raise ValueError('Graphics candidate metadata differs from the current baseline source')
+    for identity,item in expected_graphics.items():
+        if components[identity] != item:
+            raise ValueError('Graphics candidate inventory differs from the current adjustable baseline: '+identity)
+    for identity in sorted(wireless):
+        item=components[identity]
+        if (item.get('delivery')!='on-demand' or item.get('payload_cached') is not False
+                or item.get('metadata_available') is not True or item.get('available') is not True):
+            raise ValueError('Production firmware must use metadata-only on-demand delivery')
+        # Exact comparison includes paths, hashes, sizes, licensing and every
+        # Git/alias evidence field, not just a subset of source metadata.
+        if item!=expected_wireless[identity]:
+            raise ValueError('Firmware metadata differs from reviewed lock: '+identity)
     decky=components['core:decky']
     if decky.get('available'):
         lock=json.loads((root/'components/locks/decky.json').read_text())
@@ -41,16 +52,66 @@ def validate_integration(root, integration):
         notices.append(dict(source='sources/LICENSE',size=license_file.stat().st_size,sha256=digest(license_file)))
         if inventory(decky['files'])!=inventory([dict(lock['file'],source='decky/PluginLoader')]) or inventory(decky['notices'])!=inventory(notices) or decky.get('licenses'):
             raise ValueError('Decky inventory differs from reviewed lock')
-    # Rebuild the small runtime from final sources to cover the launcher and targets too.
-    import importlib.util
-    spec=importlib.util.spec_from_file_location('boiler_preparation',root/'scripts/prepare-integration.py')
-    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    persist_models=integration.get('local_test_models') is True
+    if persist_models and not local_test:
+        raise ValueError('Local maintenance model assets require explicit local-test packaging')
+    # Rebuild from final sources to cover launchers, guides and retained model bytes.
     with tempfile.TemporaryDirectory(prefix='boiler-runtime-verification-') as temporary:
-        expected=module.prepare(Path(temporary)/'payload')['components']['core:maintenance']
+        expected=module.prepare(Path(temporary)/'payload',local_test_models=persist_models)['components']['core:maintenance']
     if components['core:maintenance']!=expected:raise ValueError('Maintenance runtime differs from final sources')
 
 
-def package(root, output, source_commit, configuration='Release'):
+def integration_package_files(root, integration, *, local_test=False):
+    """Only core bytes belong in a distribution; reject stale firmware caches."""
+    validate_integration(root,integration,local_test=local_test)
+    selected={}
+    for identity in ('core:decky','core:maintenance'):
+        component=integration['components'][identity]
+        if not component.get('available'):continue
+        for entry in component.get('files',[])+component.get('licenses',[])+component.get('notices',[]):
+            name=entry['source']
+            if name.startswith(('wireless/','graphics/')):
+                raise ValueError('Firmware bytes are not permitted in production payloads')
+            if name in selected and selected[name]!=entry:raise ValueError('Conflicting integration inventory')
+            selected[name]=entry
+    base=Path(root)/'cache/integration'
+    actual={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
+    if actual!=set(selected)|{'manifest.json'}:
+        raise ValueError('Integration payload contains unlisted files; firmware must be downloaded on demand')
+    return selected
+
+
+def local_model_package_files(root, *, local_test=False):
+    """A test installer includes only explicit anchored model inventories."""
+    root=Path(root).resolve()
+    descriptor=root/'cache/model-bundles/manifest.json'
+    if not descriptor.exists():return {}
+    if not local_test:raise ValueError('Local device candidates require explicit --local-test packaging')
+    from protocol.model_catalog import bundled_packages, bundled_model_package
+    files={}
+    for item in bundled_packages(root):
+        result=bundled_model_package(item['id'],trust_local_test=True,root=root)
+        package=result['package']
+        prefix=Path(item['directory']).relative_to(root).as_posix()
+        if package.get('selection_contract',{}).get('kind')=='oxp3-legacy-options-v1':
+            frozen=json.loads((root/prefix/'selection.json').read_text(encoding='utf-8'))
+            requested=set(frozen['repairs']+frozen['plugins'])
+            defaults={cap['id'] for cap in package['legacy_capabilities'] if cap.get('default')}
+            available={cap['id'] for cap in package['legacy_capabilities'] if cap.get('available')}
+            if defaults!=requested or not defaults<=available:
+                raise ValueError('Local model UI defaults differ from the reviewed frozen selection')
+        files[prefix+'/manifest.json']={'size':(root/prefix/'manifest.json').stat().st_size,
+                                       'sha256':item['manifest_sha256']}
+        for entry in package['files']:
+            files[prefix+'/'+entry['path']]=entry
+    files['cache/model-bundles/manifest.json']={'size':descriptor.stat().st_size,'sha256':digest(descriptor)}
+    base=root/'cache/model-bundles'
+    actual={'cache/model-bundles/'+path.relative_to(base).as_posix() for path in base.rglob('*') if path.is_file()}
+    if actual!=set(files):raise ValueError('Local test model directory contains unlisted files')
+    return files
+
+
+def package(root, output, source_commit, configuration='Release', *, local_test=False):
     if len(source_commit)!=40 or any(c not in '0123456789abcdef' for c in source_commit):raise ValueError('Exact public source commit required')
     root=Path(root).resolve();output=Path(output).resolve()
     if output.exists() or output.with_suffix(output.suffix+'.partial').exists():raise ValueError('Package destination already exists')
@@ -94,15 +155,15 @@ def package(root, output, source_commit, configuration='Release'):
         for name,path in expected.items():add('runtime/python/'+name,{'size':path.stat().st_size,'sha256':digest(path)})
     integration_bytes=confined(root,'cache/integration/manifest.json').read_bytes()
     integration=json.loads(integration_bytes)
-    validate_integration(root,integration)
+    integration_files=integration_package_files(root,integration,local_test=local_test)
+    if local_test and (root/'cache/model-bundles/manifest.json').exists() and integration.get('local_test_models') is not True:
+        raise ValueError('Local model tests must synchronize the on-device maintenance model assets')
     add('cache/integration/manifest.json',{'size':len(integration_bytes),'sha256':hashlib.sha256(integration_bytes).hexdigest()})
-    selected=set()
-    for component in integration['components'].values():
-        if not component.get('available'):continue
-        for entry in component.get('files',[])+component.get('licenses',[])+component.get('notices',[]):
-            selected.add(entry['source']);add('cache/integration/'+entry['source'],entry)
-    actual={p.relative_to(root/'cache/integration').as_posix() for p in (root/'cache/integration').rglob('*') if p.is_file()}
-    if actual!=selected|{'manifest.json'}:raise ValueError('Integration payload contains unlisted files')
+    for name,entry in integration_files.items():add('cache/integration/'+name,entry)
+    # Display metadata remains pinned and verified even for offline test use.
+    from protocol.model_catalog import load_models
+    catalog=load_models(root=root,online=False)
+    for name,entry in local_model_package_files(root,local_test=local_test).items():add(name,entry)
     # The runtime component must reflect the exact final sources in this package.
     for entry in integration['components']['core:maintenance']['component']['files']:
         relative=entry['source'].removeprefix('maintenance-runtime/')
@@ -113,8 +174,11 @@ def package(root, output, source_commit, configuration='Release'):
     release=json.loads((root/'components/release.json').read_text(encoding='utf-8'))
     info={'schema':1,'product':'Boiler Installer','version':release['version'],'display_version':release['display_version'],
           'source_commit':source_commit,'built_utc':datetime.now(timezone.utc).isoformat(),'configuration':configuration,
+          'package_channel':'local-test' if local_test else 'preview','source_published':not local_test,
+          'model_catalog_source':catalog['source'],
           'dependency_lock_sha256':digest(root/'scripts/runtime-dependencies.lock.json'),
-          'files':[records[name] for name in sorted(records)],'acceptance':'preview; see release record for separate hardware/release gates'}
+          'files':[records[name] for name in sorted(records)],
+          'acceptance':('local physical-test candidate; no device acceptance claimed' if local_test else 'preview; see release record for separate hardware/release gates')}
     output.parent.mkdir(parents=True,exist_ok=True)
     partial=output.with_suffix(output.suffix+'.partial')
     with zipfile.ZipFile(partial,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=1) as archive:
@@ -137,4 +201,5 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,default=ROOT);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--source-commit',required=True);parser.add_argument('--configuration',choices=('Debug','Release'),default='Release')
-    args=parser.parse_args();print(json.dumps(package(args.root,args.output,args.source_commit,args.configuration),indent=2))
+    parser.add_argument('--local-test',action='store_true',help='Mark an unpublished source build and permit explicitly inventoried model test packages')
+    args=parser.parse_args();print(json.dumps(package(args.root,args.output,args.source_commit,args.configuration,local_test=args.local_test),indent=2))

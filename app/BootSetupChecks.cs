@@ -25,6 +25,8 @@ internal static class BootSetupChecks
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var picker = Find<PartitionPicker>("PartitionSelector");
         picker.AutomaticReadEnabled = false;
+        window.BoilerModeForChecks("vanilla");
+        window.PreviewStep(0);
         window.WindowState = WindowState.Normal; window.ShowActivated = false; window.Show();
         Require(Find<Grid>("BootPrerequisitesOverlay").IsVisible && !Find<Grid>("WizardShell").IsEnabled && !picker.BootPrerequisitesReady, "prerequisites-block-location-before-disk-inventory");
         Require(!Find<Button>("BootPrerequisitesContinue").IsEnabled, "prerequisites-require-explicit-acknowledgement");
@@ -93,6 +95,13 @@ internal static class BootSetupChecks
             window.UpdateLayout();
             var choiceAt = panel.MakeDefaultChoice.TransformToAncestor(Find<Grid>("WindowRoot")).Transform(new Point());
             Require(choiceAt.Y < 300 && panel.MakeDefaultChoice.ActualHeight >= 48, "firmware-choice-visible-near-top-with-touch-target-" + english);
+            Require(((TextBlock)panel.MakeDefaultChoice.Content).FontSize >= 18 && ((TextBlock)panel.InstallChoice.Content).FontSize >= 18,
+                "boot-main-options-readable-font-size-" + english);
+            var pageScroll = Find<ScrollViewer>("PageScroll");
+            pageScroll.ScrollToTop(); window.UpdateLayout();
+            var timeoutAt = panel.Seconds.TransformToAncestor(pageScroll).Transform(new Point());
+            Require(timeoutAt.Y >= 0 && timeoutAt.Y + panel.Seconds.ActualHeight <= pageScroll.ViewportHeight + 1,
+                "boot-timeout-visible-without-scrolling-" + english);
             Require(panel.MakeDefaultChoice.IsEnabled && panel.MakeDefaultBoot, "internal-firmware-default-selected-" + english);
             if (!english)
             {
@@ -117,6 +126,12 @@ internal static class BootSetupChecks
             Require(refindTokens.Contains(directive), "driver-scan-directive-recognized-by-bundled-refind-" + english);
             Require(!panel.Configuration().Contains("\ndriver_dirs "), "unrecognized-driver-directive-not-exported-" + english);
             Capture(Find<Grid>("WindowRoot"), Path.Combine(directory, $"boot-options-{(english ? "en" : "zh")}.png"));
+            window.Width = 1060; window.UpdateLayout(); pageScroll.ScrollToTop(); window.UpdateLayout();
+            timeoutAt = panel.Seconds.TransformToAncestor(pageScroll).Transform(new Point());
+            Require(timeoutAt.Y >= 0 && timeoutAt.Y + panel.Seconds.ActualHeight <= pageScroll.ViewportHeight + 1,
+                "boot-timeout-visible-at-default-window-width-" + english);
+            Capture(Find<Grid>("WindowRoot"), Path.Combine(directory, $"boot-options-{(english ? "en" : "zh")}-1060.png"));
+            window.Width = 1280;
             panel.InstallChoice.IsChecked = false; window.PreviewStep(0);
         }
         Find<RadioButton>("ChineseLanguage").IsChecked = true;
@@ -126,7 +141,9 @@ internal static class BootSetupChecks
         Require(!oldRequest.MakeDefaultBoot, "legacy-request-keeps-firmware-default");
         var request = oldRequest with { Physical = true, MakeDefaultBoot = true };
         Require(JsonSerializer.Deserialize<InstallationRequest>(JsonSerializer.Serialize(request))!.MakeDefaultBoot, "default-choice-survives-request-serialization");
-        CheckFirmware(directory, Require, Refuse);
+        var firmwareFixture = Path.Combine(InstallationController.Work, "boot-firmware-check-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(firmwareFixture);
+        CheckFirmware(firmwareFixture, Require, Refuse);
         File.WriteAllText(Path.Combine(directory, "checks.json"), JsonSerializer.Serialize(new { passed = true, events, scope = "Synthetic WPF events and in-memory firmware only; no disk writes, restart, BitLocker or NVRAM changes." }, new JsonSerializerOptions { WriteIndented = true }));
         return directory;
     }

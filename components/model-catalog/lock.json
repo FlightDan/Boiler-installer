@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "ModelCatalogLock",
+  "source": {
+    "repository": "FlightDan/Boiler-devices",
+    "commit": "d72035c81126b5149d70723a104b631835a4d037"
+  },
+  "files": [
+    {
+      "path": "adaptations.json",
+      "size": 264,
+      "sha256": "2386b05df7bf15083d1d5b6ff195b47a1344afe6c16d8995eab9800c548877e0"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/manifest.json",
+      "size": 12883,
+      "sha256": "20b754dcb806091f6b316e08b61573cbec8698250efd093fcb7148f62af1d585"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/manifest.json",
+      "size": 12916,
+      "sha256": "91b2c8ea86cd69a5e3f768d85588b329d05a81df3ddcde785c16dd929f96342a"
+    }
+  ]
+}

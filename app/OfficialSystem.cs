@@ -3,10 +3,13 @@ using System.Net.Http;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace OxpInstaller;
 
 public sealed record OfficialPreparationProgress(string Step, string Message, double Fraction);
+public sealed record OfficialSourceBinding(string Path, string Sha256, long Length, long LastWriteUtcTicks);
 
 public static class OfficialSystem
 {
@@ -50,6 +53,78 @@ public static class OfficialSystem
     {
         if (IsBundleReady()) return Path.Combine(Cache, "system.raucb");
         return RequireCachedRoot();
+    }
+    internal static string SourceKey(string path)
+    {
+        // A local UI association may reference an external input. The reviewed
+        // bytes are still hashed and copied into the managed session before use.
+        path = InputDiscovery.SafePath(path);
+        if (!File.Exists(path)) throw new IOException("The selected 3.10 source is unavailable.");
+        var file = new FileInfo(path);
+        return file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks;
+    }
+    internal static void ValidateBinding(OfficialSourceBinding binding)
+    {
+        if (!Regex.IsMatch(binding.Sha256 ?? "", "^[0-9a-f]{64}$") || binding.Length <= 0)
+            throw new IOException("Invalid reviewed SteamOS 3.10 source identity.");
+        _ = SourceKey(binding.Path);
+        var file = new FileInfo(binding.Path);
+        if (file.Length != binding.Length || file.LastWriteTimeUtc.Ticks != binding.LastWriteUtcTicks)
+            throw new IOException(PartitionInventory.L("3.10 镜像已改变，请重新检查并确认。", "The 3.10 image changed. Inspect and confirm it again."));
+        if (!binding.Path.EndsWith(".raucb", StringComparison.OrdinalIgnoreCase)) ValidateRoot(binding.Path);
+    }
+    internal static void ValidateRoot(string path)
+    {
+        using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        ValidateRoot(source);
+    }
+    private static void ValidateRoot(Stream source)
+    {
+        if (source.Length != RootSize) throw new IOException(PartitionInventory.L("请选择重建后的 5 GiB rootfs.img 系统分区镜像。", "Select the rebuilt 5 GiB rootfs.img system partition image."));
+        source.Position = 0x10040;
+        Span<byte> magic = stackalloc byte[8]; source.ReadExactly(magic);
+        if (!magic.SequenceEqual("_BHRfS_M"u8)) throw new IOException(PartitionInventory.L("这不是 Btrfs 系统分区镜像，请选择 rootfs.img。", "This is not a Btrfs system partition image. Select rootfs.img."));
+        source.Position = 0;
+    }
+    internal static async Task<OfficialSourceBinding> InspectPreparedSourceAsync(CancellationToken token, string? input = null)
+    {
+        var path = input ?? RequirePreparedSource();
+        if (input != null)
+        {
+            var discovered = await InputDiscovery.InspectAsync(path, token);
+            if (discovered.Kind is not (InputKind.UpgradeRoot or InputKind.UpgradeBundle) || discovered.Error != null)
+                throw new IOException(discovered.Error ?? "The file is not a supported 3.10 source.");
+        }
+        var key = SourceKey(path);
+        using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
+        if (!path.EndsWith(".raucb", StringComparison.OrdinalIgnoreCase)) ValidateRoot(source);
+        var hash = Convert.ToHexString(await SHA256.HashDataAsync(source, token)).ToLowerInvariant();
+        if (key != SourceKey(path)) throw new IOException("SteamOS 3.10 source changed during inspection.");
+        var file = new FileInfo(path);
+        return new(file.FullName, hash, source.Length, file.LastWriteTimeUtc.Ticks);
+    }
+    internal static async Task<string> SnapshotBoundSourceAsync(OfficialSourceBinding binding, string directory, CancellationToken token)
+    {
+        ValidateBinding(binding);
+        Directory.CreateDirectory(directory);
+        var output = Path.Combine(directory, "official-source-" + Guid.NewGuid().ToString("N") + (binding.Path.EndsWith(".raucb", StringComparison.OrdinalIgnoreCase) ? ".raucb" : ".img"));
+        MediaSource.Ordinary(output, InstallationController.Work, false);
+        using var source = new FileStream(binding.Path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
+        if (source.Length != binding.Length) throw new IOException("SteamOS 3.10 source changed after review.");
+        MediaSpace.RequireAvailable(directory, checked((ulong)source.Length + PartitionInventory.GiB));
+        try
+        {
+            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var buffer = new byte[1024 * 1024]; int count;
+            while ((count = await source.ReadAsync(buffer, token)) != 0)
+            { hash.AppendData(buffer, 0, count); await target.WriteAsync(buffer.AsMemory(0, count), token); }
+            await target.FlushAsync(token); target.Flush(true);
+            if (target.Length != binding.Length || Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant() != binding.Sha256)
+                throw new IOException(PartitionInventory.L("3.10 镜像内容与确认时不一致，请重新检查。", "The 3.10 image differs from the reviewed file. Inspect it again."));
+        }
+        catch { File.Delete(output); throw; }
+        return output;
     }
     internal static async Task<string> StageBundleAsync(Action<string> log, CancellationToken token,
         Action<OfficialPreparationProgress>? report = null, string? localBundle = null, bool fresh = false)
@@ -98,9 +173,10 @@ public static class OfficialSystem
         }
         finally { Directory.Delete(staging, true); }
     }
-    internal static bool IsCached()
+    internal static bool IsCached() => IsCachedAt(Cache);
+    private static bool IsCachedAt(string cache)
     {
-        var root = Path.Combine(Cache, "rootfs.img"); var complete = Path.Combine(Cache, "complete.txt");
+        var root = Path.Combine(cache, "rootfs.img"); var complete = Path.Combine(cache, "complete.txt");
         try
         {
             MediaSource.Ordinary(root, InstallationController.Work, false);
@@ -122,6 +198,11 @@ public static class OfficialSystem
         return match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var percent)
             && percent is >= 0 and <= 100 ? percent / 100 : null;
     }
+    internal static void ValidatePreparedRootResult(string verification)
+    {
+        if (!verification.Split('\n').Any(line => Regex.IsMatch(line.Trim(), @"^OXP_UPDATE_ROOT=3\.10(?:\.0)?:" + Regex.Escape(Build) + "$")))
+            throw new IOException(PartitionInventory.L("所选系统镜像不是要求的 SteamOS 3.10 build 20260924.1000，已停止准备。", "The selected image is not SteamOS 3.10 build 20260924.1000. Preparation stopped."));
+    }
     internal static async Task CopyDownloadAsync(Stream source, Stream destination, long? total,
         Action<long, long?, double> report, CancellationToken token)
     {
@@ -142,9 +223,9 @@ public static class OfficialSystem
         report(received, total, received / Math.Max(.001, watch.Elapsed.TotalSeconds));
     }
     public static async Task<string> DownloadAsync(Action<string> log, CancellationToken token,
-        Action<OfficialPreparationProgress>? report = null, string? localBundle = null, bool fresh = false)
+        Action<OfficialPreparationProgress>? report = null, string? localBundle = null, bool fresh = false, string? preparationDirectory = null)
     {
-        var cache = Cache; Directory.CreateDirectory(cache);
+        var cache = preparationDirectory ?? Cache; Directory.CreateDirectory(cache);
         MediaSource.Ordinary(Path.Combine(cache, "download.lock"), InstallationController.Work, false);
         using var lease=new FileStream(Path.Combine(cache,"download.lock"),FileMode.Create,FileAccess.ReadWrite,FileShare.None);
         var root=Path.Combine(cache,"rootfs.img");var bundle=Path.Combine(cache,"system.raucb");
@@ -152,7 +233,7 @@ public static class OfficialSystem
         foreach(var path in new[]{root,bundle,index,complete})MediaSource.Ordinary(path,InstallationController.Work,false);
         if (fresh || localBundle != null) File.Delete(complete);
         if (fresh) File.Delete(root);
-        if (!IsCached())
+        if (!IsCachedAt(cache))
         {
             MediaSpace.RequireAvailable(cache, (ulong)RootSize + 512ul * 1024 * 1024);
             log("Preparing official SteamOS 3.10 build20260924.1000 root image…");
@@ -208,11 +289,7 @@ public static class OfficialSystem
         Action<OfficialPreparationProgress>? report = null)
     {
         using var source = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (source.Length != RootSize) throw new IOException(PartitionInventory.L("请选择重建后的 5 GiB rootfs.img 系统分区镜像。", "Select the rebuilt 5 GiB rootfs.img system partition image."));
-        source.Position = 0x10040;
-        var magic = new byte[8]; await source.ReadExactlyAsync(magic, token);
-        if (System.Text.Encoding.ASCII.GetString(magic) != "_BHRfS_M") throw new IOException(PartitionInventory.L("这不是 Btrfs 系统分区镜像，请选择 rootfs.img。", "This is not a Btrfs system partition image. Select rootfs.img."));
-        source.Position = 0;
+        ValidateRoot(source);
         Directory.CreateDirectory(Cache);
         var root = Path.Combine(Cache, "rootfs.img"); var complete = Path.Combine(Cache, "complete.txt");
         var pending = Path.Combine(Cache, "importing.img"); var leasePath = Path.Combine(Cache, "download.lock");
@@ -239,18 +316,21 @@ public static class OfficialSystem
         return root;
     }
     public static async Task<string> PrepareAsync(string recovery,string directory,Action<string> log,CancellationToken token,
-        Action<OfficialPreparationProgress>? report = null)
+        Action<OfficialPreparationProgress>? report = null, OfficialSourceBinding? officialSource = null)
     {
         RecoveryImage.ValidateRaw(recovery);
-        var source = RequirePreparedSource();
+        var source = officialSource == null ? RequirePreparedSource() : await SnapshotBoundSourceAsync(officialSource, directory, token);
+        if (officialSource != null)
+            await File.WriteAllTextAsync(Path.Combine(directory, "official-source.json"), JsonSerializer.Serialize(new { reviewed = officialSource, snapshot = source }), token);
         var root = source.EndsWith(".raucb", StringComparison.OrdinalIgnoreCase)
-            ? await DownloadAsync(log, token, report, source) : source;
+            ? await DownloadAsync(log, token, report, source, preparationDirectory: officialSource == null ? null : Path.Combine(directory, "official-preparation")) : source;
         report?.Invoke(new("01.02.04", PartitionInventory.L("已使用本地 3.10 缓存，正在转换恢复镜像…", "Using the local 3.10 cache; converting the recovery image…"), .8));
         var output=Path.Combine(directory,"recovery-3.10.img");
         await RawImageStaging.ConvertAsync(recovery,output,log,token);
         report?.Invoke(new("01.02.05", PartitionInventory.L("正在虚拟机中整合 SteamOS 3.10，等待系统处理…", "Integrating SteamOS 3.10 in the virtual machine; waiting for system processing…"), .9));
         // The VM checks actual os-release and kernel before modifying only this new ordinary image.
-        await Backend.GuestAsync("upgrade-source",output,true,log,token,updateRoot:root);
+        var verification = await Backend.GuestAsync("upgrade-source",output,true,log,token,updateRoot:root);
+        ValidatePreparedRootResult(verification);
         report?.Invoke(new("01.02.05", PartitionInventory.L("SteamOS 3.10 整合完成。", "SteamOS 3.10 integration completed."), 1));
         return output;
     }

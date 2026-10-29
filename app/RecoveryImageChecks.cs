@@ -11,9 +11,9 @@ internal static class RecoveryImageChecks
 {
     // A small GPT disk, not an installable OS. Both GPT copies use standard
     // CRC32; real recovery/root images are checked separately when present.
-    internal static byte[] Fixture(bool prepared = false, bool withProtected = false)
+    internal static byte[] Fixture(bool prepared = false, bool withProtected = false, int? capacityMiB = null)
     {
-        var disk = new byte[(prepared ? 16 : 2) * 1024 * 1024];
+        var disk = new byte[(capacityMiB ?? (prepared ? 16 : 2)) * 1024 * 1024];
         disk[510] = 0x55; disk[511] = 0xaa; disk[450] = 0xee;
         var header = disk.AsSpan(512, 512);
         "EFI PART"u8.CopyTo(header);

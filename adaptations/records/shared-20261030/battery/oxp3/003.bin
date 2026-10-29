@@ -1,0 +1,4 @@
+# OXP3 Battery: keep the existing sleep request and select its operation.
+[Service]
+ExecStart=
+ExecStart=/usr/bin/python3 -I -B /var/lib/oxp3-battery/sleep_control.py run

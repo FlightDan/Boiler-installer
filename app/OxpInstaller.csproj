@@ -12,8 +12,10 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PortableLauncherName Condition="'$(PortableLauncherName)' == ''">BoilerInstaller.exe</PortableLauncherName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/boiler-app-icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Resource Include="Assets/*.png" />
     <EmbeddedResource Include="../components/release.json" LogicalName="OxpInstaller.release.json" />
     <EmbeddedResource Include="RestartToSteamOS.bat" LogicalName="OxpInstaller.RestartToSteamOS.bat" />
   </ItemGroup>

@@ -27,6 +27,13 @@ class MaintenanceTests(unittest.TestCase):
         self.assertEqual((self.root/"etc/test").read_bytes(),b"original")
         with self.assertRaises(MaintenanceError): self.engine.verify("core:decky")
 
+    def test_device_mismatch_warns_and_applies(self):
+        item = component(); item['compatibility'] = {'device_ids':['known']}
+        result = self.engine.apply(item, self.payload, environment={'device_id':'other'})
+        self.assertEqual(result['device_warning']['actual_device_id'], 'other')
+        self.assertTrue(self.engine.verify(item['id'])['ok'])
+        self.engine.restore(result['transaction'])
+
     def test_binary_new_install_needs_no_legacy_store_and_creates_public_system_parents(self):
         result=self.engine.apply(component(target='etc/new-system/runtime/file'),self.payload)
         target=self.root/'etc/new-system/runtime/file'

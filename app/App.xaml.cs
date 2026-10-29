@@ -51,11 +51,29 @@ public partial class App : Application
             {
                 if (e.Args.Length == 2 && e.Args[1] == "normal-elevation-probe") { log.AppendLine(System.Text.Json.JsonSerializer.Serialize(new { elevated = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator), identity = System.Security.Principal.WindowsIdentity.GetCurrent().Name, scope = "Read-only token identity probe; no disk, firmware or system modifications." })); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-ui-checks") { log.AppendLine(await BoilerUiChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "steamos-partition-checks") { log.AppendLine(await SteamOsPartitionChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "boiler-device-checks") { log.AppendLine(await BoilerDeviceChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "model-catalog-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "device-choice-checks") { log.AppendLine(await BoilerAdaptationChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "source-card-checks") { log.AppendLine(await SystemSourceCardChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "source-digest-checks") { log.AppendLine(await SourceDigestChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "wireless-options-checks") { log.AppendLine(await WirelessOptionsChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "graphics-options-checks") { log.AppendLine(await GraphicsOptionsChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "system-preset-checks") { log.AppendLine(await SystemPresetChecks.RunAsync()); }
+                else if (e.Args.Length == 4 && e.Args[1] == "firmware-plan-checks")
+                {
+                    var selection = await File.ReadAllTextAsync(e.Args[3]);
+                    await Backend.GuestAsync("firmware-plan", e.Args[2], false, text => log.Append(text), CancellationToken.None, selection: selection);
+                }
+                else if (e.Args.Length == 2 && e.Args[1] == "input-discovery-checks") { log.AppendLine(await InputDiscoveryChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "input-association-checks") { log.AppendLine(await InputAssociationChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "input-binding-checks") { log.AppendLine(await InputDiscoveryChecks.RunBindingAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "helper-binding-checks") { log.AppendLine(await HelperBindingChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-image-checks") { log.AppendLine(await BoilerImageBuildChecks.RunAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-prepared-checks") { log.AppendLine(await BoilerImageBuildChecks.RecheckAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-model-checks") { log.AppendLine(await BoilerImageBuildChecks.ModelAsync(e.Args[2], e.Args[3])); }
+                else if (e.Args.Length == 3 && e.Args[1] == "boiler-linux-model-checks") { log.AppendLine(await BoilerImageBuildChecks.LinuxModelAsync(e.Args[2])); }
                 else if (e.Args.Length == 2 && e.Args[1] == "native-volume-checks") { log.AppendLine(NativeVolumeChecks.Run()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "process-checks") { log.AppendLine(await ProcessChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "installer-restart-checks") { log.AppendLine(await InstallerRestartChecks.RunAsync()); }
@@ -303,9 +321,29 @@ public partial class App : Application
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == "--render-ui") System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
-        var rehearsal = e.Args.Length > 0 && e.Args[0] is "--rehearsal" or "--recovery-image-checks" or "--shared-storage-ui-checks" or "--wizard-checks" or "--wizard-resume" or "--wizard-run-prepared" or "--wizard-run-image" or "--wizard-cancel-prepared";
+        var rehearsal = e.Args.Length > 0 && e.Args[0] is "--rehearsal" or "--steamos-reinstall-preview" or "--device-choice-preview" or "--source-cards-preview" or "--official-download-ui-checks" or "--recovery-image-checks" or "--shared-storage-ui-checks" or "--wizard-checks" or "--wizard-resume" or "--wizard-run-prepared" or "--wizard-run-image" or "--wizard-cancel-prepared";
         var window = new MainWindow(rehearsal);
         MainWindow = window;
+        if (e.Args.Length == 1 && e.Args[0] == "--steamos-reinstall-preview")
+        {
+            var picker = (PartitionPicker)window.FindName("PartitionSelector"); picker.AutomaticReadEnabled = false;
+            window.WindowState = WindowState.Normal; window.Width = 1060; window.Height = 790;
+            window.BoilerModeForChecks("imported"); window.PreviewStep(0);
+            picker.SetDebugMode(true); picker.LoadSnapshot(SteamOsPartitions.ExampleJson(), true);
+            window.Show(); return;
+        }
+        if (e.Args.Length == 1 && e.Args[0] == "--source-cards-preview")
+        {
+            ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
+            window.WindowState = WindowState.Normal; window.Width = 1280; window.Height = 900;
+            window.PreviewSystemSources(); window.Show(); return;
+        }
+        if (e.Args.Length == 1 && e.Args[0] == "--device-choice-preview")
+        {
+            ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
+            window.WindowState = WindowState.Normal; window.Width = 1060; window.Height = 720;
+            window.BoilerModeForChecks("custom"); window.Show(); return;
+        }
         if (e.Args.Length == 1 && e.Args[0] == "--recovery-image-checks")
         {
             var result = Path.Combine(Backend.Root, "logs/recovery-image-checks.json");

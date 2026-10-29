@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "licenses/GPL-2.0.txt",
+      "source": "Git for Windows distribution, unmodified LICENSE.txt (complete GPL version 2 text and original preface)",
+      "size": 19125,
+      "sha256": "454649ddc02b5cc098513cea28db6592b45ac0a906386287c4d48cf8dbde651c"
+    }
+  ]
+}

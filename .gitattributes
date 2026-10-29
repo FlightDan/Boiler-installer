@@ -1,1 +1,3 @@
-* -text
+* -text whitespace=cr-at-eol
+adaptations/** whitespace=cr-at-eol,-blank-at-eof
+adaptations/**/*.patch -whitespace

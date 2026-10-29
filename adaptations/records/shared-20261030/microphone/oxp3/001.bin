@@ -1,0 +1,13 @@
+[Unit]
+Description=Synchronize microphone mute with ALSA Capture Switch
+ConditionUser=!root
+After=pipewire-pulse.service wireplumber.service
+Wants=pipewire-pulse.service wireplumber.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/oxp-microphone/microphone.py run
+NoNewPrivileges=yes
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=30
