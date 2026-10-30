@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261030.7'
+VERSION = '0.1.0-localtest.20261030.8'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 
@@ -141,6 +141,25 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
     if data.count(before) != 1:
         raise ValueError('Unexpected managed maintenance Decky provider')
     path.write_bytes(data.replace(before, after)); changed.append(name)
+    name = 'payload/legacy/components/catalog.json'
+    path = directory/name; catalog = json.loads(path.read_bytes())
+    entries = [row for row in catalog['plugins'] if row['id'] == 'decky']
+    if len(entries) != 1 or entries[0]['version'] != '3.2.10':
+        raise ValueError('Unexpected retained Decky catalog entry')
+    entries[0]['version'] = '3.3.1'
+    path.write_bytes(encoded(catalog)); changed.append(name)
+    name = 'payload/legacy/licenses/runtime-inventory.json'
+    path = directory/name; notices = json.loads(path.read_bytes())
+    entries = [row for row in notices['runtime'] if row['name'] == 'Decky Loader']
+    if len(entries) != 1 or entries[0]['version'] != '3.2.10':
+        raise ValueError('Unexpected retained Decky license record')
+    entries[0].update(version='3.3.1', source=decky_lock['url'], license=decky_lock['license'],
+        sources='plugins/decky/source-v3.3.1.zip')
+    entries[0].pop('pending', None)
+    for row in notices['files']:
+        if row.get('file') == 'plugins/decky/PluginLoader':
+            row.update(bytes=len(binary), sha256=digest(binary))
+    path.write_bytes(encoded(notices)); changed.append(name)
     for cap in manifest.get('legacy_capabilities', []):
         if cap['id'] == 'oxp3:decky':
             cap['payload_version'] = '3.3.1'
