@@ -61,7 +61,7 @@ public partial class MainWindow : Window
         physicalInstallation = !rehearsal;
         InitializeComponent();
         PartitionSelector.BootPrerequisitesReady = !physicalInstallation;
-        PartitionSelector.DefaultCapacityGiB = physicalInstallation ? 64 : 128;
+        PartitionSelector.DefaultCapacityGiB = 128;
         PartitionSelector.AllowPhysicalDeletion = physicalInstallation;
         optionsPanel = new InstallerOptionsPanel(); ComponentOptionsHost.Children.Add(optionsPanel);
         if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.Checked += CoreDeckyProviderChecked;
@@ -250,6 +250,9 @@ public partial class MainWindow : Window
     }
     private void RefreshWorkspace()
     {
+        CleanupTemporaryFilesLabel.Text = PartitionInventory.L("安装成功后清理临时文件（保留下载缓存和日志）", "Clean temporary files after successful installation (keep download caches and logs)");
+        CleanupTemporaryFiles.ToolTip = PartitionInventory.L("失败或中断时保留恢复文件；取消勾选可保留准备镜像。", "Recovery files are kept after failure or interruption. Uncheck to retain prepared images.");
+        CleanupTemporaryFiles.Visibility = physicalInstallation ? Visibility.Visible : Visibility.Collapsed;
         WorkspaceHeading.Text = PartitionInventory.L("工作空间", "Workspace");
         BrowseWorkspaceButton.Content = PartitionInventory.L("选择文件夹…", "Choose folder…");
         WorkspacePath.Text = InstallerWorkspace.DirectoryPath;
@@ -311,7 +314,7 @@ public partial class MainWindow : Window
         PlanningScope.Text = Kind == InstallationTargetKind.InternalShared
             ? PartitionInventory.L("所选磁盘与容量用于安装规划；本次执行仍使用独立的 80 GiB 虚拟测试盘。", "Disk and capacity selections are for planning; execution still uses a separate 80 GiB virtual test disk.")
             : PartitionInventory.L("外部完整系统演练使用新建的 80 GiB 虚拟盘；真实外部设备选择尚未开放。", "The external full-system rehearsal uses a new 80 GiB virtual disk; real external-device selection is not available yet.");
-        if(physicalInstallation) PlanningScope.Text=PartitionInventory.L("选择至少 64 GiB 未分配空间，可选 64G、100G 或自定义容量。也可先删除不再需要的数据分区来释放空间；删除前会单独确认，系统和启动分区受保护。","Choose at least 64 GiB of unallocated space, then select 64G, 100G or a custom capacity. You can first delete an unwanted data partition to free space. Deletion has its own confirmation; system and boot partitions are protected.");
+        if(physicalInstallation) PlanningScope.Text=PartitionInventory.L("选择至少 128 GiB 未分配空间，可选 128G 或 256G。也可先删除不再需要的数据分区来释放空间；删除前会单独确认，系统和启动分区受保护。","Choose at least 128 GiB of unallocated space, then select 128G or 256G. You can first delete an unwanted data partition to free space. Deletion has its own confirmation; system and boot partitions are protected.");
     }
     private void SourceModeChanged(object sender, RoutedEventArgs e) { if (ready) { ImagePath.Clear(); ValidationMessage.Text = ""; } }
     private void BrowseImage(object sender, RoutedEventArgs e)
@@ -427,6 +430,8 @@ public partial class MainWindow : Window
         var compact = width < 960;
         var stackedChoices = width < 800;
         var shortSidebar = height < 420;
+        var shortWindow = height < 480;
+        PageSubtitle.Visibility = shortWindow ? Visibility.Collapsed : Visibility.Visible;
         SidebarColumn.Width = new GridLength(compact ? 152 : 216);
         SidebarBody.Margin = shortSidebar ? new Thickness(12,8,12,8)
             : compact ? new Thickness(12,16,12,12) : new Thickness(24,32,24,24);
@@ -439,8 +444,8 @@ public partial class MainWindow : Window
         }
         SidebarTitle.FontSize = compact ? 20 : 24;
         SidebarLogo.Width = SidebarLogo.Height = compact ? 28 : 36;
-        MainContent.Margin = compact ? new Thickness(16,16,16,16) : new Thickness(40,32,32,32);
-        PageTitle.FontSize = compact ? 22 : 28;
+        MainContent.Margin = shortWindow ? new Thickness(12,8,12,8) : compact ? new Thickness(16,16,16,16) : new Thickness(40,32,32,32);
+        PageTitle.FontSize = shortWindow ? 20 : compact ? 22 : 28;
         // Keep one vertical gesture surface; do not nest a scrollable disk table inside it.
         PartitionSelector.FreeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         PartitionSelector.TypeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
@@ -490,6 +495,7 @@ public partial class MainWindow : Window
     internal async Task StartAsync(InstallationRequest request)
     {
         if (operation != null) throw new InvalidOperationException(InstallerI18n.T("已有任务正在运行。"));
+        request = request with { CleanupTemporaryFiles = physicalInstallation && CleanupTemporaryFiles.IsChecked == true };
         session = null; Progress.Value = 0;
         operation = new CancellationTokenSource(); StopButton.IsEnabled = true; ShowStep(5); LogText.Clear(); LogExpander.IsExpanded = false;
         try
@@ -529,6 +535,8 @@ public partial class MainWindow : Window
             ResultMessage.Text=written?PartitionInventory.L("SteamOS 系统分区已写入，并已完成读回核对。","SteamOS system partitions have been written and read-back verification is complete."):state.Error;
             ResultScope.Text=written ? BootResultGuidance(state) : PartitionInventory.L("保留任务目录。若中断，不要自动删除已创建分区或重复安装；先检查 physical-state.json 中的设备与完成记录。","Keep the task directory. If interrupted, review physical-state.json before deleting partitions or reinstalling.");
             RecentText.Text=ResultTitle.Text;
+            if (state.TemporaryFilesCleaned) ResultScope.Text += "\n" + PartitionInventory.L("临时文件已清理，下载缓存与日志已保留。", "Temporary files cleaned; download caches and logs kept.");
+            if (state.CleanupWarning != null) ResultScope.Text += "\n" + PartitionInventory.L("部分临时文件未清理：", "Some temporary files could not be cleaned: ") + state.CleanupWarning;
         }
         var componentReport = Path.Combine(InstallationController.SessionDirectory(state), "components.json");
         if (File.Exists(componentReport))

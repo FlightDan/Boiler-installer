@@ -8,11 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace OxpInstaller;
 
-public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null);
+public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null, bool CleanupTemporaryFiles = false);
 public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null);
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
-    string? DesktopRebootScript = null, string? DesktopRebootWarning = null);
+    string? DesktopRebootScript = null, string? DesktopRebootWarning = null, bool CleanupTemporaryFiles = false, bool TemporaryFilesCleaned = false, string? CleanupWarning = null);
 public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null, string? RecoveryDigest = null);
 public sealed record PartitionJobResult(string Status, string? Error);
 
@@ -99,12 +99,12 @@ public static partial class InstallationController
     }
     public static async Task<InstallationSession> RunAsync(InstallationRequest request, Action<InstallationProgress> report, Action<string> log,
         CancellationToken token, Action<InstallationSession>? created = null)
-        => await WithInstallationLogAsync("install", log, trace => RunCoreAsync(request,
+        => await WithInstallationLogAsync("install", log, async trace => { var state = await RunCoreAsync(request,
             update => { trace.Progress(update); report(update); }, trace.Write, token, state =>
             {
                 trace.Write($"\nINSTALL_SESSION={Path.Combine(SessionDirectory(state), "session.json")}\n");
                 created?.Invoke(state);
-            }));
+            }); return await Task.Run(() => InstallationTemporaryFiles.Complete(state, trace.Write)); });
 
     private static async Task<T> WithInstallationLogAsync<T>(string kind, Action<string> log, Func<InstallationLog, Task<T>> action)
     {
@@ -134,6 +134,7 @@ public static partial class InstallationController
         }
         Directory.CreateDirectory(Work);
         var id = Guid.NewGuid().ToString("N"); var directory = Path.Combine(Work, "install-session-" + id); Directory.CreateDirectory(directory);
+        using var temporaryScope = InstallationTemporaryFiles.UseSession(directory);
         var snapshot = await BoilerImage.SnapshotAsync(request.Source, directory, token);
         if (request.ExpectedSourceSha256 != null && snapshot.Sha256 != request.ExpectedSourceSha256)
         {
@@ -143,7 +144,7 @@ public static partial class InstallationController
         request = request with { Source = snapshot.Path };
         var journal = Path.Combine(directory, "session.json");
         using var sessionLease = LeaseSession(directory);
-        var state = new InstallationSession(1, id, request.Kind, Path.GetFullPath(request.Source), request.Prepared, "running", "preparing", null, null, DateTime.UtcNow, request.Options, request.Physical, request.Refind, request.MakeDefaultBoot);
+        var state = new InstallationSession(1, id, request.Kind, Path.GetFullPath(request.Source), request.Prepared, "running", "preparing", null, null, DateTime.UtcNow, request.Options, request.Physical, request.Refind, request.MakeDefaultBoot, CleanupTemporaryFiles: request.CleanupTemporaryFiles);
         Save(journal, state); created?.Invoke(state);
         var progress = new InstallationProgressTracker();
         using var progressLog = new StreamWriter(new FileStream(Path.Combine(directory, "progress.jsonl"), FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };

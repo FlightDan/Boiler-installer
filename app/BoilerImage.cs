@@ -16,19 +16,24 @@ internal static class BoilerImage
         return Math.Max(PartitionInventory.Minimum, checked((span + PartitionInventory.MiB - 1) / PartitionInventory.MiB * PartitionInventory.MiB));
     }
 
-    internal static ulong RawImportBudget(long imageBytes, bool physical, bool includeInspection = false) =>
-        Math.Max(MediaSpace.InstallationBudget(physical, false), checked((ulong)imageBytes * (includeInspection ? 3ul : 2ul) + 8ul * PartitionInventory.GiB));
+    internal static ulong RawImportBudget(long imageBytes, bool physical, bool includeInspection = false, ulong? dataBytes = null) =>
+        Math.Max(MediaSpace.InstallationBudget(physical, false), checked((dataBytes ?? (ulong)imageBytes) * (includeInspection ? 3ul : 2ul) + 8ul * PartitionInventory.GiB));
 
     internal static ulong ArchiveImportBudget(long compressedBytes, long expandedBytes, bool physical, bool includeInspection = false) =>
         Math.Max(MediaSpace.InstallationBudget(physical, false),
-            checked(((ulong)compressedBytes + (ulong)expandedBytes) * (includeInspection ? 2ul : 1ul) + 8ul * PartitionInventory.GiB));
+            // Expanded data is sparsely streamed with per-write reserve checks;
+            // its logical capacity does not predict real disk allocation.
+            checked((ulong)compressedBytes * (includeInspection ? 2ul : 1ul) + 8ul * PartitionInventory.GiB));
 
     internal static ulong WorkspaceBudget(string input, bool physical, bool includeInspection = false)
     {
         if (File.Exists(input))
         {
             if (input.EndsWith(".img", StringComparison.OrdinalIgnoreCase))
-                return RawImportBudget(new FileInfo(input).Length, physical, includeInspection);
+            {
+                using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read);
+                return RawImportBudget(source.Length, physical, includeInspection, RawImageStaging.SparseDataUpperBound(source, CancellationToken.None));
+            }
             if (input.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 using var archive = ImageImportStreams.OpenZip(input, allowManifest: true);
@@ -50,17 +55,24 @@ internal static class BoilerImage
         MediaSource.Ordinary(output, InstallationController.Work, false);
         // Copy and hash the same held handle. A parent junction may be rebound
         // while that handle is open, so never reopen the input by path afterward.
-        using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
-        MediaSpace.RequireAvailable(directory, checked((ulong)source.Length + PartitionInventory.GiB));
+        using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, false);
+        var allocated = suffix == ".img" ? RawImageStaging.SparseDataUpperBound(source, token) : null;
         var owned = false;
         try
         {
-            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false);
             owned = true;
+            var sparse = RawImageStaging.TryMakeSparse(target);
+            MediaSpace.RequireAvailable(directory, checked((sparse ? allocated ?? (ulong)source.Length : (ulong)source.Length) + PartitionInventory.GiB));
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[1024 * 1024]; int size;
             while ((size = await source.ReadAsync(buffer, token)) != 0)
-            { hash.AppendData(buffer, 0, size); await target.WriteAsync(buffer.AsMemory(0, size), token); }
+            {
+                hash.AppendData(buffer, 0, size);
+                MediaSpace.RequireAvailable(directory, checked((ulong)size + PartitionInventory.GiB + 65536));
+                await RawImageStaging.WriteSparseAsync(target, buffer.AsMemory(0, size), sparse, token);
+            }
+            target.SetLength(target.Position);
             await target.FlushAsync(token);
             if (target.Length != source.Length) throw new IOException("Source size changed during snapshot.");
             return (output, Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant());
@@ -88,7 +100,7 @@ internal static class BoilerImage
             {
                 using var archive = ImageImportStreams.OpenZip(input, allowManifest: true);
                 var (image, metadata) = ImageImportStreams.ZipEntries(archive, allowManifest: true);
-                MediaSpace.RequireAvailable(session, checked((ulong)image.Length + (ulong)(metadata?.Length ?? 0) + ImageImportStreams.ReserveBytes));
+                MediaSpace.RequireAvailable(session, checked((ulong)(metadata?.Length ?? 0) + ImageImportStreams.ReserveBytes));
                 if (metadata != null)
                 {
                     using (var stream = metadata.Open())
@@ -113,7 +125,7 @@ internal static class BoilerImage
             }
             else
             {
-                using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
+                using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, false);
                 await ImageImportStreams.CopyOwnedAsync(source, output, token, expected: source.Length);
                 outputOwned = true;
             }

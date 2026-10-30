@@ -58,7 +58,13 @@ public static partial class InstallationController
 {
     // Explicit recovery entry. Never constructs a new plan from the now-occupied gap.
     public static async Task<string> ResumePhysicalAsync(string sessionPath, Action<string> log, CancellationToken token)
-        => await WithInstallationLogAsync("physical-resume", log, trace => ResumePhysicalCoreAsync(sessionPath, trace.Write, token));
+        => await WithInstallationLogAsync("physical-resume", log, async trace =>
+        {
+            var deployment = await ResumePhysicalCoreAsync(sessionPath, trace.Write, token);
+            var state = JsonSerializer.Deserialize<InstallationSession>(await File.ReadAllTextAsync(sessionPath)) ?? throw new IOException("Missing completed session.");
+            await Task.Run(() => InstallationTemporaryFiles.Complete(state, trace.Write));
+            return deployment;
+        });
 
     private static async Task<string> ResumePhysicalCoreAsync(string sessionPath, Action<string> log, CancellationToken token)
     {

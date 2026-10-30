@@ -22,13 +22,27 @@ internal static class PreparedCapacityChecks
         var same = await PreparedCapacity.ExpandAsync(original,session,64*PartitionInventory.GiB,_=>{},token);
         if(same!=original) throw new IOException("64G unexpectedly copied the matching source.");
         events.Add("64g-existing-layout-kept");
-        var expanded = await PreparedCapacity.ExpandAsync(original,session,100*PartitionInventory.GiB,_=>{},token);
+        var expanded = await PreparedCapacity.ExpandAsync(original,session,128*PartitionInventory.GiB,_=>{},token);
         if(expanded==original) throw new IOException("Selected source was modified in place.");
         using(var source=new PreparedDiskImage(original)) if(source.Identity!=identity) throw new IOException("Original source changed.");
         events.Add("selected-source-immutable");
-        await Backend.GuestAsync("capacity-check",expanded,true,_=>{},token,selection:JsonSerializer.Serialize(new{mode="verify",capacity=100*PartitionInventory.GiB}));
-        events.Add("100g-real-gpt-and-ext4-growth-data-preserved");
-        var fractional=100*PartitionInventory.GiB+512*PartitionInventory.MiB;
+        await Backend.GuestAsync("capacity-check",expanded,true,_=>{},token,selection:JsonSerializer.Serialize(new{mode="verify",capacity=128*PartitionInventory.GiB}));
+        events.Add("128g-real-gpt-and-ext4-growth-data-preserved");
+        using (var allocation = File.OpenRead(expanded))
+        {
+            var bound = RawImageStaging.SparseDataUpperBound(allocation, token);
+            if (bound == null || bound > 2ul * PartitionInventory.GiB) throw new IOException("128-GiB expansion allocated excessive physical space.");
+            events.Add($"128g-native-sparse-allocation-{bound}-bytes");
+        }
+        await PreparedCapacity.ExpandAsync(expanded,session,256*PartitionInventory.GiB,_=>{},token);
+        await Backend.GuestAsync("capacity-check",expanded,true,_=>{},token,selection:JsonSerializer.Serialize(new{mode="verify",capacity=256*PartitionInventory.GiB}));
+        using (var allocation = File.OpenRead(expanded))
+        {
+            var bound = RawImageStaging.SparseDataUpperBound(allocation, token);
+            if (bound == null || bound > 2ul * PartitionInventory.GiB) throw new IOException("256-GiB expansion allocated excessive physical space.");
+            events.Add($"256g-real-ext4-growth-data-preserved-native-allocation-{bound}-bytes");
+        }
+        var fractional=256*PartitionInventory.GiB+512*PartitionInventory.MiB;
         await PreparedCapacity.ExpandAsync(expanded,session,fractional,_=>{},token);
         await Backend.GuestAsync("capacity-check",expanded,true,_=>{},token,selection:JsonSerializer.Serialize(new{mode="verify",capacity=fractional}));
         events.Add("fractional-all-space-capacity-gpt-and-ext4-growth");

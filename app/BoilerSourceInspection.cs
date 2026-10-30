@@ -26,7 +26,7 @@ public partial class MainWindow
         inspectedSourceMd5 = null;
         inspectedSourceInfo = null; inspectedSourceCapacity = null;
         if (sourceInfoText != null) sourceInfoText.Text = "";
-        PartitionSelector.DefaultCapacityGiB = physicalInstallation ? 64 : 128;
+        PartitionSelector.DefaultCapacityGiB = 128;
     }
     private string SourceInfoKey()
     {

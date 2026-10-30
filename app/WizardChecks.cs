@@ -26,7 +26,7 @@ public static class WizardChecks
             Click("TargetTab");
             picker.LoadSnapshot(PartitionInventory.ExampleJson, false);
             picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(r => r.Space != null);
-            picker.CapacityInput.Text = "64";
+            picker.CapacityInput.Text = "128";
             Click("NextButton");
             Require(Find<Grid>("SafetyOverlay").IsVisible, "target-consent-required-" + language);
             Click("SafetyContinue");

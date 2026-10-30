@@ -52,12 +52,54 @@ internal static class WorkspaceChecks
                 Require(largeClusters >= 40ul * 1024 * 1024 && largeClusters < 64ul * 1024 * 1024,
                     "sparse-budget-rounds-and-merges-larger-destination-clusters");
             }
+            foreach (var gib in new[] { 128, 256 })
+            {
+                var large = Path.Combine(directory, $"sparse-{gib}.img");
+                using (var file = new FileStream(large, FileMode.CreateNew, FileAccess.Write))
+                {
+                    Require(RawImageStaging.TryMakeSparse(file), $"{gib}-GiB-fixture-supports-sparse");
+                    file.SetLength(gib * PartitionInventory.GiB);
+                    file.WriteByte(0x31);
+                    file.Position = file.Length / 2; file.WriteByte(0x72);
+                    file.Position = file.Length - 1; file.WriteByte(0x93);
+                }
+                Require(BoilerImage.WorkspaceBudget(large, true, true) == MediaSpace.MinimumWorkspace,
+                    $"{gib}-GiB-sparse-input-budget-uses-allocated-data");
+                var snapshotDirectory = Path.Combine(directory, $"snapshot-{gib}");
+                var capacitySnapshot = await BoilerImage.SnapshotAsync(large, snapshotDirectory, CancellationToken.None);
+                var imported = Path.Combine(directory, $"import-{gib}.img");
+                using (var input = File.OpenRead(capacitySnapshot.Path))
+                    await ImageImportStreams.CopyOwnedAsync(input, imported, CancellationToken.None, expected: input.Length,
+                        // Sparse data fits despite less space than logical capacity.
+                        available: () => 2ul * PartitionInventory.GiB);
+                foreach (var path in new[] { capacitySnapshot.Path, imported })
+                {
+                    using var file = File.OpenRead(path);
+                    var bound = RawImageStaging.SparseDataUpperBound(file, CancellationToken.None);
+                    Require(file.Length == gib * PartitionInventory.GiB && bound is > 0 and < 4ul * 1024 * 1024,
+                        $"{gib}-GiB-{Path.GetFileName(path)}-native-allocation-under-4-MiB");
+                    foreach (var (offset, value) in new[] { (0L, 0x31), (file.Length / 2, 0x72), (file.Length - 1, 0x93), (file.Length / 4, 0) })
+                    { file.Position = offset; Require(file.ReadByte() == value, $"{gib}-GiB-{Path.GetFileName(path)}-byte-{offset}-preserved"); }
+                }
+            }
             var source = Path.Combine(directory, "data.img");
             using (var stream = new FileStream(source, FileMode.CreateNew, FileAccess.Write)) {
                 stream.SetLength(16 * 1024 * 1024);
                 stream.Write(new byte[] { 1, 2, 3, 4 });
                 stream.Position = stream.Length - 4; stream.Write(new byte[] { 5, 6, 7, 8 });
             }
+            var smallSnapshot = await BoilerImage.SnapshotAsync(source, Path.Combine(directory, "small-snapshot"), CancellationToken.None);
+            using (var input = File.OpenRead(source))
+                Require(smallSnapshot.Sha256 == Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(input)).ToLowerInvariant(),
+                    "sparse-source-snapshot-hash-covers-all-logical-zero-bytes");
+            using (var input = File.OpenRead(smallSnapshot.Path))
+                Require(smallSnapshot.Sha256 == Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(input)).ToLowerInvariant(),
+                    "sparse-source-snapshot-bytes-match-returned-digest");
+            var tail = new byte[2 * 1024 * 1024 + 17]; tail[65537] = 0x64;
+            var tailCopy = Path.Combine(directory, "trailing-zero-import.img");
+            await ImageImportStreams.CopyOwnedAsync(new MemoryStream(tail), tailCopy, CancellationToken.None, expected: tail.Length,
+                available: () => 2ul * PartitionInventory.GiB);
+            Require((await File.ReadAllBytesAsync(tailCopy)).SequenceEqual(tail), "sparse-stream-retains-unaligned-data-and-trailing-zero-length");
             var copy = Path.Combine(directory, "data-copy.img");
             await RawImageStaging.ConvertAsync(source, copy, _ => { }, CancellationToken.None);
             await Backend.ProcessAsync(qemu, ["compare", "-f", "raw", "-F", "raw", source, copy], _ => { }, CancellationToken.None);

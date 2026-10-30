@@ -138,13 +138,17 @@ internal static class ImageImportStreams
         {
             if (available() < ReserveBytes + bytes) throw new IOException("镜像解压后须保留至少 1 GiB 可用工作空间。 / Image expansion would consume the 1 GiB workspace reserve.");
         }
-        Space((ulong)(expected ?? 0));
+        Space(0);
         token.ThrowIfCancellationRequested();
         var owned = false;
         try
         {
-            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false);
             owned = true;
+            var sparse = RawImageStaging.TryMakeSparse(target);
+            // Declared length is a validation bound, not allocated space. On a
+            // filesystem without sparse support retain the full-size preflight.
+            if (!sparse) Space((ulong)(expected ?? 0));
             var buffer = new byte[1024 * 1024]; long total = 0;
             var limit = expected ?? maximum;
             while (true)
@@ -155,11 +159,12 @@ internal static class ImageImportStreams
                 var count = await source.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token);
                 if (count == 0) break;
                 if (count > limit - total) throw new IOException("镜像数据超过解压大小限制。 / Image stream exceeds its expanded byte budget.");
-                Space((ulong)count);
-                await target.WriteAsync(buffer.AsMemory(0, count), token);
+                Space((ulong)count + 65536);
+                await RawImageStaging.WriteSparseAsync(target, buffer.AsMemory(0, count), sparse, token);
                 total += count;
             }
             if (expected != null && total != expected) throw new IOException("镜像数据长度与声明不符。 / Image stream differs from its declared length.");
+            target.SetLength(total); // Keep trailing zero runs as holes too.
             await target.FlushAsync(token);
             Space(0);
             return total;
@@ -287,7 +292,7 @@ public static class Backend
         if (!File.Exists(input)) throw new FileNotFoundException("恢复镜像不存在。", input);
         if (input.EndsWith(".img", StringComparison.OrdinalIgnoreCase)) { RecoveryImage.ValidateRaw(input, allowPrepared); return input; }
         if (!input.EndsWith(".img.bz2", StringComparison.OrdinalIgnoreCase) && !input.EndsWith(".img.zip", StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("只支持 .img、.img.bz2、.img.zip。");
-        var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "import", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
+        var directory = Path.Combine(InstallationTemporaryFiles.Root, "import", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
         var output = Path.Combine(directory, "imported.img");
         var owned = false;
         try
@@ -310,7 +315,7 @@ public static class Backend
     {
         if (string.Equals(Path.GetFullPath(input), Path.GetFullPath(output), StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("输出不能覆盖源镜像。");
         using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, true);
-        using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+        using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false);
         await source.CopyToAsync(target, token); await target.FlushAsync(token);
     }
     public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null)
@@ -346,9 +351,9 @@ public static class Backend
             MediaSource.Ordinary(integrationPayload, InstallerWorkspace.DirectoryPath, false);
         }
         if (task == "integration" && integrationPayload == null && selection != null)
-            integrationPayload = await FirmwareDownloads.PrepareAsync(image!, Path.Combine(InstallerWorkspace.DirectoryPath, "firmware-session-" + Guid.NewGuid().ToString("N")), selection, log, token);
+            integrationPayload = await FirmwareDownloads.PrepareAsync(image!, Path.Combine(InstallationTemporaryFiles.Root, "firmware-session-" + Guid.NewGuid().ToString("N")), selection, log, token);
         var id = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + "-" + task;
-        var work = Path.Combine(InstallerWorkspace.DirectoryPath, id); Directory.CreateDirectory(work);
+        var work = Path.Combine(InstallationTemporaryFiles.Root, id); Directory.CreateDirectory(work);
         var payload = Path.Combine(work, "payload"); Directory.CreateDirectory(payload);
         using (var manifest = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(Root, "scripts/runtime-dependencies.lock.json"), token)))
         {
@@ -434,7 +439,7 @@ public static class Backend
                 }
             }
         }
-        var transport = Path.Combine(InstallerWorkspace.DirectoryPath, ".p-" + Guid.NewGuid().ToString("N")[..12]);
+        var transport = InstallationTemporaryFiles.NewTransportDirectory();
         var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, transport, token);
         await File.WriteAllTextAsync(Path.Combine(work, "payload-transport.json"),
             System.Text.Json.JsonSerializer.Serialize(new { source = payload, volumes = payloadVolumes }), token);
@@ -663,7 +668,7 @@ public static class Backend
     }
     public static async Task<string> CreateFixtureAsync(Action<string> log, CancellationToken token)
     {
-        var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "virtual-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
+        var directory = Path.Combine(InstallationTemporaryFiles.Root, "virtual-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
         var fixture = Path.Combine(directory, "windows-fixture.qcow2");
         await ProcessAsync(Path.Combine(Root, "runtime/qemu-min/qemu-img.exe"), ["create", "-f", "qcow2", fixture, "80G"], log, token);
         var marker = System.Text.Json.JsonSerializer.Serialize(new { kind = "oxp3-virtual-fixture", size = 80L * 1024 * 1024 * 1024 });

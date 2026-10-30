@@ -166,7 +166,6 @@ public sealed partial class InstallerOptionsPanel : StackPanel
         repairs.Children.Add(OptionGrid(DeviceRepairs, trackRepairSelection: true));
         RepairsExpander.Header = repairHeading;
         RepairsExpander.Content = repairs;
-        RepairsExpander.IsExpanded = true;
         Children.Add(RepairsExpander); GenericSections.Add(RepairsExpander);
         InitializeGraphicsOptions();
         if (catalog.Repairs.Any(x => x.Id == "flathub-ustc"))

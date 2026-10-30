@@ -93,6 +93,7 @@ public partial class App : Application
                 }
                 else if (e.Args.Length == 3 && e.Args[1] == "reviewed-install") { log.AppendLine("INSTALL_SESSION=" + await ReviewedInstallationCli.RunAsync(e.Args[2])); }
                 else if (e.Args.Length == 2 && e.Args[1] == "capacity-checks") { log.AppendLine(await PreparedCapacityChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "installation-cleanup-checks") { log.AppendLine(await InstallationCleanupChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "workspace-checks") { log.AppendLine(await WorkspaceChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "installation-log-checks")
                 {

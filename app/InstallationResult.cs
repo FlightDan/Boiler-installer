@@ -26,9 +26,20 @@ public partial class MainWindow
             PartitionInventory.L("重启到 SteamOS", "Restart to SteamOS"), MessageBoxButton.OKCancel, MessageBoxImage.Question,
             MessageBoxResult.Cancel) != MessageBoxResult.OK) return;
         RestartButton.IsEnabled = false;
+        operation = new CancellationTokenSource();
         string? restartLog = null;
         try
         {
+            if (session.CleanupTemporaryFiles && CleanupTemporaryFiles.IsChecked == true)
+            {
+                session = await Task.Run(() => InstallationTemporaryFiles.Complete(session, Log));
+                if (session.CleanupWarning != null)
+                {
+                    ValidationMessage.Text = PartitionInventory.L("临时文件未完整清理：", "Temporary file cleanup is incomplete: ") + session.CleanupWarning
+                        + "\n" + PartitionInventory.L("请关闭占用文件的程序后重试；也可取消清理选项后重启。", "Close programs using these files and retry, or uncheck cleanup before restarting.");
+                    return;
+                }
+            }
             var directory = InstallationController.SessionDirectory(session);
             MediaSource.Ordinary(directory, InstallationController.Work, false);
             restartLog = Path.Combine(directory, "restart-" + Guid.NewGuid().ToString("N") + ".jsonl");
@@ -39,6 +50,6 @@ public partial class MainWindow
             ValidationMessage.Text = PartitionInventory.L("写入已完成，但未能重启：", "Writing completed, but restart failed: ") + error.Message;
             if (restartLog != null) ValidationMessage.Text += "\n" + PartitionInventory.L("诊断日志：", "Diagnostic log: ") + restartLog;
         }
-        finally { UpdateNavigationState(); }
+        finally { FinishOperation(); }
     }
 }
