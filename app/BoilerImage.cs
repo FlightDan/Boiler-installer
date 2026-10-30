@@ -64,9 +64,11 @@ internal static class BoilerImage
             owned = true;
             var sparse = RawImageStaging.TryMakeSparse(target);
             MediaSpace.RequireAvailable(directory, checked((sparse ? allocated ?? (ulong)source.Length : (ulong)source.Length) + PartitionInventory.GiB));
+            if (sparse) target.SetLength(source.Length);
+            using var inputStream = RawImageStaging.SparseRead(source, token);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[1024 * 1024]; int size;
-            while ((size = await source.ReadAsync(buffer, token)) != 0)
+            while ((size = await inputStream.ReadAsync(buffer, token)) != 0)
             {
                 hash.AppendData(buffer, 0, size);
                 MediaSpace.RequireAvailable(directory, checked((ulong)size + PartitionInventory.GiB + 65536));
@@ -131,7 +133,8 @@ internal static class BoilerImage
             }
             RecoveryImage.ValidateRaw(output, true);
             using var file = File.OpenRead(output);
-            var hash = Convert.ToHexString(await SHA256.HashDataAsync(file, token)).ToLowerInvariant();
+            using var hashInput = RawImageStaging.SparseRead(file, token);
+            var hash = Convert.ToHexString(await SHA256.HashDataAsync(hashInput, token)).ToLowerInvariant();
             if (manifest is { } value && !string.Equals(value.GetProperty("image").GetProperty("sha256").GetString(), hash, StringComparison.Ordinal))
                 throw new IOException("镜像哈希不匹配。 / Image hash does not match manifest.");
             var prepared = RecoveryImage.IsPrepared(output);
@@ -155,7 +158,8 @@ internal static class BoilerImage
         bool prepared;
         try { RecoveryImage.ValidateRaw(image, true); prepared = RecoveryImage.IsPrepared(image); }
         catch (IOException) { using var owned = new PreparedDiskImage(image); prepared = true; }
-        using Stream source = prepared ? new BoilerExportStream(image) : File.OpenRead(image);
+        using var rawSource = prepared ? null : File.OpenRead(image);
+        using Stream source = prepared ? new BoilerExportStream(image) : RawImageStaging.SparseRead(rawSource!, token);
         var hash = Convert.ToHexString(await SHA256.HashDataAsync(source, token)).ToLowerInvariant();
         source.Position = 0;
         var manifest = new { schema_version = 1, kind = "ImageManifest", id = "image:steamos", version = "0.1.0", architecture = "x86_64", layout = prepared ? "steamos-ab" : "steamos-recovery",

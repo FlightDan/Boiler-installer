@@ -30,6 +30,9 @@ internal static class RawImageStaging
     // real clusters on Windows. Skip zero runs while retaining logical position.
     internal static async Task WriteSparseAsync(FileStream output, ReadOnlyMemory<byte> data, bool sparse, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
+        if (sparse && data.Span.IndexOfAnyExcept((byte)0) < 0)
+        { output.Seek(data.Length, SeekOrigin.Current); return; }
         const int unit = 65536;
         for (var offset = 0; offset < data.Length; offset += unit)
         {
@@ -50,16 +53,66 @@ internal static class RawImageStaging
         return Math.Max(65536ul, (ulong)sectors * bytes);
     }
 
-    // QEMU's Windows raw map can report holes as nonzero data. Query logical
-    // allocated ranges instead of using compressed byte counts, which could
-    // underestimate nonzero data on a compressed NTFS volume.
-    internal static ulong? SparseDataUpperBound(FileStream source, CancellationToken token, ulong allocationUnit = 65536)
+    // Windows cached reads through sparse holes can reserve their full logical
+    // size without allocating file ranges. Read only native allocated ranges;
+    // synthesize the same zero bytes in memory for hashing and copying.
+    internal static Stream SparseRead(FileStream source, CancellationToken token)
     {
-        if (allocationUnit == 0 || allocationUnit > long.MaxValue) throw new ArgumentOutOfRangeException(nameof(allocationUnit));
+        var ranges = SparseRanges(source, token);
+        return new SparseReadStream(source, ranges ?? [(0, source.Length)]);
+    }
+
+    private sealed class SparseReadStream(FileStream source, List<(long Start, long End)> ranges) : Stream
+    {
+        private readonly long length = source.Length;
+        private long position = source.Position;
+        private int index;
+        private int Next(Memory<byte> buffer, out bool data)
+        {
+            while (index < ranges.Count && ranges[index].End <= position) index++;
+            var end = index == ranges.Count ? length : ranges[index].Start > position ? ranges[index].Start : ranges[index].End;
+            data = index < ranges.Count && ranges[index].Start <= position;
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, end - position));
+            if (!data) buffer.Span[..count].Clear();
+            return count;
+        }
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+        public override int Read(Span<byte> buffer)
+        {
+            while (index < ranges.Count && ranges[index].End <= position) index++;
+            var data = index < ranges.Count && ranges[index].Start <= position;
+            var end = index == ranges.Count ? length : data ? ranges[index].End : ranges[index].Start;
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, end - position));
+            if (data && count > 0) { count = RandomAccess.Read(source.SafeFileHandle, buffer[..count], position); if (count == 0) throw new EndOfStreamException(); }
+            else buffer[..count].Clear();
+            position += count; return count;
+        }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
+        {
+            token.ThrowIfCancellationRequested();
+            var count = Next(buffer, out var data);
+            if (data && count > 0) { count = await RandomAccess.ReadAsync(source.SafeFileHandle, buffer[..count], position, token); if (count == 0) throw new EndOfStreamException(); }
+            position += count; return count;
+        }
+        public override long Length => length;
+        public override long Position { get => position; set { if (value < 0) throw new ArgumentOutOfRangeException(nameof(value)); position = value; index = 0; } }
+        public override long Seek(long offset, SeekOrigin origin) { Position = checked(offset + (origin == SeekOrigin.Begin ? 0 : origin == SeekOrigin.Current ? position : length)); return position; }
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override bool CanWrite => false;
+        public override void Flush() { }
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        // The caller retains ownership of the immutable source handle.
+    }
+
+    private static List<(long Start, long End)>? SparseRanges(FileStream source, CancellationToken token)
+    {
         if (!File.GetAttributes(source.Name).HasFlag(FileAttributes.SparseFile)) return null;
         var capacity = source.Length;
         var input = new byte[16]; var output = new byte[4096];
-        long cursor = 0; ulong allocated = 0, allocatedEnd = 0;
+        long cursor = 0;
+        var ranges = new List<(long Start, long End)>();
         while (cursor < capacity)
         {
             token.ThrowIfCancellationRequested();
@@ -67,7 +120,6 @@ internal static class RawImageStaging
             BinaryPrimitives.WriteInt64LittleEndian(input.AsSpan(8), capacity - cursor);
             var complete = DeviceIoControl(source.SafeFileHandle, 0x940cf, input, (uint)input.Length,
                 output, (uint)output.Length, out var returned, IntPtr.Zero);
-            // Unsupported filesystem/driver: retain the conservative QEMU map.
             if (!complete && Marshal.GetLastWin32Error() != 234) return null;
             if (returned > output.Length || returned % 16 != 0 || !complete && returned == 0)
                 throw new IOException("Invalid sparse allocation query result.");
@@ -78,13 +130,25 @@ internal static class RawImageStaging
                 if (start < cursor || start >= capacity || length <= 0 || length > long.MaxValue - start)
                     throw new IOException("Invalid sparse allocation range.");
                 var end = Math.Min(capacity, start + length);
-                var roundedStart = (ulong)start / allocationUnit * allocationUnit;
-                var roundedEnd = checked(((ulong)end + allocationUnit - 1) / allocationUnit * allocationUnit);
-                allocated = checked(allocated + roundedEnd - Math.Max(roundedStart, allocatedEnd));
-                allocatedEnd = roundedEnd;
-                cursor = end;
+                ranges.Add((start, end)); cursor = end;
             }
-            if (complete) return allocated;
+            if (complete) return ranges;
+        }
+        return ranges;
+    }
+
+    internal static ulong? SparseDataUpperBound(FileStream source, CancellationToken token, ulong allocationUnit = 65536)
+    {
+        if (allocationUnit == 0 || allocationUnit > long.MaxValue) throw new ArgumentOutOfRangeException(nameof(allocationUnit));
+        var ranges = SparseRanges(source, token);
+        if (ranges == null) return null;
+        ulong allocated = 0, allocatedEnd = 0;
+        foreach (var (start, end) in ranges)
+        {
+            var roundedStart = (ulong)start / allocationUnit * allocationUnit;
+            var roundedEnd = checked(((ulong)end + allocationUnit - 1) / allocationUnit * allocationUnit);
+            allocated = checked(allocated + roundedEnd - Math.Max(roundedStart, allocatedEnd));
+            allocatedEnd = roundedEnd;
         }
         return allocated;
     }
@@ -119,6 +183,19 @@ internal static class RawImageStaging
             output.SetLength(capacity);
         }
         log($"Image staging: logical {capacity / 1073741824d:F1} GiB; data upper bound {allocated / 1073741824d:F1} GiB; sparse={sparse}; allocation source={(sparseAllocated.HasValue ? "Windows sparse ranges" : "QEMU map")}.");
+        if (raw != null)
+        {
+            using var input = SparseRead(raw, token);
+            using var output = new FileStream(destination, FileMode.Open, FileAccess.Write, FileShare.None, 1024 * 1024, true);
+            var buffer = new byte[1024 * 1024]; int count;
+            while ((count = await input.ReadAsync(buffer, token)) != 0)
+            {
+                MediaSpace.RequireAvailable(Path.GetDirectoryName(destination)!, reserve + (ulong)count + 65536);
+                await WriteSparseAsync(output, buffer.AsMemory(0, count), sparse, token);
+            }
+            await output.FlushAsync(token);
+            return;
+        }
         // Keep the explicitly sparse file. -n prevents qemu from recreating it.
         await Backend.ProcessAsync(qemu, ["convert", "-n", "--target-is-zero", "-S", "4k", "-O", "raw", source, destination], log, token);
     }

@@ -149,6 +149,9 @@ internal static class ImageImportStreams
             // Declared length is a validation bound, not allocated space. On a
             // filesystem without sparse support retain the full-size preflight.
             if (!sparse) Space((ulong)(expected ?? 0));
+            if (sparse && expected.HasValue) target.SetLength(expected.Value);
+            using var sparseInput = source is FileStream file ? RawImageStaging.SparseRead(file, token) : null;
+            var input = sparseInput ?? source;
             var buffer = new byte[1024 * 1024]; long total = 0;
             var limit = expected ?? maximum;
             while (true)
@@ -156,7 +159,7 @@ internal static class ImageImportStreams
                 token.ThrowIfCancellationRequested();
                 // Read at most one byte beyond the budget, and never write that
                 // byte. ZIP declared lengths are assertions, not trusted bounds.
-                var count = await source.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token);
+                var count = await input.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token);
                 if (count == 0) break;
                 if (count > limit - total) throw new IOException("镜像数据超过解压大小限制。 / Image stream exceeds its expanded byte budget.");
                 Space((ulong)count + 65536);
