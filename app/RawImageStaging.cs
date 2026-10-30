@@ -108,7 +108,7 @@ internal static class RawImageStaging
 
     private static List<(long Start, long End)>? SparseRanges(FileStream source, CancellationToken token)
     {
-        if (!File.GetAttributes(source.Name).HasFlag(FileAttributes.SparseFile)) return null;
+        if (!File.GetAttributes(source.SafeFileHandle).HasFlag(FileAttributes.SparseFile)) return null;
         var capacity = source.Length;
         var input = new byte[16]; var output = new byte[4096];
         long cursor = 0;
