@@ -150,7 +150,7 @@ internal static class ImageImportStreams
             // filesystem without sparse support retain the full-size preflight.
             if (!sparse) Space((ulong)(expected ?? 0));
             if (sparse && expected.HasValue) target.SetLength(expected.Value);
-            using var sparseInput = source is FileStream file ? RawImageStaging.SparseRead(file, token) : null;
+            using var sparseInput = source is FileStream { CanSeek: true } file ? RawImageStaging.SparseRead(file, token) : null;
             var input = sparseInput ?? source;
             var buffer = new byte[1024 * 1024]; long total = 0;
             var limit = expected ?? maximum;
