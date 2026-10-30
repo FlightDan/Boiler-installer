@@ -173,7 +173,7 @@ class ModelUI:
         while True:
             choice = self.dialog.menu(self.label(model['name']), [
                 ('options', self.tr('查看选项与维护操作', 'Options and maintenance actions')),
-                ('shared', self.tr('Battery 0.2 / 麦克风修复', 'Battery 0.2 / microphone repairs')),
+                ('shared', self.tr('机型附加修复', 'Additional device repairs')),
                 ('guide', self.tr('查看完整适配指南', 'Read the full adaptation guide')),
                 ('back', self.tr('返回机型列表', 'Back to models'))])
             if choice in (None, 'back'):
