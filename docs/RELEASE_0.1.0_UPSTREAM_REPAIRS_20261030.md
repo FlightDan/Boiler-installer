@@ -1,6 +1,6 @@
 # Boiler 0.1.0-preview — Decky 与 OXP3 上游修复，2026-10-30
 
-本次交付为本地测试候选；安装器显示版本保持 0.1.0-preview，OXP3 模型使用新的 `0.1.0-localtest.20261030.7`，保留维护器为 `0.1.0+maintenance.10`。不覆盖既有公开资产，也不以本地构建声明公开发布或实机验收完成。完整源码提交、ZIP 大小、SHA-256、逐文件库存和最终检查结果由本次 `dist/upstream-repairs-20261030-final2/verification.json`、`dist/upstream-repairs-delivery-20261030/result.json` 记录。
+本次交付为本地测试候选；安装器显示版本保持 0.1.0-preview，OXP3 模型使用新的 `0.1.0-localtest.20261030.8`，保留维护器为 `0.1.0+maintenance.10`。不覆盖既有公开资产，也不以本地构建声明公开发布或实机验收完成。完整源码提交、ZIP 大小、SHA-256、逐文件库存和最终检查结果由本次 `dist/upstream-repairs-20261030-final3/verification.json`、`dist/upstream-repairs-delivery-20261030/result.json` 记录。
 
 - 通用及 OXP3 自带的 Decky 均更新为官方 3.3.1，包含对应源码归档和 GPL 许可；沿用原有互斥、依赖和部署事务。新装写入的版本标记与维护器写入的版本标记一致。
 - OXP3 输入模板补入 `HID 1a86:fe02` 底座键盘接口，使 Console/Keyboard 组合进入现有 InputPlumber 输入路径。input 和 gyro 模板均处理；启动 helper 同样在 `/run` 的生成副本补入接口，已有 `/etc` 模板和陀螺仪校准不被改写。该改动不宣称额外实现底座 Home/G 键，也不替换 InputPlumber 二进制。
