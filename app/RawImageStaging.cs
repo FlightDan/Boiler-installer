@@ -23,6 +23,23 @@ internal static class RawImageStaging
     private static extern bool GetDiskFreeSpace(string root, out uint sectorsPerCluster, out uint bytesPerSector,
         out uint freeClusters, out uint totalClusters);
 
+    internal static bool TryMakeSparse(FileStream output) =>
+        DeviceIoControl(output.SafeFileHandle, 0x900c4, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero);
+
+    // A sparse flag alone does not preserve holes: writing zero bytes allocates
+    // real clusters on Windows. Skip zero runs while retaining logical position.
+    internal static async Task WriteSparseAsync(FileStream output, ReadOnlyMemory<byte> data, bool sparse, CancellationToken token)
+    {
+        const int unit = 65536;
+        for (var offset = 0; offset < data.Length; offset += unit)
+        {
+            token.ThrowIfCancellationRequested();
+            var part = data.Slice(offset, Math.Min(unit, data.Length - offset));
+            if (sparse && part.Span.IndexOfAnyExcept((byte)0) < 0) output.Seek(part.Length, SeekOrigin.Current);
+            else await output.WriteAsync(part, token);
+        }
+    }
+
     private static ulong? AllocationUnit(string directory)
     {
         var volume = new StringBuilder(32768);
@@ -97,7 +114,7 @@ internal static class RawImageStaging
         bool sparse;
         using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         {
-            sparse = DeviceIoControl(output.SafeFileHandle, 0x900c4, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero);
+            sparse = TryMakeSparse(output);
             MediaSpace.RequireAvailable(Path.GetDirectoryName(destination)!, checked((sparse ? allocated : (ulong)capacity) + reserve));
             output.SetLength(capacity);
         }

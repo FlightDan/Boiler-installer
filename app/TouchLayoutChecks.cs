@@ -22,8 +22,11 @@ internal static class TouchLayoutChecks
         Require(window.WindowState == WindowState.Maximized && window.WindowStyle == WindowStyle.SingleBorderWindow && window.ResizeMode == ResizeMode.CanResize, "default-maximized-with-system-chrome");
         Require(window.FindName("PhysicalMode") == null, "no-physical-mode-checkbox");
         ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
+        window.BoilerModeForChecks("custom");
         window.WindowState = WindowState.Normal; window.ShowActivated = false; window.Show();
         BootSetupChecks.Acknowledge(window);
+        typeof(MainWindow).GetMethod("ChooseGenericInstallation", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null);
+        window.PreviewStep(0);
         Require(!Find<Expander>("LogExpander").IsExpanded, "logs-default-collapsed");
         var closingWindow = new MainWindow(rehearsal: true) { WindowState = WindowState.Normal, ShowActivated = false };
         ((PartitionPicker)closingWindow.FindName("PartitionSelector")).AutomaticReadEnabled = false;
@@ -36,6 +39,8 @@ internal static class TouchLayoutChecks
         closingWindow.FinishOperation();
         Require(closedAfterCleanup && !closingWindow.IsVisible, "cleanup-finished-window-closes-automatically");
         events.AddRange(WizardChecks.CheckFreeNavigation(window));
+        var emptyTargetRoot = Find<Grid>("WindowRoot"); window.UpdateLayout();
+        Capture(emptyTargetRoot, new Size(emptyTargetRoot.ActualWidth, emptyTargetRoot.ActualHeight), Path.Combine(directory, "empty-target-red"));
         var picker = Find<PartitionPicker>("PartitionSelector");
         Require(window.FindName("DebugMode") == null && window.FindName("AdvancedButton") == null,
             "debug-entry-removed");
@@ -47,21 +52,20 @@ internal static class TouchLayoutChecks
         {
             picker.LoadSnapshot(PartitionInventory.ExampleJson, example);
             picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(r => r.Space != null);
-            picker.CapacityInput.Text = "64";
+            picker.CapacityInput.Text = "128";
         }
         Load(true); Click("NextButton");
         Require(Find<StackPanel>("TargetPage").IsVisible && Find<TextBlock>("ValidationMessage").Text.Length > 0, "example-cannot-enter-physical-installation");
         Load(false);
         bool TargetRed() => ((SolidColorBrush)Find<TextBlock>("NavTarget").Foreground).Color == Color.FromRgb(255,139,139);
-        Require(!TargetRed(), "valid-64g-clears-target-error");
+        Require(!TargetRed(), "valid-128g-clears-target-error");
         Require(((SolidColorBrush)Find<TextBlock>("NavTarget").Foreground).Color == Color.FromRgb(134,239,172), "valid-target-is-green");
-        picker.Capacity100Button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Require(picker.Selection.Capacity == 100 * PartitionInventory.GiB && !TargetRed(), "valid-100g-clears-target-error");
+        Require(!picker.Capacity256Button.IsEnabled && picker.Selection.Capacity == 128 * PartitionInventory.GiB, "256g-disabled-for-small-region");
         Require(picker.AllSpaceButton.Visibility == Visibility.Collapsed && !picker.AllSpaceButton.IsVisible,
             "all-space-entry-hidden-from-touch-layout");
         picker.CapacityInput.Text = "32";
         Require(TargetRed(), "invalid-capacity-marks-target-error");
-        picker.Capacity64Button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        picker.Capacity128Button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Require(!TargetRed(), "preset-repairs-invalid-capacity-state");
         Click("NextButton");
         Require(Find<Grid>("SafetyOverlay").IsVisible && !Find<Grid>("WizardShell").IsEnabled && Find<StackPanel>("TargetPage").IsVisible, "next-opens-blocking-backup-confirmation-before-navigation");
@@ -70,7 +74,7 @@ internal static class TouchLayoutChecks
         Click("SafetyCancel");
         Require(!Find<Grid>("SafetyOverlay").IsVisible && Find<StackPanel>("TargetPage").IsVisible, "cancel-remains-on-target");
         Click("NextButton"); Click("SafetyContinue");
-        Require(Find<StackPanel>("SourcePage").IsVisible && window.CompletedSession == null, "acknowledge-only-navigates-without-starting-installation");
+        Require(Find<StackPanel>("BootPage").IsVisible && window.CompletedSession == null, "acknowledge-only-navigates-without-starting-installation");
         window.PreviewStep(3); Click("NextButton");
         Require(Find<StackPanel>("ReviewPage").IsVisible && Find<TextBlock>("ValidationMessage").Text.Length > 0 && window.CompletedSession == null, "final-install-requires-separate-consent");
         Require(Find<CheckBox>("PhysicalConsent").FontWeight == FontWeights.Bold
@@ -83,7 +87,7 @@ internal static class TouchLayoutChecks
         Require(Find<CheckBox>("PhysicalConsent").IsChecked != true, "changed-capacity-invalidates-consent");
         Find<CheckBox>("PhysicalConsent").IsChecked = true; Click("NextButton");
         Require(window.CompletedSession == null && Find<TextBlock>("ValidationMessage").Text.Length > 0, "stale-acknowledgement-cannot-start-installation");
-        picker.CapacityInput.Text = "64";
+        picker.CapacityInput.Text = "128";
         var root = Find<Grid>("WindowRoot");
         foreach (var english in new[] { false, true })
         foreach (var size in new[] { new Size(640,360), new Size(800,450), new Size(853,480), new Size(960,540), new Size(1280,720), new Size(1280,800), new Size(1920,1080) })
@@ -140,6 +144,17 @@ internal static class TouchLayoutChecks
                 {
                     picker.CapacityPanel.BringIntoView(); window.UpdateLayout();
                     Capture(root,size,Path.Combine(directory,suffix+"-capacity"));
+                    scroll.ScrollToTop(); window.UpdateLayout();
+                }
+                if (step == 1 && size.Width == 1280 && size.Height == 720)
+                {
+                    scroll.ScrollToBottom(); window.UpdateLayout();
+                    var cleanup = Find<CheckBox>("CleanupTemporaryFiles");
+                    var cleanupPosition = cleanup.TransformToAncestor(scroll).Transform(new Point());
+                    Require(cleanup.IsVisible && cleanup.ActualHeight > 0 && cleanupPosition.Y >= -1
+                        && cleanupPosition.Y + cleanup.ActualHeight <= scroll.ViewportHeight + 1,
+                        "cleanup-option-visible-in-source-viewport");
+                    Capture(root,size,Path.Combine(directory,suffix+"-cleanup"));
                     scroll.ScrollToTop(); window.UpdateLayout();
                 }
                 if (step == 3 && size.Width == 1280 && size.Height == 720)

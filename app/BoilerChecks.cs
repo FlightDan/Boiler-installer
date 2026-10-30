@@ -84,9 +84,9 @@ internal static class BoilerChecks
             "raw-import-workspace-budget-scales-with-image-size");
         Require(BoilerImage.RawImportBudget(96 * PartitionInventory.GiB, true, true) == 296ul * PartitionInventory.GiB,
             "raw-import-workspace-budget-includes-pending-inspection-copy");
-        Require(BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 96 * PartitionInventory.GiB, true, true) == 202ul * PartitionInventory.GiB
-            && BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 96 * PartitionInventory.GiB, true) == 105ul * PartitionInventory.GiB,
-            "zip-workspace-budget-uses-expanded-size-and-retained-copies");
+        Require(BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 96 * PartitionInventory.GiB, true, true) == MediaSpace.MinimumWorkspace
+            && BoilerImage.ArchiveImportBudget(PartitionInventory.GiB, 256 * PartitionInventory.GiB, true) == MediaSpace.MinimumWorkspace,
+            "zip-workspace-budget-excludes-sparsely-streamed-logical-capacity");
         var localImages = new List<string> { ab.Path };
         foreach (var capacityMiB in new[] { 8, 24 })
         {
@@ -155,14 +155,14 @@ internal static class BoilerChecks
                 var partitions = (System.Windows.Controls.DataGrid)selector.FindName("Partitions");
                 partitions.SelectedItem = partitions.Items.Cast<PartitionRow>().First(p => p.Space?.Size >= 100 * PartitionInventory.GiB);
                 var capacityInput = (System.Windows.Controls.TextBox)selector.FindName("CapacityInput");
-                capacityInput.Text = "64";
+                capacityInput.Text = "128";
                 var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
                 typeof(MainWindow).GetField("inspectedSourceKey", flags)!.SetValue(window, typeof(MainWindow).GetMethod("SourceInfoKey", flags)!.Invoke(window, null));
                 typeof(MainWindow).GetField("inspectedSourceDigest", flags)!.SetValue(window, "synthetic-checked-source");
-                typeof(MainWindow).GetField("inspectedSourceCapacity", flags)!.SetValue(window, (long?)(96 * PartitionInventory.GiB));
+                typeof(MainWindow).GetField("inspectedSourceCapacity", flags)!.SetValue(window, (long?)(129 * PartitionInventory.GiB));
                 var targetIssue = typeof(MainWindow).GetMethod("TargetIssue", flags)!;
-                Require((targetIssue.Invoke(window, null) as string)?.Contains("96 GiB") == true, "larger-img-rejects-64-GiB-target-before-install");
-                capacityInput.Text = "100";
+                Require((targetIssue.Invoke(window, null) as string)?.Contains("129 GiB") == true, "larger-img-rejects-128-GiB-target-before-install");
+                typeof(MainWindow).GetField("inspectedSourceCapacity", flags)!.SetValue(window, (long?)(96 * PartitionInventory.GiB));
                 Require(targetIssue.Invoke(window, null) == null, "larger-img-accepts-sufficient-target-before-install");
                 imagePath.Text = localImages[0];
                 Require(selector.DefaultCapacityGiB == 128

@@ -16,8 +16,10 @@ public static class OptionsChecks
         // This UI check uses synthetic layouts, so suppress the automatic hardware inventory.
         typeof(PartitionPicker).GetField("automaticReadAttempted", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .SetValue((PartitionPicker)window.FindName("PartitionSelector"), true);
+        window.BoilerModeForChecks("custom");
         window.WindowState = WindowState.Normal; window.ShowActivated = false; window.Show();
         BootSetupChecks.Acknowledge(window);
+        typeof(MainWindow).GetMethod("ChooseGenericInstallation", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null);
         Color ContentColor() => ((SolidColorBrush)((TextBlock)window.FindName("NavContent")).Foreground).Color;
         Require(ContentColor() == Color.FromRgb(148, 169, 195), "unvisited-content-starts-neutral");
         ((Button)window.FindName("ContentTab")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -34,10 +36,11 @@ public static class OptionsChecks
         Require(!panel.RepairsExpander.IsExpanded, "device-repairs-start-collapsed");
         Require(!panel.Children.OfType<TextBlock>().Any(x => x.Text.Contains("系统更新") || x.Text.Contains("system updates"))
             && !panel.Describe().Contains("系统更新") && !panel.Describe().Contains("system updates"), "options-and-plan-do-not-promise-system-update-pause");
-        Require(catalog.Repairs.Where(x => x.Available && x.Id is not ("refind" or "flathub-ustc")).All(x => panel.Selection.Repairs.Contains(x.Id)), "all-available-device-repairs-selected");
+        Require(catalog.Repairs.Where(x => x.Available && InstallerOptions.WirelessComponents.Contains(x.Id))
+            .All(x => !x.Default && !panel.Selection.Repairs.Contains(x.Id)), "optional-wireless-firmware-starts-unselected");
         Require(panel.Selection.Plugins.Order().SequenceEqual(catalog.Plugins.Where(x => x.Default).Select(x => x.Id).Order()), "plugin-defaults-match-catalog");
-        Require(catalog.Repairs.All(x => x.Id != "waydroid") && catalog.Plugins.Any(x => x.Id == "waydroid"), "third-party-waydroid-is-in-third-party-category");
-        Require(catalog.Repairs.Single(x => x.Id == "gamescope-env").Default, "new-game-mode-black-screen-fix-default-enabled");
+        Require(catalog.Repairs.Concat(catalog.Plugins).All(x => x.Id is not ("gamescope-env" or "flathub-ustc" or "waydroid" or "hdr" or "windows-reboot")),
+            "model-specific-and-third-party-options-stay-out-of-generic-catalog");
         var boot = (BootOptionsPanel)((StackPanel)window.FindName("BootOptionsHost")).Children[0];
         Require(boot.InstallChoice.IsEnabled && boot.InstallChoice.IsChecked == true
             && boot.Selection == new RefindChoice("SteamOS", 2), "refind-install-selected-by-default-with-two-second-timeout");
@@ -77,31 +80,36 @@ public static class OptionsChecks
         Require(new[] { "steamgriddb", "protondb", "tabmaster", "css-loader", "autoflatpaks", "deck-settings", "hltb", "animation-changer" }
             .All(id => !boxes.ContainsKey(id)), "user-installed-third-party-plugins-are-not-bundled-options");
         ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
-        Require(boxes["flathub-ustc"].IsChecked == true, "chinese-mirror-default-enabled");
+        Require(boxes["wifi:intel"].IsChecked == false, "chinese-language-does-not-select-wireless-firmware");
         ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
-        Require(boxes["flathub-ustc"].IsChecked == false, "english-mirror-default-disabled");
-        boxes["flathub-ustc"].IsChecked = true;
+        Require(boxes["wifi:intel"].IsChecked == false, "english-language-does-not-select-wireless-firmware");
+        boxes["wifi:intel"].IsChecked = true;
         ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
         ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
-        Require(boxes["flathub-ustc"].IsChecked == true, "explicit-mirror-choice-survives-language-change");
-        boxes["flathub-ustc"].IsChecked = false;
+        Require(boxes["wifi:intel"].IsChecked == true, "explicit-wireless-choice-survives-language-change");
+        boxes["wifi:intel"].IsChecked = false;
         ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
-        Require(boxes["flathub-ustc"].IsChecked == false, "explicit-mirror-opt-out-survives-chinese");
-        boxes["hdr"].IsChecked = false; Require(!panel.Selection.Repairs.Contains("hdr"), "disabled-repair-is-absent-from-request");
-        boxes["windows-reboot"].IsChecked = false; Require(!panel.Selection.Plugins.Contains("windows-reboot"), "disabled-project-plugin-is-absent-from-request");
-        boxes["decky"].IsChecked = false;
-        try { InstallerOptions.Validate(panel.Selection); throw new IOException("disabled-dependency-was-accepted"); } catch (IOException e) when (e.Message != "disabled-dependency-was-accepted") { events.Add("disabled-dependency-refused"); }
-        boxes["decky"].IsChecked = true;
+        Require(boxes["wifi:intel"].IsChecked == false, "explicit-wireless-opt-out-survives-chinese");
+        Require(!panel.Selection.Repairs.Contains("wifi:intel"), "disabled-repair-is-absent-from-request");
+        boxes["core:decky"].IsChecked = false;
+        Require(!panel.Selection.Plugins.Contains("core:decky"), "disabled-project-plugin-is-absent-from-request");
+        try
+        {
+            InstallerOptions.Validate(panel.Selection with { Plugins = ["unknown:plugin"] });
+            throw new IOException("unknown-option-was-accepted");
+        }
+        catch (IOException error) when (error.Message != "unknown-option-was-accepted") { events.Add("unknown-option-refused"); }
+        boxes["core:decky"].IsChecked = true;
         ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
         Require(InstallerI18n.Language == "en-US" && ((Button)window.FindName("NextButton")).Content.ToString() == "Next", "english-navigation-applied");
         Require(((TextBlock)window.FindName("ModeBanner")).Text.Contains("Back up"),"backup-warning-translated");
-        Require(((TextBlock)boxes["hdr"].Content).Text.Contains("Game mode HDR"), "english-repair-label-applied");
-        Require(boxes["hdr"].IsChecked == false && boxes["windows-reboot"].IsChecked == false, "language-switch-preserves-disabled-choices");
+        Require(((TextBlock)boxes["wifi:intel"].Content).Text.Contains("Intel Wi-Fi firmware"), "english-repair-label-applied");
+        Require(boxes["wifi:intel"].IsChecked == false && boxes["core:decky"].IsChecked == true, "language-switch-preserves-user-choices");
         Require(boot.WindowsChoice.IsChecked == true && boot.Seconds.Text == "2" && boot.InstallChoice.IsChecked == true, "language-switch-preserves-refind-settings");
         var kde = panel.KdeChoice; kde.SelectedIndex = 1;
         Require(panel.Selection.KdeLanguage == "zh_CN" && panel.Selection.InstallerLanguage == "en-US", "kde-language-independent-of-installer-language");
         var json = JsonSerializer.Serialize(panel.Selection); var roundtrip = JsonSerializer.Deserialize<SelectedOptions>(json)!;
-        InstallerOptions.Validate(roundtrip); Require(roundtrip.KdeLanguage == "zh_CN" && !roundtrip.Repairs.Contains("hdr"), "selection-roundtrip-retains-language-and-opt-outs");
+        InstallerOptions.Validate(roundtrip); Require(roundtrip.KdeLanguage == "zh_CN" && !roundtrip.Repairs.Contains("wifi:intel"), "selection-roundtrip-retains-language-and-opt-outs");
         ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true; Require(((Button)window.FindName("NextButton")).Content.ToString() == "下一步", "chinese-navigation-restored");
         foreach (var size in new[] { new Size(850, 620), new Size(1060, 790), new Size(1280, 800) })
         {
@@ -170,12 +178,17 @@ public static class OptionsChecks
             var picker = Find<PartitionPicker>("PartitionSelector");
             picker.LoadSnapshot(PartitionInventory.ExampleJson, false);
             picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(r => r.Space != null);
-            picker.CapacityInput.Text = "64";
+            picker.CapacityInput.Text = "128";
             Find<CheckBox>("UsePrepared").IsChecked = false;
             // Consent is independent of downloaded 3.10 resources. Keep this
             // fixture portable to a freshly extracted package with no cache.
             Find<CheckBox>("Upgrade310").IsChecked = false;
             Find<TextBox>("ImagePath").Text = source;
+            // This check isolates consent behavior; source inspection is covered separately.
+            var sourceKey = (string)typeof(MainWindow).GetMethod("SourceInfoKey", flags)!.Invoke(window, null)!;
+            var sourceDigest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(source))).ToLowerInvariant();
+            typeof(MainWindow).GetField("inspectedSourceKey", flags)!.SetValue(window, sourceKey);
+            typeof(MainWindow).GetField("inspectedSourceDigest", flags)!.SetValue(window, sourceDigest);
             var boot = (BootOptionsPanel)Find<StackPanel>("BootOptionsHost").Children[0];
             boot.InstallChoice.IsChecked = false;
             Field<CheckBox>("setDeckPassword").IsChecked = true;

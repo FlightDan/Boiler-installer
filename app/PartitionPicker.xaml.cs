@@ -62,7 +62,10 @@ public partial class PartitionPicker : UserControl
         get
         {
             if (busy || snapshot == null || gap == null) throw new InvalidOperationException(L("请选择一段可安装的未分配空间。", "Select an eligible unallocated region."));
-            var selected = new PartitionSelection(snapshot, example, gap.Disk, gap.Start, PartitionInventory.ParseCapacity(CapacityInput.Text, gap.Size), AlignRight.IsChecked == true);
+            var capacity = PartitionInventory.ParseCapacity(CapacityInput.Text, gap.Size);
+            if (capacity != 128 * PartitionInventory.GiB && capacity != 256 * PartitionInventory.GiB)
+                throw new InvalidOperationException(L("请选择 128 GiB 或 256 GiB。", "Choose 128 GiB or 256 GiB."));
+            var selected = new PartitionSelection(snapshot, example, gap.Disk, gap.Start, capacity, AlignRight.IsChecked == true);
             selected.Target(); return selected;
         }
     }
@@ -80,7 +83,7 @@ public partial class PartitionPicker : UserControl
         DeleteSteamOsButton.Content = L("删除所选 SteamOS 分区…", "Delete selected SteamOS partitions…");
         SteamOsDetails.Header = L("查看并选择 SteamOS 分区", "Review and select SteamOS partitions");
         FormatRemainingButton.Content = L("将剩余空间格式化为 NTFS…", "Format remaining space as NTFS…");
-        FormatRemainingHint.Text = L("保留所选 SteamOS 容量（可选 64 GiB），将同一段空间的余量建为共享文件分区。确认后立即格式化；分区起点 1 MiB 对齐（满足 4K 对齐），4096 字节簇。", "Reserve the selected SteamOS capacity (64 GiB available) and create a shared-file partition in the rest of this region. Formats immediately after confirmation; partition start aligned to 1 MiB (4K aligned), 4096-byte clusters.");
+        FormatRemainingHint.Text = L("保留所选 SteamOS 容量（128 或 256 GiB），将同一段空间的余量建为共享文件分区。确认后立即格式化；分区起点 1 MiB 对齐（满足 4K 对齐），4096 字节簇。", "Reserve the selected SteamOS capacity (128 or 256 GiB) and create a shared-file partition in the rest of this region. Formats immediately after confirmation; partition start aligned to 1 MiB (4K aligned), 4096-byte clusters.");
         NameColumn.Header = L("分区 / 空间", "Partition / region"); SizeColumn.Header = L("容量", "Size");
         FreeColumn.Header = L("可用", "Free"); TypeColumn.Header = L("类型", "Type"); StatusColumn.Header = L("状态", "Status");
         CapacityLabel.Text = L("SteamOS 安装容量", "SteamOS capacity"); AllSpaceButton.Content = L("使用全部空间", "Use all space");
@@ -91,8 +94,8 @@ public partial class PartitionPicker : UserControl
         AutomationProperties.SetName(Disks, L("目标磁盘", "Target disk"));
         AutomationProperties.SetName(Partitions, L("分区与未分配空间", "Partitions and unallocated space"));
         AutomationProperties.SetName(CapacityInput, CapacityLabel.Text);
-        AutomationProperties.SetName(Capacity64Button, L("安装容量 64 GiB", "Install using 64 GiB"));
-        AutomationProperties.SetName(Capacity100Button, L("安装容量 100 GiB", "Install using 100 GiB"));
+        AutomationProperties.SetName(Capacity128Button, L("安装容量 128 GiB", "Install using 128 GiB"));
+        AutomationProperties.SetName(Capacity256Button, L("安装容量 256 GiB", "Install using 256 GiB"));
         if (snapshot != null && !busy)
         {
             var disk = (Disks.SelectedItem as InventoryDisk)?.Number; var start = (Partitions.SelectedItem as PartitionRow)?.Start; var input = CapacityInput.Text;
@@ -154,11 +157,11 @@ public partial class PartitionPicker : UserControl
     private void DiskChanged(object sender, SelectionChangedEventArgs e)
     {
         gap = null; CapacityInput.Clear(); ChangesHost.Children.Clear(); CapacityPanel.IsEnabled = false;
-        Partitions.ItemsSource = (Disks.SelectedItem as InventoryDisk)?.Rows;
+        Partitions.ItemsSource = (Disks.SelectedItem as InventoryDisk)?.Rows.Select(r => r.Space != null && r.Space.Size < 128 * PartitionInventory.GiB ? r with { Space = null, Status = L("不足 128 GiB", "Less than 128 GiB") } : r).ToArray();
         steamOsSelected.Clear(); ShowSteamOsPartitions();
-        SelectionHint.Text = (Disks.SelectedItem as InventoryDisk)?.Rows.Any(r => r.Space != null) == true
+        SelectionHint.Text = (Disks.SelectedItem as InventoryDisk)?.Rows.Any(r => r.Space != null && r.Space.Size >= 128 * PartitionInventory.GiB) == true
             ? L("请选择标记为“可安装 SteamOS”的未分配空间。", "Select unallocated space marked as available for SteamOS.")
-            : L("需要至少 64 GiB 连续未分配空间。可删除不再需要的数据分区来释放空间；系统、启动和恢复分区受保护。", "At least 64 GiB of contiguous unallocated space is required. Delete an unwanted data partition to free space; system, boot and recovery partitions are protected.");
+            : L("需要至少 128 GiB 连续未分配空间。可删除不再需要的数据分区来释放空间；系统、启动和恢复分区受保护。", "At least 128 GiB of contiguous unallocated space is required. Delete an unwanted data partition to free space; system, boot and recovery partitions are protected.");
         Changed?.Invoke();
     }
     private void PartitionChanged(object sender, SelectionChangedEventArgs e)
@@ -178,7 +181,7 @@ public partial class PartitionPicker : UserControl
         }
         SelectionHint.Foreground = new SolidColorBrush(Color.FromRgb(53,84,122));
         SelectionHint.Text = L("已有分区将保留。只在所选未分配空间内规划 SteamOS。", "Existing partitions are kept. SteamOS is planned only inside the selected unallocated region.");
-        CapacityInput.Text = Math.Min(DefaultCapacityGiB, decimal.Floor(gap.Size / (decimal)PartitionInventory.GiB)).ToString(CultureInfo.InvariantCulture);
+        CapacityInput.Text = DefaultCapacityGiB.ToString(CultureInfo.InvariantCulture);
         UpdatePlan();
     }
     private async void DeletePartition(object sender, RoutedEventArgs e)
@@ -248,7 +251,7 @@ public partial class PartitionPicker : UserControl
         Partitions.SelectedItem = released;
         InventoryStatus.Text = (isExample ? L("示例：已模拟删除，真实磁盘未改动。", "Example: deletion simulated; real disks unchanged.") : L("已删除选定分区。", "Selected partitions deleted."))
             + (released != null ? L("已选中释放后的未分配空间，可继续设置安装容量。", "The released unallocated space is selected. Choose an installation capacity.")
-                : L("释放后的连续空间仍不足 64 GiB，或磁盘不符合安装要求。请查看列表。", "Released contiguous space is still below 64 GiB, or this disk is ineligible. Review the list."));
+                : L("释放后的连续空间仍不足 128 GiB，或磁盘不符合安装要求。请查看列表。", "Released contiguous space is still below 128 GiB, or this disk is ineligible. Review the list."));
     }
     private void SelectAllSteamOs(object sender, RoutedEventArgs e)
     {
@@ -312,11 +315,11 @@ public partial class PartitionPicker : UserControl
         updating = true;
         FormatRemainingButton.IsEnabled = false;
         FormatRemainingButton.ToolTip = L("选择安装容量后，至少保留 64 MiB 余量才能创建 NTFS。", "Choose an installation capacity leaving at least 64 MiB for NTFS.");
-        Capacity64Button.IsEnabled = gap?.Size >= 64 * PartitionInventory.GiB;
-        Capacity100Button.IsEnabled = gap?.Size >= 100 * PartitionInventory.GiB;
-        Capacity100Button.ToolTip = gap != null && gap.Size < 100 * PartitionInventory.GiB
-            ? L("所选连续未分配空间不足 100 GiB。", "The selected unallocated region is smaller than 100 GiB.")
-            : L("将安装容量设为 100 GiB。", "Set installation capacity to 100 GiB.");
+        Capacity128Button.IsEnabled = gap?.Size >= 128 * PartitionInventory.GiB;
+        Capacity256Button.IsEnabled = gap?.Size >= 256 * PartitionInventory.GiB;
+        Capacity256Button.ToolTip = gap != null && gap.Size < 256 * PartitionInventory.GiB
+            ? L("所选连续未分配空间不足 256 GiB。", "The selected unallocated region is smaller than 256 GiB.")
+            : L("将安装容量设为 256 GiB。", "Set installation capacity to 256 GiB.");
         ChangesHost.Children.Clear();
         try
         {
@@ -327,7 +330,7 @@ public partial class PartitionPicker : UserControl
             else if (FormatRemainingButton.IsEnabled) FormatRemainingButton.ToolTip = L("核对范围并确认后立即创建 NTFS；已有分区保持不变。", "Review and confirm to create NTFS immediately; existing partitions are kept.");
             var after = PartitionInventory.After(plan); var home = after.Single(s => s.Name == "home" && s.Action == "new");
             CapacityHint.Foreground = new SolidColorBrush(Color.FromRgb(97,114,138));
-            CapacityHint.Text = L($"已选择安装容量：{PartitionInventory.SizeText(plan.Capacity)} · 剩余未分配：{PartitionInventory.SizeText(gap.Size - plan.Capacity)}\n系统及启动约 24.375 GiB；数据分区 {PartitionInventory.SizeText(home.Size)}（格式化前）。\n可选范围：64–{gap.Size / (decimal)PartitionInventory.GiB:0.######} GiB。", $"Selected installation capacity: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder: {PartitionInventory.SizeText(gap.Size - plan.Capacity)}\nSystem and boot: about 24.375 GiB; data: {PartitionInventory.SizeText(home.Size)} (before formatting).\nAvailable range: 64–{gap.Size / (decimal)PartitionInventory.GiB:0.######} GiB.");
+            CapacityHint.Text = L($"已选择安装容量：{PartitionInventory.SizeText(plan.Capacity)} · 剩余未分配：{PartitionInventory.SizeText(gap.Size - plan.Capacity)}\n系统及启动约 24.375 GiB；数据分区 {PartitionInventory.SizeText(home.Size)}（格式化前）。\n可选容量：128 或 256 GiB。", $"Selected installation capacity: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder: {PartitionInventory.SizeText(gap.Size - plan.Capacity)}\nSystem and boot: about 24.375 GiB; data: {PartitionInventory.SizeText(home.Size)} (before formatting).\nCapacity choices: 128 or 256 GiB.");
             ShowChanges(ChangesHost, plan);
         }
         catch (InvalidOperationException error) { CapacityHint.Text = error.Message; CapacityHint.Foreground = Brushes.Sienna; }

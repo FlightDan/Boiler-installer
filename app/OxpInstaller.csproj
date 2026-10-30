@@ -11,6 +11,8 @@
     <FileVersion>0.1.0.0</FileVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PortableLauncherName Condition="'$(PortableLauncherName)' == ''">BoilerInstaller.exe</PortableLauncherName>
+    <AppHostDotNetSearch>AppRelative</AppHostDotNetSearch>
+    <AppHostRelativeDotNet>../../../../runtime/dotnet</AppHostRelativeDotNet>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/boiler-app-icon.ico</ApplicationIcon>
   </PropertyGroup>

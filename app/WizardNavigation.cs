@@ -119,6 +119,7 @@ public partial class MainWindow
     {
         if (!ready) return;
         if (step == 6) checkedAllSteps = true;
+        CleanupTemporaryFiles.IsEnabled = operation == null;
         var targetIssue = TargetIssue();
         var sourceIssue = SourceIssue(requireInspection: true);
         var contentIssue = ContentIssue();
