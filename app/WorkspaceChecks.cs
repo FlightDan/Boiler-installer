@@ -66,19 +66,17 @@ internal static class WorkspaceChecks
                 }
                 Require(BoilerImage.WorkspaceBudget(large, true, true) == MediaSpace.MinimumWorkspace,
                     $"{gib}-GiB-sparse-input-budget-uses-allocated-data");
-                var snapshotDirectory = Path.Combine(directory, $"snapshot-{gib}");
+                // Exercise large logical copies and volume reservations here;
+                // full-digest correctness uses the independent small fixture below.
                 var freeBefore = MediaSpace.Available(directory);
-                var capacitySnapshot = await BoilerImage.SnapshotAsync(large, snapshotDirectory, CancellationToken.None);
-                Require(MediaSpace.Available(directory) + PartitionInventory.GiB >= freeBefore,
-                    $"{gib}-GiB-snapshot-does-not-reserve-logical-holes");
                 var imported = Path.Combine(directory, $"import-{gib}.img");
-                using (var input = File.OpenRead(capacitySnapshot.Path))
+                using (var input = File.OpenRead(large))
                     await ImageImportStreams.CopyOwnedAsync(input, imported, CancellationToken.None, expected: input.Length,
                         // Sparse data fits despite less space than logical capacity.
                         available: () => 2ul * PartitionInventory.GiB);
                 Require(MediaSpace.Available(directory) + PartitionInventory.GiB >= freeBefore,
                     $"{gib}-GiB-import-does-not-reserve-logical-holes");
-                foreach (var path in new[] { capacitySnapshot.Path, imported })
+                foreach (var path in new[] { large, imported })
                 {
                     using var file = File.OpenRead(path);
                     var bound = RawImageStaging.SparseDataUpperBound(file, CancellationToken.None);
@@ -153,6 +151,18 @@ internal static class WorkspaceChecks
             fixture.Flush(true);
         }
         var expectedHash = System.Security.Cryptography.SHA256.HashData(expected);
+        var freeBeforeSnapshot = MediaSpace.Available(directory);
+        var snapshot = await BoilerImage.SnapshotAsync(path, Path.Combine(directory, "known-byte-snapshot"), CancellationToken.None);
+        require(snapshot.Sha256 == Convert.ToHexString(expectedHash).ToLowerInvariant(), "snapshot-hash-matches-independent-array");
+        using (var copy = File.OpenRead(snapshot.Path))
+        {
+            var allocation = RawImageStaging.SparseDataUpperBound(copy, CancellationToken.None);
+            require(allocation is > 0 and < 2ul * 1024 * 1024, "known-byte-snapshot-allocation-below-logical-size");
+            using var reader = RawImageStaging.SparseRead(copy, CancellationToken.None);
+            var actual = new byte[expected.Length]; await reader.ReadExactlyAsync(actual);
+            require(actual.SequenceEqual(expected), "snapshot-bytes-match-independent-array");
+        }
+        require(MediaSpace.Available(directory) + 2ul * 1024 * 1024 >= freeBeforeSnapshot, "snapshot-does-not-reserve-logical-holes");
         using var held = File.OpenRead(path);
         using (var reader = RawImageStaging.SparseRead(held, CancellationToken.None))
         {
