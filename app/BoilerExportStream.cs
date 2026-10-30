@@ -9,12 +9,14 @@ namespace OxpInstaller;
 internal sealed class BoilerExportStream : Stream
 {
     private readonly PreparedDiskImage image;
+    private readonly Stream source;
     private readonly byte[] prefix = new byte[34 * 512];
     private readonly byte[] suffix = new byte[33 * 512];
     private long position;
     internal BoilerExportStream(string path)
     {
         image = new PreparedDiskImage(path);
+        source = RawImageStaging.SparseRead(image.Stream, CancellationToken.None);
         var layout = image.Layout;
         prefix[510] = 0x55; prefix[511] = 0xaa; prefix[450] = 0xee;
         BinaryPrimitives.WriteUInt32LittleEndian(prefix.AsSpan(454), 1);
@@ -61,8 +63,8 @@ internal sealed class BoilerExportStream : Stream
         {
             var start = Math.Max(position, part.Offset); var end = Math.Min(position + count, part.Offset + part.Size);
             if (start >= end) continue;
-            image.Stream.Position = start;
-            image.Stream.ReadExactly(output.Slice((int)(start - position), (int)(end - start)));
+            source.Position = start;
+            source.ReadExactly(output.Slice((int)(start - position), (int)(end - start)));
         }
         position += count; return count;
     }
@@ -83,5 +85,5 @@ internal sealed class BoilerExportStream : Stream
     public override void Flush() { }
     public override void SetLength(long value) => throw new NotSupportedException();
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-    protected override void Dispose(bool disposing) { if (disposing) image.Dispose(); base.Dispose(disposing); }
+    protected override void Dispose(bool disposing) { if (disposing) { source.Dispose(); image.Dispose(); } base.Dispose(disposing); }
 }

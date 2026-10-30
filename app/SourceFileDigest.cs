@@ -19,14 +19,15 @@ internal sealed record SourceFileDigest(string Path, long Length, long LastWrite
         path = InputDiscovery.SafePath(path);
         var stamp = new FileInfo(path); var length = stamp.Length; var ticks = stamp.LastWriteTimeUtc.Ticks;
         using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+            FileOptions.SequentialScan);
         if (length == 0 || source.Length != length) throw new IOException("The source file is empty or changed before reading.");
+        using var input = RawImageStaging.SparseRead(source, token);
         using var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
         using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var watch = Stopwatch.StartNew(); var last = TimeSpan.Zero; long completed = 0;
         report?.Invoke(new(0, length, 0));
         var buffer = new byte[1024 * 1024]; int count;
-        while ((count = await source.ReadAsync(buffer, token)) != 0)
+        while ((count = await input.ReadAsync(buffer, token)) != 0)
         {
             token.ThrowIfCancellationRequested();
             md5.AppendData(buffer, 0, count); sha256.AppendData(buffer, 0, count); completed += count;
