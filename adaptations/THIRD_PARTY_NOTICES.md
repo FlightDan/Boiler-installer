@@ -29,3 +29,9 @@ collection's export list.
 Python is required to run the builder and tests, but no Python interpreter or
 third-party Python package is bundled in this source repository. This registry
 does not bundle QEMU, Alpine Linux, .NET, rEFInd, Decky, or model payloads.
+
+## OXP3 upstream repairs (20261029)
+
+Speaker and connector adaptations retain the MIT notice of HHHHanasak1/onexplayer3-steamos-setup at commit e72e814da1944da3792076689995b6fe961f5768. Their complete notice and provenance are under adaptations/brands/onexplayer/oxp3/current/upstream-20261029 (relative to the Boiler root).
+
+The xevmafix kernel module declares GPL, independently of the enclosing upstream repository MIT license. GPL-2.0 text, original C source, Makefile, build instructions and exact official build-input records are retained under adaptations/brands/onexplayer/oxp3/current/xevma-20261029 and in its device payload. No kernel package or toolchain binary is added to the public source export.
