@@ -16,6 +16,7 @@ import stat
 import subprocess
 import tarfile
 import tempfile
+import time
 import zipfile
 
 
@@ -366,6 +367,31 @@ def resolve_plan(components, selected, environment, *, mode="normal"):
             "device_warnings":warnings}
 
 
+def _windows_publication():
+    return os.name == 'nt'
+
+
+def _publish_directory(staging, destination, operation, *, guard=None):
+    """Retry transient Windows access denial without replacing a destination."""
+    first_error = None
+    for attempt in range(6):
+        if guard is not None:
+            guard(destination)
+        if os.path.lexists(destination):
+            _fail('Publication destination already exists')
+        try:
+            operation(staging, destination)
+            return
+        except OSError as error:
+            if not _windows_publication() or getattr(error, 'winerror', None) != 5:
+                raise
+            if first_error is None:
+                first_error = error
+            if attempt == 5:
+                raise first_error
+            time.sleep(0.1)
+
+
 def safe_extract_archive(archive, destination, *, max_bytes=8*1024**3, max_files=100000):
     """Reject links, traversal, aliases and bombs; publish only a complete tree."""
     destination=Path(destination)
@@ -403,7 +429,7 @@ def safe_extract_archive(archive, destination, *, max_bytes=8*1024**3, max_files
                         if not block: _fail("Truncated archive")
                         target.write(block); remaining-=len(block)
                     if stream.read(1): _fail("Archive entry exceeds declared size")
-        os.replace(staging,destination)
+        _publish_directory(staging, destination, os.replace)
     except BaseException:
         shutil.rmtree(staging,ignore_errors=True)
         raise
