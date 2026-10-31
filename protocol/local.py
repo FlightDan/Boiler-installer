@@ -9,7 +9,7 @@ from pathlib import Path
 import stat
 import tempfile
 
-from .manifest import ProtocolError, relative_path, safe_extract_archive, validate_package, _filesystem_path
+from .manifest import ProtocolError, relative_path, safe_extract_archive, validate_package, _filesystem_path, _publish_directory
 
 
 MAX_SCRIPT = 8 * 1024**2
@@ -191,9 +191,6 @@ def import_local(source, destination, *, developer=False):
                 root = children[0]
             expected = _copy_package(root, ready)
         manifest = validate_package(ready, expected_manifest_sha256=expected)
-        if os.path.lexists(destination):
-            raise ProtocolError("Package destination already exists")
-        _safe_path(destination)
-        os.rename(ready, destination)
+        _publish_directory(ready, destination, os.rename, guard=_safe_path)
     return {"package": manifest, "directory": str(display_destination),
             "manifest_sha256": expected, "kind": kind}

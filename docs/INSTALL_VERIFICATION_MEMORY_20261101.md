@@ -33,12 +33,15 @@ its empty owned fixture. It is preserved separately from the corrected run.
 ## Delivery and acceptance boundaries
 
 New immutable identities: OXP3 model `0.1.0-localtest.20261101.11`, installer
-`0.2.0-local.20261101.ui.4`, generic maintenance `0.1.0+maintenance.16`.
+`0.2.0-local.20261101.ui.5`, generic maintenance `0.1.0+maintenance.17`.
 The normal model and maintenance generators run before Windows packaging.
 Whitelisted sources are frozen into an independent public-derived checkout
 with exact unpublished commit; public origin/history and CPU baseline are
 preserved. Windows/retained model copies must match. Old artifacts remain
 immutable. The complete installer TAR is requested under `C:\`.
+The intermediate unpublished `.ui.4`/maintenance `.16` source/build evidence is
+retained; its Windows publication failures led to the separately documented
+`WINDOWS_PUBLICATION_RETRY_20261101.md` fix included in this final candidate.
 
 Actual gate results are recorded with the final build, not predeclared here:
 source/locked dependencies, independent review, focused Windows/Linux tests,
