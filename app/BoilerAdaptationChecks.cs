@@ -42,11 +42,12 @@ internal static class BoilerAdaptationChecks
                 var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
                 Require(choices.IsVisible && choices.Children.Count == 2 && Field<int>(window, "step") == MainWindow.AdaptationStep, language + "-two-entry-cards-before-system-source");
                 Require(!((Border)window.FindName("SidebarPanel")).IsVisible && ((ColumnDefinition)window.FindName("SidebarColumn")).ActualWidth == 0
-                    && ((Button)window.FindName("AdaptationBackButton")).IsVisible && !((StackPanel)window.FindName("SourcePage")).IsVisible, language + "-standalone-layer-has-corner-back-and-no-sidebar");
+                    && ((Button)window.FindName("AdaptationBackButton")).IsVisible && !((Grid)window.FindName("PageFooter")).IsVisible
+                    && !((Button)window.FindName("AdaptationTab")).IsVisible, language + "-first-layer-entry-is-separate-from-numbered-wizard");
                 ((Button)window.FindName("AdaptationBackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Require(Field<Border>(window, "homeScreen") != null && !((Grid)window.FindName("WizardShell")).IsVisible, language + "-corner-back-returns-to-main-menu");
                 window.BoilerModeForChecks("custom"); await Flush(window);
-                Require(((Border)choices.Children[0]).Name == "ChooseDeviceInstallation" && ((Button)choices.Children[1]).Name == "ChooseGenericInstallation", language + "-device-left-generic-right");
+                Require(((Border)choices.Children[0]).Name == "ChooseDeviceInstallation" && ((Button)choices.Children[1]).Name == "ChooseGenericInstallation", language + "-first-layer-device-left-generic-right");
                 var quickPicker = Field<StackPanel>(window, "deviceQuickPicker");
                 var deviceList = Field<ComboBox>(window, "deviceList");
                 Require(Field<StackPanel>(window, "adaptationDevicePickerHost").Children.Count == 1, language + "-reentering-mode-removes-stale-inline-picker");
@@ -150,7 +151,7 @@ internal static class BoilerAdaptationChecks
                 deviceList.SelectedIndex = 0;
                 await (Task)Call(window, "LoadDeviceIndexAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!; await Flush(window);
                 Require(deviceList.SelectedIndex == 0, language + "-directory-refresh-does-not-overwrite-manual-choice");
-                Require(!options.IsVisible && ((Button)window.FindName("NextButton")).Visibility == Visibility.Collapsed, language + "-choice-does-not-show-generic-options-or-a-bypass-next");
+                Require(!options.IsVisible && !Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-choice-does-not-show-generic-options-or-a-bypass-next");
                 Require(!((StackPanel)window.FindName("RecoverySourceSection")).Children.Contains(Field<StackPanel>(window, "devicePanel")), language + "-device-picker-removed-from-source-page");
                 foreach (var size in new[] { new Size(1060, 720), new Size(640, 480) })
                 {
@@ -161,7 +162,23 @@ internal static class BoilerAdaptationChecks
                     var scroll = (ScrollViewer)window.FindName("PageScroll");
                     Require(scroll.ExtentWidth <= scroll.ViewportWidth + 1, language + "-choice-no-horizontal-overflow-" + size.Width);
                     scroll.ScrollToTop(); await Flush(window);
-                    await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-choice-" + size.Width + ".png"), captures, captureErrors);
+                    await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-layer-one-choice-" + size.Width + ".png"), captures, captureErrors);
+                    var deviceCard = (Border)choices.Children[0];
+                    var genericCard = (Button)choices.Children[1];
+                    Require(!wide || Math.Abs(deviceCard.ActualWidth - genericCard.ActualWidth) < 1
+                        && Math.Abs(deviceCard.ActualHeight - genericCard.ActualHeight) < 1
+                        && Grid.GetRow(deviceCard) == Grid.GetRow(genericCard)
+                        && Grid.GetColumn(genericCard) == 1, language + "-first-layer-symmetric-two-column-cards-" + size.Width,
+                        JsonSerializer.Serialize(new { deviceCard.ActualWidth, deviceCard.ActualHeight, genericWidth = genericCard.ActualWidth, genericHeight = genericCard.ActualHeight }));
+                    window.PreviewStep(1); await Flush(window);
+                    Require(((Border)window.FindName("SidebarPanel")).IsVisible
+                        && !((Button)window.FindName("AdaptationTab")).IsVisible
+                        && ((TextBlock)window.FindName("NavSource")).Text.StartsWith("01")
+                        && ((TextBlock)window.FindName("NavContent")).Text.StartsWith("02")
+                        && ((TextBlock)window.FindName("NavResult")).Text.StartsWith("07"),
+                        language + "-second-layer-starts-at-system-source-and-has-seven-steps-" + size.Width);
+                    await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-layer-two-source-" + size.Width + ".png"), captures, captureErrors);
+                    window.PreviewStep(MainWindow.AdaptationStep); await Flush(window);
                 }
                 window.Width = 1060; window.Height = 720;
                 ((Button)choices.Children[1]).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
@@ -193,7 +210,16 @@ internal static class BoilerAdaptationChecks
                 ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Require(Field<int>(window, "step") == 1, language + "-options-back-returns-to-source");
                 ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
-                Require(choices.IsVisible && !((Border)window.FindName("SidebarPanel")).IsVisible, language + "-source-back-returns-to-standalone-choices");
+                Require(choices.IsVisible && !((Border)window.FindName("SidebarPanel")).IsVisible
+                    && Field<string>(window, "adaptationBranch") == "generic", language + "-source-back-returns-to-first-layer-with-generic-selection");
+                var retainedGenericOptions = JsonSerializer.Serialize(window.CurrentOptions);
+                deviceList.SelectedIndex = 1;
+                ((Button)choices.Children[1]).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                Require(Field<int>(window, "step") == 1 && JsonSerializer.Serialize(window.CurrentOptions) == retainedGenericOptions,
+                    language + "-first-layer-generic-continue-preserves-all-option-choices");
+                Require(deviceList.SelectedIndex == 0 && !Field<Button>(window, "inlineDeviceContinue").IsEnabled,
+                    language + "-generic-continue-clears-uncommitted-device-candidate");
+                ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Call(window, "ChooseDeviceInstallation"); await Flush(window);
                 Require(!options.IsVisible && window.CurrentOptions.Repairs.Length == 0, language + "-device-card-hides-and-clears-generic-wireless");
                 Require(!((Button)window.FindName("NextButton")).IsEnabled, language + "-device-route-requires-an-actual-package");
@@ -212,22 +238,28 @@ internal static class BoilerAdaptationChecks
                 };
                 using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
                 using (var stream = archive.CreateEntry("manifest.json").Open())
-                    await JsonSerializer.SerializeAsync(stream, package);
+                {
+                    var data = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(package))!;
+                    data["components"]![1]!["selection_policy"] = "explicit-opt-in";
+                    await JsonSerializer.SerializeAsync(stream, data);
+                }
                 await (Task)Call(window, "ReceiveInputFilesAsync", new object?[] { new[] { packagePath } })!; await Flush(window);
                 var preview = Field<Border>(window, "deviceOptionPreview");
-                Require(((StackPanel)preview.Child).Children.OfType<TextBlock>().Any(text => text.Name == "DeviceCompatibilityNotice"
-                    && text.Text == MainWindow.DeviceCompatibilityNotice()), language + "-imported-device-preview-warns");
-                var previewOptions = ((StackPanel)preview.Child).Children.OfType<CheckBox>().ToArray();
-                Require(preview.IsVisible && previewOptions.Length == 2 && previewOptions.All(box => !box.IsEnabled), language + "-drop-shows-package-options-before-trust");
-                Require(!options.IsVisible && window.CurrentOptions.DevicePackage == null && window.CurrentOptions.DeviceComponents is not { Length: > 0 }, language + "-preview-never-selects-or-trusts-package");
-                Require(!Field<Button>(window, "inputApplyButton").IsEnabled, language + "-preview-still-requires-session-trust");
-                await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-preview.png"), captures, captureErrors);
-                Field<CheckBox>(window, "inputDeviceTrust").IsChecked = true;
-                await (Task)Call(window, "ApplyInputAssociationsAsync")!; await Flush(window);
+                Require(!preview.IsVisible && !options.IsVisible && window.CurrentOptions.DevicePackage != null,
+                    language + "-import-selects-device-without-preview-or-trust-confirmation");
+                Require(!Field<Button>(window, "inputApplyButton").IsEnabled, language + "-completed-import-needs-no-associate-click");
+                await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-imported.png"), captures, captureErrors);
                 Require(window.CurrentOptions.DevicePackage != null && window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-feature", "device:fixture-optional"]), language + "-trusted-package-defaults-to-all-adaptations", Field<TextBlock>(window, "inputAssociationStatus").Text + " / " + JsonSerializer.Serialize(window.CurrentOptions.DeviceComponents));
                 Require(Field<int>(window, "step") == 1 && !options.IsVisible, language + "-trusted-device-without-source-opens-source-first");
                 ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Require(choices.IsVisible && !Field<StackPanel>(window, "adaptationDeviceHost").IsVisible, language + "-source-back-skips-redundant-device-page");
+                Require(Field<TextBlock>(window, "inlineDeviceStatus").IsVisible
+                    && Field<TextBlock>(window, "inlineDeviceStatus").Text.Contains(language == "zh-CN" ? "机型交互测试包" : "Device interaction fixture")
+                    && Field<Button>(window, "inlineDeviceContinue").IsVisible && Field<Button>(window, "inlineDeviceContinue").IsEnabled,
+                    language + "-source-back-shows-active-local-package-and-can-continue");
+                Field<Button>(window, "inlineDeviceContinue").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                Require(Field<int>(window, "step") == 1 && window.CurrentOptions.DeviceComponents!.Length == 2,
+                    language + "-first-layer-package-continue-preserves-selection-and-opens-second-layer");
                 Call(window, "ContinueAfterDeviceSelection"); await Flush(window);
                 BindSourceFixture(window, source);
                 ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
@@ -235,8 +267,8 @@ internal static class BoilerAdaptationChecks
                 var packageOptions = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
                 var allAdaptations = Field<CheckBox>(window, "deviceAdaptationsChoice");
                 Require(allAdaptations.IsVisible && allAdaptations.IsEnabled && allAdaptations.IsChecked == true
-                    && Field<StackPanel>(window, "deviceComponentsPanel").Children.OfType<CheckBox>().Count() == 1,
-                    language + "-one-default-checked-package-adaptation-option");
+                    && Field<StackPanel>(window, "deviceComponentsPanel").Children.OfType<CheckBox>().Count() == 3,
+                    language + "-default-checked-package-adaptation-options");
                 Require(((TextBlock)allAdaptations.Content).Text == PartitionInventory.L("机型适配修复", "Device compatibility fixes"),
                     language + "-device-fixes-requested-label");
                 await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-defaults.png"), captures, captureErrors);
@@ -247,7 +279,7 @@ internal static class BoilerAdaptationChecks
                 allAdaptations.IsChecked = false;
                 ((RadioButton)window.FindName(language == "zh-CN" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true; await Flush(window);
                 Require(window.CurrentOptions.DeviceComponents!.Length == 0 && !options.RepairsExpander.IsVisible, language + "-language-switch-keeps-package-choice-and-no-wireless");
-                Require(((TextBlock)window.FindName("PageSubtitle")).Text == MainWindow.DeviceCompatibilityNotice(), language + "-language-switch-updates-compatibility-notice");
+                Require(((TextBlock)window.FindName("PageSubtitle")).Text == MainWindow.DeviceOptionsDescription(), language + "-language-switch-updates-options-description");
                 await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-options.png"), captures, captureErrors);
                 ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
@@ -262,22 +294,11 @@ internal static class BoilerAdaptationChecks
                     await writer.WriteAsync(alternate.ToJsonString());
                 Field<Button>(window, "inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 await (Task)Call(window, "ReceiveInputFilesAsync", new object?[] { new[] { alternatePath } })!; await Flush(window);
-                Require(preview.IsVisible && window.CurrentOptions.DevicePackage == selectedPackage && !((Button)window.FindName("NextButton")).IsEnabled,
-                    language + "-untrusted-new-preview-cannot-continue-as-old-package");
-                Require(Call(window, "ContentIssue") is string, language + "-pending-preview-blocks-final-review");
-                window.PreviewStep(3); await Flush(window);
-                var reviewNext = (Button)window.FindName("NextButton");
-                Require(!reviewNext.IsEnabled, language + "-pending-preview-disables-install-action");
-                var blockedReason = (string)Call(window, "ContentIssue")!;
-                reviewNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
-                Require(((TextBlock)window.FindName("ValidationMessage")).Text == blockedReason && Field<InstallationSession?>(window, "session") == null,
-                    language + "-final-next-entry-rejects-untrusted-preview");
-                window.PreviewStep(MainWindow.AdaptationStep); await Flush(window);
-                Field<Button>(window, "inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
-                Require(!preview.IsVisible && window.CurrentOptions.DevicePackage == selectedPackage, language + "-removing-preview-restores-existing-selection");
-                ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
-                ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                ((Button)window.FindName("AdaptationBackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                Require(!preview.IsVisible && window.CurrentOptions.DevicePackage != selectedPackage
+                    && window.CurrentOptions.DeviceComponents!.Contains("device:other-feature"), language + "-new-import-replaces-package-without-confirmation");
+                ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                Require(choices.IsVisible && !((Border)window.FindName("SidebarPanel")).IsVisible,
+                    language + "-replacement-import-back-returns-to-first-layer");
                 ((Button)choices.Children[1]).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Require(window.CurrentOptions.DevicePackage == null && Field<int>(window, "step") == 1 && window.CurrentOptions.Repairs.Length == 0, language + "-explicit-generic-clears-package-and-does-not-restore-wireless");
                 window.BoilerModeForChecks("vanilla");
@@ -287,7 +308,6 @@ internal static class BoilerAdaptationChecks
                     language + "-vanilla-enters-source-directly-without-device-picker");
                 BindSourceFixture(window, source);
                 await (Task)Call(window, "ReceiveInputFilesAsync", new object?[] { new[] { packagePath } })!;
-                Field<CheckBox>(window, "inputDeviceTrust").IsChecked = true;
                 await (Task)Call(window, "ApplyInputAssociationsAsync")!; await Flush(window);
                 var digest = typeof(MainWindow).GetProperty("CurrentSourceDigest", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window);
                 Require(window.CurrentOptions.InstallMode == "custom" && digest is string value && value == new string('a', 64), language + "-vanilla-device-association-preserves-unchanged-source-binding");

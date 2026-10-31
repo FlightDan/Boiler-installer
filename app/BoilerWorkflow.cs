@@ -17,7 +17,7 @@ public partial class MainWindow
     private void ChooseBoilerMode(string mode)
     {
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
-        if (operation != null || DownloadsBusy || deviceActionBusy || PartitionSelector.IsBusy) return;
+        if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
         deviceActionError = null;
         ResetInputAssociationSession();
@@ -80,7 +80,7 @@ public partial class MainWindow
     {
         Title = "Boiler Installer";
         var pairedOrPrepared = installMode is "local" or "imported";
-        NavAdaptation.Text = PartitionInventory.L("01   设备适配", "01   Device support");
+        NavAdaptation.Text = PartitionInventory.L("设备适配", "Device support");
         NavSource.Text = PartitionInventory.L("01   系统来源", "01   System source");
         NavContent.Text = PartitionInventory.L("02   安装选项", "02   Installation options");
         NavTarget.Text = pairedOrPrepared ? PartitionInventory.L("02   安装位置", "02   Destination") : PartitionInventory.L("03   安装位置", "03   Destination");
@@ -96,8 +96,11 @@ public partial class MainWindow
         ContentTab.Visibility = pairedOrPrepared ? Visibility.Collapsed : Visibility.Visible;
         AdaptationTab.Visibility = Visibility.Collapsed;
         BackHomeButton.Content = PartitionInventory.L("返回安装方式", "Back to home");
-        BackHomeButton.IsEnabled = operation == null && !DownloadsBusy && !PartitionSelector.IsBusy;
+        BackHomeButton.IsEnabled = operation == null && !DownloadsBusy && !deviceActionBusy && !inputInspectionBusy && !inputAssociationBusy && !PartitionSelector.IsBusy;
         BackButton.Visibility = step is 0 or 2 or 3 or 4 or AdaptationStep || step == 1 && !pairedOrPrepared ? Visibility.Visible : Visibility.Collapsed;
+        BackButton.Content = step == 1 && !pairedOrPrepared
+            ? PartitionInventory.L("返回适配方式", "Back to device support")
+            : PartitionInventory.L("上一步", "Back");
         SourceFooterHint.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
         SourceFooterHint.Text = installMode == "local" ? PartitionInventory.L("两个镜像均选择并校验后继续。", "Select and verify both images to continue.") : PartitionInventory.L("选择并核对镜像后继续。", "Select and verify the image to continue.");
         NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : step == 1 ? pairedOrPrepared ? PartitionInventory.L("下一步：安装位置", "Next: destination") : PartitionInventory.L("下一步：安装选项", "Next: installation options") : PartitionInventory.L("下一步", "Next");

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "IndependentXevmaRebuildProof",
+  "source_binary_correspondence_verified": true,
+  "fresh_source_build": true,
+  "old_module_input": false,
+  "public_recipe_executed": true,
+  "module_loaded": false,
+  "hardware_accepted": false,
+  "production_release_ready": false,
+  "script": {
+    "path": "scripts/rebuild-xevma.py",
+    "size": 7325,
+    "sha256": "c8c707df6efa379f14ff4514677ad10a4556b6ee9c653de806aebe0be05ae0f1"
+  },
+  "recipe": {
+    "path": "adaptations/common/resource-inputs/intel-xevma-724/xevma-rebuild-inputs.json",
+    "size": 25585,
+    "sha256": "4a96af51b82259a07bc8a26d64984868aff018fdab174afc7b75a4addd100974"
+  },
+  "source": {
+    "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+    "commit": "e72e814da1944da3792076689995b6fe961f5768",
+    "path": "xevmafix/xevmafix.c",
+    "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+    "git_blob_sha1": "dfbe5242348b67547cc500a29c9fd7917c875a3b",
+    "license": "GPL-2.0",
+    "unchanged_from_upstream": true,
+    "license_variant": "exact variant unspecified by upstream; MODULE_LICENSE(\"GPL\")"
+  },
+  "sources": [
+    {
+      "local_file": "xevmafix.c",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/xevmafix/xevmafix.c",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "xevmafix/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+      "git_blob": "dfbe5242348b67547cc500a29c9fd7917c875a3b"
+    },
+    {
+      "local_file": "Makefile",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/xevmafix/Makefile",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "xevmafix/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a",
+      "git_blob": "85394bbebd42c7cd4aa8448614ba4470b0b6b341"
+    },
+    {
+      "local_file": "LICENSE",
+      "url": "https://raw.githubusercontent.com/FlightDan/Boiler-installer/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "repository": "FlightDan/Boiler-installer",
+      "commit": "00d26ea7ed0aa4f1d1002216242199bc72736e80",
+      "path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa",
+      "git_blob": "ea8e93dc44bc462a2be34e484432cf2b9ec88527"
+    },
+    {
+      "local_file": "UPSTREAM_LICENSE",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/LICENSE",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "git_blob": "63e0ac770ae194b6a466f889562aca99522728d3"
+    }
+  ],
+  "kernel": "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9",
+  "build_environment": {
+    "KBUILD_BUILD_TIMESTAMP": "2026-10-30 00:00:00 UTC",
+    "KBUILD_BUILD_USER": "boiler",
+    "KBUILD_BUILD_HOST": "offline-audit"
+  },
+  "package_count": 60,
+  "artifact": {
+    "file": "xevmafix.ko",
+    "built_file": "rebuilt-xevmafix.ko",
+    "size": 397512,
+    "sha256": "10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b",
+    "elf64": true,
+    "machine": 62,
+    "vermagic": "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9 SMP preempt mod_unload ",
+    "module_license": "GPL",
+    "has_exit_handler": false,
+    "btf_present": false
+  },
+  "execution": {
+    "environment": "Disposable offline QEMU Linux VM",
+    "guest_network": false,
+    "writable_host_disks": false,
+    "host_inputs_read_only": true,
+    "guest_exit": 0,
+    "qemu_exit": 0,
+    "apk_signatures_verified": true,
+    "elapsed_seconds": 156.647
+  },
+  "build_log": {
+    "path": "adaptations/common/resource-inputs/intel-xevma-724/xevma-build.log",
+    "size": 726,
+    "sha256": "22c2efe22083460e472330831ec703eecb44c2b63d83fedf2dae24da0ac342d0"
+  },
+  "retained_evidence_digests": {
+    "result_sha256": "39f455c2fa509803811f4ed6ad3315715780a3767e34615cb4837eaf9459021c",
+    "console_sha256": "af3bbe203bc3363e0ed6ea0405005357415426562b776fde1448ba96a0e2644d",
+    "input_manifest_sha256": "9742b84f83d4f6c4cf2e1e1b8ca6265261c2daef891f5a0a33fde699253bbc79"
+  },
+  "limits": [
+    "This is a reproducible local source-build attestation, not a vendor signature or production hardware authorization.",
+    "The resource pool assembler consumes an explicitly locked module; it does not compile a module on every pool build.",
+    "GPU, boot, service, suspend, performance, recovery and signing/lockdown acceptance are not established.",
+    "No exit handler: file restoration or stopping the service does not unload an active copy.",
+    "Original GPL module declaration/GPL v2 text and separate upstream MIT notice are retained; exact GPL variant is not inferred solely from MODULE_LICENSE."
+  ]
+}

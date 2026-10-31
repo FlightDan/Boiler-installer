@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "KeyboardRuntimeSourceInventory",
+  "runtime_sources": [
+    {
+      "source": "maintenance/keyboard_contract.py",
+      "size": 1404,
+      "sha256": "a4671997e463553f86537197b733459002c98987c4a5325f25d54f1294600825"
+    },
+    {
+      "source": "maintenance/keyboard_target.py",
+      "size": 2682,
+      "sha256": "74fe188af4b9c19eb6b0fa47a665d0eb29e85687880e9a2b02cb9750a66bf748"
+    },
+    {
+      "source": "maintenance/keyboard_models.py",
+      "size": 8141,
+      "sha256": "5f034a7be9f6c618093c6f9665d716e3245127d1de85b52b72026920c3df1fc8"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/__init__.py",
+      "size": 84,
+      "sha256": "a6f4ff9773269ab66d8d51ea127adfe370d1745bd8efe1bbce75b00902beb3d7"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/merge.py",
+      "size": 2012,
+      "sha256": "fe9f91b84d2c6d36a79554a51975c18c7178d6117b7a6554f03a2bc2ac21e7da"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/public-source-lock.json",
+      "size": 3556,
+      "sha256": "320f5c4c7f8c52393cea18c211ae35c15375f36f1e8ed6a20b883db72a7fcbdd"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/service.py",
+      "size": 20772,
+      "sha256": "152304760a596c8308052c5b26773844e7fd4c453f666454a17a4af68df38478"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/LICENSE-AGPL-3.0",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/animation_changer_compat.py",
+      "size": 12223,
+      "sha256": "751a1f6902e5c304223e0215fdd6072cf6a77ccbd0935a50281c62fdf2e5bff5"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/autoflatpaks_compat.py",
+      "size": 12240,
+      "sha256": "36b4b0b8b970b640e404d09772a625e990e37588e69b9e3ee73448b2b6493047"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/compatibility.py",
+      "size": 3454,
+      "sha256": "a331adf7768b4019dc9ea4bc8e15376a9a50617070d7fd5ef5f4b2fdd20742a9"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/decky_order.py",
+      "size": 2109,
+      "sha256": "973f1b3c61db67598546c8f4d9f61ec6ec6ec953329ba9ac015262df7d91fa48"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/keyboard_merge.py",
+      "size": 1055,
+      "sha256": "6af9554ef77dc335e8295dd79d1309da1489b07e413f490acb8f52dc8597af3e"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/opti_migration.py",
+      "size": 836,
+      "sha256": "8adcb35bcb2cd48d7641b3645631dd11473cb061654e93748463d0a0f22aeeb7"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/probe.py",
+      "size": 14187,
+      "sha256": "e202c700a5ddaaad28775ae79b7801faa52912887a4587ae30b27d0e5a1e5ffa"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/runtime_directories.py",
+      "size": 18254,
+      "sha256": "f7c74b3bd6701d3367bdbe895ec6b91535c46e76a28a79d1a0edd4b23e845ba4"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/split_lock.py",
+      "size": 2491,
+      "sha256": "1eb270c5ac1151422b26d0233ee68b52155042b316c26a6e932bcbd4e8abc694"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/state_io.py",
+      "size": 20445,
+      "sha256": "a27eed43dd15ba2d18db723f8d138813a3b056084eebfb31e7994d47c419bb43"
+    },
+    {
+      "source": "maintenance/keyboard_runtime/vendor/transactions.py",
+      "size": 61029,
+      "sha256": "39f122669a151b85a66223f2779d4352c014d7d331cabc1aa616b31099f06baf"
+    }
+  ],
+  "public_base_manifest_sha256": "c442eef2039779be8e3f432a65bb5cc46c432f8cd7b51734ea76168ab07136e2",
+  "provenance": {
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "e181a9055e1c94e8d758e2b9575f60fb5fc5109c",
+    "release_tag": "v1.0.6+installer.20261022.220437",
+    "asset": {
+      "url": "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/v1.0.6%2Binstaller.20261022.220437/oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+      "name": "oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+      "size": 555684389,
+      "sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4"
+    }
+  },
+  "execution": "Only fixed trusted host handler; package code is never executed",
+  "license": "AGPL-3.0 retained in maintenance/keyboard_runtime/vendor/LICENSE-AGPL-3.0"
+}

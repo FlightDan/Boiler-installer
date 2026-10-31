@@ -59,7 +59,7 @@ public partial class MainWindow
 
     private void ShowBoilerHome()
     {
-        if (ready && (operation != null || DownloadsBusy || deviceActionBusy || PartitionSelector.IsBusy)) return;
+        if (ready && (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy)) return;
         optionsPanel?.CancelPendingWirelessDetection();
         optionsPanel?.ClearSensitiveInputs();
         WizardShell.Visibility = Visibility.Collapsed;
@@ -103,6 +103,8 @@ public partial class MainWindow
             languages.Children.Add(button);
         }
         controls.Children.Add(languages);
+        var feedback = new Button { Name = "HomeFeedback", Content = PartitionInventory.L("反馈…", "Feedback…"), MinHeight = 48, Margin = new(0, 0, 8, 0), Padding = new(12, 8, 12, 8) };
+        feedback.Click += OpenFeedback; controls.Children.Add(feedback);
         var exit = new Button { Content = PartitionInventory.L("退出", "Exit"), MinWidth = 64, Margin = new(0), Padding = new(12, 8, 12, 8) };
         exit.Click += ExitWindow;
         controls.Children.Add(exit);
@@ -297,7 +299,7 @@ public partial class MainWindow
 
     private void BackToBoilerHome(object sender, RoutedEventArgs e)
     {
-        if (operation != null || DownloadsBusy || PartitionSelector.IsBusy) return;
+        if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         ShowBoilerHome();
     }
 }

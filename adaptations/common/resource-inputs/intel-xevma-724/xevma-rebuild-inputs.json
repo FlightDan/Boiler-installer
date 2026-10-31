@@ -1,0 +1,504 @@
+{
+  "schema_version": 1,
+  "kind": "XevmaRebuildInputs",
+  "source": {
+    "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+    "commit": "e72e814da1944da3792076689995b6fe961f5768",
+    "path": "xevmafix/xevmafix.c",
+    "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+    "git_blob_sha1": "dfbe5242348b67547cc500a29c9fd7917c875a3b",
+    "license": "GPL-2.0",
+    "unchanged_from_upstream": true,
+    "license_variant": "exact variant unspecified by upstream; MODULE_LICENSE(\"GPL\")"
+  },
+  "sources": [
+    {
+      "local_file": "xevmafix.c",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/xevmafix/xevmafix.c",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "xevmafix/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+      "git_blob": "dfbe5242348b67547cc500a29c9fd7917c875a3b"
+    },
+    {
+      "local_file": "Makefile",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/xevmafix/Makefile",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "xevmafix/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a",
+      "git_blob": "85394bbebd42c7cd4aa8448614ba4470b0b6b341"
+    },
+    {
+      "local_file": "LICENSE",
+      "url": "https://raw.githubusercontent.com/FlightDan/Boiler-installer/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "repository": "FlightDan/Boiler-installer",
+      "commit": "00d26ea7ed0aa4f1d1002216242199bc72736e80",
+      "path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa",
+      "git_blob": "ea8e93dc44bc462a2be34e484432cf2b9ec88527"
+    },
+    {
+      "local_file": "UPSTREAM_LICENSE",
+      "url": "https://raw.githubusercontent.com/HHHHanasak1/onexplayer3-steamos-setup/e72e814da1944da3792076689995b6fe961f5768/LICENSE",
+      "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+      "commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "path": "LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "git_blob": "63e0ac770ae194b6a466f889562aca99522728d3"
+    }
+  ],
+  "packages": [
+    {
+      "file": "linux-neptune-72-headers-7.2.4.valve1-1-x86_64.pkg.tar.zst",
+      "size": 43158779,
+      "sha256": "c038a1443e0baf0b33d869747e027056beb28f4a619e235fa624403a1918de6a",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/jupiter-main/os/x86_64/linux-neptune-72-headers-7.2.4.valve1-1-x86_64.pkg.tar.zst",
+      "local_file": "headers.pkg.tar.zst"
+    },
+    {
+      "file": "acl-2.4.0-1-x86_64.pkg.tar.zst",
+      "local_file": "acl-2.4.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/acl-2.4.0-1-x86_64.pkg.tar.zst",
+      "size": 150821,
+      "sha256": "dca9ec50cf51243b86a67367a55e78b1851d31240b1edaf9c011f8511765d999"
+    },
+    {
+      "file": "attr-2.6.0-1-x86_64.pkg.tar.zst",
+      "local_file": "attr-2.6.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/attr-2.6.0-1-x86_64.pkg.tar.zst",
+      "size": 74207,
+      "sha256": "0db32b421f67000950f7b55b531291ce8c13985c5444425b22dce94d485daed1"
+    },
+    {
+      "file": "bash-5.3.15-1-x86_64.pkg.tar.zst",
+      "local_file": "bash-5.3.15-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/bash-5.3.15-1-x86_64.pkg.tar.zst",
+      "size": 2002014,
+      "sha256": "2c14ce3c72790ec6b344267b39f04f921bbb34f0c1399460e71492547f6b6c65"
+    },
+    {
+      "file": "binutils-2.46.1+r3+g046eeeef4721-1-x86_64.pkg.tar.zst",
+      "local_file": "binutils-2.46.1+r3+g046eeeef4721-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/binutils-2.46.1%2Br3%2Bg046eeeef4721-1-x86_64.pkg.tar.zst",
+      "size": 8545424,
+      "sha256": "c756dd783468214029026fe9157306e5d2f5191e5af2a9162ca57d696db5ef8b"
+    },
+    {
+      "file": "brotli-1.2.0-1-x86_64.pkg.tar.zst",
+      "local_file": "brotli-1.2.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/brotli-1.2.0-1-x86_64.pkg.tar.zst",
+      "size": 407149,
+      "sha256": "4a0c95d5967476d0efdaf76d344b61e3eee02cd7920a315e457f3fd96311b7ec"
+    },
+    {
+      "file": "bzip2-1.0.8-6-x86_64.pkg.tar.zst",
+      "local_file": "bzip2-1.0.8-6-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/bzip2-1.0.8-6-x86_64.pkg.tar.zst",
+      "size": 59786,
+      "sha256": "8779003d659c441b952095c19907603a738c1366f25cc51be3fd139fa4e95748"
+    },
+    {
+      "file": "coreutils-9.11-2-x86_64.pkg.tar.zst",
+      "local_file": "coreutils-9.11-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/coreutils-9.11-2-x86_64.pkg.tar.zst",
+      "size": 3062677,
+      "sha256": "8d6668fba51085e680b1510f16ff43d32fbfdd068e78b2000783a4dab1c15513"
+    },
+    {
+      "file": "curl-8.21.0-1-x86_64.pkg.tar.zst",
+      "local_file": "curl-8.21.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/curl-8.21.0-1-x86_64.pkg.tar.zst",
+      "size": 1341008,
+      "sha256": "67f9275b591d3cc12c2c54bc38727363575d2d8c665aa4e3c26bf60b0856867b"
+    },
+    {
+      "file": "diffutils-3.12-2-x86_64.pkg.tar.zst",
+      "local_file": "diffutils-3.12-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/diffutils-3.12-2-x86_64.pkg.tar.zst",
+      "size": 350156,
+      "sha256": "53830e09d46ceccde48a0fc1dcee026902e2a639a1b8a5e2a091d2a9d90b6967"
+    },
+    {
+      "file": "e2fsprogs-1.47.4-1-x86_64.pkg.tar.zst",
+      "local_file": "e2fsprogs-1.47.4-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/e2fsprogs-1.47.4-1-x86_64.pkg.tar.zst",
+      "size": 1296838,
+      "sha256": "a78971bbbe0ae89d15a0cbbc952e64462edc5a6f991c1bb9cefd0539ca548bd4"
+    },
+    {
+      "file": "elfutils-0.195-1-x86_64.pkg.tar.zst",
+      "local_file": "elfutils-0.195-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/elfutils-0.195-1-x86_64.pkg.tar.zst",
+      "size": 649766,
+      "sha256": "d5cda303f8a4dfa86ba2428f188e87d71d1b46832117f5589a31f7e71b116c87"
+    },
+    {
+      "file": "expat-2.8.2-1-x86_64.pkg.tar.zst",
+      "local_file": "expat-2.8.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/expat-2.8.2-1-x86_64.pkg.tar.zst",
+      "size": 132140,
+      "sha256": "7df6034eb09e2c7fc6300c2d7588ee9a6c5954e2f775461fbb6521ba51ddfe37"
+    },
+    {
+      "file": "findutils-4.11.0-1-x86_64.pkg.tar.zst",
+      "local_file": "findutils-4.11.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/findutils-4.11.0-1-x86_64.pkg.tar.zst",
+      "size": 539114,
+      "sha256": "76ac56a7f03039d163306701e5c02777b9b7170ad5388e66e46c363dd2792edf"
+    },
+    {
+      "file": "gawk-5.4.1-1-x86_64.pkg.tar.zst",
+      "local_file": "gawk-5.4.1-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/gawk-5.4.1-1-x86_64.pkg.tar.zst",
+      "size": 1553071,
+      "sha256": "875761229b80b29078cd1fafc35a07add9ac4c2dbb9a429bd0b72ddcc14a31bd"
+    },
+    {
+      "file": "gc-8.2.12-1-x86_64.pkg.tar.zst",
+      "local_file": "gc-8.2.12-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/gc-8.2.12-1-x86_64.pkg.tar.zst",
+      "size": 241204,
+      "sha256": "f81f6053b8986150529ad125827f00cc8f7652f827cea34fe3f0e97ce078434e"
+    },
+    {
+      "file": "gcc-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "local_file": "gcc-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/gcc-16.1.1%2Br346%2Bg4e03491b401d-4-x86_64.pkg.tar.zst",
+      "size": 60617995,
+      "sha256": "346a52cc965b67f362d5b6701ec339eb43df8e68f8167a491a30847d15545a48"
+    },
+    {
+      "file": "gcc-libs-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "local_file": "gcc-libs-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/gcc-libs-16.1.1%2Br346%2Bg4e03491b401d-4-x86_64.pkg.tar.zst",
+      "size": 2710,
+      "sha256": "e2f27ea47272a08d5b317c86d0eb567a53922892d4bdc1061f3e2821a18672b6"
+    },
+    {
+      "file": "glibc-2.43+r37+gfdf10644d6ee-1-x86_64.pkg.tar.zst",
+      "local_file": "glibc-2.43+r37+gfdf10644d6ee-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/glibc-2.43%2Br37%2Bgfdf10644d6ee-1-x86_64.pkg.tar.zst",
+      "size": 10814843,
+      "sha256": "213332b0d5b712c20a12dd61d96ba4c21f192df63d454a94ad5cef2b7864e8d1"
+    },
+    {
+      "file": "gmp-6.3.0-3-x86_64.pkg.tar.zst",
+      "local_file": "gmp-6.3.0-3-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/gmp-6.3.0-3-x86_64.pkg.tar.zst",
+      "size": 453294,
+      "sha256": "2969061e117d2a8c19d89427b0b88e1c956a6269bc0602087d41aecd15097064"
+    },
+    {
+      "file": "grep-3.12-2-x86_64.pkg.tar.zst",
+      "local_file": "grep-3.12-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/grep-3.12-2-x86_64.pkg.tar.zst",
+      "size": 241270,
+      "sha256": "9dd8a5dad99e8d388b1fb1406919de218d30c7e49924f615a12d3f2deaaecfe2"
+    },
+    {
+      "file": "guile-3.0.11-1-x86_64.pkg.tar.zst",
+      "local_file": "guile-3.0.11-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/guile-3.0.11-1-x86_64.pkg.tar.zst",
+      "size": 8798834,
+      "sha256": "dbc4c775e0474a5ac8784aab95a77f6fd23ebc930abea34c7a5e0f83dd00873d"
+    },
+    {
+      "file": "icu-78.3-1-x86_64.pkg.tar.zst",
+      "local_file": "icu-78.3-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/icu-78.3-1-x86_64.pkg.tar.zst",
+      "size": 12272670,
+      "sha256": "118fe41efa6c550f3fe67893946dcea2c6cbb5272299a6ddf4160fb17f3e4bb0"
+    },
+    {
+      "file": "jansson-2.15.0-1-x86_64.pkg.tar.zst",
+      "local_file": "jansson-2.15.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/jansson-2.15.0-1-x86_64.pkg.tar.zst",
+      "size": 90651,
+      "sha256": "d58e6b36a8a8dcd81ae4a943b859d9b7b9d72c77455aef4f82226aa8909dadb0"
+    },
+    {
+      "file": "json-c-0.19-1-x86_64.pkg.tar.zst",
+      "local_file": "json-c-0.19-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/json-c-0.19-1-x86_64.pkg.tar.zst",
+      "size": 64992,
+      "sha256": "a2ebb9395bfc18a29abd21b6dd756519114e4e6241d6321588ada285ded4d63f"
+    },
+    {
+      "file": "keyutils-1.6.3-4-x86_64.pkg.tar.zst",
+      "local_file": "keyutils-1.6.3-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/keyutils-1.6.3-4-x86_64.pkg.tar.zst",
+      "size": 104718,
+      "sha256": "e3e5d4226bb7d213a6baddb997bf679a2b1106d95b5c2845b79bf8df1c3ef5fe"
+    },
+    {
+      "file": "krb5-1.22.2-1-x86_64.pkg.tar.zst",
+      "local_file": "krb5-1.22.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/krb5-1.22.2-1-x86_64.pkg.tar.zst",
+      "size": 1407071,
+      "sha256": "38dcaf86512559c47e9b084ce78f417b5e8b0634feb8cb80b5edeab2c40b704f"
+    },
+    {
+      "file": "libbpf-1.7.0-1-x86_64.pkg.tar.zst",
+      "local_file": "libbpf-1.7.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libbpf-1.7.0-1-x86_64.pkg.tar.zst",
+      "size": 273925,
+      "sha256": "07ca39704fd534fcb4f520550cdddad5c113521f87035fb66f66a50a6d843257"
+    },
+    {
+      "file": "libcap-2.78-1-x86_64.pkg.tar.zst",
+      "local_file": "libcap-2.78-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libcap-2.78-1-x86_64.pkg.tar.zst",
+      "size": 854184,
+      "sha256": "3e984fe1d323b1c5a5fc60fef005776a4882fbca913d6fe3c41ad11128929ed1"
+    },
+    {
+      "file": "libelf-0.195-1-x86_64.pkg.tar.zst",
+      "local_file": "libelf-0.195-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libelf-0.195-1-x86_64.pkg.tar.zst",
+      "size": 659429,
+      "sha256": "e7faf9dc2d9dab8975a4a95ce0804c45b3fe69c1551ccb4c05c52003cb2e75c1"
+    },
+    {
+      "file": "libffi-3.7.1-1-x86_64.pkg.tar.zst",
+      "local_file": "libffi-3.7.1-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libffi-3.7.1-1-x86_64.pkg.tar.zst",
+      "size": 54112,
+      "sha256": "f6b3e945f965f1faeb66362392a341e47cfaef25a45dc75046ce7af0b2f10b1a"
+    },
+    {
+      "file": "libgcc-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "local_file": "libgcc-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libgcc-16.1.1%2Br346%2Bg4e03491b401d-4-x86_64.pkg.tar.zst",
+      "size": 81875,
+      "sha256": "722979b963615931feb6aaba3cbd15376b04ef0ec17ec1f0c557edaa5d16c358"
+    },
+    {
+      "file": "libgomp-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "local_file": "libgomp-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libgomp-16.1.1%2Br346%2Bg4e03491b401d-4-x86_64.pkg.tar.zst",
+      "size": 236378,
+      "sha256": "b4a8c0795fe74492a34b0b878659977908bf253af519e86f669b5cc6b5080d6d"
+    },
+    {
+      "file": "libidn2-2.3.8-1-x86_64.pkg.tar.zst",
+      "local_file": "libidn2-2.3.8-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libidn2-2.3.8-1-x86_64.pkg.tar.zst",
+      "size": 135360,
+      "sha256": "1749bdd4c395913df18c57fdd42820d3de88738b7163b7aa254d13e3da7b1d9d"
+    },
+    {
+      "file": "libisl-0.28-1-x86_64.pkg.tar.zst",
+      "local_file": "libisl-0.28-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libisl-0.28-1-x86_64.pkg.tar.zst",
+      "size": 980886,
+      "sha256": "e72fd1165d674f440ff9882b514c999423098a5852ea41fa692db65f391c98c1"
+    },
+    {
+      "file": "libmpc-1.4.1-1-x86_64.pkg.tar.zst",
+      "local_file": "libmpc-1.4.1-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libmpc-1.4.1-1-x86_64.pkg.tar.zst",
+      "size": 94077,
+      "sha256": "880bdba957ebe5136449c7b61821e92628d7bdd43f370e5a0818d229372d3851"
+    },
+    {
+      "file": "libnghttp2-1.69.0-1-x86_64.pkg.tar.zst",
+      "local_file": "libnghttp2-1.69.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libnghttp2-1.69.0-1-x86_64.pkg.tar.zst",
+      "size": 96754,
+      "sha256": "18846de3571b98cf657098e2f77d9c9b38d6af0c0497cff665f8b80472d0c62a"
+    },
+    {
+      "file": "libnghttp3-1.17.0-1-x86_64.pkg.tar.zst",
+      "local_file": "libnghttp3-1.17.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libnghttp3-1.17.0-1-x86_64.pkg.tar.zst",
+      "size": 84225,
+      "sha256": "1eb7cfbfb83fc660756a92be13d7f541c0a2f79818d50c958a187a13caf16633"
+    },
+    {
+      "file": "libngtcp2-1.24.0-1-x86_64.pkg.tar.zst",
+      "local_file": "libngtcp2-1.24.0-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libngtcp2-1.24.0-1-x86_64.pkg.tar.zst",
+      "size": 227295,
+      "sha256": "3a3c8694d416d104643681aa7c2bb2589068cee52bd11f7f1ab2ecfa9ec50cb0"
+    },
+    {
+      "file": "libpsl-0.21.5-2-x86_64.pkg.tar.zst",
+      "local_file": "libpsl-0.21.5-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libpsl-0.21.5-2-x86_64.pkg.tar.zst",
+      "size": 88860,
+      "sha256": "e07925c2487bd7deffdd57808b19561e80a4cb25a33e51dbd94efb673bc81944"
+    },
+    {
+      "file": "libssh2-1.11.1-6-x86_64.pkg.tar.zst",
+      "local_file": "libssh2-1.11.1-6-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libssh2-1.11.1-6-x86_64.pkg.tar.zst",
+      "size": 265565,
+      "sha256": "567bd99e4935704167dad4bf3baa9828ca029247dab1696af6c28fccf04c5bc8"
+    },
+    {
+      "file": "libstdc++-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "local_file": "libstdc++-16.1.1+r346+g4e03491b401d-4-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libstdc%2B%2B-16.1.1%2Br346%2Bg4e03491b401d-4-x86_64.pkg.tar.zst",
+      "size": 883060,
+      "sha256": "90790e8d6b126891a2159139330c2e8464b47f0beeb604e6cb9b2b7c4542c3a8"
+    },
+    {
+      "file": "libtool-2.6.2-1-x86_64.pkg.tar.zst",
+      "local_file": "libtool-2.6.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libtool-2.6.2-1-x86_64.pkg.tar.zst",
+      "size": 439424,
+      "sha256": "a341443892cec624da4ca7920cdde0caa3f4feca0c99d3dd8f69a9390e66995a"
+    },
+    {
+      "file": "libunistring-1.4.2-1-x86_64.pkg.tar.zst",
+      "local_file": "libunistring-1.4.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libunistring-1.4.2-1-x86_64.pkg.tar.zst",
+      "size": 746290,
+      "sha256": "582625bc02e710b587f4ed319e5c7ad29fd5d4d424b6384f125fc094f07ce590"
+    },
+    {
+      "file": "libverto-0.3.2-6-x86_64.pkg.tar.zst",
+      "local_file": "libverto-0.3.2-6-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libverto-0.3.2-6-x86_64.pkg.tar.zst",
+      "size": 19195,
+      "sha256": "d0965b1b256e330e300c2bc3c699afa24f2d800dc476541039d452b606309496"
+    },
+    {
+      "file": "libxcrypt-4.5.2-1-x86_64.pkg.tar.zst",
+      "local_file": "libxcrypt-4.5.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libxcrypt-4.5.2-1-x86_64.pkg.tar.zst",
+      "size": 94258,
+      "sha256": "7d324b88963786491391468203701efd2c812798a9c3fbcc4ff8a4ddb2d9f276"
+    },
+    {
+      "file": "libxml2-2.15.3-1-x86_64.pkg.tar.zst",
+      "local_file": "libxml2-2.15.3-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/libxml2-2.15.3-1-x86_64.pkg.tar.zst",
+      "size": 789927,
+      "sha256": "51807c20a300bf85db48ae7f2f8967bec291439764b29279e3297dff3247ed4f"
+    },
+    {
+      "file": "linux-api-headers-7.1-1-x86_64.pkg.tar.zst",
+      "local_file": "linux-api-headers-7.1-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/linux-api-headers-7.1-1-x86_64.pkg.tar.zst",
+      "size": 1576198,
+      "sha256": "a6edb1e19a58c43abb93b38e70eb327b2e8b0c15aa74abf31a187c0ee6a5d732"
+    },
+    {
+      "file": "lz4-1:1.10.0-2-x86_64.pkg.tar.zst",
+      "local_file": "lz4-1_1.10.0-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/lz4-1%3A1.10.0-2-x86_64.pkg.tar.zst",
+      "size": 160028,
+      "sha256": "c6200c776440678fe8c26adae6c104194b425d9393a9e3fc09f934363f0c39a6"
+    },
+    {
+      "file": "make-4.4.1-3-x86_64.pkg.tar.zst",
+      "local_file": "make-4.4.1-3-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/make-4.4.1-3-x86_64.pkg.tar.zst",
+      "size": 529562,
+      "sha256": "b03efac9175b986a5f29302336fb1271874464644de3191e6a40079eb8cc5276"
+    },
+    {
+      "file": "mpfr-4.2.2-1-x86_64.pkg.tar.zst",
+      "local_file": "mpfr-4.2.2-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/mpfr-4.2.2-1-x86_64.pkg.tar.zst",
+      "size": 447319,
+      "sha256": "e765082b2c3260550887ccf34f6f0d24289fc5ca8c0949eb5c2e9937272ea80f"
+    },
+    {
+      "file": "ncurses-6.6-2-x86_64.pkg.tar.zst",
+      "local_file": "ncurses-6.6-2-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/ncurses-6.6-2-x86_64.pkg.tar.zst",
+      "size": 1226662,
+      "sha256": "9b80390fd681121443a45a51b74e2e2ade245ce22af8769915d63165b727e27c"
+    },
+    {
+      "file": "openssl-3.6.3-1-x86_64.pkg.tar.zst",
+      "local_file": "openssl-3.6.3-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/openssl-3.6.3-1-x86_64.pkg.tar.zst",
+      "size": 5750527,
+      "sha256": "85fdbdd57b6773a9b94d4d54c39deecd808aac6bc48d6d42c36ce712283665b3"
+    },
+    {
+      "file": "pcre2-10.47-1-x86_64.pkg.tar.zst",
+      "local_file": "pcre2-10.47-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/pcre2-10.47-1-x86_64.pkg.tar.zst",
+      "size": 1698422,
+      "sha256": "54e0d8c998d2748f47fead1926b04357719bdd00fa1cea84901c3af501aab002"
+    },
+    {
+      "file": "readline-8.3.003-1-x86_64.pkg.tar.zst",
+      "local_file": "readline-8.3.003-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/readline-8.3.003-1-x86_64.pkg.tar.zst",
+      "size": 419558,
+      "sha256": "a4e861378069dcb15c6fbd52a1f5d9ed01b4bce5fb208268c7c182341f5f3960"
+    },
+    {
+      "file": "sed-4.10-1-x86_64.pkg.tar.zst",
+      "local_file": "sed-4.10-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/sed-4.10-1-x86_64.pkg.tar.zst",
+      "size": 254411,
+      "sha256": "6cd7348dd89a6fafcd39e4ae6b0eea02ccfed03474f24d461cc50ec41137a979"
+    },
+    {
+      "file": "xxhash-0.8.3-1-x86_64.pkg.tar.zst",
+      "local_file": "xxhash-0.8.3-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/extra-main/os/x86_64/xxhash-0.8.3-1-x86_64.pkg.tar.zst",
+      "size": 100356,
+      "sha256": "3d48ff40b744aa4503cd5638f620c2c39a12d27967d1db3ab46bf18ff4b2fd80"
+    },
+    {
+      "file": "xz-5.8.3-1-x86_64.pkg.tar.zst",
+      "local_file": "xz-5.8.3-1-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/xz-5.8.3-1-x86_64.pkg.tar.zst",
+      "size": 896293,
+      "sha256": "03b9eefeb02c27c4f30fce4481cb5bd2922c0391f628665911c156970285d5d9"
+    },
+    {
+      "file": "zlib-1:1.3.2-3-x86_64.pkg.tar.zst",
+      "local_file": "zlib-1_1.3.2-3-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/zlib-1%3A1.3.2-3-x86_64.pkg.tar.zst",
+      "size": 84690,
+      "sha256": "41cf0bb5df14e18f7fb868a97da3feb7c4127fba99bb332ad54b14322faac1b1"
+    },
+    {
+      "file": "zstd-1.5.7-3-x86_64.pkg.tar.zst",
+      "local_file": "zstd-1.5.7-3-x86_64.pkg.tar.zst",
+      "url": "https://steamdeck-packages.steamos.cloud/archlinux-mirror/core-main/os/x86_64/zstd-1.5.7-3-x86_64.pkg.tar.zst",
+      "size": 527400,
+      "sha256": "d4cf0049137124c8a025eedfad267a3e8a02310c9efb9d1ae4a61aa1d02789fc"
+    }
+  ],
+  "kernel": "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9",
+  "build_environment": {
+    "KBUILD_BUILD_TIMESTAMP": "2026-10-30 00:00:00 UTC",
+    "KBUILD_BUILD_USER": "boiler",
+    "KBUILD_BUILD_HOST": "offline-audit"
+  },
+  "expected_module": {
+    "file": "xevmafix.ko",
+    "size": 397512,
+    "sha256": "10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b",
+    "vermagic": "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9 SMP preempt mod_unload ",
+    "license": "GPL",
+    "elf_class": 64,
+    "elf_machine": 62,
+    "has_exit_handler": false
+  },
+  "module_lock": {
+    "url": "https://raw.githubusercontent.com/FlightDan/Boiler-installer/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/oxp3/current/xevma-20261029/module-lock.json",
+    "size": 26919,
+    "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41"
+  },
+  "limits": [
+    "Never load the module as part of this build.",
+    "Module has no exit handler; file restore does not unload an active copy.",
+    "No physical GPU, service, boot, suspend, performance or recovery acceptance."
+  ]
+}

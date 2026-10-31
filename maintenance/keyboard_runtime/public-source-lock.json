@@ -1,0 +1,89 @@
+{
+  "kind": "KeyboardPublicInputLock",
+  "base_manifest_sha256": "c442eef2039779be8e3f432a65bb5cc46c432f8cd7b51734ea76168ab07136e2",
+  "public_provenance": {
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "e181a9055e1c94e8d758e2b9575f60fb5fc5109c",
+    "release_tag": "v1.0.6+installer.20261022.220437",
+    "asset": {
+      "url": "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/v1.0.6%2Binstaller.20261022.220437/oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+      "name": "oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+      "size": 555684389,
+      "sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4"
+    }
+  },
+  "files": [
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/transactions.py",
+      "size": 61029,
+      "sha256": "39f122669a151b85a66223f2779d4352c014d7d331cabc1aa616b31099f06baf",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/state_io.py",
+      "size": 20445,
+      "sha256": "a27eed43dd15ba2d18db723f8d138813a3b056084eebfb31e7994d47c419bb43",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/runtime_directories.py",
+      "size": 18254,
+      "sha256": "f7c74b3bd6701d3367bdbe895ec6b91535c46e76a28a79d1a0edd4b23e845ba4",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/opti_migration.py",
+      "size": 836,
+      "sha256": "8adcb35bcb2cd48d7641b3645631dd11473cb061654e93748463d0a0f22aeeb7",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/autoflatpaks_compat.py",
+      "size": 12240,
+      "sha256": "36b4b0b8b970b640e404d09772a625e990e37588e69b9e3ee73448b2b6493047",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/animation_changer_compat.py",
+      "size": 12223,
+      "sha256": "751a1f6902e5c304223e0215fdd6072cf6a77ccbd0935a50281c62fdf2e5bff5",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/split_lock.py",
+      "size": 2491,
+      "sha256": "1eb270c5ac1151422b26d0233ee68b52155042b316c26a6e932bcbd4e8abc694",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/decky_order.py",
+      "size": 2109,
+      "sha256": "973f1b3c61db67598546c8f4d9f61ec6ec6ec953329ba9ac015262df7d91fa48",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/components.py",
+      "size": 46403,
+      "sha256": "c5c96188bd318302ac2e072d0724dc14a9dcdf1d726604b8bd144a13ff383394",
+      "role": "merge-function"
+    },
+    {
+      "path": "payload/legacy/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "role": "license"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/probe.py",
+      "size": 14187,
+      "sha256": "e202c700a5ddaaad28775ae79b7801faa52912887a4587ae30b27d0e5a1e5ffa",
+      "role": "transaction-module"
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/compatibility.py",
+      "size": 3454,
+      "sha256": "a331adf7768b4019dc9ea4bc8e15376a9a50617070d7fd5ef5f4b2fdd20742a9",
+      "role": "transaction-module"
+    }
+  ]
+}

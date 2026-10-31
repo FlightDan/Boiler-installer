@@ -44,26 +44,65 @@ def _legacy_lock_required(journal):
 
 
 RUNTIME_FILES = (
+    'maintenance/resource_staging.py',
+    'maintenance/hdr_resources.py', 'protocol/hdr_contract.py',
+    'maintenance/core_retention.py',
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
     'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
     'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
+    'maintenance/resource_runtime.py', 'maintenance/resource_entrypoints.py', 'maintenance/firmware_resources.py', 'maintenance/cpu_resources.py', 'maintenance/resource_cli.py',
+    'maintenance/feedback.py', 'maintenance/reporter.py', 'maintenance/release.json',
     'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py',
     'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',
-    'components/model-catalog/lock.json', 'components/model-catalog/snapshot/adaptations.json',
-    'components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json',
-    'components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json',
+    'protocol/resource_pool.py', 'protocol/resource_selection.py', 'protocol/resource_import.py', 'protocol/firmware_contract.py', 'protocol/cpu_contract.py', 'adaptations/toon-parser-lock.json',
+    'components/model-catalog/lock.json',
+    'maintenance/keyboard_contract.py',
+    'maintenance/keyboard_target.py',
+    'maintenance/keyboard_models.py',
+    'maintenance/keyboard_runtime/__init__.py',
+    'maintenance/keyboard_runtime/merge.py',
+    'maintenance/keyboard_runtime/public-source-lock.json',
+    'maintenance/keyboard_runtime/service.py',
+    'maintenance/keyboard_runtime/vendor/LICENSE-AGPL-3.0',
+    'maintenance/keyboard_runtime/vendor/__init__.py',
+    'maintenance/keyboard_runtime/vendor/animation_changer_compat.py',
+    'maintenance/keyboard_runtime/vendor/autoflatpaks_compat.py',
+    'maintenance/keyboard_runtime/vendor/compatibility.py',
+    'maintenance/keyboard_runtime/vendor/decky_order.py',
+    'maintenance/keyboard_runtime/vendor/keyboard_merge.py',
+    'maintenance/keyboard_runtime/vendor/opti_migration.py',
+    'maintenance/keyboard_runtime/vendor/probe.py',
+    'maintenance/keyboard_runtime/vendor/runtime_directories.py',
+    'maintenance/keyboard_runtime/vendor/split_lock.py',
+    'maintenance/keyboard_runtime/vendor/state_io.py',
+    'maintenance/keyboard_runtime/vendor/transactions.py',
 )
 
 
-def runtime_files():
-    root=Path(__file__).resolve().parents[1]
+def runtime_files(root=None):
+    root=Path(root).resolve() if root is not None else Path(__file__).resolve().parents[1]
     expected=set(RUNTIME_FILES)
     for name in ('maintenance','protocol'):
         with os.scandir(root/name) as entries:
             for entry in entries:
                 if Path(entry.name).suffix in ('.py','.pem') and name+'/'+entry.name not in expected:
                     raise MaintenanceError('Unreviewed maintenance runtime source: '+name+'/'+entry.name)
-    return [root/name for name in RUNTIME_FILES]
+    # Metadata members come only from the checked display catalog lock. This
+    # adds data, never code, packages, signatures or executable trust grants.
+    from protocol.model_catalog import read_lock, snapshot_records
+    try:
+        snapshot_records(root)
+        lock=read_lock(root)
+    except (OSError,ValueError) as exc:
+        raise MaintenanceError('Invalid or missing model catalog runtime snapshot: '+str(exc)) from exc
+    # Retain the exact vendored parser used by resource pool validation.
+    # Authenticate the lock and bytes before shipping executable Python.
+    from protocol import resource_pool
+    resource_pool.decoder(root/'adaptations')
+    parser_lock = json.loads((root/'adaptations/toon-parser-lock.json').read_bytes())
+    parser_files = ['adaptations/vendor/'+entry['path'] for entry in parser_lock['files']]
+    names=[*RUNTIME_FILES,*parser_files,*('components/model-catalog/snapshot/'+entry['path'] for entry in lock['files'])]
+    return [confined(root,name) for name in names]
 
 
 def _sync_dir(path):
@@ -216,9 +255,18 @@ def build_hook_environment(root, transaction_id, extra=None):
 
 
 class Engine:
-    def __init__(self,root,state_dir=None,*,read_only=False):
+    def __init__(self,root,state_dir=None,*,read_only=False,target_domain='root',account_roots=None):
         self.root=Path(root).resolve()
         if not self.root.is_dir(): raise MaintenanceError("Target root is not mounted")
+        if target_domain not in ('root','shared-home'):
+            raise MaintenanceError('Unknown fixed maintenance target domain')
+        if target_domain == 'root' and account_roots is not None:
+            raise MaintenanceError('Root account lookup belongs to its mounted root')
+        if target_domain == 'shared-home' and (not account_roots or len(account_roots) > 2):
+            raise MaintenanceError('Shared home requires explicit probed account roots')
+        self.target_domain=target_domain
+        self.home_root=self.root/'home' if target_domain == 'root' else self.root
+        self.account_roots=(self.root,) if target_domain == 'root' else tuple(Path(p).absolute() for p in account_roots)
         from .live_root import check_state_directory
         check_state_directory(self.root,state_dir)
         self.state_dir=Path(state_dir).absolute() if state_dir else self.root/"var/lib/boiler/maintenance"
@@ -242,12 +290,14 @@ class Engine:
             if not read_only: self.state_dir.mkdir(parents=True,exist_ok=True)
             self.state_dir=self.state_dir.resolve()
         self.identity="mounted-target" if self.state_dir.is_relative_to(self.root) else str(self.root)
+        if target_domain == 'shared-home': self.identity += ':shared-home'
         self.journals=self.state_dir/"transactions"
         if not read_only and os.name == 'nt': self.journals.mkdir(exist_ok=True)
 
     @contextlib.contextmanager
-    def _lock(self,*,live_recover=False):
+    def _state_lock(self):
         if self.read_only: raise MaintenanceError("Read-only verification cannot modify maintenance state")
+        self._cpu_barrier()
         if os.name != 'nt':
             from .adoption_blobs import _directory
             import fcntl
@@ -261,8 +311,7 @@ class Engine:
                         raise MaintenanceError('Unsafe maintenance lock file')
                     fcntl.flock(stream.fileno(),fcntl.LOCK_EX)
                     try:
-                        from .live_root import write_scope
-                        with write_scope(self,recover=live_recover): yield
+                        yield
                     finally: fcntl.flock(stream.fileno(),fcntl.LOCK_UN)
             return
         lock=self.state_dir/"lock"
@@ -280,13 +329,26 @@ class Engine:
                 try: yield
                 finally: fcntl.flock(stream.fileno(),fcntl.LOCK_UN)
 
+    @contextlib.contextmanager
+    def _lock(self,*,live_recover=False,retention_component=None):
+        # Root protection is an independent platform transaction. Home-only
+        # fixed handlers use the same state serialization without opening it.
+        from .core_retention import scope
+        with scope(self,retention_component), self._state_lock():
+            from .live_root import write_scope
+            with write_scope(self,recover=live_recover):
+                yield
+
     def _target(self,name):
         path=confined(self.root,name)
         if path==self.state_dir or self.state_dir in path.parents or path in self.state_dir.parents:
             raise MaintenanceError("Components cannot own maintenance state")
-        backups=self.root/'home/.boiler/maintenance-blobs'
+        backups=self.home_root/'.boiler/maintenance-blobs'
         if path==backups or backups in path.parents or path in backups.parents:
             raise MaintenanceError('Components cannot own maintenance backups')
+        for protected in (self.home_root/'.boiler/core-retention',self.home_root/'.boiler/fresh-resource-installs'):
+            if path==protected or protected in path.parents or path in protected.parents:
+                raise MaintenanceError('Components cannot own fresh/core-retention state')
         return path
 
     def _state(self):
@@ -325,6 +387,7 @@ class Engine:
         return _snapshot(path)
 
     def _recover(self,*,allow_adoption=False,legacy_locked=False,allow_model_action=None):
+        self._cpu_barrier()
         from .models import check_pending
         check_pending(self, allow_model_action)
         if not allow_adoption and os.path.lexists(self.state_dir/'adoption-pending.json'):
@@ -368,6 +431,34 @@ class Engine:
 
     def recover(self):
         with self._lock(live_recover=True): return self._recover()
+
+    def _cpu_barrier(self):
+        from protocol.cpu_contract import IDENTITY
+        from .cpu_resources import permitted
+        for path in self.journals.glob('*.json'):
+            if path.is_symlink(): raise MaintenanceError('Unsafe journal')
+            journal=_read(path)
+            if journal.get('status') in ('committed','restored','rolled_back'): continue
+            component=journal.get('component',{})
+            if component.get('id')==IDENTITY and not permitted(self,getattr(self,'_cpu_permit',None),component,recovery=True):
+                raise MaintenanceError('Pending CPU transaction requires explicit fixed offline CPU recovery')
+
+    @contextlib.contextmanager
+    def _cpu_action(self,pool,slots,slot,*,recovery):
+        from .cpu_resources import authorize
+        if getattr(self,'_cpu_permit',None) is not None: raise MaintenanceError('Nested CPU authorization is unsupported')
+        self._cpu_permit=authorize(self,pool,slots,slot,recovery=recovery)
+        try: yield
+        finally: self._cpu_permit=None
+
+    def recover_cpu(self,*,pool,slots,slot):
+        with self._cpu_action(pool,slots,slot,recovery=True): return self.recover()
+
+    def apply_cpu(self,component,payload_root,*,pool,slots,slot,**kwargs):
+        with self._cpu_action(pool,slots,slot,recovery=False): return self.apply(component,payload_root,**kwargs)
+
+    def restore_cpu(self,transaction_id,*,pool,slots,slot):
+        with self._cpu_action(pool,slots,slot,recovery=True): return self.restore(transaction_id)
 
     def retained_owned(self,component,state=None):
         """Return bounded current identities for an explicit static retention plan."""
@@ -416,6 +507,10 @@ class Engine:
 
     def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None):
         validate_manifest(component,"ComponentManifest")
+        from protocol.cpu_contract import IDENTITY as CPU_ID
+        from .cpu_resources import permitted
+        if component.get('id')==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),component,recovery=False):
+            raise MaintenanceError('CPU writes require the explicit fixed offline host entry')
         if type(component.get('retain_owned_paths',False)) is not bool:
             raise MaintenanceError('retain_owned_paths must be a boolean')
         if not compatible(component,environment or {}): raise MaintenanceError("Component target compatibility has not been established")
@@ -426,8 +521,10 @@ class Engine:
             build_hook_environment(self.root, 'pending', hook_environment)
             package=validate_package(payload_root,allow_unsigned=True)
             if component not in package["components"]: raise MaintenanceError("Hook component not in verified package")
-        with self._lock():
+        with self._lock(retention_component=component):
             self._recover(); state=self._state(); identity=uuid.uuid4().hex
+            from .core_retention import guard_apply
+            guard_apply(self,component,state)
             if expected_state_sha256 is not None:
                 actual_state_sha256=hashlib.sha256(json.dumps(state,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')).hexdigest()
                 if actual_state_sha256 != expected_state_sha256: raise MaintenanceError("Installed state changed after update review")
@@ -453,6 +550,12 @@ class Engine:
 
     def _apply_locked(self,component,payload_root,hooks,state,identity,hook_environment,legacy_required):
         from .adoption_blobs import capture, payload_snapshot, observe, _hash_file, MAX_FILE, MAX_TOTAL, MAX_OPERATIONS
+        from protocol.cpu_contract import mutable_target
+        mutable = mutable_target(component)
+        if component.get('dynamic_handler') or component.get('id') == 'x2-mini:keyboard':
+            raise MaintenanceError('Dynamic keyboard requires the fixed host handler')
+        if any(self._target(row['target']) == self.home_root/'deck/.config/kwinrc' for row in component.get('files', [])):
+            raise MaintenanceError('Mutable keyboard target requires its unique recovery ledger')
         operations=[]; total=0; targets=set()
         if _overlapping_targets(item['target'] for item in component.get('files',[])):
             raise MaintenanceError('Component targets overlap or alias')
@@ -478,10 +581,18 @@ class Engine:
             if owner:
                 prior=_read(self._journal(owner["transaction"]))
                 recorded=next((op["after"] for op in prior["operations"] if op["target"]==key),None)
-                if recorded is None or not _same(before,recorded): raise MaintenanceError("Upgrade refused modified managed file")
+                from .cpu_resources import mutable_operation
+                old_operation=next((op for op in prior['operations'] if op['target']==key),None)
+                mutable_prior=(key==mutable and old_operation is not None and mutable_operation(prior['component'],old_operation))
+                if recorded is None or (not mutable_prior and not _same(before,recorded)): raise MaintenanceError("Upgrade refused modified managed file")
             before=capture(self,target,before)
-            after=payload_snapshot(self,source,entry,before)
-            operations.append({"target":key,"before":before,"after":after})
+            if key==mutable and (before.get('exists') or owner):
+                operations.append(dict(target=key,before=before,after=dict(before),retained=True,cpu_mutable_config=True))
+            else:
+                after=payload_snapshot(self,source,entry,before,target=target)
+                operation={"target":key,"before":before,"after":after}
+                if key==mutable: operation['cpu_mutable_config']=True
+                operations.append(operation)
         for item in retained:
             snapshot=item['snapshot']
             total+=2*snapshot.get('size',0)
@@ -535,7 +646,8 @@ class Engine:
             self._recover(); state=self._state()
             if component_id not in state["components"]: raise MaintenanceError("Component is not installed")
             journal=_read(self._journal(state["components"][component_id]["transaction"]))
-            failures=[op["target"] for op in journal["operations"] if not _same(self._observed(self._target(op["target"]),op['after']),op["after"])]
+            from .cpu_resources import matches
+            failures=[op['target'] for op in journal['operations'] if not matches(self,journal['component'],op)]
             return {"component":component_id,"ok":not failures,"modified":failures}
 
     def verify_readonly(self,component_id):
@@ -550,11 +662,18 @@ class Engine:
         if component_id not in state["components"]: raise MaintenanceError("Component is not installed")
         journal=_read(self._journal(state["components"][component_id]["transaction"]))
         if journal.get("root") != self.identity or journal.get("status") != "committed": raise MaintenanceError("Invalid active journal")
-        failures=[op["target"] for op in journal["operations"] if not _same(self._observed(self._target(op["target"]),op['after']),op["after"])]
+        from .cpu_resources import matches
+        failures=[op['target'] for op in journal['operations'] if not matches(self,journal['component'],op)]
         return {"component":component_id,"ok":not failures,"modified":failures}
 
     def restore(self,transaction_id):
-        with self._lock():
+        if self.read_only: raise MaintenanceError('Read-only verification cannot modify maintenance state')
+        from protocol.cpu_contract import IDENTITY as CPU_ID
+        from .cpu_resources import permitted
+        component=_read(self._journal(transaction_id)).get('component',{})
+        if component.get('id')==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),component,recovery=True):
+            raise MaintenanceError('CPU restore requires the explicit fixed offline host entry')
+        with self._lock(retention_component=component):
             self._recover(); state=self._state(); path=self._journal(transaction_id); journal=_read(path)
             if _legacy_lock_required(journal):
                 from .adoption_blobs import _legacy_lock
@@ -565,10 +684,18 @@ class Engine:
     def _restore_locked(self,transaction_id,state,path,journal):
         if journal.get("root")!=self.identity or journal.get("status")!="committed": raise MaintenanceError("Transaction is not restorable")
         cid=journal["component"]["id"]
+        from .core_retention import guard_restore
+        guard_restore(self,journal)
+        from protocol.cpu_contract import IDENTITY as CPU_ID
+        from .cpu_resources import permitted
+        if cid==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),journal['component'],recovery=True):
+            raise MaintenanceError('CPU restore requires the explicit fixed offline host entry')
         if state["components"].get(cid,{}).get("transaction")!=transaction_id: raise MaintenanceError("Only active component generation can be restored")
         if journal["component"].get("hooks"): raise MaintenanceError("Script component requires explicit package restore integration")
+        from .cpu_resources import mutable_operation, preserve_for_restore, matches
         for item in journal["operations"]:
-            if not _same(self._observed(self._target(item["target"]),item['after']),item["after"]): raise MaintenanceError("Restore refused modified target")
+            if not matches(self,journal['component'],item): raise MaintenanceError("Restore refused modified target")
+        journal['operations']=[preserve_for_restore(self,journal['component'],item) for item in journal['operations']]
         # Preserve transactions belonging to other components installed later.
         previous=journal["before_state"]
         if cid not in previous["components"] and any(cid in item.get("requires",[]) for key,item in state["components"].items() if key!=cid):

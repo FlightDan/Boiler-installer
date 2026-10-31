@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from protocol.model_catalog import REPOSITORY, SOURCE_SUBTREE, document, guide_model, source_member
+from protocol.model_catalog import REPOSITORY, SOURCE_SUBTREE, MAX_CATALOG_BYTES, document, catalog_records, guide_model, source_member
 from protocol.manifest import relative_path
 
 
@@ -29,17 +29,15 @@ def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE):
     source = {'repository': REPOSITORY, 'commit': commit, 'subtree': source_subtree}
     catalog_data = git('show', commit+':'+source_member(source, 'adaptations.json'))
     catalog = document(catalog_data)
-    if catalog.get('kind') != 'AdaptationSourceCatalog' or catalog.get('installable') is not False:
-        raise ValueError('Expected a display-only catalog')
+    records=catalog_records(catalog)
     contents = {'adaptations.json': catalog_data}
-    for path in catalog['models']:
-        if path not in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json'):
-            raise ValueError('Unexpected model source path')
+    for row in records:
+        path=row['manifest']
         data = git('show', commit+':'+source_member(source, path))
-        guide_model(document(data), path, source)
+        guide_model(document(data),path,source,row)
         contents[path] = data
-    if len(contents) != 3:
-        raise ValueError('Both model guides are required')
+    if sum(len(data) for data in contents.values())>MAX_CATALOG_BYTES:
+        raise ValueError('Model catalog snapshot exceeds size limit')
     inventory = [dict(path=name, size=len(data), sha256=hashlib.sha256(data).hexdigest())
                  for name, data in contents.items()]
     output.mkdir(parents=True)

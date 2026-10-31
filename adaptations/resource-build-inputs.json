@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerProjectResourceBuildInputs",
+  "public_baseline": "72f864e0498c10366493c74608c5ffed62cc99ca",
+  "predecessor_catalog_sha256": "6672bdd06e2b6b7a23e0de71532b56c0052a7d2e85e4eaf24bb2ceacde487730",
+  "static_resources": [
+    "resource:common-slot-switch",
+    "resource:common-partition-mount",
+    "resource:common-windows-reboot",
+    "resource:onexplayer-light",
+    "resource:common-serial-console-policy",
+    "resource:onexplayer-battery-common",
+    "resource:onexplayer-battery-charge-backend",
+    "resource:common-charge-compatibility-guard",
+    "resource:onexplayer-microphone",
+    "resource:oxp3-speaker-route",
+    "resource:intel-xevmafix-724"
+  ],
+  "wifi_resource": "resource:intel-be201-firmware",
+  "xevma_module": "adaptations/common/resource-inputs/intel-xevma-724/xevmafix.ko",
+  "files": [
+    {
+      "path": "adaptations/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/oxp3.toon",
+      "size": 15077,
+      "sha256": "25742e428bc77159fe4eb2fd0babd1e601cef42d1b11770777c48e1e090d8af0"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/compatibility.py",
+      "size": 1789,
+      "sha256": "c8225f4facc43fff072bd6f47847722f8e96d9c5162bac30d9bc7e8754ddae8e"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-index.js",
+      "size": 12203,
+      "sha256": "a1cd67a64fc69b4f279b17ffe8fc5948b37fb7f4a233a10745fa01698492fa44"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-main.py",
+      "size": 1911,
+      "sha256": "36e6ceacda689a4856486c5fe2fd541094b4f603b8282b79886ad7519f30736b"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
+      "size": 6473,
+      "sha256": "7dabf1846c473fbd3a17f4453e835fd5116d74abe6d0e3aee528bc74dcaa4872"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/deploy-cpu.py",
+      "size": 3236,
+      "sha256": "3120cfd39c794d5475ee400acb90cb000842269fef71388c31783221913e9352"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+      "size": 4266,
+      "sha256": "d5c5efd2f847d443bbff04dd30a3af847576d867eebcfb9b25c94d8e2b31654f"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/profile.json",
+      "size": 3753,
+      "sha256": "0adb8851e4a880a6aeb03d267ae48925c69c631d4c415503d0e3f54fe8f8359e"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+      "size": 22758,
+      "sha256": "11af7da8d69a59b3e6413380a6516468da2d50248043cf6a93cf813381f2116b"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/x2-mini.toon",
+      "size": 14680,
+      "sha256": "41303f02cb2710dc1b41d6d519bcc84bc83b230c2bbe24abe64ab969e54b42ee"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "size": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "size": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "size": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "size": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/004-ibt-00a0-0291-iml.sfi",
+      "size": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/005-ibt-00a0-0291-pci.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/006-ibt-00a0-0291-pci.sfi",
+      "size": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/007-ibt-00a0-0291-usb.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/008-ibt-00a0-0291-usb.sfi",
+      "size": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/source.json",
+      "size": 17916,
+      "sha256": "d23fafbae52da609cb1ba84fc4032640b8e127ebf9ad6c6f94cc043530ba1c6a"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/000-LICENCE.ibt_firmware",
+      "size": 2040,
+      "sha256": "5181b0b51efc79d5acb2c9bb92042878fdbad97a92114d4ab5e32e2b5b52fce4"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/001-LICENCE.iwlwifi_firmware",
+      "size": 2046,
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/002-provenance.json",
+      "size": 4512,
+      "sha256": "e820cc0d41fdb7ddbd73a8c8432ecc5f70b44e4a0148b26bc5a1e486f68b47d8"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-xevma-724/REBUILD.md",
+      "size": 3773,
+      "sha256": "d4902fe75d1665f5c9e90c36ee611ebd45cc23e726bb3127e4a5a156e5120de5"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-xevma-724/xevma-build.log",
+      "size": 726,
+      "sha256": "22c2efe22083460e472330831ec703eecb44c2b63d83fedf2dae24da0ac342d0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-xevma-724/xevma-rebuild-inputs.json",
+      "size": 25585,
+      "sha256": "4a96af51b82259a07bc8a26d64984868aff018fdab174afc7b75a4addd100974"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-xevma-724/xevma-rebuild-proof.json",
+      "size": 5346,
+      "sha256": "4206fd49587e5706959eb8cca4ba847825b0041b4fd02f7079d9468062327045"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-xevma-724/xevmafix.ko",
+      "size": 397512,
+      "sha256": "10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b"
+    },
+    {
+      "path": "adaptations/current-source-lock.json",
+      "size": 11891,
+      "sha256": "d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827"
+    },
+    {
+      "path": "adaptations/resource-public-source-proof.json",
+      "size": 8927,
+      "sha256": "ed3ec2e75d2371dbcb4b19e6bb3e7d53abede0ac1e251c9f8fb5479e1a0bef2f"
+    },
+    {
+      "path": "adaptations/source-lock.json",
+      "size": 27296,
+      "sha256": "b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa"
+    },
+    {
+      "path": "adaptations/toon-parser-lock.json",
+      "size": 2365,
+      "sha256": "f8314cd5f40ccbe494e0d2887ad504e43af9eab39ded46894a5389c273c1dbc8"
+    },
+    {
+      "path": "adaptations/upstream-source-lock.json",
+      "size": 4360,
+      "sha256": "099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+      "size": 5836,
+      "sha256": "a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    }
+  ],
+  "publication_blockers": [],
+  "unresolved": [
+    "Trusted physical hardware facts and protected A/B coordinator acceptance",
+    "Real firmware/radio/audio/EC/service/boot/recovery validation",
+    "This resource build consumes the explicitly locked GPU module; it does not claim a fresh kernel-module compilation",
+    "CPU remains inactive staging only; production service/RAPL/D-Bus/Manager and protected CPU fact/plan/result closure are unverified.",
+    "Shared game HDR requires trusted Gamescope/panel facts and live runtime acceptance; X2 panel model/timing and desktop native rebuild/ABI/activation remain unavailable."
+  ],
+  "verified_public_current_sources": {
+    "proof": "adaptations/resource-public-source-proof.json",
+    "repository": "FlightDan/Boiler-installer",
+    "commit": "00d26ea7ed0aa4f1d1002216242199bc72736e80",
+    "scope": "Fifteen actual battery/microphone source members and adaptations/LICENSE, exact bytes verified; generated guards remain this project code"
+  },
+  "verified_xevma_source_rebuild": {
+    "proof": "adaptations/common/resource-inputs/intel-xevma-724/xevma-rebuild-proof.json",
+    "recipe": "adaptations/common/resource-inputs/intel-xevma-724/xevma-rebuild-inputs.json",
+    "script": "scripts/rebuild-xevma.py",
+    "source_commit": "e72e814da1944da3792076689995b6fe961f5768",
+    "scope": "Independent public recipe executed offline from 4 original source/license members plus 60 official headers/toolchain packages; exact retained module reproduced. This resource build does not recompile or load the module."
+  },
+  "cpu_resource": "resource:intel-g3e-public-cpu-controls",
+  "cpu_source_scope": {
+    "public_baseline": "72f864e0498c10366493c74608c5ffed62cc99ca",
+    "files": [
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-main.py",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-index.js",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/cpu/deploy-cpu.py",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/profile.json",
+      "adaptations/brands/onexplayer/oxp3/scripts/controls/compatibility.py"
+    ],
+    "activation_allowed": false
+  },
+  "hdr_resource": "resource:gamma22-hdr-game",
+  "hdr_source_scope": {
+    "public_baseline": "72f864e0498c10366493c74608c5ffed62cc99ca",
+    "files": [
+      "adaptations/brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+      "adaptations/brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE"
+    ],
+    "shared_implementation": true,
+    "game_runtime_accepted": false,
+    "desktop_native_installable": false
+  }
+}

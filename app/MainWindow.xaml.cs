@@ -69,6 +69,8 @@ public partial class MainWindow : Window
         bootPanel = new BootOptionsPanel(); BootOptionsHost.Children.Add(bootPanel);
         downloadPanel = new ImageDownloadPanel(); DownloadHost.Children.Add(downloadPanel);
         officialDownloadPanel = new OfficialDownloadPanel(); OfficialDownloadHost.Children.Add(officialDownloadPanel);
+        downloadPanel.DownloadFailed += diagnostic => OfferFailureFeedback(FeedbackFailure.ImageDownload, diagnostic);
+        officialDownloadPanel.DownloadFailed += diagnostic => OfferFailureFeedback(FeedbackFailure.UpdateDownload, diagnostic);
         officialDownloadPanel.BusyChanged += _ => UpdateNavigationState();
         officialDownloadPanel.SourceChanged += () => { ResetOfficialSourceInspection(); ConfigurationChanged(); };
         downloadPanel.Completed += path => { UsePrepared.IsChecked = false; ImagePath.Text = path; };
@@ -325,20 +327,25 @@ public partial class MainWindow : Window
     }
     private void Back(object sender, RoutedEventArgs e)
     {
-        if (operation != null || DownloadsBusy || deviceActionBusy) return;
+        if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
         if (BackWithinAdaptation()) return;
         var route = installMode is "imported" or "local" ? boilerRoute.Where(value => value is not (2 or AdaptationStep)).ToArray() : boilerRoute;
         var index = Array.IndexOf(route, step); if (index > 0) ShowStep(route[index - 1]); else ShowBoilerHome();
     }
     private async void Next(object sender, RoutedEventArgs e)
     {
-        if (operation != null || DownloadsBusy || deviceActionBusy) return;
+        if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
         if (physicalInstallation && (!bootPrerequisitesAcknowledged || BootPrerequisitesOverlay.Visibility == Visibility.Visible)) { ShowBootPrerequisites(null, null); return; }
         try
         {
             if (step == 3 && ContentIssue() is string invalidContent) throw new IOException(invalidContent);
             if (step == AdaptationStep)
             {
+                if (selectedDevicePackage == null && adaptationScreen == AdaptationScreen.Choice && CanUseChosenDevice)
+                {
+                    await DeviceAction(SelectChosenDeviceAsync);
+                    return;
+                }
                 if (DeviceSupportIssue() is string supportIssue) throw new IOException(supportIssue);
                 ShowStep(1);
             }
@@ -468,8 +475,10 @@ public partial class MainWindow : Window
         else if (e.Key == Key.F11 || e.Key == Key.Escape && WindowState == WindowState.Maximized) { ToggleFullscreen(sender,e); e.Handled = true; }
     }
     private void ExitWindow(object sender, RoutedEventArgs e) => Close();
+    private FeedbackDiagnostic? feedbackDiagnostic;
     private void Log(string message) => Dispatcher.Invoke(() =>
     {
+        feedbackDiagnostic?.Append(message);
         var text = Regex.Replace(message, @"\x1b\[[0-9;?]*[A-Za-z]|\x1b[78]", "");
         journalLog?.Write(text);
         LogText.AppendText(text); if (LogText.Text.Length > 70000) LogText.Text = LogText.Text[^50000..]; LogText.ScrollToEnd();
@@ -477,6 +486,8 @@ public partial class MainWindow : Window
     });
     private void Report(InstallationProgress progress) => Dispatcher.Invoke(() =>
     {
+        if (progress.Stage is not ("failed" or "cancelled" or "complete")) feedbackDiagnostic?.Stage(progress.Step);
+        if (progress.Stage == "failed") feedbackDiagnostic?.FailureType(progress.FailureType);
         if (CloseOnFirstWriteForCheck && progress.Stage == "writing" && progress.Percent > 78
             && progress.Step?.StartsWith("04.", StringComparison.Ordinal) == true)
         { CloseOnFirstWriteForCheck = false; Close(); return; }
@@ -496,8 +507,9 @@ public partial class MainWindow : Window
     {
         if (operation != null) throw new InvalidOperationException(InstallerI18n.T("已有任务正在运行。"));
         request = request with { CleanupTemporaryFiles = physicalInstallation && CleanupTemporaryFiles.IsChecked == true };
-        session = null; Progress.Value = 0;
+        session = null; Progress.Value = 0; feedbackDiagnostic = new FeedbackDiagnostic();
         operation = new CancellationTokenSource(); StopButton.IsEnabled = true; ShowStep(5); LogText.Clear(); LogExpander.IsExpanded = false;
+        var offerFailureFeedback = false;
         try
         {
             session = await InstallationController.RunAsync(request, Report, Log, operation.Token, state => Dispatcher.Invoke(() =>
@@ -505,14 +517,19 @@ public partial class MainWindow : Window
                 session = state;
                 journalLog = new StreamWriter(new FileStream(Path.Combine(InstallationController.SessionDirectory(state), "ui.log"), FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
             }));
+            offerFailureFeedback = session.Status == "failed";
             ShowResult(session);
         }
         catch (Exception error)
         {
+            offerFailureFeedback = FeedbackReport.OfferForException(error, operation.Token);
+            feedbackDiagnostic?.Failure(error);
             Log(error.ToString()); ShowStep(6); ResultTitle.Text = InstallerI18n.T("无法开始演练"); ResultMessage.Text = error.Message;
             ResultScope.Text = InstallerI18n.T("查看任务记录后重试。没有完整写入与启动证据时，不会显示安装完成。");
         }
         finally { FinishOperation(); }
+        if (offerFailureFeedback) OfferFailureFeedback(FeedbackFailure.Install, feedbackDiagnostic);
+        feedbackDiagnostic = null;
     }
     private void ShowResult(InstallationSession state)
     {
@@ -595,22 +612,28 @@ public partial class MainWindow : Window
     internal async Task ResumeAsync(InstallationSession selected)
     {
         if (operation != null || DownloadsBusy) return;
-        session = selected; Progress.Value = 0;
+        session = selected; Progress.Value = 0; feedbackDiagnostic = new FeedbackDiagnostic();
         operation = new CancellationTokenSource(); StopButton.IsEnabled = true; ShowStep(5); LogText.Clear(); LogExpander.IsExpanded = false;
+        var offerFailureFeedback = false;
         try
         {
             var path = Path.Combine(InstallationController.SessionDirectory(selected), "ui-resume-" + Guid.NewGuid().ToString("N") + ".log");
             MediaSource.Ordinary(path, InstallationController.Work, false);
             journalLog = new StreamWriter(new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
             session = await InstallationController.ResumeAsync(selected, Report, Log, operation.Token);
+            offerFailureFeedback = session.Status == "failed";
             ShowResult(session);
         }
         catch (Exception error)
         {
+            offerFailureFeedback = FeedbackReport.OfferForException(error, operation.Token);
+            feedbackDiagnostic?.Failure(error);
             Log(error.ToString()); ShowStep(6); ResultTitle.Text = InstallerI18n.T("无法继续演练"); ResultMessage.Text = error.Message;
             ResultScope.Text = InstallerI18n.T("原任务记录已保留。请先处理提示中的问题，再重试。");
         }
         finally { FinishOperation(); }
+        if (offerFailureFeedback) OfferFailureFeedback(FeedbackFailure.Resume, feedbackDiagnostic);
+        feedbackDiagnostic = null;
     }
     internal void FinishOperation()
     {

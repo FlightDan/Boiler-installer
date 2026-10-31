@@ -65,7 +65,7 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
         raise ValueError('Explicit firmware inputs require --development-firmware-cache')
     graphics = graphics_metadata(ROOT)
     components = {'core:decky': {'available': False, 'reason': 'Explicit locked Decky input required'}}
-    components.update(firmware_metadata())
+    components.update(firmware_metadata(ROOT))
     components.update(graphics_firmware_metadata(ROOT))
     staged = {}
     if decky:
@@ -101,7 +101,7 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
         components[identity] = dict(bundle, available=True, files=files, licenses=licenses,
                                    metadata_available=False, payload_cached=True, delivery='development-cache')
     runtime = []
-    for source in runtime_files():
+    for source in runtime_files(root=ROOT):
         if not source.is_file() or source.is_symlink(): raise FileNotFoundError('Maintenance runtime missing')
         relative = source.relative_to(ROOT).as_posix()
         data = source.read_bytes(); name = 'maintenance-runtime/' + relative

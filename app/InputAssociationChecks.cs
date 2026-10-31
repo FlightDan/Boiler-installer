@@ -46,6 +46,19 @@ internal static class InputAssociationChecks
             return path;
         }
         void Clear() => Field<Button>(window, "inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        async Task CompleteAfterGate(Task operation, TaskCompletionSource entered, TaskCompletionSource release, Func<Task> inspect, Action? beforeRelease = null)
+        {
+            try
+            {
+                await Wait(window, () => entered.Task.IsCompleted);
+                await Flush(window);
+                await inspect();
+                beforeRelease?.Invoke();
+            }
+            finally { release.TrySetResult(); }
+            await operation;
+            window.InputPreparationGateForChecks = null;
+        }
         try
         {
             window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
@@ -70,72 +83,119 @@ internal static class InputAssociationChecks
             var oldSession = new InstallationSession(1, "ui-fixture-complete", InstallationTargetKind.ExternalDisk, prior, false, "complete", "complete", null, null, DateTime.UtcNow);
             Set(window, "session", oldSession);
 
-            await Call(window, "ReceiveInputFilesAsync", new string[] { recovery, root, model });
-            var rows = Field<List<InputAssignment>>(window, "inputAssignments");
-            Require(rows.Count == 3 && rows.All(row => row.Input?.Error == null), "batch-identifies-recovery-root-and-model");
-            Require(imagePath.Text == prior && Options(window) == oldOptions && Field<InstallationSession>(window, "session") == oldSession, "preview-does-not-change-current-configuration-or-session");
-            Require(!Field<Button>(window, "inputApplyButton").IsEnabled, "external-model-needs-session-trust");
-            await Call(window, "ReceiveInputFilesAsync", new string[] { recovery }); Require(rows.Count == 3, "duplicate-path-drop-is-idempotent");
-            await Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery });
-            Field<CheckBox>(window, "inputDeviceTrust").IsChecked = true;
-            Require(!Field<Button>(window, "inputApplyButton").IsEnabled && Field<TextBlock>(window, "inputAssociationStatus").Text.Length > 0, "same-role-conflict-blocks-overwrite");
-            rows.Single(row => row.Path == secondRecovery).Role = InputRole.Ignore;
-            CallRender(window); await Flush(window);
-            Require(Field<Button>(window, "inputApplyButton").IsEnabled, "ignoring-extra-file-resolves-conflict");
-            foreach (var language in new[] { "zh-CN", "en-US" })
+            var initialGateEntered = new TaskCompletionSource(); var initialGateRelease = new TaskCompletionSource();
+            window.InputPreparationGateForChecks = _ => { initialGateEntered.TrySetResult(); return initialGateRelease.Task; };
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            var initialBatch = Call(window, "ReceiveInputFilesAsync", new string[] { recovery, root, model });
+            await CompleteAfterGate(initialBatch, initialGateEntered, initialGateRelease, async () =>
             {
-                ((RadioButton)window.FindName(language == "en-US" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true;
-                foreach (var width in new[] { 1060d, 640d })
+                var rows = Field<List<InputAssignment>>(window, "inputAssignments");
+                Require(rows.Count == 3 && rows.All(row => row.Input?.Error == null), "batch-identifies-recovery-root-and-model");
+                Require(Field<bool>(window, "inputAssociationBusy") && imagePath.Text == prior && Options(window) == oldOptions && Field<InstallationSession>(window, "session") == oldSession,
+                    "automatic-batch-prepares-before-configuration-commit");
+                window.BoilerModeForChecks("imported");
+                Require(window.CurrentOptions.InstallMode == "custom" && Field<bool>(window, "inputAssociationBusy"),
+                    "automatic-import-prevents-mode-switch-before-commit");
+                foreach (var language in new[] { "zh-CN", "en-US" })
                 {
-                    window.Width = width; window.Height = width == 1060 ? 720 : 480; await Flush(window);
-                    ((ScrollViewer)window.FindName("PageScroll")).ScrollToTop(); await Flush(window);
-                    var panel = Field<Border>(window, "inputAssociationPanel"); var roleSelectors = Field<StackPanel>(window, "inputRowsHost").Children.OfType<DockPanel>().SelectMany(line => line.Children.OfType<ComboBox>()).ToArray();
-                    Require(roleSelectors.All(role => role.ActualWidth <= panel.ActualWidth - 32), "role-controls-fit-" + language + "-" + width);
-                    var path = Path.Combine(directory, language + "-" + width + ".png"); if (Capture((FrameworkElement)window.Content, path)) captures.Add(path);
+                    ((RadioButton)window.FindName(language == "en-US" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true;
+                    foreach (var width in new[] { 1060d, 640d })
+                    {
+                        window.Width = width; window.Height = width == 1060 ? 720 : 480; await Flush(window);
+                        ((ScrollViewer)window.FindName("PageScroll")).ScrollToTop(); await Flush(window);
+                        var panel = Field<Border>(window, "inputAssociationPanel"); var roleSelectors = Field<StackPanel>(window, "inputRowsHost").Children.OfType<DockPanel>().SelectMany(line => line.Children.OfType<ComboBox>()).ToArray();
+                        Require(roleSelectors.All(role => role.ActualWidth <= panel.ActualWidth - 32), "role-controls-fit-" + language + "-" + width);
+                        var path = Path.Combine(directory, language + "-" + width + ".png"); if (Capture((FrameworkElement)window.Content, path)) captures.Add(path);
+                    }
                 }
-            }
-            ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true; window.Width = 1060; window.Height = 720;
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            await Call(window, "ApplyInputAssociationsAsync"); stopwatch.Stop();
-            Require(imagePath.Text == recovery && window.CurrentOptions.DevicePackage != null, "one-action-associates-recovery-and-real-device-plan");
+                ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true; window.Width = 1060; window.Height = 720;
+            }, () => stopwatch.Start());
+            stopwatch.Stop();
+            Require(imagePath.Text == recovery && window.CurrentOptions.DevicePackage != null && Field<bool>(window, "inputAssociationApplied"), "successful-batch-auto-associates-recovery-root-and-device-package");
             Require(Field<OfficialDownloadPanel>(window, "officialDownloadPanel").AssociatedSourcePath == root && OfficialSystem.HasPreparedSource() == oldCached,
                 "system-root-association-is-a-reference-without-cache-mutation");
             Require(stopwatch.Elapsed < TimeSpan.FromSeconds(10), "associating-root-does-not-copy-or-hash-five-gib");
             Require(Options(window) == oldOptions, "association-retains-existing-generic-component-choices");
             Require(Field<InstallationSession?>(window, "session") == null && ((CheckBox)window.FindName("PhysicalConsent")).IsChecked != true, "association-clears-old-completion-and-install-consent");
             Require(Field<TextBlock>(window, "deviceStatus").Text.Contains("OXP3 interaction fixture"), "non-string-status-metadata-renders-safely");
-            var feature = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices").Single().Value; feature.IsChecked = false;
+            var deviceChoices = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices"); var feature = deviceChoices.Single().Value; feature.IsChecked = false;
+            var priorDeviceChoices = window.CurrentOptions.DeviceComponents?.ToArray() ?? Array.Empty<string>();
+            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { model });
+            Require(Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices").Single().Value.IsChecked == false
+                && (window.CurrentOptions.DeviceComponents?.SequenceEqual(priorDeviceChoices) ?? priorDeviceChoices.Length == 0), "same-package-reselection-preserves-user-component-choices");
+
+            Clear(); imagePath.Text = prior; Set(window, "session", oldSession);
+            await Call(window, "ReceiveInputFilesAsync", new string[] { recovery, secondRecovery });
+            var conflictRows = Field<List<InputAssignment>>(window, "inputAssignments");
+            Require(conflictRows.Count == 2 && !Field<Button>(window, "inputApplyButton").IsEnabled && Field<TextBlock>(window, "inputAssociationStatus").Text.Length > 0,
+                "same-role-conflict-stays-uncommitted");
+            Require(imagePath.Text == prior && Field<InstallationSession>(window, "session") == oldSession && !Field<bool>(window, "inputAssociationApplied"), "conflicting-batch-preserves-configuration-and-session");
+            await Call(window, "ReceiveInputFilesAsync", new string[] { recovery });
+            Require(conflictRows.Count == 2 && imagePath.Text == prior && Field<InstallationSession>(window, "session") == oldSession, "duplicate-path-drop-is-idempotent-before-conflict-resolution");
+            conflictRows.Single(row => row.Path == secondRecovery).Role = InputRole.Ignore;
+            CallRender(window); await Flush(window);
+            Require(Field<Button>(window, "inputApplyButton").IsEnabled, "ignoring-extra-file-resolves-conflict");
             await Call(window, "ApplyInputAssociationsAsync");
-            Require(Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices").Single().Value.IsChecked == false, "same-model-reassociation-preserves-component-choices");
+            Require(imagePath.Text == recovery && Field<InstallationSession?>(window, "session") == null, "resolved-conflict-can-be-associated-explicitly");
 
-            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery });
-            var beforeCancel = imagePath.Text; var gate = new TaskCompletionSource();
-            window.InputPreparationGateForChecks = _ => gate.Task;
-            var cancelledApply = Call(window, "ApplyInputAssociationsAsync"); await Flush(window);
-            Field<Button>(window, "inputCancelButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); gate.SetResult(); await cancelledApply;
-            window.InputPreparationGateForChecks = null;
-            Require(imagePath.Text == beforeCancel && !Field<bool>(window, "inputAssociationApplied"), "cancel-before-commit-preserves-selected-source");
+            Clear(); imagePath.Text = prior; Set(window, "session", oldSession);
+            var beforeCancel = imagePath.Text; var cancelGateEntered = new TaskCompletionSource(); var cancelGateRelease = new TaskCompletionSource();
+            window.InputPreparationGateForChecks = _ => { cancelGateEntered.TrySetResult(); return cancelGateRelease.Task; };
+            var cancelledBatch = Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery });
+            await CompleteAfterGate(cancelledBatch, cancelGateEntered, cancelGateRelease, () =>
+            {
+                Require(imagePath.Text == beforeCancel && Field<InstallationSession>(window, "session") == oldSession, "cancel-test-reaches-precommit-with-original-state");
+                Field<Button>(window, "inputCancelButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                return Task.CompletedTask;
+            });
+            Require(imagePath.Text == beforeCancel && Field<InstallationSession>(window, "session") == oldSession && !Field<bool>(window, "inputAssociationApplied"), "cancel-before-commit-preserves-selected-source-and-session");
 
-            Clear(); var bad = Model("bad-inventory.zip", badHash: true);
-            await Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery, bad }); Field<CheckBox>(window, "inputDeviceTrust").IsChecked = true;
-            Set(window, "session", oldSession);
-            await Call(window, "ApplyInputAssociationsAsync");
-            Require(imagePath.Text == beforeCancel && Field<InstallationSession>(window, "session") == oldSession && !Field<bool>(window, "inputAssociationApplied"), "full-package-validation-failure-has-no-partial-ui-commit");
+            Clear(); var bad = Model("bad-inventory.zip", badHash: true); imagePath.Text = prior; Set(window, "session", oldSession);
+            var packageBeforeBadHash = window.CurrentOptions.DevicePackage; var choicesBeforeBadHash = window.CurrentOptions.DeviceComponents?.ToArray() ?? Array.Empty<string>();
+            await Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery, bad });
+            Require(imagePath.Text == prior && Field<InstallationSession>(window, "session") == oldSession && !Field<bool>(window, "inputAssociationApplied")
+                && window.CurrentOptions.DevicePackage == packageBeforeBadHash && (window.CurrentOptions.DeviceComponents?.SequenceEqual(choicesBeforeBadHash) ?? choicesBeforeBadHash.Length == 0),
+                "bad-package-hash-rejects-whole-batch-without-partial-commit");
 
-            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery });
-            File.SetLastWriteTimeUtc(secondRecovery, File.GetLastWriteTimeUtc(secondRecovery).AddSeconds(10)); await Call(window, "ApplyInputAssociationsAsync");
-            Require(imagePath.Text == beforeCancel && Field<TextBlock>(window, "inputAssociationStatus").Text.Contains("改变"), "changed-input-needs-new-inspection");
+            Clear(); imagePath.Text = prior; Set(window, "session", oldSession);
+            var stampGateEntered = new TaskCompletionSource(); var stampGateRelease = new TaskCompletionSource();
+            window.InputPreparationGateForChecks = _ => { stampGateEntered.TrySetResult(); return stampGateRelease.Task; };
+            var staleBatch = Call(window, "ReceiveInputFilesAsync", new string[] { secondRecovery });
+            await CompleteAfterGate(staleBatch, stampGateEntered, stampGateRelease, () =>
+            {
+                File.SetLastWriteTimeUtc(secondRecovery, File.GetLastWriteTimeUtc(secondRecovery).AddSeconds(10));
+                return Task.CompletedTask;
+            });
+            Require(imagePath.Text == prior && Field<InstallationSession>(window, "session") == oldSession && !Field<bool>(window, "inputAssociationApplied")
+                && Field<TextBlock>(window, "inputAssociationStatus").Text.Contains("改变"), "changed-input-stamp-is-rechecked-before-commit");
 
-            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { disk, recovery });
-            Require(!Field<Button>(window, "inputApplyButton").IsEnabled, "complete-image-and-recovery-flow-conflict-is-explicit");
-            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { model }); Field<CheckBox>(window, "inputDeviceTrust").IsChecked = true;
+            Clear(); imagePath.Text = prior; Set(window, "session", oldSession);
+            await Call(window, "ReceiveInputFilesAsync", new string[] { disk, recovery });
+            Require(!Field<Button>(window, "inputApplyButton").IsEnabled && imagePath.Text == prior && Field<InstallationSession>(window, "session") == oldSession,
+                "complete-image-and-recovery-conflict-does-not-commit");
+            Clear(); await Call(window, "ReceiveInputFilesAsync", new string[] { model });
             window.BoilerModeForChecks("vanilla"); await Flush(window);
-            Require(Field<CheckBox>(window, "inputDeviceTrust").IsChecked == false && !Field<bool>(window, "inputAssociationApplied"), "new-installation-route-requires-new-model-trust");
+            Require(window.CurrentOptions.DevicePackage == null && !Field<bool>(window, "inputAssociationApplied"), "new-installation-route-clears-prior-model-association");
 
-            Clear(); NativeDrop(window, [recovery, model]);
-            await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
-            Require(Field<List<InputAssignment>>(window, "inputAssignments").Count == 2 && window.CurrentOptions.DevicePackage == null, "native-multiple-file-drop-enters-the-same-preview");
-            Require(Field<CheckBox>(window, "inputDeviceTrust").IsChecked == false, "native-drop-does-not-auto-grant-script-trust");
+            Clear(); var unrelated = Path.Combine(directory, "notes.txt");
+            await File.WriteAllTextAsync(unrelated, "Unrelated text in a mixed file selection.");
+            await Call(window, "ReceiveInputFilesAsync", new string[] { model, unrelated });
+            Require(window.CurrentOptions.DevicePackage != null && Field<bool>(window, "inputAssociationApplied")
+                && Field<List<InputAssignment>>(window, "inputAssignments").Single(row => row.Path == unrelated).Role == InputRole.Ignore,
+                "ignored-unrelated-file-does-not-block-valid-package-auto-import");
+
+            Clear(); var nativeGateEntered = new TaskCompletionSource(); var nativeGateRelease = new TaskCompletionSource();
+            window.InputPreparationGateForChecks = _ => { nativeGateEntered.TrySetResult(); return nativeGateRelease.Task; };
+            NativeDrop(window, [recovery, model]);
+            var sourceBeforeNativeDrop = imagePath.Text;
+            await CompleteAfterGate(Task.CompletedTask, nativeGateEntered, nativeGateRelease, () =>
+            {
+                var rows = Field<List<InputAssignment>>(window, "inputAssignments");
+                Require(rows.Count == 2 && rows.All(row => row.Input?.Error == null) && imagePath.Text == sourceBeforeNativeDrop, "native-multiple-file-drop-prepares-shared-batch");
+                return Task.CompletedTask;
+            });
+            await Wait(window, () => Field<bool>(window, "inputAssociationApplied") && !Field<bool>(window, "inputAssociationBusy"));
+            Require(imagePath.Text == recovery && window.CurrentOptions.DevicePackage != null, "native-drop-auto-applies-recovery-and-device-package");
 
             // Exercise the extension correction without allocating/copying a large root.
             var misleading = Path.Combine(directory, "root-kind.raucb"); await File.WriteAllTextAsync(misleading, "owned normalizer fixture");

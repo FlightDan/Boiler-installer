@@ -44,7 +44,8 @@ def _signature(info):
 
 
 @contextlib.contextmanager
-def _directory(path, *, user_from=None, user_uid=None, create=False, create_mode=0o700):
+def _directory(path, *, user_from=None, user_uid=None, create=False, create_mode=0o700,
+               create_uid=None, create_gid=None):
     """Hold every parent through no-follow directory traversal (Linux runtime)."""
     path = Path(path).absolute()
     if '..' in path.parts:
@@ -73,6 +74,7 @@ def _directory(path, *, user_from=None, user_uid=None, create=False, create_mode
         check(descriptor, current)
         for part in path.parts[1:]:
             current /= part
+            created = False
             try:
                 child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
             except FileNotFoundError:
@@ -80,10 +82,15 @@ def _directory(path, *, user_from=None, user_uid=None, create=False, create_mode
                     raise
                 try:
                     os.mkdir(part, create_mode, dir_fd=descriptor)
+                    created = True
                 except FileExistsError:
                     pass
                 child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
             try:
+                if created and create_uid is not None and current.is_relative_to(user_from):
+                    os.fchown(child, create_uid, create_gid)
+                    os.fsync(child)
+                    os.fsync(descriptor)
                 check(child, current)
             except BaseException:
                 os.close(child)
@@ -141,18 +148,51 @@ def _hash_file(path, expected, *, private=False, destination=None, limit=MAX_FIL
         return info
 
 
-def _target_user(engine, path):
-    home = engine.root/'home/deck'
+def _target_account(engine, path):
+    """Resolve the fixed deck home from protected target OS account metadata.
+
+    A separately mounted shared home has no /etc. Its explicitly probed slot
+    roots must agree, including the primary group. Never use the host account
+    database or infer an identity from a directory owner.
+    """
+    home = engine.home_root/'deck'
     if not path.is_relative_to(home):
+        return None
+    identities = []
+    for root in engine.account_roots:
+        passwd = confined(root, 'etc/passwd')
+        with _file(passwd) as (stream, info):
+            if info.st_size > 65536:
+                raise MaintenanceError('Invalid target account metadata')
+            users = [line.split(':') for line in stream.read(65537).decode('utf-8').splitlines() if line.startswith('deck:')]
+        if (len(users) != 1 or len(users[0]) != 7 or
+                not users[0][2].isdigit() or not users[0][3].isdigit() or users[0][5] != '/home/deck'):
+            raise MaintenanceError('Expected one target deck account')
+        uid, gid = int(users[0][2]), int(users[0][3])
+        if not 0 < uid < 2**32-1 or not 0 < gid < 2**32-1:
+            raise MaintenanceError('Target deck account must have a non-root UID/GID')
+        identities.append((uid, gid))
+    if len(set(identities)) != 1:
+        raise MaintenanceError('Shared home target account differs between slots')
+    return identities[0]
+
+
+def _target_user(engine, path):
+    if engine.target_domain == 'root':
+        home = engine.root/'home/deck'
+        if not path.is_relative_to(home):
+            return {}
+        with _file(confined(engine.root, 'etc/passwd')) as (stream, info):
+            if info.st_size > 65536:
+                raise MaintenanceError('Invalid target account metadata')
+            users = [line.split(':') for line in stream.read(65537).decode('utf-8').splitlines() if line.startswith('deck:')]
+        if len(users) != 1 or not users[0][2].isdigit():
+            raise MaintenanceError('Expected one target deck account')
+        return dict(user_from=home, user_uid=int(users[0][2]))
+    identity = _target_account(engine, path)
+    if identity is None:
         return {}
-    passwd = confined(engine.root, 'etc/passwd')
-    with _file(passwd) as (stream, info):
-        if info.st_size > 65536:
-            raise MaintenanceError('Invalid target account metadata')
-        users = [line.split(':') for line in stream.read(65537).decode('utf-8').splitlines() if line.startswith('deck:')]
-    if len(users) != 1 or not users[0][2].isdigit():
-        raise MaintenanceError('Expected one target deck account')
-    return dict(user_from=home, user_uid=int(users[0][2]))
+    return dict(user_from=engine.home_root/'deck', user_uid=identity[0])
 
 
 def observe(engine, path):
@@ -204,7 +244,7 @@ def blob_cache(engine, *, create=False):
     Objects are immutable SHA-addressed content only. No garbage collection is
     attempted: both installed root slots can still refer to these originals.
     """
-    parent = engine.root/'home/.boiler'
+    parent = engine.home_root/'.boiler'
     directory = parent/'maintenance-blobs'
     for path in (parent,directory):
         with _directory(path, create=create) as directory_fd:
@@ -244,20 +284,25 @@ def capture(engine, target, snapshot=None):
     return snapshot | {'storage':STORAGE}
 
 
-def payload_snapshot(engine, source, entry, before):
+def payload_snapshot(engine, source, entry, before, *, target=None):
     if type(entry.get('size')) is not int or not 0 <= entry['size'] <= MAX_FILE:
         raise MaintenanceError('Component file exceeds the explicit binary transaction limit')
     _cache_blob(engine,source,entry,source_private=False)
+    identity = (_target_account(engine, target) if engine.target_domain == 'shared-home'
+                and target is not None and not before['exists'] else None)
+    uid, gid = identity or (0, 0)
     return dict(exists=True,storage=STORAGE,sha256=entry['sha256'],size=entry['size'],
-                mode=entry.get('mode',0o644),uid=before.get('uid',0),gid=before.get('gid',0))
+                mode=entry.get('mode',0o644),uid=before.get('uid',uid),gid=before.get('gid',gid))
 
 
 def restore_blob(engine, target, snapshot):
     """Restore an authenticated private CAS object with an atomic file replace."""
     source = blob_cache(engine)/snapshot['sha256']
     user = _target_user(engine, target)
-    mode = 0o700 if target.is_relative_to(engine.root/'home/.boiler') else 0o755
-    with _directory(target.parent, create=not bool(user), create_mode=mode, **user) as directory:
+    identity = _target_account(engine, target) if user and engine.target_domain == 'shared-home' else None
+    mode = 0o700 if target.is_relative_to(engine.home_root/'.boiler') else 0o755
+    with _directory(target.parent, create=not bool(user) or identity is not None, create_mode=mode,
+                    **(dict(create_uid=identity[0], create_gid=identity[1]) if identity else {}), **user) as directory:
         name = '.boiler-restore-'+uuid.uuid4().hex
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
         fd = os.open(target.parent/name if os.name == 'nt' else name, flags, 0o600,

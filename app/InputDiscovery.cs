@@ -262,7 +262,7 @@ internal static class InputDiscovery
     }
     private static string DeviceDetail(JsonElement metadata) => metadata.TryGetProperty("purpose", out var purpose) && purpose.ValueKind == JsonValueKind.String && purpose.GetString() == "maintenance"
         ? L("维护专用包；不能关联为新装机型包。", "Maintenance-only package; it cannot be assigned as an installation device package.")
-        : L("已识别机型包清单；完整文件摘要与本次信任将在关联时检查。", "Device package manifest detected; full file digests and session trust are checked when assigning it.");
+        : L("已识别机型包清单；导入时检查完整文件摘要。", "Device package manifest detected; full file digests are checked during import.");
 
     private static void ArchivePath(string name)
     {

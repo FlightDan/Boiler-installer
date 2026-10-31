@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace OxpInstaller;
 
 public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null, bool CleanupTemporaryFiles = false);
-public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null);
+public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null, string? FailureType = null);
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
     string? DesktopRebootScript = null, string? DesktopRebootWarning = null, bool CleanupTemporaryFiles = false, bool TemporaryFilesCleaned = false, string? CleanupWarning = null);
@@ -363,7 +363,7 @@ public static partial class InstallationController
         {
             var denied = error is Win32Exception { NativeErrorCode: 1223 };
             state = state with { Status = error is OperationCanceledException || denied ? "cancelled" : "failed", Error = denied ? "管理员权限请求已取消。" : error.Message, UpdatedUtc = DateTime.UtcNow };
-            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!));
+            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!, FailureType: FeedbackDiagnostic.Classify(error)));
         }
         return state;
     }

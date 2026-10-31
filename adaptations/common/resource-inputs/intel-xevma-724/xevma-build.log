@@ -1,0 +1,17 @@
+gcc (GCC) 16.1.1 20260625
+Copyright (C) 2026 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+make: Entering directory '/usr/lib/modules/7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9/build'
+make[1]: Entering directory '/w'
+warning: pahole version differs from the one used to build the kernel
+  The kernel was built with: 131
+  You are using:             0
+  CC [M]  xevmafix.o
+  MODPOST Module.symvers
+  CC [M]  xevmafix.mod.o
+  CC [M]  .module-common.o
+  LD [M]  xevmafix.ko
+make[1]: Leaving directory '/w'
+make: Leaving directory '/usr/lib/modules/7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9/build'

@@ -12,6 +12,10 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import toon_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 BEGIN = '<!-- BEGIN GENERATED INSTALL LIST -->'
@@ -39,10 +43,12 @@ def local(root, name):
 
 
 def records(root):
-    catalog = read(root/'adaptations.json')
-    if catalog['kind'] != 'AdaptationSourceCatalog' or catalog['installable'] is not False:
-        raise ValueError('Source catalog cannot advertise an installable package')
-    return [(name, read(local(root, name))) for name in catalog['models']]
+    # model.toon is the only maintained model record. JSON is checked as a
+    # compatibility view so old consumers cannot silently see stale options.
+    toon_catalog.generate(root, check=True)
+    return [(Path(name).with_name('manifest.json').as_posix(),
+             {key:value for key,value in model.items() if key not in ('build','package','runtime')})
+            for name, model in toon_catalog.models(root)]
 
 
 def table(model):
@@ -119,16 +125,22 @@ def prepare(checkout, root=ROOT):
     lock = dict(schema_version=1, kind='AdaptationSourceInventory', source=source, files=inventory)
     (root/'source-lock.json').write_text(json.dumps(lock, ensure_ascii=False, indent=2)+'\n',
                                        encoding='utf-8', newline='\n')
-    for name, model in records(root):
+    for name, _ in toon_catalog.models(root):
+        # models() expands reusable assembly references for build consumers.
+        # Edit the maintained source document so a provenance refresh cannot
+        # replace those references with a second copy of executable metadata.
+        model = toon_catalog.load(local(root, name), root)
         model['source_revision'] = source
         model['source_inventory'] = 'source-lock.json'
         local(root, name).write_text(
-            json.dumps(model, ensure_ascii=False, indent=2)+'\n', encoding='utf-8', newline='\n')
+            toon_catalog.decoder(root).dumps(model), encoding='utf-8', newline='\n')
         guide(root, model, write=True)
+    toon_catalog.generate(root)
     return check(root)
 
 
 def check(root=ROOT):
+    toon_catalog.generate(root, check=True)
     plan, lock = read(root/'source-plan.json'), read(root/'source-lock.json')
     if lock['source'] != plan['source']:
         raise ValueError('Source inventory is from another upstream revision')
@@ -177,6 +189,8 @@ def check(root=ROOT):
         data = local(root, item['path']).read_bytes()
         if len(data) != item['size'] or hashlib.sha256(data).hexdigest() != item['sha256']:
             raise ValueError('Supplementary license inventory mismatch: '+item['path'])
+    for _, model in toon_catalog.models(root):
+        toon_catalog.check_sources(root.parent, model, adaptations=root)
     return dict(models=len(models), source_files=len(inventory), status='source-collection-verified', installable=False)
 
 

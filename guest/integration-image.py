@@ -81,6 +81,17 @@ for slot in ('A','B'):
                     unavailable_requirements=value['unavailable_requirements'],
                     unavailable_companions=value.get('unavailable_companions',[]),runtime='not_validated')),flush=True)
     finally:
+        original_error = sys.exc_info()[1]
+        cleanup_errors = []
         if root in mounts:
-            subprocess.run(['btrfs','property','set','-ts',str(root),'ro','true'],check=True)
-        for path in reversed(mounts): subprocess.run(['umount',str(path)],check=True)
+            try:
+                subprocess.run(['btrfs','property','set','-ts',str(root),'ro','true'],check=True)
+            except Exception as error:
+                cleanup_errors.append('root protection: ' + str(error))
+        for path in reversed(mounts):
+            try:
+                subprocess.run(['umount',str(path)],check=True)
+            except Exception as error:
+                cleanup_errors.append('unmount ' + str(path) + ': ' + str(error))
+        if cleanup_errors:
+            raise RuntimeError('Prepared image cleanup incomplete; preserve image: ' + '; '.join(cleanup_errors)) from original_error
