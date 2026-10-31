@@ -14,7 +14,7 @@ public partial class MainWindow
 
     private void NavigateStep(object sender, RoutedEventArgs e)
     {
-        if (deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
+        if (sourceInspectionBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
         if (sender is Button { Tag: string tag } && int.TryParse(tag, out var destination) && destination is >= 0 and <= AdaptationStep)
         {
             if (destination is 1 or 2 && DeviceSupportIssue() != null) destination = AdaptationStep;
@@ -68,7 +68,7 @@ public partial class MainWindow
                 BoilerImage.WorkspaceBudget(ImagePath.Text, physicalInstallation));
             if (includeOfficial && installMode != "imported" && UsePrepared.IsChecked != true && Upgrade310.IsChecked == true
                 && OfficialSourceIssue(requireInspection) is string officialIssue) return officialIssue;
-            if (requireInspection && CurrentSourceDigest == null) return PartitionInventory.L("请在系统来源页点击下一步，计算镜像 MD5。", "Continue from System source to calculate the image MD5.");
+            if (requireInspection && CurrentSourceDigest == null && !CurrentSourceSkipped) return PartitionInventory.L("请在系统来源页点击下一步，计算镜像 MD5。", "Continue from System source to calculate the image MD5.");
             return null;
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException or UnauthorizedAccessException)

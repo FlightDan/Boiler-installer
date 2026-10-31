@@ -63,7 +63,7 @@ public partial class MainWindow
         var deviceBody = new StackPanel();
         deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("选择机型", "Choose a device"), FontSize = 24,
             FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 4) });
-        deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("导入本地机型包，或从目录选择。导入后自动选用。", "Import a local package or choose from the directory. Imported packages are selected automatically."),
+        deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("选择适合目标设备的机型包。", "Choose a device package for your target computer."),
             FontSize = 16, LineHeight = 26, Foreground = BoilerBrush("#61728A"), TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 12) });
         adaptationDevicePickerHost = new StackPanel(); deviceBody.Children.Add(adaptationDevicePickerHost);
         inlineDeviceContinue = new Button { Name = "UseInlineDevice", MinHeight = 52,
@@ -117,13 +117,14 @@ public partial class MainWindow
         if (inlineDeviceContinue != null && !ReferenceEquals(inlineDeviceContinue.Parent, deviceQuickPicker))
         {
             if (inlineDeviceContinue.Parent is Panel actionParent) actionParent.Children.Remove(inlineDeviceContinue);
-            deviceQuickPicker.Children.Insert(Math.Min(2, deviceQuickPicker.Children.Count), inlineDeviceContinue);
+            var actionIndex = deviceDirectoryDetails == null ? deviceQuickPicker.Children.Count : deviceQuickPicker.Children.IndexOf(deviceDirectoryDetails);
+            deviceQuickPicker.Children.Insert(actionIndex < 0 ? deviceQuickPicker.Children.Count : actionIndex, inlineDeviceContinue);
         }
         if (inlineDeviceContinue != null) inlineDeviceContinue.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
         if (inlineDeviceStatus != null && !ReferenceEquals(inlineDeviceStatus.Parent, deviceQuickPicker))
         {
             if (inlineDeviceStatus.Parent is Panel statusParent) statusParent.Children.Remove(inlineDeviceStatus);
-            deviceQuickPicker.Children.Insert(Math.Min(3, deviceQuickPicker.Children.Count), inlineDeviceStatus);
+            deviceQuickPicker.Children.Insert(deviceQuickPicker.Children.IndexOf(inlineDeviceContinue!) + 1, inlineDeviceStatus);
         }
         if (inlineDeviceStatus != null && !inline) inlineDeviceStatus.Visibility = Visibility.Collapsed;
         var destination = inline ? adaptationDevicePickerHost : devicePanel;
@@ -134,6 +135,7 @@ public partial class MainWindow
 
     private void RefreshInlineDeviceChoice()
     {
+        RefreshDeviceSourcePresentation();
         var canContinue = (selectedDevicePackage != null && !HasPendingDevicePreview || CanUseChosenDevice)
             && operation == null && !DownloadsBusy && !deviceActionBusy && !inputInspectionBusy && !inputAssociationBusy;
         if (inlineDeviceContinue != null)

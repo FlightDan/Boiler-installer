@@ -52,11 +52,12 @@ internal static class BoilerAdaptationChecks
                 var deviceList = Field<ComboBox>(window, "deviceList");
                 Require(Field<StackPanel>(window, "adaptationDevicePickerHost").Children.Count == 1, language + "-reentering-mode-removes-stale-inline-picker");
                 Require(quickPicker.IsVisible && deviceList.IsVisible && ReferenceEquals(quickPicker.Parent, Field<StackPanel>(window, "adaptationDevicePickerHost")), language + "-device-dropdown-is-inline-in-left-card");
-                Require(quickPicker.Children.OfType<WrapPanel>().SelectMany(panel => panel.Children.OfType<Button>()).Any(button => button.Name == "BrowseLocalDevice" && button.MinHeight >= 48), language + "-local-package-picker-in-left-card");
+                Require(Field<StackPanel>(window, "deviceImportArea").IsVisible
+                    && Field<StackPanel>(window, "deviceImportArea").Children.OfType<Button>().Any(button => button.Name == "BrowseLocalDevice" && button.MinHeight >= 48), language + "-local-package-picker-in-online-path");
                 Require(!Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-inline-continue-requires-device-choice");
                 Require(window.CurrentOptions.Plugins.Contains("core:maintenance") && options.OptionBoxes["core:maintenance"].IsChecked == true,
                     language + "-maintenance-default-enabled");
-                Require(((TextBlock)((ComboBoxItem)deviceList.Items[1]).Content).Text == "Fixture Maker Test device",
+                Require(((TextBlock)((ComboBoxItem)deviceList.Items[1]).Content).Text == "Fixture Maker Test device" + PartitionInventory.L(" · GitHub 机型包", " · GitHub package"),
                     language + "-brand-precedes-model-name");
                 var branded = JsonSerializer.SerializeToElement(new { id = "device:brand", brand = "ASUS", name = "ASUS ROG Ally" });
                 Require(MainWindow.DeviceLabel(branded) == "ASUS ROG Ally", language + "-brand-prefix-not-duplicated");

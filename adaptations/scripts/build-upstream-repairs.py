@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261030.8'
+VERSION = '0.1.0-localtest.20261101.9'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 
@@ -33,6 +33,23 @@ def encoded(value):
 
 def record(path, data):
     return dict(path=path, size=len(data), sha256=digest(data))
+
+
+def refresh_maintenance_manifest(directory):
+    """Inventory final generated maintenance bytes before the outer package."""
+    name = 'payload/legacy/maintenance/manifest.json'
+    path = Path(directory)/name
+    manifest = json.loads(path.read_bytes())
+    if manifest.get('schema') != 1 or not isinstance(manifest.get('files'), dict):
+        raise ValueError('Invalid retained maintenance manifest')
+    app = path.parent/'app'
+    actual = {file.relative_to(app).as_posix(): digest(file.read_bytes())
+              for file in sorted(app.rglob('*')) if file.is_file()}
+    if actual.keys() != manifest['files'].keys():
+        raise ValueError('Maintenance application member inventory changed')
+    manifest['files'] = actual
+    path.write_bytes(encoded(manifest))
+    return name
 
 
 def patched_input_helper(data, dock_source):
@@ -211,6 +228,7 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
     manifest['components'].append(component)
     manifest['shared_adaptations']['components'].append(component['id'])
     manifest['shared_adaptations']['warnings'].append('OXP3 speaker and connector fixes require physical-device acceptance; no sleep is initiated by installation.')
+    changed.append(refresh_maintenance_manifest(directory))
     evidence = dict(kind='Oxp3UpstreamRepairs', upstream=source_lock['upstream'], base_manifest_sha256=BASE_ANCHOR,
         changed_base_files=changed, source_lock_sha256=digest((root/'adaptations/upstream-source-lock.json').read_bytes()),
         decky_version='3.3.1', xevmafix=dict(kernel=pin['kernel'], module=pin['module'],

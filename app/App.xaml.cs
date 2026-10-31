@@ -54,6 +54,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "steamos-partition-checks") { log.AppendLine(await SteamOsPartitionChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-device-checks") { log.AppendLine(await BoilerDeviceChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "model-catalog-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "model-plugin-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunPluginMatrixAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "device-choice-checks") { log.AppendLine(await BoilerAdaptationChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "source-card-checks") { log.AppendLine(await SystemSourceCardChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "source-digest-checks") { log.AppendLine(await SourceDigestChecks.RunAsync()); }

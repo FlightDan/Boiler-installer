@@ -104,6 +104,7 @@ public partial class MainWindow
 
     private void ClearDeviceSelection()
     {
+        importedDeviceFileName = null;
         selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
         optionsPanel.SetWirelessContext(installMode, hasPackage: adaptationBranch != "generic");
         displayedDeviceMetadata = null;
@@ -230,6 +231,7 @@ public partial class MainWindow
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;
+                EnsureStaticDeckyProvider();
                 RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             }
             check.Checked += Changed; check.Unchecked += Changed;
@@ -245,15 +247,17 @@ public partial class MainWindow
             updatingDeviceAdaptations = true;
             try { foreach (var box in deviceComponentChoices.Values) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
+            EnsureStaticDeckyProvider();
             ConfigurationChanged();
         }
         deviceAdaptationsChoice.Checked += SetAllDeviceAdaptations;
         deviceAdaptationsChoice.Unchecked += SetAllDeviceAdaptations;
         deviceComponentsPanel.Children.Add(deviceAdaptationsChoice);
         BuildLegacyDeviceOptions(package, priorLegacy);
+        EnsureStaticDeckyProvider();
         if (deviceLegacyBridge == null)
             foreach (var check in deviceComponentChoices.Values) deviceComponentsPanel.Children.Add(check);
-        ComponentOptionsHost.Children.Insert(0, deviceComponentsPanel);
+        ComponentOptionsHost.Children.Add(deviceComponentsPanel);
         ShowDeviceDetails(selection.Reviewed is JsonElement reviewed ? reviewed : package);
         deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         ConfigurationChanged();

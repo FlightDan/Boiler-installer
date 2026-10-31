@@ -1,6 +1,13 @@
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.IO;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace OxpInstaller;
 
@@ -55,6 +62,39 @@ internal static class FeedbackReportChecks
         Reject(() => FeedbackReport.Manual("title", new string('中', 683), "", "0.1.0"), "utf8-message-overlimit-rejected");
         Reject(() => FeedbackReport.Manual("", "message", "", "0.1.0"), "empty-title-rejected");
         Reject(() => FeedbackReport.Manual("title", "message", "bad email", "0.1.0"), "invalid-email-rejected");
+        var logDirectory = Path.Combine(Backend.Root, "logs", "feedback-checks-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(logDirectory);
+        var logPath = Path.Combine(logDirectory, "private-name.log");
+        await File.WriteAllTextAsync(logPath, "stage 32% waiting\npassword=private-log-secret\nC:\\Users\\PrivateOwner\\trace\n", new UTF8Encoding(true));
+        var attachment = FeedbackLog.Read(logPath);
+        var logReport = FeedbackReport.Manual("", "", "", "0.1.0", attachment);
+        using (var document = JsonDocument.Parse(logReport.Json))
+        {
+            var root = document.RootElement;
+            Require(root.GetProperty("logs").GetString()!.Contains("stage 32% waiting")
+                && root.GetProperty("kind").GetString() == "error" && root.GetProperty("mode").GetString() == "manual"
+                && root.GetProperty("title").GetString()!.Length > 0 && root.GetProperty("message").GetString()!.Length > 0,
+                "selected-log-needs-no-title-or-description");
+            Require(new[] { "private-name", "PrivateOwner", "private-log-secret", logDirectory }.All(value => !logReport.Json.Contains(value)), "selected-log-redacts-secrets-and-omits-file-path-and-name");
+        }
+        await File.WriteAllTextAsync(logPath, "changed after preview", Encoding.UTF8);
+        Require(FeedbackReport.Manual("", "", "", "0.1.0", attachment).Json.Contains("stage 32% waiting"), "selected-log-is-snapshot-not-reread-for-send");
+        await File.WriteAllTextAsync(logPath, string.Concat(Enumerable.Repeat("中😀 continuing\n", 7000)) + "last stage waiting", Encoding.UTF8);
+        var large = FeedbackLog.Read(logPath);
+        Require(large.Truncated && Encoding.UTF8.GetByteCount(large.Text) <= 4096 && large.Text.EndsWith("last stage waiting") && !large.Text.Contains('\uFFFD'), "selected-large-log-redacted-utf8-tail-bounded");
+        await File.WriteAllTextAsync(logPath, "UTF16日志\nlast stage waiting", Encoding.Unicode);
+        Require(FeedbackLog.Read(logPath).Text.Contains("UTF16日志"), "selected-log-supports-utf16-bom");
+        await File.WriteAllTextAsync(logPath, "\x1b[31mERROR waiting\x1b[0m\n", Encoding.UTF8);
+        Require(FeedbackLog.Read(logPath).Text == "ERROR waiting", "selected-log-accepts-and-strips-ansi-colors");
+        await File.WriteAllTextAsync(logPath, string.Concat(Enumerable.Repeat("中😀", 14000)) + "last single line", Encoding.UTF8);
+        var singleLine = FeedbackLog.Read(logPath);
+        Require(singleLine.Truncated && singleLine.Text.EndsWith("last single line") && !singleLine.Text.Contains('\uFFFD'), "selected-large-single-line-log-retains-valid-tail");
+        await File.WriteAllBytesAsync(logPath, [0, 1, 2, 255]);
+        Reject(() => FeedbackLog.Read(logPath), "selected-binary-log-rejected");
+        await File.WriteAllTextAsync(logPath, " \n\t");
+        Reject(() => FeedbackLog.Read(logPath), "selected-empty-log-rejected");
+        await File.WriteAllTextAsync(logPath, "stage 32% waiting\npassword=private-log-secret\n");
+        await CheckLogEditorAsync(logPath, logDirectory, Require);
         Exception? preSessionFailure = null;
         try { using var absent = System.IO.File.OpenRead(System.IO.Path.Combine(AppContext.BaseDirectory, "absent-pre-session-" + Guid.NewGuid().ToString("N"))); }
         catch (System.IO.IOException error) { preSessionFailure = error; }
@@ -75,7 +115,45 @@ internal static class FeedbackReportChecks
         Require((await FeedbackTransport.SendAsync(machine, true, CancellationToken.None, client)).Code == "network" && fake.Calls == 4, "network-failure-contained-no-retry");
         using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
         Require(!(await FeedbackTransport.SendAsync(machine, true, cancelled.Token, client)).Sent, "closed-window-cancellation-contained");
+        fake.Fault = false; fake.Status = HttpStatusCode.Created;
+        Require((await FeedbackTransport.SendAsync(logReport, true, CancellationToken.None, client)).Sent && fake.Body == logReport.Json,
+            "selected-log-send-is-exact-preview-with-fake-http-only");
         return JsonSerializer.Serialize(new { passed = true, checks });
+    }
+    private static async Task CheckLogEditorAsync(string logPath, string directory, Action<bool, string> require)
+    {
+        var owner = new Window { Width = 640, Height = 650, ShowInTaskbar = false };
+        owner.Show();
+        var window = new FeedbackWindow(owner);
+        try
+        {
+            window.Show(); await window.SelectLogAsync(logPath);
+            var body = (StackPanel)((ScrollViewer)window.Content).Content;
+            var editorFields = body.Children.OfType<TextBox>().ToArray();
+            require(editorFields.Length == 3 && editorFields.All(field => field.Text.Length == 0), "log-editor-keeps-title-description-email-optional");
+            var preview = body.Children.OfType<WrapPanel>().Last().Children.OfType<Button>().First();
+            preview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var reportText = body.Children.OfType<TextBox>().Single().Text;
+            require(reportText.Contains("stage 32% waiting") && !reportText.Contains("private-log-secret"), "log-editor-preview-includes-selected-redacted-log");
+            var actions = body.Children.OfType<WrapPanel>().Single();
+            var send = actions.Children.OfType<Button>().First();
+            require(!send.IsEnabled, "selected-log-preview-still-requires-consent");
+            body.Children.OfType<CheckBox>().Single().IsChecked = true;
+            require(send.IsEnabled, "selected-log-confirmation-enables-send-without-description");
+            actions.Children.OfType<Button>().ElementAt(1).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            require(body.Children.OfType<TextBlock>().Any(text => text.Text.Contains("private-name.log")), "back-to-edit-retains-selected-log");
+            await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Render);
+            var root = (FrameworkElement)window.Content;
+            root.UpdateLayout();
+            var bitmap = new RenderTargetBitmap((int)root.ActualWidth, (int)root.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(root);
+            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using var output = File.Create(Path.Combine(directory, "feedback-editor.png")); encoder.Save(output);
+            // Never send to the real service from a source check.
+            body.Children.OfType<WrapPanel>().First().Children.OfType<Button>().Last().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            require(body.Children.OfType<TextBlock>().All(text => !text.Text.Contains("private-name.log")), "remove-log-clears-selection");
+        }
+        finally { window.Close(); owner.Close(); }
     }
     private sealed class FakeHandler : HttpMessageHandler
     {

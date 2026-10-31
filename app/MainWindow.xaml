@@ -1,6 +1,18 @@
 <Window x:Class="OxpInstaller.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:OxpInstaller"
  Title="Boiler Installer" Width="1060" Height="720" MinWidth="640" MinHeight="360" WindowState="Maximized" WindowStyle="SingleBorderWindow" ResizeMode="CanResize" WindowStartupLocation="CenterScreen" Background="#F4F6FA" Foreground="#192B43" FontFamily="Microsoft YaHei UI" FontSize="14" SizeChanged="LayoutChanged" PreviewKeyDown="WindowKeyDown">
  <Window.Resources>
+  <Style x:Key="DeviceSourceTab" TargetType="RadioButton">
+   <Setter Property="Foreground" Value="#61728A"/><Setter Property="Padding" Value="0,8,0,10"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
+    <Border x:Name="SourceTabSurface" BorderThickness="0,0,0,2" BorderBrush="Transparent" Background="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter VerticalAlignment="Center"/></Border>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#2968D9"/><Setter TargetName="SourceTabSurface" Property="BorderBrush" Value="#2968D9"/></Trigger>
+     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SourceTabSurface" Property="Background" Value="#EFF5FF"/></Trigger>
+     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SourceTabSurface" Property="Background" Value="#E5EEFF"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="SourceTabSurface" Property="Opacity" Value="0.45"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
   <Style x:Key="HomeEntry" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
    <Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#192B43"/><Setter Property="BorderBrush" Value="#DFE6F0"/><Setter Property="BorderThickness" Value="1"/>
    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="EntrySurface" CornerRadius="12" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/></Border><ControlTemplate.Triggers>

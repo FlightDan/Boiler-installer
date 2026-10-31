@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Automation;
+using System.IO;
+using Microsoft.Win32;
 
 namespace OxpInstaller;
 
@@ -9,7 +11,7 @@ internal sealed class FeedbackWindow : Window
 {
     private readonly StackPanel body = new() { Margin = new(24) };
     private readonly TextBox title = new() { MaxLength = 240 };
-    private readonly TextBox message = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 150, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxLength = 2048 };
+    private readonly TextBox message = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 90, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxLength = 2048 };
     private readonly TextBox email = new() { MaxLength = 254 };
     private readonly TextBox preview = new() { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, Height = 240, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private CheckBox consent = new();
@@ -20,6 +22,9 @@ internal sealed class FeedbackWindow : Window
     private bool sent;
     private readonly bool automatic;
     private readonly FeedbackFailure failure;
+    private FeedbackLog? attachment;
+    private string? attachmentName;
+    private readonly TextBlock attachmentStatus = new() { TextWrapping = TextWrapping.Wrap, Margin = new(0, 8, 0, 0) };
     private static string L(string zh, string en) => PartitionInventory.L(zh, en);
 
     internal FeedbackWindow(Window owner, FeedbackFailure? failure = null, FeedbackDiagnostic? diagnostic = null)
@@ -28,7 +33,7 @@ internal sealed class FeedbackWindow : Window
         Title = automatic ? L("发送脱敏错误报告", "Send a redacted error report") : L("手动反馈", "Send feedback");
         Width = 640; Height = 650; MinWidth = 360; MinHeight = 360; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         FontFamily = owner.FontFamily; FontSize = 14; Background = new SolidColorBrush(Color.FromRgb(244, 246, 250));
-        Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        Content = new ScrollViewer { Content = body, Background = Background, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetName(preview, L("实际发送的脱敏报告", "Exact redacted report to send"));
         Closed += (_, _) => cancellation.Cancel();
         if (automatic) ShowPreview(FeedbackReport.Automatic(this.failure, ReleaseInfo.DisplayVersion, diagnostic)); else ShowEditor();
@@ -43,19 +48,44 @@ internal sealed class FeedbackWindow : Window
     {
         body.Children.Clear(); report = null; consent.IsChecked = false;
         body.Children.Add(Label(L("反馈问题或建议", "Report an issue or suggestion"), true));
-        body.Children.Add(Label(L("不收集日志或设备信息。输入内容会先脱敏，再由你预览确认。邮箱为自愿提供的联系方式。", "No logs or device information are collected. Review the redacted content before sending. Email is optional contact information.")));
-        body.Children.Add(Label(L("标题", "Title"))); body.Children.Add(title); AutomationProperties.SetName(title, L("反馈标题", "Feedback title"));
-        body.Children.Add(Label(L("发生了什么？（最多 2048 UTF-8 字节）", "What happened? (up to 2048 UTF-8 bytes)"))); body.Children.Add(message); AutomationProperties.SetName(message, L("反馈正文", "Feedback message"));
+        body.Children.Add(Label(L("安装卡住或报错时，选择日志即可反馈，无需填写描述。只读取你选择的文件，脱敏后由你预览确认。", "If installation stalls or fails, select a log to send feedback without a description. Only your selected file is read, then redacted for your review.")));
+        var logActions = new WrapPanel();
+        logActions.Children.Add(Button(L("选择日志文件…", "Choose log file…"), async (_, _) =>
+        {
+            var picker = new OpenFileDialog { Title = L("选择要反馈的日志", "Choose a log for feedback"), Filter = L("文本日志|*.log;*.txt;*.jsonl|所有文件|*.*", "Text logs|*.log;*.txt;*.jsonl|All files|*.*"), CheckFileExists = true, Multiselect = false };
+            var directory = Path.Combine(Backend.Root, "logs");
+            if (Directory.Exists(directory)) picker.InitialDirectory = directory;
+            if (picker.ShowDialog(this) != true) return;
+            body.IsEnabled = false; status.Text = L("正在读取并脱敏日志…", "Reading and redacting log…");
+            try { await SelectLogAsync(picker.FileName); status.Text = ""; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException)
+            { status.Text = L("未能读取所选日志，请检查文件权限或选择其他文本日志。", "Could not read the selected log. Check access or choose another text log.") + "\n" + (error is ArgumentException ? error.Message : ""); }
+            finally { body.IsEnabled = true; }
+        }));
+        var remove = Button(L("移除日志", "Remove log"), (_, _) => { attachment = null; attachmentName = null; UpdateAttachmentStatus(); });
+        logActions.Children.Add(remove); body.Children.Add(logActions); body.Children.Add(attachmentStatus); UpdateAttachmentStatus();
+        body.Children.Add(Label(L("服务最多接收 4 KiB 日志，将发送脱敏后的末尾片段，不上传完整文件或本地路径。", "The service accepts up to 4 KiB of log text. Only the redacted tail is sent, without the full file or local path.")));
+        body.Children.Add(Label(L("标题（已选日志时可不填）", "Title (optional with a log)"))); body.Children.Add(title); AutomationProperties.SetName(title, L("反馈标题", "Feedback title"));
+        body.Children.Add(Label(L("补充说明（已选日志时可不填，最多 2048 UTF-8 字节）", "Description (optional with a log; up to 2048 UTF-8 bytes)"))); body.Children.Add(message); AutomationProperties.SetName(message, L("反馈正文", "Feedback message"));
         body.Children.Add(Label(L("邮箱（选填，会随报告发送）", "Email (optional; included in the report)"))); body.Children.Add(email); AutomationProperties.SetName(email, L("联系邮箱（选填）", "Contact email (optional)"));
         status.Text = ""; body.Children.Add(status);
         var actions = new WrapPanel();
         actions.Children.Add(Button(L("预览脱敏内容", "Preview redacted report"), (_, _) =>
         {
-            try { ShowPreview(FeedbackReport.Manual(title.Text, message.Text, email.Text, ReleaseInfo.DisplayVersion)); }
+            try { ShowPreview(FeedbackReport.Manual(title.Text, message.Text, email.Text, ReleaseInfo.DisplayVersion, attachment)); }
             catch (ArgumentException error) { status.Text = error.Message; }
         }));
         actions.Children.Add(Button(L("取消", "Cancel"), (_, _) => Close())); body.Children.Add(actions);
     }
+    internal async Task SelectLogAsync(string path)
+    {
+        var selected = await Task.Run(() => FeedbackLog.Read(path));
+        if (cancellation.IsCancellationRequested) return;
+        attachment = selected; attachmentName = Path.GetFileName(path); UpdateAttachmentStatus();
+    }
+    private void UpdateAttachmentStatus() => attachmentStatus.Text = attachment == null
+        ? L("尚未选择日志。也可以只填写文字反馈。", "No log selected. You can also send text feedback.")
+        : attachmentName + L(" · 已读取并脱敏", " · Read and redacted") + (attachment.Truncated ? L(" · 仅发送末尾片段", " · Tail excerpt only") : "");
     private void ShowPreview(FeedbackReport value)
     {
         // Detach shared controls before placing them into the preview layout.

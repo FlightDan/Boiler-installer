@@ -72,6 +72,13 @@ public partial class MainWindow
             }
         }
         finally { updatingLegacyChoices = false; }
+        if (deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) && deviceDecky.IsEnabled
+            && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
+        {
+            updatingLegacyChoices = true;
+            try { coreDecky.IsChecked = deviceDecky.IsChecked == true; }
+            finally { updatingLegacyChoices = false; }
+        }
         foreach (var pair in deviceLegacyChoices)
         {
             void Changed(object sender, RoutedEventArgs args)
@@ -102,19 +109,52 @@ public partial class MainWindow
         if (selected)
         {
             foreach (var dependency in LegacyDependencies(box)) SetLegacyClosure(dependency, true, seen);
-            if (id == "oxp3:decky" && box.IsChecked == true && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
-                coreDecky.IsChecked = false;
         }
         else
             foreach (var dependent in deviceLegacyChoices.Where(pair => LegacyDependencies(pair.Value).Contains(id)).Select(pair => pair.Key))
                 SetLegacyClosure(dependent, false, seen);
+        if (id == "oxp3:decky" && box.IsEnabled && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
+            coreDecky.IsChecked = box.IsChecked == true;
+    }
+
+    private static bool IsStaticDeckyConsumer(CheckBox box)
+    {
+        const string prefix = "home/deck/homebrew/plugins/";
+        if (box.Tag is not JsonElement item || !item.TryGetProperty("files", out var files)
+            || files.ValueKind != JsonValueKind.Array) return false;
+        foreach (var file in files.EnumerateArray())
+        {
+            if (file.ValueKind != JsonValueKind.Object || !file.TryGetProperty("target", out var target)
+                || target.ValueKind != JsonValueKind.String) continue;
+            var path = target.GetString()!;
+            if (!path.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            var separator = path.IndexOf('/', prefix.Length);
+            if (separator > prefix.Length && separator < path.Length - 1) return true;
+        }
+        return false;
+    }
+
+    private void EnsureStaticDeckyProvider()
+    {
+        if (deviceLegacyBridge == null && deviceComponentChoices.Values.Any(box => box.IsChecked == true && IsStaticDeckyConsumer(box))
+            && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.IsChecked = true;
     }
 
     private void CoreDeckyProviderChecked(object sender, RoutedEventArgs args)
     {
-        if (updatingLegacyChoices || deviceLegacyBridge == null) return;
+        if (updatingLegacyChoices || updatingDeviceAdaptations) return;
+        if (deviceLegacyBridge == null)
+        {
+            if (((CheckBox)sender).IsChecked == true) return;
+            updatingDeviceAdaptations = true;
+            try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
+            finally { updatingDeviceAdaptations = false; }
+            RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
+            return;
+        }
+        if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) || !deviceDecky.IsEnabled) return;
         updatingLegacyChoices = true;
-        try { SetLegacyClosure("oxp3:decky", false, new()); }
+        try { SetLegacyClosure("oxp3:decky", ((CheckBox)sender).IsChecked == true, new()); }
         finally { updatingLegacyChoices = false; }
         SyncLegacyBridge(); ConfigurationChanged();
     }

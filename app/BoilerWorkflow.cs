@@ -139,7 +139,7 @@ public partial class InstallerOptionsPanel
         OptionsNotesPanel.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
         foreach (var item in catalog.Repairs.Concat(catalog.Plugins))
             if (boxes.TryGetValue(item.Id, out var box)) box.IsChecked = item.Available && item.Default
-                && (mode == "custom" || mode == "vanilla" && item.Id == "core:maintenance");
+                && (mode is "custom" or "vanilla");
         applyingLanguageDefault = true;
         try { kde.SelectedItem = kde.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == (mode is "custom" or "vanilla" ? InstallerOptions.DefaultKdeLanguage : "system")); }
         finally { applyingLanguageDefault = false; }

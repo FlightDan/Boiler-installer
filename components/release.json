@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "product": "Boiler Installer",
-  "version": "0.2.0-local.20261101.ui.1",
-  "display_version": "0.2.0-local.20261101.ui.1",
+  "version": "0.2.0-local.20261101.ui.2",
+  "display_version": "0.2.0-local.20261101.ui.2",
   "channel": "local-test",
   "release_date": "2026-11-01"
 }
