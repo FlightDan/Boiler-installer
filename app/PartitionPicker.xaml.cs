@@ -192,7 +192,13 @@ public partial class PartitionPicker : UserControl
     }
     private async void DeleteSteamOs(object sender, RoutedEventArgs e)
     {
-        if (busy || snapshot == null || (!example && !AllowPhysicalDeletion) || steamOsSelected.Count == 0) return;
+        if (busy || snapshot == null || (!example && !AllowPhysicalDeletion)) return;
+        if (steamOsSelected.Count == 0)
+        {
+            SelectAllSteamOs(sender, e);
+            SteamOsDetails.IsExpanded = true;
+            return;
+        }
         try { await DeletePartitionsAsync(SteamOsDeleteRequest()); }
         catch (InvalidOperationException error) { InventoryStatus.Text = error.Message; }
     }
@@ -277,14 +283,14 @@ public partial class PartitionPicker : UserControl
             : L($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。受保护的启动等分区保留；删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Protected boot partitions are kept. Deletion requires a separate confirmation.");
         SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => !steamOsSelected.Contains(r.Start));
         ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
-        DeleteSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0 && (example || AllowPhysicalDeletion);
+        UpdateSteamOsDeleteButton(candidates);
         foreach (var row in rows)
         {
             var choice = new CheckBox { Tag = row.Start, IsChecked = steamOsSelected.Contains(row.Start), IsEnabled = !busy && row.CanDelete,
                 MinHeight = 44, VerticalContentAlignment = VerticalAlignment.Center,
-                Content = new TextBlock { Text = row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留（受保护）", " · Kept (protected)")), TextWrapping = TextWrapping.Wrap },
+                Content = new TextBlock { Text = row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留：", " · Kept: ") + row.Status), TextWrapping = TextWrapping.Wrap },
                 ToolTip = row.Status };
-            AutomationProperties.SetName(choice, row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留", " · Kept")));
+            AutomationProperties.SetName(choice, row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留：", " · Kept: ") + row.Status));
             choice.Checked += (_, _) => { if (!busy) { steamOsSelected.Add(row.Start); UpdateSteamOsSelection(); } };
             choice.Unchecked += (_, _) => { if (!busy) { steamOsSelected.Remove(row.Start); UpdateSteamOsSelection(); } };
             SteamOsPartitionsHost.Children.Add(choice);
@@ -297,7 +303,14 @@ public partial class PartitionPicker : UserControl
         SteamOsStatus.Text = L($"已选 {steamOsSelected.Count} 个 SteamOS 分区 · 共 {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}。受保护分区保留；确认后立即删除。", $"{steamOsSelected.Count} SteamOS partitions selected · {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))} total. Protected partitions are kept. Deletion is immediate after confirmation.");
         SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => r.CanDelete && !steamOsSelected.Contains(r.Start));
         ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
-        DeleteSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0 && (example || AllowPhysicalDeletion);
+        UpdateSteamOsDeleteButton(candidates);
+    }
+    private void UpdateSteamOsDeleteButton(PartitionRow[] candidates)
+    {
+        DeleteSteamOsButton.Content = steamOsSelected.Count == 0
+            ? L("选择 SteamOS 分区以删除…", "Select SteamOS partitions to delete…")
+            : L("删除所选 SteamOS 分区…", "Delete selected SteamOS partitions…");
+        DeleteSteamOsButton.IsEnabled = !busy && candidates.Any(r => r.CanDelete) && (example || AllowPhysicalDeletion);
     }
     private void UseAll(object sender, RoutedEventArgs e)
     { if (gap != null) CapacityInput.Text = (gap.Size / (decimal)PartitionInventory.GiB).ToString(CultureInfo.InvariantCulture); }

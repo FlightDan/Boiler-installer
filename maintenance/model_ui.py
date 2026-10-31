@@ -10,6 +10,7 @@ import html
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -20,6 +21,7 @@ from .feedback import FeedbackClient
 KDIALOG = '/usr/bin/kdialog'
 MAINTENANCE = '/usr/local/bin/boiler-maintenance'
 PKEXEC = '/usr/bin/pkexec'
+MAX_SELECTED_LOG_READ = 64 * 1024
 
 
 class BackendError(RuntimeError):
@@ -90,6 +92,10 @@ class KDialog:
         result = self._run('--textinputbox' if multiline else '--inputbox', self._rich(text), '')
         return result.stdout.rstrip('\n') if result.returncode == 0 else None
 
+    def open_file(self):
+        result = self._run('--getopenfilename')
+        return result.stdout.rstrip('\n') if result.returncode == 0 else None
+
     def details(self, text):
         # QTextEdit.append auto-detects rich text, so escape all source content.
         with tempfile.TemporaryDirectory(prefix='boiler-dialog-') as directory:
@@ -100,6 +106,93 @@ class KDialog:
                 for line in text.splitlines():
                     output.write('<p style="white-space:pre-wrap;margin:0">' + html.escape(line) + '</p>\n')
             return self._run('--textbox', str(path), '800', '540').returncode == 0
+
+
+def _read_limited(fd, maximum):
+    chunks = []
+    remaining = maximum
+    while remaining:
+        chunk = os.read(fd, min(8192, remaining))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b''.join(chunks)
+
+
+def _decode_log_window(raw, offset, encoding):
+    if encoding == 'utf-8':
+        if offset == 0 and raw.startswith(b'\xef\xbb\xbf'):
+            raw = raw[3:]
+        skipped = 0
+        while True:
+            try:
+                return raw.decode('utf-8')
+            except UnicodeDecodeError as error:
+                # A bounded tail can begin in the middle of a UTF-8 character.
+                if offset == 0 or error.start != 0 or skipped >= 3:
+                    raise ValueError('invalid_log_encoding') from error
+                discarded = max(error.end, 1)
+                raw = raw[discarded:]
+                offset += discarded
+                skipped += discarded
+    if offset == 0:
+        raw = raw[2:]
+    elif offset % 2:
+        raw = raw[1:]
+        offset += 1
+    skipped = 0
+    while True:
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError as error:
+            # A UTF-16 window can start on the low half of a surrogate pair.
+            if offset == 0 or error.start != 0 or skipped >= 2:
+                raise ValueError('invalid_log_encoding') from error
+            raw = raw[2:]
+            offset += 2
+            skipped += 2
+
+
+def read_selected_log(path):
+    """Read only a bounded tail from a user-selected ordinary UTF text file."""
+    if not isinstance(path, (str, os.PathLike)) or not os.fspath(path):
+        raise ValueError('invalid_log_file')
+    path = os.fspath(path)
+    if not stat.S_ISREG(os.lstat(path).st_mode):
+        raise ValueError('invalid_log_file')
+    flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_NONBLOCK', 0)
+             | getattr(os, 'O_NOFOLLOW', 0))
+    fd = os.open(path, flags)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_size <= 0:
+            raise ValueError('invalid_log_file')
+        size = info.st_size
+        head = _read_limited(fd, min(4, size))
+        if size <= MAX_SELECTED_LOG_READ:
+            raw = head + _read_limited(fd, size - len(head))
+            offset = 0
+        else:
+            # Include the four-byte encoding probe within the 64 KiB read cap.
+            tail_size = MAX_SELECTED_LOG_READ - len(head)
+            offset = size - tail_size
+            os.lseek(fd, offset, os.SEEK_SET)
+            raw = _read_limited(fd, tail_size)
+        if head.startswith(b'\xef\xbb\xbf'):
+            encoding = 'utf-8'
+        elif head.startswith(b'\xff\xfe'):
+            encoding = 'utf-16-le'
+        elif head.startswith(b'\xfe\xff'):
+            encoding = 'utf-16-be'
+        else:
+            encoding = 'utf-8'
+        text = _decode_log_window(raw, offset, encoding)
+        if '\x00' in text or not text.strip():
+            raise ValueError('invalid_log_text')
+        return text
+    finally:
+        os.close(fd)
 
 
 class Backend:
@@ -236,26 +329,55 @@ class ModelUI:
 
     def manual_feedback(self):
         try:
-            title = self.dialog.input(self.tr('反馈标题（最多 240 UTF-8 字节）',
-                                             'Feedback title (up to 240 UTF-8 bytes)'))
-            if title is None:
+            choice = self.dialog.menu(self.tr('选择反馈方式', 'Choose a feedback method'), [
+                ('log', self.tr('选择日志文件', 'Select a log file')),
+                ('write', self.tr('填写反馈', 'Write feedback'))])
+            if choice not in ('log', 'write'):
                 return
-            description = self.dialog.input(self.tr('请描述问题、复现步骤或建议（最多 2048 UTF-8 字节）。',
-                                                    'Describe the problem, steps or suggestion (up to 2048 UTF-8 bytes).'),
-                                            multiline=True)
-            if description is None:
-                return
-            try:
-                report = self.feedback.manual(title, description)
-            except ValueError:
-                self.dialog.message(self.tr('标题和描述不能为空或超出限制，请重新填写。',
-                                            'Provide a nonempty title and description within the limits.'), error=True)
-                return
+            has_logs = choice == 'log'
+            if has_logs:
+                self.dialog.message(self.tr(
+                    '只读取您选择文件的末尾最多 64 KiB；仅把脱敏后的末尾最多 4 KiB 放入反馈。文件路径不会上传，发送前会预览实际内容。',
+                    'Only up to the final 64 KiB of the selected file is read; only its redacted final 4 KiB is included. '
+                    'The file path is not uploaded, and the exact report is previewed before sending.'))
+                path = self.dialog.open_file()
+                if path is None:
+                    return
+                try:
+                    logs = read_selected_log(path)
+                    report = self.feedback.manual_log(logs)
+                except (OSError, UnicodeError, ValueError):
+                    self.dialog.message(self.tr(
+                        '无法读取此日志。请选择非空的 UTF-8 或带 BOM 的 UTF-16 普通文本文件。',
+                        'This log could not be read. Select a nonempty regular UTF-8 or BOM-marked UTF-16 text file.'),
+                        error=True)
+                    return
+            else:
+                title = self.dialog.input(self.tr('反馈标题（最多 240 UTF-8 字节）',
+                                                 'Feedback title (up to 240 UTF-8 bytes)'))
+                if title is None:
+                    return
+                description = self.dialog.input(self.tr('请描述问题、复现步骤或建议（最多 2048 UTF-8 字节）。',
+                                                        'Describe the problem, steps or suggestion (up to 2048 UTF-8 bytes).'),
+                                                multiline=True)
+                if description is None:
+                    return
+                try:
+                    report = self.feedback.manual(title, description)
+                except ValueError:
+                    self.dialog.message(self.tr('标题和描述不能为空或超出限制，请重新填写。',
+                                                'Provide a nonempty title and description within the limits.'), error=True)
+                    return
             if self.dialog.details(self.tr(
-                    '以下为脱敏后的实际发送内容。请检查是否仍包含敏感信息；取消可返回重新填写。\n'
-                    '不会附加日志或文件。\n\n',
-                    'These are the exact redacted contents to send. Check for remaining sensitive information; '
-                    'cancel to return and rewrite.\nNo logs or files are attached.\n\n') + self.feedback.preview(report)) is False:
+                    ('以下为脱敏后的实际发送内容。日志字段只包含脱敏后末尾最多 4 KiB；请检查是否仍有敏感信息。'
+                     '文件路径不会上传；取消可放弃发送。\n\n') if has_logs else
+                    ('以下为脱敏后的实际发送内容。请检查是否仍包含敏感信息；取消可返回重新填写。\n'
+                     '不会附加日志或文件。\n\n'),
+                    ('These are the exact redacted contents to send. The logs field contains only the redacted final 4 KiB. '
+                     'Check for remaining sensitive information; the file path is not uploaded. Cancel to discard.\n\n') if has_logs else
+                    ('These are the exact redacted contents to send. Check for remaining sensitive information; '
+                     'cancel to return and rewrite.\nNo logs or files are attached.\n\n')) +
+                    self.feedback.preview(report)) is False:
                 return
             if not self.dialog.confirm(self.tr('将刚刚预览的反馈发送给 Boiler 反馈服务（Cloudflare）？发送等待最多 6 秒。',
                                                 'Send the feedback just previewed to the Boiler feedback service (Cloudflare)? '

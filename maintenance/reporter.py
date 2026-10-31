@@ -6,7 +6,9 @@ only machine-code constants from the caller's controlled enumerations: never pas
 usernames, hostnames, paths, command output or exception messages as codes/steps.
 Exception objects contribute only type(error).__name__, never str(error) or a stack.
 
-There is deliberately no logs/file/environment argument: regex redaction cannot
+Automatic reports never accept logs, files, or environment data. A separate,
+user-initiated maintenance log report may include only text explicitly selected in
+the desktop UI; it is redacted and capped before HTTP, but regex redaction cannot
 guarantee that arbitrary logs are anonymous. User-initiated feedback text is cleaned
 before it reaches HTTP; the optional, explicitly supplied contact email is preserved
 for replies. Do not obtain that address from system/account settings.
@@ -34,6 +36,8 @@ from uuid import uuid4
 
 
 MAX_BODY_BYTES = 12 * 1024
+MAX_LOG_BYTES = 4096
+MAX_LOG_INPUT_BYTES = 96 * 1024
 MAX_EVENTS = 20
 HTTP_TIMEOUT = 5
 _CODE = re.compile(r"[A-Za-z0-9_.:+-]+\Z")
@@ -86,6 +90,44 @@ def _text(value: str, maximum: int) -> str:
     cleaned = _redact(value)
     if not cleaned or len(cleaned.encode("utf-8")) > maximum:
         raise ValueError("invalid_feedback_text")
+    return cleaned
+
+
+def _log_text(value: str) -> str:
+    """Redact an explicitly selected log tail and retain at most 4 KiB of UTF-8."""
+    if not isinstance(value, str):
+        raise ValueError("invalid_feedback_logs")
+    try:
+        raw = value.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise ValueError("invalid_feedback_logs") from error
+    # The UI reads at most 64 KiB from disk. UTF-16 text can expand when decoded
+    # to UTF-8, so allow that bounded representation plus room for supplementary
+    # code points without accepting arbitrary-sized values here.
+    if len(raw) > MAX_LOG_INPUT_BYTES:
+        raise ValueError("invalid_feedback_logs")
+    cleaned = _redact(value)
+    try:
+        encoded = cleaned.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise ValueError("invalid_feedback_logs") from error
+    if len(encoded) > MAX_LOG_BYTES:
+        encoded = encoded[-MAX_LOG_BYTES:]
+        # Truncation starts at an arbitrary byte boundary. Drop only an
+        # incomplete leading UTF-8 character; the end remains a full boundary.
+        while encoded:
+            try:
+                cleaned = encoded.decode("utf-8")
+                break
+            except UnicodeDecodeError as error:
+                if error.start != 0:
+                    raise ValueError("invalid_feedback_logs") from error
+                encoded = encoded[max(error.end, 1):]
+        else:
+            cleaned = ""
+        cleaned = cleaned.strip()
+    if not cleaned or len(cleaned.encode("utf-8")) > MAX_LOG_BYTES:
+        raise ValueError("invalid_feedback_logs")
     return cleaned
 
 
@@ -188,6 +230,13 @@ class Reporter:
         fields = dict(kind="feedback", mode="manual", title=_text(title, 240), message=_text(message, 2048))
         if contact_email:
             fields["contact_email"] = contact_email
+        return self._prepare(**fields)
+
+    def prepare_manual_error(self, error_code: str, title: str, message: str,
+                             logs: str) -> PreparedReport:
+        """Prepare a manual error report with an explicitly selected log tail."""
+        fields = dict(kind="error", mode="manual", error_code=_code(error_code, required=True),
+                      title=_text(title, 240), message=_text(message, 2048), logs=_log_text(logs))
         return self._prepare(**fields)
 
     def send(self, report: PreparedReport) -> ReportResult:

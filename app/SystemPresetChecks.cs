@@ -52,6 +52,17 @@ internal static class SystemPresetChecks
                     var prefix = language + "-" + mode;
                     Require(panel.SystemPresetsPanel.IsVisible && panel.KdeChoice.IsVisible && panel.SshChoice.IsVisible && panel.PasswordChoice.IsVisible, prefix + "-presets-visible");
                     Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage && !panel.Selection.EnableSsh && !panel.Selection.SetDeckPassword, prefix + "-defaults-follow-windows-language");
+                    Require(panel.Selection.Plugins.Contains("core:decky"), prefix + "-decky-selected-by-default");
+                    Require(panel.Children.IndexOf(panel.SystemPresetsPanel) < panel.Children.IndexOf(panel.RepairsExpander), prefix + "-presets-before-repairs");
+                    var accessNote = (TextBlock)panel.SystemPresetsPanel.Children[^1];
+                    Require(accessNote.Visibility == Visibility.Collapsed, prefix + "-ssh-explanation-hidden-by-default");
+                    if (mode == "custom")
+                    {
+                        ((ScrollViewer)window.FindName("PageScroll")).ScrollToTop(); await Flush();
+                        var path = Path.Combine(directory, language + "-default-options.png");
+                        try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path); captures.Add(path); }
+                        catch (IOException error) { captureErrors.Add(error.Message); }
+                    }
                     InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN"); panel.Refresh();
                     Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage, prefix + "-installer-language-switch-does-not-change-windows-default");
                     InstallerI18n.SetLanguage(language); panel.Refresh();
@@ -65,6 +76,10 @@ internal static class SystemPresetChecks
                     panel.PasswordInput.Password = secret; panel.PasswordConfirmation.Password = "different-password";
                     Refuse(panel.ValidateDeckPassword, prefix + "-mismatch-refused");
                     panel.PasswordConfirmation.Password = secret; panel.ValidateDeckPassword();
+                    panel.SshChoice.IsChecked = true;
+                    Require(accessNote.Visibility == Visibility.Visible, prefix + "-ssh-explanation-shown-when-selected");
+                    panel.SshChoice.IsChecked = false;
+                    Require(accessNote.Visibility == Visibility.Collapsed, prefix + "-ssh-explanation-hidden-after-opt-out");
                     panel.SshChoice.IsChecked = true;
                     panel.KdeChoice.SelectedIndex = 1;
                     Require(window.CurrentOptions.SetDeckPassword && window.CurrentOptions.EnableSsh && window.CurrentOptions.KdeLanguage == "zh_CN", prefix + "-choices-reach-current-plan");

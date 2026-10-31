@@ -28,7 +28,8 @@ internal static class SteamOsPartitions
                 ["number"] = 10 + i, ["guid"] = Guid.NewGuid().ToString(), ["offset"] = part.GetProperty("start").GetInt64(), ["size"] = part.GetProperty("size").GetInt64(),
                 ["gptType"] = role.gptType.ToString("D"), ["gptName"] = role.name, ["gptAttributes"] = "0", ["nativeGptVerified"] = true,
                 ["type"] = i == 0 ? "System" : "Unknown", ["filesystem"] = i < 3 ? "FAT32" : "", ["letter"] = "", ["label"] = "",
-                ["isBoot"] = false, ["isSystem"] = false, ["isHidden"] = i >= 3, ["nativeUnrecognizedSafe"] = i >= 3, ["deletionAllowed"] = i >= 3
+                ["isBoot"] = false, ["isSystem"] = false, ["isHidden"] = i >= 3, ["nativeUnrecognizedSafe"] = i >= 3, ["deletionAllowed"] = i >= 3,
+                ["deletionBlockReason"] = i == 0 ? "EFI, MSR, recovery and boot partitions are protected." : i < 3 ? "Volume has no verifiable access path." : ""
             });
         }
         // Native metadata is available for retained Windows partitions too.

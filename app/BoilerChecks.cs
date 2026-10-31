@@ -35,6 +35,16 @@ internal static class BoilerChecks
         Require(delivered.Length == 5 && delivered.Select(file => file.relative).Distinct().Count() == 5
             && delivered.All(file => File.ReadAllBytes(file.file).SequenceEqual(File.ReadAllBytes(Path.Combine(transport, file.relative)))), "payload-volumes-preserve-every-file-and-source");
         Require(PayloadVolumes.MountCommand(3).Contains("remount,ro") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-merge") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-2"), "payload-volumes-use-readonly-identified-mounts");
+        foreach (var count in new[] { 1, 3, 8 })
+        foreach (var secret in new[] { false, true })
+        {
+            var mount = PayloadVolumes.MountCommand(count);
+            var command = Backend.GuestCommand("integration", mount, secret);
+            Require(command.Split('\n').All(line => System.Text.Encoding.UTF8.GetByteCount(line) < 1024)
+                && command.EndsWith("; poweroff\n", StringComparison.Ordinal)
+                && command.Replace(" &&\n", " && ", StringComparison.Ordinal).Contains(mount),
+                $"guest-command-fits-interactive-lines-{count}-volumes-secret-{secret}");
+        }
         await Reject(async () => { await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "too-small"), CancellationToken.None, 8192); }, "oversized-payload-file-refused");
         if (OperatingSystem.IsWindows())
         {
@@ -137,7 +147,7 @@ internal static class BoilerChecks
             window.BoilerModeForChecks(mode);
             Require(window.CurrentOptions.InstallMode == mode, mode + "-mode-propagated");
             Require(mode == "custom" || window.CurrentOptions.Repairs.Length == 0
-                && window.CurrentOptions.Plugins.SequenceEqual(mode == "vanilla" ? ["core:maintenance"] : Array.Empty<string>()), mode + "-safe-defaults");
+                && window.CurrentOptions.Plugins.SequenceEqual(mode == "vanilla" ? ["core:decky", "core:maintenance"] : Array.Empty<string>()), mode + "-safe-defaults");
             if (mode == "imported")
             {
                 var upgrade = (System.Windows.Controls.CheckBox)window.FindName("Upgrade310");

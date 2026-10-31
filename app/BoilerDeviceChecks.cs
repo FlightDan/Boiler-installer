@@ -146,7 +146,7 @@ internal static class BoilerDeviceChecks
                     typeof(MainWindow).GetMethod("ChooseDeviceInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null); await Flush(window);
                     stale.SetResult(IndexResponse(name: "Stale route")); await Flush(window);
                     var currentLabel = MainWindow.DeviceLabel(IndexResponse(name: "Current route").GetProperty("index").GetProperty("packages")[0]);
-                    Require(Field<ComboBox>(window, "deviceList").Items.OfType<ComboBoxItem>().Any(i => i.Content is TextBlock t && t.Text == currentLabel), "stale-response-cannot-replace-current-route");
+                    Require(Field<ComboBox>(window, "deviceList").Items.OfType<ComboBoxItem>().Any(i => i.Tag is JsonElement entry && MainWindow.DeviceLabel(entry) == currentLabel), "stale-response-cannot-replace-current-route");
 
                     var delayed = new TaskCompletionSource<JsonElement>();
                     window.DeviceHardwareReaderForChecks = () => new("Fixture Maker", "Fixture Model");
@@ -158,6 +158,8 @@ internal static class BoilerDeviceChecks
                     Require(window.CurrentOptions.DevicePackage == pendingLocal && !Field<Border>(window, "deviceOptionPreview").IsVisible
                         && Field<ComboBox>(window, "deviceList").SelectedIndex == 0,
                         "late-matching-directory-does-not-replace-local-package-selection");
+                    Require(Field<TextBlock>(window, "deviceSourceStatus").Text == PartitionInventory.L("当前来源：手动导入：", "Current source: Manual import: ") + Path.GetFileName(script)
+                        && !Field<bool>(window, "deviceSourceBundled"), "explicit-local-import-shows-filename-in-online-path");
 
                     var droppedIndex = new TaskCompletionSource<JsonElement>();
                     window.DeviceIndexLoaderForChecks = _ => droppedIndex.Task;
@@ -167,6 +169,8 @@ internal static class BoilerDeviceChecks
                     droppedIndex.SetResult(IndexResponse()); await Flush(window);
                     Require(!Field<Border>(window, "deviceOptionPreview").IsVisible && Field<ComboBox>(window, "deviceList").SelectedIndex == 0
                         && window.CurrentOptions.DevicePackage != null, "late-matching-directory-does-not-replace-dropped-device-selection");
+                    Require(Field<TextBlock>(window, "deviceSourceStatus").Text.Contains(Path.GetFileName(script))
+                        && !Field<bool>(window, "deviceSourceBundled"), "dropped-package-keeps-import-provenance-in-online-path");
                 }
                 window.PreviewStep(MainWindow.AdaptationStep);
                 window.DeviceIndexLoaderForChecks = _ => throw new IOException("Directory unavailable fixture");
@@ -176,6 +180,13 @@ internal static class BoilerDeviceChecks
                 Require(Field<Expander>(window, "deviceDirectoryDetails").IsExpanded
                     && Field<Button>(window, "deviceIndexRetry").IsVisible,
                     "directory-failure-exposes-retry-without-opening-details-manually-" + language);
+                window.DeviceIndexLoaderForChecks = _ => Task.FromResult(IndexResponse(offline: true));
+                await (Task)typeof(MainWindow).GetMethod("LoadDeviceIndexAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Field<int>(window, "devicePanelGeneration"), CancellationToken.None])!;
+                Field<Expander>(window, "deviceDirectoryDetails").IsExpanded = false; await Flush(window);
+                Require(Field<TextBlock>(window, "deviceSourceHelp").IsVisible
+                    && Field<TextBlock>(window, "deviceSourceHelp").Text.Contains(PartitionInventory.L("无法检查新的撤销记录", "newer revocations cannot be checked")),
+                    "offline-github-warning-visible-with-details-collapsed-" + language);
                 window.Close(); window = null;
             }
         }

@@ -89,10 +89,10 @@ public static class PartitionInventory
                 if (type.Length == 0) type = L("未知文件系统", "Unknown filesystem");
                 if (part.TryGetProperty("isBoot", out var boot) && boot.ValueKind == JsonValueKind.True) type += " · Windows";
                 long? free = part.TryGetProperty("free", out var f) && f.ValueKind == JsonValueKind.Number ? f.GetInt64() : null;
-                var canDelete = reason.Length == 0 && PartitionDeletion.Allowed(disk, part);
+                var canDelete = reason.Length == 0 && Str(part, "deletionBlockReason").Length == 0 && PartitionDeletion.Allowed(disk, part);
                 rows.Add(new(number, start, bytes, name, type, free, canDelete
                     ? L("可删除以释放空间（清空数据）", "Can delete to free space (erases data)")
-                    : L("受保护 / 不支持删除", "Protected / deletion unavailable"), CanDelete: canDelete, SteamOsRole: steamOsRole));
+                    : DeletionStatus(reason, Str(part, "deletionBlockReason")), CanDelete: canDelete, SteamOsRole: steamOsRole));
                 cursor = checked(start + bytes);
             }
             AddGap(cursor, size / MiB * MiB - MiB);
@@ -108,6 +108,31 @@ public static class PartitionInventory
             }
         }
         return result.ToArray();
+    }
+    private static string DeletionStatus(string diskReason, string blockReason)
+    {
+        if (diskReason.Length > 0) return diskReason;
+        var translated = blockReason switch
+        {
+            "Disk is offline, read-only, or protection metadata is unavailable." => "磁盘脱机、只读或保护信息不可用。",
+            "Unsupported disk layout." => "不支持的磁盘布局。",
+            "System, boot, hidden, offline, or read-only partition is protected." => "系统、启动、隐藏、脱机或只读分区受保护。",
+            "Partition type cannot be identified." => "无法识别分区类型。",
+            "EFI, MSR, recovery and boot partitions are protected." => "EFI、MSR、恢复和启动分区受保护。",
+            "Hidden, read-only or unavailable partition protection metadata." => "分区隐藏、只读或保护信息不可用。",
+            "GPT protection attributes are set or unavailable." => "GPT 保护属性已设置或不可用。",
+            "Native GPT protection attributes could not be verified." => "无法验证原生 GPT 保护属性。",
+            "Volume is unhealthy or cannot be inspected." => "卷不健康或无法检查。",
+            "Volume has no verifiable access path." => "卷没有可验证的访问路径。",
+            "This volume contains Windows, the installer, temporary files, a pagefile or crash dump." => "此卷包含 Windows、安装程序、临时文件、分页文件或崩溃转储。",
+            "Volume cannot be inspected safely." => "无法安全检查此卷。",
+            "Volume contains operating-system or boot files." => "此卷包含操作系统或启动文件。",
+            "Volume protection checks failed; refresh or unlock the volume first." => "卷保护检查失败；请先刷新或解锁卷。",
+            _ => ""
+        };
+        var fallback = L("受保护 / 不支持删除", "Protected / deletion unavailable");
+        if (blockReason.Length == 0) return fallback;
+        return fallback + " · " + (InstallerI18n.Language == "en-US" || translated.Length == 0 ? blockReason : translated);
     }
     public static LayoutSegment[] Before(InventoryDisk disk) => disk.Rows.Select(r => new LayoutSegment(r.Name, r.Start, r.Size,
         r.Type == "—" ? "free" : "keep")).ToArray();

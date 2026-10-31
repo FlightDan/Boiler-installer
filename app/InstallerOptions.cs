@@ -152,6 +152,7 @@ public sealed partial class InstallerOptionsPanel : StackPanel
         GenericSections.Add(Heading("通用组件", "Common components"));
         var common = OptionGrid(catalog.Plugins);
         Children.Add(common); GenericSections.Add(common);
+        Children.Add(SystemPresetsPanel);
         var driverNote = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray, Margin = new Thickness(0, 0, 0, 16) };
         labels.Add((driverNote, "基础驱动由 SteamOS 提供，额外适配由机型包提供。",
             "SteamOS provides basic drivers; device packages add hardware support."));
@@ -173,7 +174,6 @@ public sealed partial class InstallerOptionsPanel : StackPanel
             Heading("其他设置", "Other settings");
             Children.Add(OptionGrid(catalog.Repairs.Where(x => x.Id == "flathub-ustc")));
         }
-        Children.Add(SystemPresetsPanel);
         var presetNote = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray };
         labels.Add((presetNote,
             "系统设置在安装时生效。Steam 语言请在 Steam 内设置。",
@@ -214,8 +214,8 @@ public sealed partial class InstallerOptionsPanel : StackPanel
         Children.Add(OptionsNotesPanel);
         setDeckPassword.Checked += (_, _) => { UpdateDeckPasswordState(); Changed?.Invoke(this, EventArgs.Empty); };
         setDeckPassword.Unchecked += (_, _) => { ClearSensitiveInputs(); UpdateDeckPasswordState(); Changed?.Invoke(this, EventArgs.Empty); };
-        enableSsh.Checked += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
-        enableSsh.Unchecked += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+        enableSsh.Checked += (_, _) => { UpdateDeckPasswordState(); Changed?.Invoke(this, EventArgs.Empty); };
+        enableSsh.Unchecked += (_, _) => { UpdateDeckPasswordState(); Changed?.Invoke(this, EventArgs.Empty); };
         deckPassword.PasswordChanged += (_, _) => { if (!clearingSensitiveInputs) Changed?.Invoke(this, EventArgs.Empty); };
         deckPasswordConfirm.PasswordChanged += (_, _) => { if (!clearingSensitiveInputs) Changed?.Invoke(this, EventArgs.Empty); };
         UpdateDeckPasswordState();
@@ -434,6 +434,7 @@ public sealed partial class InstallerOptionsPanel : StackPanel
         deckPasswordConfirmLabel.IsEnabled = deckPasswordConfirm.IsEnabled = enabled;
         deckPasswordLabel.Visibility = deckPassword.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
         deckPasswordConfirmLabel.Visibility = deckPasswordConfirm.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        accessNote.Visibility = enableSsh.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
     public void Refresh()
     {

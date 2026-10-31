@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -40,8 +41,7 @@ internal sealed class FeedbackDiagnostic
     internal string Log { get { lock (gate) return FeedbackRedaction.Tail(FeedbackRedaction.Redact(log).Trim(), 4096); } }
 }
 
-// Automatic reports take an enum, never an exception or a log. The immutable
-// JSON shown in the preview is also the exact UTF-8 request body.
+// The immutable JSON shown in the preview is also the exact UTF-8 request body.
 internal sealed record FeedbackReport(string Json, string Id)
 {
     internal static readonly Uri Endpoint = new("https://feedback.devdan.cc/api/v1/reports");
@@ -82,12 +82,22 @@ internal sealed record FeedbackReport(string Json, string Id)
         }
         return Create(fields, version);
     }
-    internal static FeedbackReport Manual(string title, string message, string email, string version)
+    internal static FeedbackReport Manual(string title, string message, string email, string version, FeedbackLog? attachment = null)
     {
         title = FeedbackRedaction.Redact(title).Trim(); message = FeedbackRedaction.Redact(message).Trim(); email = email.Trim();
+        if (attachment != null)
+        {
+            if (title.Length == 0) title = "Installer log feedback";
+            if (message.Length == 0) message = "User selected a log file for review.";
+        }
         if (title.Length < 1 || Encoding.UTF8.GetByteCount(title) > 240 || message.Length < 1 || Encoding.UTF8.GetByteCount(message) > 2048)
             throw new ArgumentException("请填写标题（最多 240 UTF-8 字节）及正文（最多 2048 UTF-8 字节）。 / Enter a title (up to 240 UTF-8 bytes) and message (up to 2048 UTF-8 bytes).");
         var fields = new Dictionary<string, object> { ["kind"] = "feedback", ["mode"] = "manual", ["title"] = title, ["message"] = message };
+        if (attachment != null)
+        {
+            fields["kind"] = "error"; fields["error_code"] = "INSTALLER_LOG_FEEDBACK";
+            fields["logs"] = attachment.Text;
+        }
         if (email.Length > 0)
         {
             if (email.Length > 254 || !Regex.IsMatch(email, @"\A[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,63}\z"))
@@ -95,6 +105,61 @@ internal sealed record FeedbackReport(string Json, string Id)
             fields["contact_email"] = email;
         }
         return Create(fields, version);
+    }
+}
+
+// A local snapshot: sending never reopens a selected or still-growing file.
+internal sealed record FeedbackLog
+{
+    internal string Text { get; }
+    internal bool Truncated { get; }
+    private FeedbackLog(string text, bool truncated) { Text = text; Truncated = truncated; }
+    internal static FeedbackLog Read(string path)
+    {
+        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (!file.CanSeek || (File.GetAttributes(path) & (FileAttributes.Directory | FileAttributes.Device)) != 0)
+            throw new ArgumentException("请选择普通文本日志文件。 / Select a regular text log file.");
+        var length = file.Length;
+        var prefix = new byte[3]; var prefixLength = file.Read(prefix);
+        var utf16 = prefixLength >= 2 && ((prefix[0] == 0xff && prefix[1] == 0xfe) || (prefix[0] == 0xfe && prefix[1] == 0xff));
+        Encoding encoding = utf16 ? new UnicodeEncoding(prefix[0] == 0xfe, false, true) : new UTF8Encoding(false, true);
+        var bom = utf16 ? 2 : prefixLength == 3 && prefix[0] == 0xef && prefix[1] == 0xbb && prefix[2] == 0xbf ? 3 : 0;
+        var offset = Math.Max(bom, length - 65536);
+        if (utf16 && (offset - bom) % 2 != 0) offset++;
+        file.Position = offset;
+        var bytes = new byte[(int)(length - offset)]; file.ReadExactly(bytes);
+        // Skip a clipped first line before decoding, including any split UTF-8 character.
+        var start = 0;
+        if (offset > bom)
+        {
+            var unit = utf16 ? 2 : 1;
+            var foundNewline = false;
+            while (start + unit <= bytes.Length)
+            {
+                var newline = utf16 ? (prefix[0] == 0xff ? bytes[start] is 10 or 13 && bytes[start + 1] == 0 : bytes[start] == 0 && bytes[start + 1] is 10 or 13) : bytes[start] is 10 or 13;
+                start += unit;
+                if (newline) { foundNewline = true; break; }
+            }
+            if (!foundNewline)
+            {
+                start = 0;
+                if (!utf16) while (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) start++;
+                else if (bytes.Length >= 2)
+                {
+                    var first = prefix[0] == 0xff ? bytes[0] | bytes[1] << 8 : bytes[0] << 8 | bytes[1];
+                    if (first is >= 0xdc00 and <= 0xdfff) start = 2;
+                }
+            }
+        }
+        string text;
+        try { text = encoding.GetString(bytes, start, bytes.Length - start); }
+        catch (DecoderFallbackException) { throw new ArgumentException("日志编码无效，请选择 UTF-8 或带 BOM 的 UTF-16 文本。 / Select UTF-8 or BOM-marked UTF-16 text."); }
+        if (text.Any(c => char.IsControl(c) && c is not '\r' and not '\n' and not '\t' and not '\x1b'))
+            throw new ArgumentException("文件包含二进制内容，请选择文本日志。 / Select a text log, not a binary file.");
+        text = FeedbackRedaction.Redact(text).Trim();
+        if (text.Length == 0) throw new ArgumentException("日志为空或没有可发送的文本，请选择其他日志。 / This log has no text to send; select another log.");
+        var excerpt = FeedbackRedaction.Tail(text, 4096);
+        return new(excerpt, offset > bom || excerpt.Length < text.Length);
     }
 }
 
@@ -114,8 +179,7 @@ internal static class FeedbackRedaction
         }
         return text[start..];
     }
-    // Best-effort scrubbing of user-written text; no files, logs, hardware IDs,
-    // credentials or local paths are collected by this feature.
+    // Best-effort scrubbing. The user reviews the exact result before sending.
     internal static string Redact(string text)
     {
         text = Regex.Replace(text, @"\x1b\][\s\S]*?(?:\x07|\x1b\\)|\x1b\[[0-?]*[ -/]*[@-~]", "");

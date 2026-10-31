@@ -530,9 +530,7 @@ public static class Backend
                     {
                         // Only the secret file uses 077. Applying it to the task also makes
                         // public runtime directories root-only and breaks the deck session.
-                        var command = secureInput == null
-                            ? $"( umask 022; {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
-                            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
+                        var command = GuestCommand(task, payloadMount, secureInput != null);
                         for (var offset = 0; offset < command.Length; offset += 8)
                         {
                             await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);
@@ -601,6 +599,17 @@ public static class Backend
             await liveLog.FlushAsync();
         }
     }
+    internal static string GuestCommand(string task, string payloadMount, bool secureInput)
+    {
+        // BusyBox ash's interactive line editor truncates a long physical line.
+        // Split at shell continuations, inside the enclosing subshell, so the
+        // complete command is parsed before the password handshake executes.
+        var mount = payloadMount.Replace(" && ", " &&\n", StringComparison.Ordinal);
+        return !secureInput
+            ? $"( umask 022; {mount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
+            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {mount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
+    }
+
     internal static void CopyIntegrationPayload(string? privatePayload, string payload, bool metadataOnly = false)
     {
         var source = privatePayload == null ? Path.Combine(Root, "cache/integration") : Path.Combine(privatePayload, "integration");

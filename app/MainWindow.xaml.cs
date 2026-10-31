@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private int sourceSection;
     private void NavigateSourceSection(object sender, RoutedEventArgs e)
     {
+        if (sourceInspectionBusy) return;
         if (sender is Button { Tag: string tag }) { sourceSection = int.Parse(tag); ShowStep(1); }
     }
     private void UpdateSourceSection()
@@ -64,7 +65,11 @@ public partial class MainWindow : Window
         PartitionSelector.DefaultCapacityGiB = 128;
         PartitionSelector.AllowPhysicalDeletion = physicalInstallation;
         optionsPanel = new InstallerOptionsPanel(); ComponentOptionsHost.Children.Add(optionsPanel);
-        if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.Checked += CoreDeckyProviderChecked;
+        if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
+        {
+            coreDecky.Checked += CoreDeckyProviderChecked;
+            coreDecky.Unchecked += CoreDeckyProviderChecked;
+        }
         optionsPanel.Changed += (_, _) => { if (ready) ConfigurationChanged(); };
         bootPanel = new BootOptionsPanel(); BootOptionsHost.Children.Add(bootPanel);
         downloadPanel = new ImageDownloadPanel(); DownloadHost.Children.Add(downloadPanel);
@@ -114,12 +119,21 @@ public partial class MainWindow : Window
     private InstallationTargetKind Kind => ExternalTarget.IsChecked == true ? InstallationTargetKind.ExternalDisk : InstallationTargetKind.InternalShared;
     // Shared partition mounting is temporarily unavailable in the installer UI.
     // Explicitly clear persisted options so hiding the page cannot submit them.
-    internal SelectedOptions CurrentOptions => installMode is "imported" or "local"
-        ? new(1, [], [], InstallerI18n.Language, "system", InstallMode: installMode)
-        : optionsPanel.Selection with { StorageMounts = null, InstallMode = installMode, DevicePackage = selectedDevicePackage,
-            DeviceManifestSha256 = selectedDeviceDigest, DeviceTrust = selectedDeviceTrust,
-            DeviceComponents = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray(),
-            DeviceLegacyOptions = CurrentDeviceLegacyOptions };
+    internal SelectedOptions CurrentOptions
+    {
+        get
+        {
+            if (installMode is "imported" or "local")
+                return new(1, [], [], InstallerI18n.Language, "system", InstallMode: installMode);
+            var legacy = CurrentDeviceLegacyOptions;
+            var selection = optionsPanel.Selection;
+            return selection with { StorageMounts = null, InstallMode = installMode, DevicePackage = selectedDevicePackage,
+                DeviceManifestSha256 = selectedDeviceDigest, DeviceTrust = selectedDeviceTrust,
+                DeviceComponents = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray(),
+                Plugins = legacy?.Plugins.Contains("oxp3:decky") == true ? selection.Plugins.Where(id => id != "core:decky").ToArray() : selection.Plugins,
+                DeviceLegacyOptions = legacy };
+        }
+    }
     private InstallationRequest Request
     {
         get
@@ -217,6 +231,7 @@ public partial class MainWindow : Window
         ReviewSource.Text += "\n" + SystemVersionSummary();
         if (CurrentOfficialSourceBinding is { } officialSource && Upgrade310.IsChecked == true)
             ReviewSource.Text += "\n" + OfficialSourceVersionDescription(officialSource.Path) + "\n" + officialSource.Path + "\nSHA-256: " + officialSource.Sha256;
+        if (CurrentSourceSkipped || (Upgrade310.IsChecked == true && CurrentOfficialSkipped)) ReviewSource.Text += "\n" + SkippedDigestText;
         if (CurrentSourceDigest != null && inspectedSourceInfo is { } sourceInfo) ReviewSource.Text += "\n" + DescribeSourceInfo(sourceInfo);
         ReviewLayout.Text = Kind == InstallationTargetKind.InternalShared
             ? InstallerI18n.T("保留：测试盘已有的 EFI / NTFS 分区与数据。\n新增：SteamOS 启动分区、A/B 系统和独立数据空间。\n测试盘中没有真正的 Windows 操作系统。")
@@ -234,7 +249,12 @@ public partial class MainWindow : Window
         ReviewExecutionNote.Text = physicalInstallation
             ? PartitionInventory.L("安装会格式化目标范围内新建的 SteamOS 分区，原有内容将被清空。请保存好重要数据。开始写入时将请求管理员权限。", "Installation formats the new SteamOS partitions in the target range, erasing their contents. Back up important data. Administrator permission is requested before writing.")
             : PartitionInventory.L("演练只写入独立虚拟盘，不会写入所选实际设备。", "Rehearsal writes only an independent virtual disk, not the selected physical device.");
-        if (installMode is not ("imported" or "local")) ReviewLayout.Text += "\n\n" + optionsPanel.Describe();
+        if (installMode is not ("imported" or "local"))
+        {
+            ReviewLayout.Text += "\n\n" + optionsPanel.Describe();
+            if (CurrentOptions.DeviceLegacyOptions?.Plugins.Contains("oxp3:decky") == true)
+                ReviewLayout.Text += "\n" + PartitionInventory.L("Decky Loader 使用机型包提供的版本。", "Decky Loader uses the device-package version.");
+        }
         if (selectedDevicePackage != null)
         {
             using var package = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(BoilerProtocol.PackageRoot, selectedDevicePackage, "manifest.json")));
@@ -370,10 +390,23 @@ public partial class MainWindow : Window
                 ShowStep(0);
             }
             else if (step == 4) { ShowStep(3); }
-            else if (step == 3) { if (SourceIssue(requireInspection: true) is string problem) throw new IOException(problem); RequirePhysicalConsent(); InstallationController.ValidateRequest(Request); if(physicalInstallation && (PhysicalConsent.IsChecked!=true || acknowledgedSelection != PartitionSelector.Selection)) throw new IOException(PartitionInventory.L("请返回安装位置，核对目标范围并确认备份，然后确认安装方案。","Return to installation location, confirm the target range and backup, then approve the installation plan.")); var request = Request; optionsPanel.ClearSensitiveInputs(); await StartAsync(request); }
+            else if (step == 3)
+            {
+                if (SourceIssue(requireInspection: true) is string problem) { ShowStep(1); ValidationMessage.Text = problem; return; }
+                RequirePhysicalConsent();
+                await PrepareSkippedBindingsAsync();
+                if (SourceIssue(requireInspection: true) is string afterIssue) { ShowStep(1); ValidationMessage.Text = afterIssue; return; }
+                if (CurrentSourceDigest == null || (Upgrade310.IsChecked == true && installMode != "imported" && UsePrepared.IsChecked != true && CurrentOfficialSourceBinding == null))
+                { ShowStep(1); ValidationMessage.Text = PartitionInventory.L("请重新检查安装源。", "Please inspect the installation sources again."); return; }
+                RequirePhysicalConsent();
+                var request = Request; InstallationController.ValidateRequest(request);
+                if (physicalInstallation && (PhysicalConsent.IsChecked != true || acknowledgedSelection != PartitionSelector.Selection))
+                    throw new IOException(PartitionInventory.L("请返回安装位置，核对目标范围并确认备份，然后确认安装方案。", "Return to installation location, confirm the target range and backup, then approve the installation plan."));
+                optionsPanel.ClearSensitiveInputs(); await StartAsync(request);
+            }
             else if (step == 6) { ShowBoilerHome(); }
         }
-        catch (OperationCanceledException) { ValidationMessage.Text = PartitionInventory.L("MD5 计算已取消，可重试。", "MD5 calculation cancelled. You can retry."); }
+        catch (OperationCanceledException) { ValidationMessage.Text = PartitionInventory.L("源文件校验已取消，可重试。", "Source verification cancelled. You can retry."); }
         catch (Exception error) { ValidationMessage.Text = error.Message; }
     }
     private void RequirePhysicalConsent()
@@ -679,7 +712,7 @@ public partial class MainWindow : Window
     private void OpenFolder(string path)
     { try { Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { path }, UseShellExecute = true }); } catch (Exception e) { ValidationMessage.Text = e.Message; } }
     private void OnClosing(object? sender, CancelEventArgs e)
-    { if (PartitionSelector.IsBusy) { e.Cancel = true; } else if (inputInspectionBusy || inputAssociationBusy) { e.Cancel = true; inputCancellation?.Cancel(); } else if (DownloadsBusy) { e.Cancel = true; if (officialDownloadPanel.IsBusy) officialDownloadPanel.Pause(); else downloadPanel.Pause(); } else if (operation != null) { e.Cancel = true; closeAfterCleanup = true; Stop(this, new RoutedEventArgs()); } }
+    { if (PartitionSelector.IsBusy) { e.Cancel = true; } else if (sourceInspectionBusy) { e.Cancel = true; sourceSkipRequested = false; sourceInspection?.Cancel(); } else if (inputInspectionBusy || inputAssociationBusy) { e.Cancel = true; inputCancellation?.Cancel(); } else if (DownloadsBusy) { e.Cancel = true; if (officialDownloadPanel.IsBusy) officialDownloadPanel.Pause(); else downloadPanel.Pause(); } else if (operation != null) { e.Cancel = true; closeAfterCleanup = true; Stop(this, new RoutedEventArgs()); } }
     internal void PreviewStep(int previewStep)
     {
         if (previewStep is < 0 or > AdaptationStep) throw new ArgumentOutOfRangeException(nameof(previewStep));

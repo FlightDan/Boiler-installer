@@ -31,6 +31,12 @@ public partial class MainWindow
     private BoilerHardware.Identity? detectedComputer;
     private bool deviceChoiceChanged, applyingDeviceDetection;
     private string deviceDetectionState = "pending";
+    private bool deviceSourceBundled, deviceSourceChosen;
+    private WrapPanel? deviceSourceTabs;
+    private RadioButton? bundledDeviceTab, onlineDeviceTab;
+    private TextBlock? deviceSourceHelp, deviceSourceStatus;
+    private StackPanel? deviceImportArea;
+    private string? importedDeviceFileName;
     internal Func<CancellationToken, Task<JsonElement>>? DeviceIndexLoaderForChecks { get; set; }
     internal Func<BoilerHardware.Identity?> DeviceHardwareReaderForChecks { get; set; } = BoilerHardware.ReadThisComputer;
 
@@ -46,6 +52,7 @@ public partial class MainWindow
         modelCatalog = null; modelCatalogError = null;
         deviceIndexError = pendingDeviceDirectory = null;
         detectedComputer = null; deviceDetectionState = "pending"; deviceChoiceChanged = false;
+        deviceSourceBundled = deviceSourceChosen = false; importedDeviceFileName = null;
         deviceLanguageUpdates.Clear();
         devicePanel = new StackPanel { Name = "DevicePanel", Margin = new Thickness(0, 0, 0, 20) };
         var panel = devicePanel;
@@ -64,12 +71,26 @@ public partial class MainWindow
             var label = Text(zh, en); button.Content = label;
             return button;
         }
-        var heading = Text("目录机型", "Device directory", 14); heading.FontWeight = FontWeights.SemiBold;
+        deviceSourceTabs = new WrapPanel { Name = "DeviceSourceTabs", Margin = new(0, 0, 0, 10), Visibility = Visibility.Collapsed };
+        RadioButton SourceTab(string name, string zh, string en, bool bundled)
+        {
+            var tab = new RadioButton { Name = name, GroupName = "DevicePackageSource", MinHeight = 44,
+                Style = (Style)FindResource("DeviceSourceTab"),
+                VerticalContentAlignment = VerticalAlignment.Center, Margin = new(0, 0, 16, 0), Content = Text(zh, en) };
+            tab.Checked += (_, _) => { if (!updatingDeviceList) SwitchDeviceSource(bundled); };
+            deviceSourceTabs.Children.Add(tab); return tab;
+        }
+        bundledDeviceTab = SourceTab("BundledDeviceTab", "自带机型包", "Bundled packages", true);
+        onlineDeviceTab = SourceTab("OnlineDeviceTab", "在线目录 / 导入", "Online directory / import", false);
+        picker.Children.Add(deviceSourceTabs);
+        deviceSourceHelp = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A"), Margin = new(0, 0, 0, 8) };
+        picker.Children.Add(deviceSourceHelp);
+        var heading = Text("机型", "Device", 14); heading.FontWeight = FontWeights.SemiBold;
         picker.Children.Add(heading);
-        var actions = new WrapPanel { Margin = new(0, 6, 0, 2) };
         var detect = Button("DetectDeviceModel", "自动识别", "Detect this computer");
+        detect.Margin = new(0, 8, 0, 4);
         detect.Click += (_, _) => DetectDeviceModel(explicitRequest: true);
-        var browse = Button("BrowseLocalDevice", "浏览机型包…", "Browse package…");
+        var browse = Button("BrowseLocalDevice", "导入本地包…", "Import local package…");
         browse.Click += async (_, _) =>
         {
             if (operation != null || DownloadsBusy || deviceActionBusy) return;
@@ -79,12 +100,17 @@ public partial class MainWindow
             if (installMode == "vanilla") PromoteDeviceMode();
             await ImportDeviceInputAsync(dialog.FileName);
         };
-        actions.Children.Add(browse); actions.Children.Add(detect); picker.Children.Add(actions);
+        deviceImportArea = new StackPanel { Name = "DeviceImportArea", Margin = new(0, 12, 0, 4) };
+        deviceImportArea.Children.Add(new Border { Height = 1, Background = BoilerBrush("#DFE6F0"), Margin = new(0, 0, 0, 12) });
+        var importHeading = Text("已有机型包？", "Already have a package?"); importHeading.FontWeight = FontWeights.SemiBold;
+        deviceImportArea.Children.Add(importHeading);
+        deviceImportArea.Children.Add(Text("浏览文件，或将机型包拖到此处。", "Browse files or drop a device package here."));
+        deviceImportArea.Children.Add(browse);
         deviceDirectoryBody = new StackPanel();
         deviceDirectoryDetails = new Expander { Name = "DeviceDirectoryDetails", MinHeight = 48,
             Content = deviceDirectoryBody, Margin = new(0, 8, 0, 0) };
         void DirectoryLabel() => deviceDirectoryDetails.Header = PartitionInventory.L("目录与识别信息", "Directory and detection details");
-        deviceLanguageUpdates.Add(DirectoryLabel); DirectoryLabel(); picker.Children.Add(deviceDirectoryDetails);
+        deviceLanguageUpdates.Add(DirectoryLabel); DirectoryLabel();
         deviceDetectionStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 2, 0, 6) };
         deviceDirectoryBody.Children.Add(deviceDetectionStatus);
         deviceIndexStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new Thickness(0, 6, 0, 4) };
@@ -94,10 +120,19 @@ public partial class MainWindow
         deviceIndexRetry.Click += async (_, _) => await Task.WhenAll(LoadDeviceIndexAsync(generation, token), LoadModelCatalogAsync(generation, token));
         deviceDirectoryBody.Children.Add(deviceIndexRetry);
         deviceList = new ModelSearchComboBox { DeviceModels = true, SearchText = DeviceSearchText,
-            Name = "DeviceList", MinHeight = 48, Margin = new Thickness(0, 8, 0, 4), HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            Name = "DeviceList", MinHeight = 48, Margin = new Thickness(0, 8, 8, 4), HorizontalContentAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(deviceList, PartitionInventory.L("目标机型", "Target device"));
         deviceList.SelectionChanged += (_, _) => DeviceListSelectionChanged();
-        picker.Children.Insert(1, deviceList);
+        var pickerRow = new Grid();
+        pickerRow.ColumnDefinitions.Add(new ColumnDefinition());
+        pickerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        pickerRow.Children.Add(deviceList); Grid.SetColumn(detect, 1); pickerRow.Children.Add(detect);
+        picker.Children.Add(pickerRow);
+        picker.Children.Add(deviceImportArea);
+        deviceSourceStatus = new TextBlock { Name = "DeviceSourceStatus", TextWrapping = TextWrapping.Wrap,
+            Foreground = BoilerBrush("#485B73"), Margin = new(0, 12, 0, 4) };
+        picker.Children.Add(deviceSourceStatus);
+        picker.Children.Add(deviceDirectoryDetails);
         CreateModelCatalogDetails(picker);
         deviceStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 6) };
         panel.Children.Add(deviceStatus);
@@ -142,6 +177,59 @@ public partial class MainWindow
         InitializeDeviceFileDrop();
     }
 
+    private bool HasBundledDeviceChoices => modelCatalog is JsonElement catalog
+        && catalog.GetProperty("models").EnumerateArray().Any(model => HasBundledModel(model.GetProperty("id").GetString()!));
+
+    private void SwitchDeviceSource(bool bundled)
+    {
+        if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy)
+        { RefreshDeviceSourcePresentation(); return; }
+        deviceSourceChosen = true; deviceChoiceChanged = true;
+        deviceDetectionState = "manual";
+        if (deviceSourceBundled == bundled) { RefreshDeviceSourcePresentation(); return; }
+        deviceSourceBundled = bundled && HasBundledDeviceChoices;
+        updatingDeviceList = true;
+        try { deviceList!.SelectedIndex = 0; }
+        finally { updatingDeviceList = false; }
+        // Browsing another source does not remove a package already in the installation configuration.
+        if (selectedDevicePackage == null && !HasPendingDevicePreview)
+        {
+            displayedDeviceMetadata = null; ClearModelGuide();
+            signedDeviceUse!.Visibility = Visibility.Collapsed;
+            deviceStatus!.Text = "";
+        }
+        PopulateDeviceList(); RefreshDeviceDetectionStatus();
+    }
+
+    private void RefreshDeviceSourcePresentation()
+    {
+        if (deviceSourceTabs == null) return;
+        deviceSourceTabs.Visibility = HasBundledDeviceChoices ? Visibility.Visible : Visibility.Collapsed;
+        var wasUpdating = updatingDeviceList; updatingDeviceList = true;
+        try { bundledDeviceTab!.IsChecked = deviceSourceBundled; onlineDeviceTab!.IsChecked = !deviceSourceBundled; }
+        finally { updatingDeviceList = wasUpdating; }
+        deviceSourceHelp!.Text = deviceSourceBundled
+            ? PartitionInventory.L("随安装器提供，无需下载机型包。", "Included with this installer; no package download needed.")
+            : deviceIndexOffline ? PartitionInventory.L("离线：使用已验签的 GitHub 缓存，无法检查新的撤销记录。", "Offline: using verified GitHub cache; newer revocations cannot be checked.")
+            : PartitionInventory.L("从 GitHub 目录查找机型，或导入已有机型包。", "Find a device in the GitHub directory or import an existing package.");
+        deviceDirectoryDetails!.Header = deviceSourceBundled ? PartitionInventory.L("识别与适配信息", "Detection and adaptation details")
+            : PartitionInventory.L("目录与识别信息", "Directory and detection details");
+        deviceImportArea!.Visibility = deviceSourceBundled ? Visibility.Collapsed : Visibility.Visible;
+        deviceIndexStatus!.Visibility = deviceIndexRetry!.Visibility = deviceSourceBundled ? Visibility.Collapsed : Visibility.Visible;
+        if (!deviceSourceBundled) deviceIndexRetry.Visibility = deviceIndexError != null || deviceIndexOffline || modelCatalogError != null ? Visibility.Visible : Visibility.Collapsed;
+        string source = "";
+        if (selectedDevicePackage != null)
+            source = selectedDeviceTrust == "signed-index" ? PartitionInventory.L("GitHub 目录", "GitHub directory")
+                : importedDeviceFileName != null ? PartitionInventory.L("手动导入：", "Manual import: ") + importedDeviceFileName
+                : PartitionInventory.L("安装器自带", "Bundled with installer");
+        else if (deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry })
+            source = IsModelGuide(entry)
+                ? deviceSourceBundled ? PartitionInventory.L("安装器自带", "Bundled with installer") : PartitionInventory.L("仅适配指南", "Guide only")
+                : PartitionInventory.L("GitHub 目录", "GitHub directory");
+        deviceSourceStatus!.Text = source.Length == 0 ? "" : PartitionInventory.L("当前来源：", "Current source: ") + source;
+        deviceSourceStatus.Visibility = source.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private static bool TryDeviceDrop(IDataObject data, out string? path)
     {
         path = null;
@@ -180,14 +268,15 @@ public partial class MainWindow
 
     private void UpdateDeviceIndexStatus(bool loading = false)
     {
-        deviceIndexRetry!.Visibility = deviceIndexError != null || deviceIndexOffline ? Visibility.Visible : Visibility.Collapsed;
+        deviceIndexStatus!.Visibility = deviceSourceBundled ? Visibility.Collapsed : Visibility.Visible;
+        deviceIndexRetry!.Visibility = !deviceSourceBundled && (deviceIndexError != null || deviceIndexOffline) ? Visibility.Visible : Visibility.Collapsed;
         if (loading)
         {
             deviceIndexStatus!.Text = PartitionInventory.L("正在读取 GitHub 机型目录…", "Loading the GitHub device directory…"); return;
         }
         if (deviceIndexError != null)
         {
-            deviceDirectoryDetails!.IsExpanded = true;
+            if (!deviceSourceBundled) deviceDirectoryDetails!.IsExpanded = true;
             deviceIndexStatus!.Text = PartitionInventory.L("签名机型包目录暂时无法读取。可以重试，仍可查看适配清单或导入本地包。", "The signed package directory is unavailable. Retry, view adaptation guides, or import a local package.");
             deviceIndexStatus.ToolTip = deviceIndexError; return;
         }
@@ -251,18 +340,25 @@ public partial class MainWindow
     private IEnumerable<JsonElement> DeviceModelEntries(string? preferredKey)
     {
         var guides = modelCatalog is JsonElement catalog ? catalog.GetProperty("models").EnumerateArray().ToArray() : [];
-        var packages = lastDeviceIndex is JsonElement index ? index.GetProperty("packages").EnumerateArray().Where(IsAvailableDeviceEntry).ToArray() : [];
-        foreach (var model in guides.Concat(packages).GroupBy(entry => entry.GetProperty("id").GetString(), StringComparer.Ordinal))
+        if (deviceSourceBundled)
         {
-            // One model can have both a guide and a package. Keep an explicit
-            // choice during refresh; otherwise prefer this build's bundled payload.
+            foreach (var guide in guides.Where(entry => HasBundledModel(entry.GetProperty("id").GetString()!))) yield return guide;
+            yield break;
+        }
+        var packages = lastDeviceIndex is JsonElement index ? index.GetProperty("packages").EnumerateArray().Where(IsAvailableDeviceEntry).ToArray() : [];
+        foreach (var model in guides.Where(entry => !HasBundledModel(entry.GetProperty("id").GetString()!)).Concat(packages).GroupBy(entry => entry.GetProperty("id").GetString(), StringComparer.Ordinal))
+        {
+            // The online path prefers an installable signed package over a guide.
             yield return model.OrderBy(entry => DeviceEntryKey(entry) == preferredKey ? 0
-                : IsModelGuide(entry) && HasBundledModel(model.Key!) ? 1 : !IsModelGuide(entry) ? 2 : 3).First();
+                : !IsModelGuide(entry) ? 1 : 2).First();
         }
     }
 
     private void PopulateDeviceList()
     {
+        if (!deviceSourceChosen && !deviceChoiceChanged && selectedDevicePackage == null && !HasPendingDevicePreview)
+            deviceSourceBundled = HasBundledDeviceChoices;
+        if (!HasBundledDeviceChoices) deviceSourceBundled = false;
         var previous = deviceList!.SelectedItem is ComboBoxItem { Tag: JsonElement selected } ? selected : (JsonElement?)null;
         var old = previous is JsonElement before ? DeviceEntryKey(before) : null;
         var keepSource = previous is JsonElement chosen && (selectedDevicePackage != null
@@ -273,7 +369,8 @@ public partial class MainWindow
             deviceList.Items.Clear();
             deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = PartitionInventory.L("请选择机型…", "Choose a device…"), TextWrapping = TextWrapping.Wrap } });
             foreach (var entry in DeviceModelEntries(keepSource ? old : null))
-                deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = DeviceLabel(entry), TextWrapping = TextWrapping.Wrap }, Tag = entry.Clone() });
+                deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = DeviceLabel(entry) + (deviceSourceBundled ? "" : IsModelGuide(entry)
+                    ? PartitionInventory.L(" · 仅适配指南", " · Guide only") : PartitionInventory.L(" · GitHub 机型包", " · GitHub package")), TextWrapping = TextWrapping.Wrap }, Tag = entry.Clone() });
             deviceList.SelectedItem = deviceList.Items.OfType<ComboBoxItem>().FirstOrDefault(item => item.Tag is JsonElement entry && DeviceEntryKey(entry) == old)
                 ?? deviceList.Items.OfType<ComboBoxItem>().FirstOrDefault(item => previous is JsonElement prior && item.Tag is JsonElement entry
                     && entry.GetProperty("id").GetString() == prior.GetProperty("id").GetString()) ?? deviceList.Items[0];
@@ -292,6 +389,7 @@ public partial class MainWindow
             signedDeviceUse!.Visibility = Visibility.Collapsed;
             deviceStatus!.Text = PartitionInventory.L("此前选择的机型包已从可用目录移除，请重新选择。", "The previously selected package is no longer available. Select another device.");
         }
+        RefreshDeviceSourcePresentation();
     }
 
     private void DetectDeviceModel(bool explicitRequest)
@@ -364,6 +462,7 @@ public partial class MainWindow
     {
         if (installMode != "custom" || homeScreen != null || operation != null || DownloadsBusy) return;
         deviceChoiceChanged = true; deviceDetectionState = "manual";
+        SwitchDeviceSource(false);
         await DeviceAction(async () =>
         {
             adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
@@ -379,8 +478,10 @@ public partial class MainWindow
             if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
                 throw new IOException(PartitionInventory.L("这是维护专用包，请使用维护器导入。", "This is a maintenance package. Import it with the maintainer."));
             reviewedDeviceMetadata = null;
-            CommitDeviceSelection(await PrepareDeviceSelectionAsync(result.GetProperty("directory").GetString()!,
-                "developer-session", result.GetProperty("manifest_sha256").GetString(), CancellationToken.None, sessionTrusted: true));
+            var selection = await PrepareDeviceSelectionAsync(result.GetProperty("directory").GetString()!,
+                "developer-session", result.GetProperty("manifest_sha256").GetString(), CancellationToken.None, sessionTrusted: true);
+            importedDeviceFileName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            CommitDeviceSelection(selection);
         });
     }
 

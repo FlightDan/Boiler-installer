@@ -14,9 +14,201 @@ internal static class BoilerModelCatalogChecks
 {
     private static T Field<T>(MainWindow window, string name) => (T)typeof(MainWindow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
     private static object? Call(MainWindow window, string name, params object?[] args) => typeof(MainWindow).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, args);
+    private static JsonElement ChosenModelEntry(ComboBox list) => (JsonElement)((ComboBoxItem)list.SelectedItem).Tag;
     private static async Task Flush(MainWindow window) { window.UpdateLayout(); await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); }
+    private static async Task CaptureSourceView(MainWindow window, string directory, string language, string view, double width, List<string> captures)
+    {
+        window.Width = width; await Flush(window);
+        var path = Path.Combine(directory, $"{language}-{view}-{(int)width}.png");
+        await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path);
+        captures.Add(path);
+    }
     private static async Task Wait(MainWindow window) { for (var i = 0; Field<bool>(window, "deviceActionBusy"); i++) { if (i > 500) throw new IOException("Timed out waiting for model action."); await Task.Delay(20); await Flush(window); } }
     internal static Task<string> RunAsync() => Application.Current.Dispatcher.CheckAccess() ? OnUiThread() : Application.Current.Dispatcher.InvokeAsync(OnUiThread).Task.Unwrap();
+    internal static Task<string> RunPluginMatrixAsync() => Application.Current.Dispatcher.CheckAccess() ? PluginMatrixOnUiThread()
+        : Application.Current.Dispatcher.InvokeAsync(PluginMatrixOnUiThread).Task.Unwrap();
+
+    private static async Task<string> PluginMatrixOnUiThread()
+    {
+        var directory = Path.Combine(Backend.Root, "logs", "model-plugin-matrix-" + DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff"));
+        Directory.CreateDirectory(directory);
+        var checks = new List<string>(); var models = new List<object>();
+        var originalLanguage = InstallerI18n.Language;
+        void Require(bool condition, string name) { if (!condition) throw new IOException("Plugin matrix failed: " + name); checks.Add(name); }
+        using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(Backend.Root, "cache/model-bundles/manifest.json")));
+        var entries = index.RootElement.GetProperty("packages").EnumerateArray().ToArray();
+        Require(new[] { "device:oxp3", "device:x2-mini" }.All(id => entries.Any(entry => entry.GetProperty("id").GetString() == id)), "both-supported-models-present");
+        try
+        {
+            foreach (var entry in entries)
+            {
+                var id = entry.GetProperty("id").GetString()!;
+                var packagePath = Path.GetFullPath(Path.Combine(Backend.Root, entry.GetProperty("directory").GetString()!, "manifest.json"));
+                MediaSource.Ordinary(packagePath, Path.Combine(Backend.Root, "cache/model-bundles"));
+                var bytes = await File.ReadAllBytesAsync(packagePath);
+                var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                Require(bytes.Length == entry.GetProperty("manifest_size").GetInt64() && digest == entry.GetProperty("manifest_sha256").GetString(), id + "-manifest-lock");
+                using var document = JsonDocument.Parse(bytes);
+                var package = document.RootElement.Clone();
+                Require(package.GetProperty("id").GetString() == id, id + "-manifest-identity");
+                var metadata = package.TryGetProperty("legacy_capabilities", out var capabilities)
+                    ? capabilities.EnumerateArray().ToDictionary(item => item.GetProperty("id").GetString()!) : new Dictionary<string, JsonElement>();
+                string[] Dependencies(string identity) => metadata[identity].GetProperty("dependencies").EnumerateArray().Select(item => item.GetString()!).ToArray();
+                HashSet<string> Closure(string identity)
+                {
+                    var result = new HashSet<string>(); var pending = new Stack<string>(); pending.Push(identity);
+                    while (pending.TryPop(out var next))
+                        if (result.Add(next)) foreach (var dependency in Dependencies(next)) pending.Push(dependency);
+                    return result;
+                }
+                var eligible = metadata.Keys.Where(identity => Closure(identity).All(dependency => metadata[dependency].GetProperty("available").GetBoolean())).ToHashSet();
+                var plugins = metadata.Where(pair => pair.Value.GetProperty("category").GetString() == "plugins").Select(pair => pair.Key).ToArray();
+                var pairCount = 0;
+                foreach (var language in new[] { "zh-CN", "en-US" })
+                {
+                    InstallerI18n.SetLanguage(language);
+                    var prefix = id + "/" + language;
+                    var window = new MainWindow(rehearsal: true) {
+                        DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()),
+                        ModelCatalogLoaderForChecks = _ => Task.FromResult(Catalog()), DeviceHardwareReaderForChecks = () => null };
+                    Field<PartitionPicker>(window, "PartitionSelector").AutomaticReadEnabled = false;
+                    try
+                    {
+                        window.BoilerModeForChecks("custom");
+                        var preparedType = typeof(MainWindow).GetNestedType("PreparedDeviceSelection", BindingFlags.NonPublic)!;
+                        void Commit() => Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+                        var core = Field<InstallerOptionsPanel>(window, "optionsPanel").OptionBoxes["core:decky"];
+                        if (id == "device:x2-mini") core.IsChecked = false;
+                        Commit();
+                        var boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+                        var components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+                        if (id == "device:x2-mini")
+                            Require(core.IsChecked == true && window.CurrentOptions.Plugins.Contains("core:decky"), prefix + "-import-defaults-enable-decky");
+                        HashSet<string> Selected() => boxes.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToHashSet();
+                        void Clear() { foreach (var box in boxes.Values) box.IsChecked = false; }
+                        void SelectAll() { foreach (var identity in eligible) boxes[identity].IsChecked = true; }
+                        void AssertPlan(string name)
+                        {
+                            var selected = Selected(); var plan = window.CurrentOptions;
+                            var emitted = (plan.DeviceLegacyOptions?.Repairs ?? []).Concat(plan.DeviceLegacyOptions?.Plugins ?? []).ToHashSet();
+                            Require(emitted.SetEquals(selected), prefix + "/" + name + "-request-matches-checkboxes");
+                            Require((plan.DeviceComponents ?? []).ToHashSet().SetEquals(components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key)),
+                                prefix + "/" + name + "-component-request-matches-checkboxes");
+                            Require(selected.All(identity => Closure(identity).IsSubsetOf(selected)), prefix + "/" + name + "-dependencies-present");
+                            var deviceDecky = selected.Contains("oxp3:decky");
+                            Require((!deviceDecky || core.IsChecked == true) && plan.Plugins.Contains("core:decky") == (core.IsChecked == true && !deviceDecky),
+                                prefix + "/" + name + "-single-decky-provider");
+                            Require(Field<InstallerOptionsPanel>(window, "optionsPanel").OptionBoxes["core:maintenance"].IsChecked == true,
+                                prefix + "/" + name + "-maintenance-preserved");
+                            Require(components.Where(pair => pair.Key != "oxp3:legacy-adaptation").All(pair => pair.Value.IsChecked == true),
+                                prefix + "/" + name + "-unrelated-package-components-preserved");
+                            InstallerOptions.Validate(plan);
+                        }
+                        Require(components.Values.All(box => box.IsChecked == true), prefix + "-all-package-components-default-selected");
+                        Require(boxes.Count == metadata.Count && Selected().SetEquals(eligible), prefix + "-all-available-default-selected");
+                        Require(plugins.Where(eligible.Contains).All(identity => boxes[identity].IsChecked == true), prefix + "-every-available-plugin-default-selected");
+                        Require(boxes.Where(pair => !eligible.Contains(pair.Key)).All(pair => !pair.Value.IsEnabled && pair.Value.IsChecked != true), prefix + "-unavailable-disabled");
+                        AssertPlan("defaults");
+                        await File.WriteAllTextAsync(Path.Combine(directory, id.Replace(':', '-') + "-" + language + "-default-options.json"),
+                            JsonSerializer.Serialize(window.CurrentOptions, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower, WriteIndented = true }));
+                        foreach (var first in eligible.Order())
+                        {
+                            foreach (var second in eligible.Order())
+                            {
+                                Clear(); boxes[first].IsChecked = true;
+                                Require(Selected().SetEquals(Closure(first)), prefix + "/" + first + "-individual-dependency-closure");
+                                var before = Selected(); boxes[second].IsChecked = true;
+                                var expected = new HashSet<string>(before); expected.UnionWith(Closure(second));
+                                Require(Selected().SetEquals(expected), prefix + "/" + first + "+" + second + "-selection-only-adds-dependencies");
+                                AssertPlan(first + "+" + second);
+                                pairCount++;
+                            }
+                            Clear(); SelectAll(); boxes[first].IsChecked = false;
+                            var expectedAfterRemoval = eligible.Where(identity => !Closure(identity).Contains(first)).ToHashSet();
+                            Require(Selected().SetEquals(expectedAfterRemoval), prefix + "/" + first + "-removal-clears-only-dependents");
+                            var retained = Selected(); boxes[first].IsChecked = true;
+                            retained.UnionWith(Closure(first));
+                            Require(retained.SetEquals(Selected()), prefix + "/" + first + "-reselection-only-adds-dependencies");
+                            AssertPlan(first + "-reselected");
+                            await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+                        }
+                        if (eligible.Contains("oxp3:decky"))
+                        {
+                            Clear(); SelectAll(); core.IsChecked = false;
+                            var expected = eligible.Where(identity => !Closure(identity).Contains("oxp3:decky")).ToHashSet();
+                            Require(Selected().SetEquals(expected), prefix + "-common-decky-off-clears-only-dependents");
+                            core.IsChecked = true; expected.Add("oxp3:decky");
+                            Require(Selected().SetEquals(expected), prefix + "-common-decky-on-does-not-clear-other-plugins");
+                            AssertPlan("common-decky-toggle");
+                        }
+                        else
+                        {
+                            foreach (var first in components.Keys.Order()) foreach (var second in components.Keys.Order())
+                            {
+                                foreach (var box in components.Values) box.IsChecked = false;
+                                components[first].IsChecked = true; components[second].IsChecked = true;
+                                Require(components[first].IsChecked == true && components[second].IsChecked == true, prefix + "/" + first + "+" + second + "-static-selection-preserved");
+                                Require((window.CurrentOptions.DeviceComponents ?? []).ToHashSet().SetEquals(components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key)),
+                                    prefix + "/" + first + "+" + second + "-static-request-matches-checkboxes");
+                                pairCount++;
+                            }
+                            if (components.TryGetValue("x2-mini:battery", out var battery))
+                            {
+                                var microphone = components["x2-mini:microphone"];
+                                foreach (var box in components.Values) box.IsChecked = false;
+                                core.IsChecked = false; microphone.IsChecked = true;
+                                Require(core.IsChecked != true && microphone.IsChecked == true, prefix + "-microphone-alone-does-not-enable-decky");
+                                battery.IsChecked = true;
+                                Require(core.IsChecked == true && microphone.IsChecked == true, prefix + "-battery-selects-decky-without-clearing-microphone");
+                                core.IsChecked = false;
+                                Require(battery.IsChecked != true && microphone.IsChecked == true, prefix + "-decky-off-clears-battery-only");
+                                core.IsChecked = true;
+                                Require(battery.IsChecked != true && microphone.IsChecked == true, prefix + "-decky-on-does-not-restore-battery");
+                                battery.IsChecked = true;
+                                Require(core.IsChecked == true && microphone.IsChecked == true, prefix + "-battery-reselection-only-adds-decky");
+                                microphone.IsChecked = false; battery.IsChecked = false; core.IsChecked = false;
+                                battery.IsChecked = true; microphone.IsChecked = true;
+                                Require(core.IsChecked == true && microphone.IsChecked == true && battery.IsChecked == true,
+                                    prefix + "-battery-then-microphone-preserves-both");
+                                battery.IsChecked = false;
+                                Require(core.IsChecked == true && microphone.IsChecked == true, prefix + "-battery-off-keeps-decky-and-microphone");
+                                var all = Field<CheckBox>(window, "deviceAdaptationsChoice");
+                                all.IsChecked = false; core.IsChecked = false; all.IsChecked = true;
+                                Require(core.IsChecked == true && components.Values.All(box => box.IsChecked == true), prefix + "-bulk-select-enables-decky");
+                                all.IsChecked = false;
+                                Require(core.IsChecked == true && components.Values.All(box => box.IsChecked != true), prefix + "-bulk-clear-keeps-decky");
+                                microphone.IsChecked = true; battery.IsChecked = true;
+                                Require((window.CurrentOptions.DeviceComponents ?? []).ToHashSet().SetEquals(components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key))
+                                    && window.CurrentOptions.Plugins.Contains("core:decky"), prefix + "-static-request-reflects-components-and-decky");
+                            }
+                        }
+                        Clear(); SelectAll();
+                        var beforeLanguage = JsonSerializer.Serialize(window.CurrentOptions.DeviceLegacyOptions);
+                        var beforeComponents = (window.CurrentOptions.DeviceComponents ?? []).ToHashSet();
+                        var beforePlugins = window.CurrentOptions.Plugins.ToHashSet();
+                        InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN");
+                        Field<InstallerOptionsPanel>(window, "optionsPanel").Refresh(); Call(window, "RefreshDeviceOptionLabels");
+                        Require(JsonSerializer.Serialize(window.CurrentOptions.DeviceLegacyOptions) == beforeLanguage, prefix + "-language-preserves-all-selections");
+                        Require((window.CurrentOptions.DeviceComponents ?? []).ToHashSet().SetEquals(beforeComponents), prefix + "-language-preserves-static-components");
+                        Require(window.CurrentOptions.Plugins.ToHashSet().SetEquals(beforePlugins), prefix + "-language-preserves-plugins");
+                        InstallerI18n.SetLanguage(language);
+                        Commit(); boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+                        Require(Selected().SetEquals(eligible), prefix + "-same-package-reentry-preserves-defaults");
+                        Require((window.CurrentOptions.DeviceComponents ?? []).ToHashSet().SetEquals(beforeComponents), prefix + "-same-package-reentry-preserves-static-components");
+                        Require(window.CurrentOptions.Plugins.ToHashSet().SetEquals(beforePlugins), prefix + "-same-package-reentry-preserves-plugins");
+                    }
+                    finally { window.Close(); }
+                }
+                models.Add(new { id, version = package.GetProperty("version").GetString(), digest, capabilities = metadata.Count,
+                    available = eligible.Count, plugins, pairs = pairCount, components = package.GetProperty("components").GetArrayLength() });
+            }
+        }
+        finally { InstallerI18n.SetLanguage(originalLanguage); }
+        var report = JsonSerializer.Serialize(new { passed = true, directory, models, checks,
+            scope = "Actual locked bundle manifests and WPF selection events only. No payload execution, physical disk queries, installation or hardware acceptance." }, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), report);
+        return report;
+    }
 
     private static JsonElement Catalog(bool bundled = true) => JsonSerializer.SerializeToElement(new
     {
@@ -63,19 +255,52 @@ internal static class BoilerModelCatalogChecks
                 window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
                 var list = Field<ComboBox>(window, "deviceList");
                 var use = Field<Button>(window, "inlineDeviceContinue");
-                Require(list.Items.Count == 4, language + "-guides-and-signed-packages-coexist");
+                var sourceTabs = Field<WrapPanel>(window, "deviceSourceTabs");
+                var bundledTab = Field<RadioButton>(window, "bundledDeviceTab");
+                var onlineTab = Field<RadioButton>(window, "onlineDeviceTab");
+                var importArea = Field<StackPanel>(window, "deviceImportArea");
+                Require(sourceTabs.IsVisible && bundledTab.IsChecked == true && onlineTab.IsChecked != true
+                    && list.Items.Count == 2 && list.SelectedIndex == 0,
+                    language + "-bundled-source-defaults-when-a-local-package-is-present");
+                Require(((JsonElement)((ComboBoxItem)list.Items[1]).Tag).GetProperty("guide_id").GetString() == "guide:oxp3"
+                    && importArea.Visibility == Visibility.Collapsed,
+                    language + "-bundled-tab-shows-only-its-model-guide-and-hides-online-import");
                 Require(bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-loading-does-not-grant-trust");
-                list.SelectedIndex = 2; await Flush(window);
+                await CaptureSourceView(window, directory, language, "bundled-default", 1060, captures);
+                await CaptureSourceView(window, directory, language, "bundled-default", 640, captures);
+                window.Width = 1060; await Flush(window);
+                onlineTab.IsChecked = true; await Flush(window);
+                Require(list.SelectedIndex == 0 && list.Items.Count == 3 && importArea.IsVisible
+                    && importArea.Children.OfType<Button>().Any(button => button.Name == "BrowseLocalDevice"),
+                    language + "-online-tab-resets-list-and-shows-import-controls");
+                await CaptureSourceView(window, directory, language, "online", 1060, captures);
+                await CaptureSourceView(window, directory, language, "online", 640, captures);
+                window.Width = 1060; await Flush(window);
+                Require(((JsonElement)((ComboBoxItem)list.Items[1]).Tag).GetProperty("id").GetString() == "device:x2-mini"
+                    && ((JsonElement)((ComboBoxItem)list.Items[1]).Tag).TryGetProperty("guide_id", out _),
+                    language + "-online-tab-keeps-guide-only-models");
+                list.SelectedIndex = 1; await Flush(window);
                 Require(!use.IsEnabled && window.CurrentOptions.DevicePackage == null, language + "-x2-guide-without-package-cannot-install");
                 var details = Field<StackPanel>(window, "modelCatalogDetails");
                 var recommendations = (StackPanel)details.Children.OfType<Expander>().Single().Content;
                 Require(details.IsVisible && recommendations.Children.OfType<TextBlock>().Any(block => block.Text.Contains("PL4"))
                     && !recommendations.Children.OfType<CheckBox>().Any(), language + "-pending-guide-items-are-read-only");
-                list.SelectedIndex = 1; await Flush(window);
+                list.SelectedIndex = 2; await Flush(window);
+                var onlineEntry = (JsonElement)((ComboBoxItem)list.SelectedItem).Tag;
                 Require(use.IsEnabled && (string)use.Content == PartitionInventory.L("使用所选机型包", "Use selected device package")
                     && Field<TextBlock>(window, "inlineDeviceStatus").Visibility == Visibility.Visible
                     && !string.IsNullOrWhiteSpace(Field<TextBlock>(window, "inlineDeviceStatus").Text)
-                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-oxp3-simple-action-with-advisory");
+                    && onlineEntry.GetProperty("id").GetString() == "device:fixture" && !onlineEntry.TryGetProperty("guide_id", out _)
+                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null,
+                    language + "-online-tab-shows-signed-index-entries-without-granting-trust");
+                bundledTab.IsChecked = true; await Flush(window);
+                Require(list.SelectedIndex == 0 && list.Items.Count == 2 && importArea.Visibility == Visibility.Collapsed
+                    && Field<TextBlock>(window, "deviceIndexStatus").Visibility == Visibility.Collapsed,
+                    language + "-switching-back-resets-candidate-and-hides-online-controls");
+                list.SelectedIndex = 1; await Flush(window);
+                Require(ChosenModelEntry(list).GetProperty("guide_id").GetString() == "guide:oxp3"
+                    && use.IsEnabled && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null,
+                    language + "-bundled-choice-is-available-separately-from-online-entry");
                 foreach (var width in new[] { 1060d, 640d })
                 {
                     window.Width = width; await Flush(window);
@@ -84,11 +309,7 @@ internal static class BoilerModelCatalogChecks
                     var actionPoint = use.TranslatePoint(new Point(0, 0), (UIElement)window.Content);
                     Require(actionPoint.Y >= 0 && actionPoint.Y + use.ActualHeight < ((FrameworkElement)window.Content).ActualHeight,
                         language + "-trust-action-visible-before-long-guides-" + width);
-                    var path = Path.Combine(directory, language + "-" + width + ".png");
-                    var surface = (FrameworkElement)window.Content;
-                    var bitmap = new RenderTargetBitmap((int)surface.ActualWidth, (int)surface.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render(surface); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                    using (var stream = File.Create(path)) encoder.Save(stream); captures.Add(path);
+                    await CaptureSourceView(window, directory, language, "bundled-guide", width, captures);
                 }
                 use.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Wait(window);
                 Require(bundleCalls == 1 && window.CurrentOptions.DevicePackage == null, language + "-explicit-click-enters-bundle-loader-without-pretrust");
@@ -106,6 +327,19 @@ internal static class BoilerModelCatalogChecks
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && window.CurrentOptions.DeviceTrust == "developer-session",
                     language + "-bundled-package-uses-real-validation-and-session-trust: " + Field<TextBlock>(window, "deviceStatus").Text + " / " + Field<string?>(window, "deviceActionError"));
                 Require(Field<int>(window, "step") == 1, language + "-single-first-layer-action-selects-package-and-opens-second-layer-source");
+                var appliedPackage = window.CurrentOptions.DevicePackage;
+                var appliedComponents = window.CurrentOptions.DeviceComponents?.ToArray() ?? [];
+                onlineTab.IsChecked = true; await Flush(window);
+                Require(list.SelectedIndex == 0 && window.CurrentOptions.DevicePackage == appliedPackage
+                    && window.CurrentOptions.DeviceManifestSha256 == sha && window.CurrentOptions.DeviceTrust == "developer-session"
+                    && window.CurrentOptions.DeviceComponents!.SequenceEqual(appliedComponents),
+                    language + "-source-switch-resets-candidate-without-clearing-applied-package-or-options");
+                Require(Field<TextBlock>(window, "deviceSourceStatus").Text.Contains(PartitionInventory.L("安装器自带", "Bundled with installer")),
+                    language + "-applied-package-provenance-survives-online-tab-switch");
+                bundledTab.IsChecked = true; await Flush(window);
+                Require(window.CurrentOptions.DevicePackage == appliedPackage && window.CurrentOptions.DeviceManifestSha256 == sha
+                    && window.CurrentOptions.DeviceTrust == "developer-session" && window.CurrentOptions.DeviceComponents!.SequenceEqual(appliedComponents),
+                    language + "-source-switch-back-keeps-applied-package-and-options");
                 await (Task)Call(window, "LoadModelCatalogAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!;
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _)
                     && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed,
@@ -115,6 +349,10 @@ internal static class BoilerModelCatalogChecks
                 Require(Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices").Values.All(
                     check => Field<StackPanel>(window, "deviceComponentsPanel").Children.Contains(check)),
                     language + "-static-component-checkboxes-are-visible-and-individually-selectable");
+                var optionsHost = (StackPanel)window.FindName("ComponentOptionsHost");
+                Require(optionsHost.Children.IndexOf(Field<InstallerOptionsPanel>(window, "optionsPanel"))
+                    < optionsHost.Children.IndexOf(Field<StackPanel>(window, "deviceComponentsPanel")),
+                    language + "-common-options-and-system-presets-before-device-repairs");
                 Call(window, "BuildLegacyDeviceOptions", JsonSerializer.SerializeToElement(new { legacy_capabilities = new[] { Capability("oxp3:descriptive", "repairs", []) } }), null);
                 Require(Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices").Count == 0,
                     language + "-legacy-capabilities-alone-do-not-authorize-edits");
@@ -154,41 +392,99 @@ internal static class BoilerModelCatalogChecks
                 Require(window.CurrentOptions.DeviceLegacyOptions?.Repairs.Contains("oxp3:base") == true, language + "-manual-selection-closes-dependencies");
                 var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
                 var coreDecky = options.OptionBoxes["core:decky"];
-                coreDecky.IsChecked = true;
                 var otherCore = options.Selection.Repairs.Concat(options.Selection.Plugins).Where(id => id != "core:decky").ToHashSet();
-                Require(coreDecky.IsChecked == true && capabilities["oxp3:decky"].IsChecked != true && capabilities["oxp3:opti2xmx"].IsChecked != true,
-                    language + "-manual-common-decky-selection-keeps-device-provider-off");
-                capabilities["oxp3:decky"].IsChecked = true;
-                Require(coreDecky.IsChecked != true && capabilities["oxp3:decky"].IsChecked == true,
-                    language + "-explicit-device-decky-clears-common-provider");
                 coreDecky.IsChecked = true;
-                Require(capabilities["oxp3:decky"].IsChecked != true && capabilities["oxp3:opti2xmx"].IsChecked != true,
-                    language + "-explicit-common-decky-clears-device-provider");
+                Require(coreDecky.IsChecked == true && capabilities["oxp3:decky"].IsChecked == true,
+                    language + "-common-decky-selects-device-decky");
                 capabilities["oxp3:opti2xmx"].IsChecked = true;
-                Require(capabilities["oxp3:decky"].IsChecked == true && coreDecky.IsChecked != true
+                Require(capabilities["oxp3:decky"].IsChecked == true && coreDecky.IsChecked == true
                     && window.CurrentOptions.DeviceLegacyOptions?.Repairs.Contains("oxp3:opti2xmx") == true
-                    && !window.CurrentOptions.Plugins.Contains("core:decky"), language + "-opti-dependency-selects-device-decky-only");
-                coreDecky.IsChecked = true;
+                    && window.CurrentOptions.DeviceLegacyOptions?.Plugins.Contains("oxp3:decky") == true
+                    && !window.CurrentOptions.Plugins.Contains("core:decky"), language + "-opti-keeps-both-checks-and-submits-device-provider-only");
+                coreDecky.RaiseEvent(new RoutedEventArgs(CheckBox.CheckedEvent));
+                Require(capabilities["oxp3:opti2xmx"].IsChecked == true, language + "-common-checked-keeps-opti");
+                coreDecky.IsChecked = false;
                 Require(capabilities["oxp3:decky"].IsChecked != true && capabilities["oxp3:opti2xmx"].IsChecked != true
                     && capabilities["oxp3:dependent"].IsChecked == true && capabilities["oxp3:base"].IsChecked == true,
-                    language + "-common-provider-clears-opti-without-unrelated-legacy-changes");
+                    language + "-clearing-common-decky-clears-dependent-only");
+                capabilities["oxp3:opti2xmx"].IsChecked = true;
+                capabilities["oxp3:decky"].IsChecked = false;
+                Require(coreDecky.IsChecked != true && capabilities["oxp3:opti2xmx"].IsChecked != true,
+                    language + "-clearing-device-decky-syncs-and-clears-dependent");
                 Require(otherCore.SetEquals(options.Selection.Repairs.Concat(options.Selection.Plugins).Where(id => id != "core:decky"))
-                    && options.OptionBoxes["core:maintenance"].IsChecked == true, language + "-provider-switch-keeps-maintenance-and-other-core-options");
+                    && options.OptionBoxes["core:maintenance"].IsChecked == true, language + "-decky-sync-keeps-other-core-options");
                 Require(Field<TextBlock>(window, "deviceLegacyNotice").Text.Contains(PartitionInventory.L("默认勾选全部可用项目", "All available items are selected by default"))
                     && Field<TextBlock>(window, "deviceLegacyNotice").Text.Contains(PartitionInventory.L("Opti2XMX 使用机型包 Decky", "Opti2XMX uses device-package Decky")),
                     language + "-defaults-and-opti-dependency-explained-concisely");
+                Call(window, "ClearLegacyDeviceOptions");
+                var noDeviceDecky = JsonSerializer.SerializeToElement(new {
+                    selection_contract = new { kind = "oxp3-legacy-options-v1", component = "oxp3:legacy-adaptation" },
+                    legacy_capabilities = new[] { Capability("oxp3:base", "repairs", []), Capability("oxp3:decky", "plugins", [], available: false) }
+                });
+                coreDecky.IsChecked = true;
+                Call(window, "BuildLegacyDeviceOptions", noDeviceDecky, null);
+                capabilities = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+                Require(coreDecky.IsChecked == true && capabilities["oxp3:decky"].IsChecked != true
+                    && window.CurrentOptions.Plugins.Contains("core:decky"), language + "-unavailable-device-decky-keeps-common-provider");
                 var delayed = new TaskCompletionSource<JsonElement>();
                 window.ModelCatalogLoaderForChecks = _ => delayed.Task; window.BoilerModeForChecks("custom"); await Flush(window);
                 list = Field<ComboBox>(window, "deviceList"); list.SelectedIndex = 1;
                 delayed.SetResult(Catalog()); await Flush(window);
                 Require(((JsonElement)((ComboBoxItem)list.SelectedItem).Tag).GetProperty("id").GetString() == "device:fixture",
                     language + "-late-guides-preserve-manual-signed-choice");
+                await CheckActualMetadata(window, language, directory, checks, captures, Require);
                 window.Close(); window = null;
             }
         }
         finally { window?.Close(); InstallerI18n.SetLanguage(languageBefore); }
         var result = JsonSerializer.Serialize(new { passed = true, checks, captures, directory, scope = "Synthetic WPF events, minimal local fixture validation and selection serialization; no hardware installation" }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), result); return result;
+    }
+
+    private static async Task CheckActualMetadata(MainWindow window, string language, string directory, List<string> checks, List<string> captures, Action<bool, string> require)
+    {
+        var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
+        var packagePath = Path.Combine(Backend.Root, "cache", "model-bundles", "packages", "oxp3", "manifest.json");
+        if (!File.Exists(indexPath) || !File.Exists(packagePath)) { checks.Add(language + "-actual-metadata-skipped-cache-unavailable"); return; }
+        using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(indexPath));
+        var entry = index.RootElement.GetProperty("packages").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "device:oxp3");
+        var bytes = await File.ReadAllBytesAsync(packagePath);
+        var sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        require(bytes.Length == entry.GetProperty("manifest_size").GetInt64() && sha == entry.GetProperty("manifest_sha256").GetString(), language + "-actual-metadata-matches-cache-index");
+        using var document = JsonDocument.Parse(bytes);
+        var package = document.RootElement.Clone();
+        var preparedType = typeof(MainWindow).GetNestedType("PreparedDeviceSelection", BindingFlags.NonPublic)!;
+        object Prepared(string digest) => Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!;
+        void Commit(string digest) => Call(window, "CommitDeviceSelection", Prepared(digest));
+        Commit(sha);
+        var boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+        var core = Field<InstallerOptionsPanel>(window, "optionsPanel").OptionBoxes["core:decky"];
+        require(boxes.Count == 28 && boxes.Values.Where(box => box.IsEnabled).All(box => box.IsChecked == true)
+            && boxes.Values.Where(box => !box.IsEnabled).All(box => box.IsChecked != true), language + "-actual-28-capabilities-all-available-selected");
+        checks.Add(language + "-actual-count-available-" + boxes.Values.Count(box => box.IsEnabled) + "-unavailable-" + boxes.Values.Count(box => !box.IsEnabled));
+        require(core.IsChecked == true && boxes["oxp3:decky"].IsChecked == true && boxes["oxp3:opti2xmx"].IsChecked == true
+            && !window.CurrentOptions.Plugins.Contains("core:decky"), language + "-actual-default-decky-and-opti");
+        window.Width = 1060; window.PreviewStep(2); await Flush(window);
+        async Task Capture(CheckBox box, string name)
+        {
+            box.BringIntoView(); await Flush(window);
+            var surface = (FrameworkElement)window.Content;
+            var bitmap = new RenderTargetBitmap((int)surface.ActualWidth, (int)surface.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(surface); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            var path = Path.Combine(directory, language + "-actual-" + name + ".png");
+            using (var stream = File.Create(path)) encoder.Save(stream); captures.Add(path);
+        }
+        await Capture(core, "core-decky"); await Capture(boxes["oxp3:opti2xmx"], "opti"); await Capture(boxes["oxp3:decky"], "device-decky");
+        boxes["oxp3:opti2xmx"].IsChecked = false; boxes["oxp3:opti2xmx"].IsChecked = true;
+        require(core.IsChecked == true && boxes["oxp3:decky"].IsChecked == true, language + "-actual-opti-reselection-keeps-decky");
+        boxes["oxp3:opti2xmx"].IsChecked = false; Commit(sha);
+        boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+        require(boxes["oxp3:opti2xmx"].IsChecked != true && boxes["oxp3:decky"].IsChecked == true && core.IsChecked == true, language + "-same-package-preserves-optout");
+        foreach (var box in boxes.Values) box.IsChecked = false;
+        Commit(sha); boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+        require(boxes.Values.All(box => box.IsChecked != true) && core.IsChecked != true, language + "-same-package-preserves-empty-selection");
+        Commit(new string('f', 64)); boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+        require(boxes.Values.Where(box => box.IsEnabled).All(box => box.IsChecked == true) && core.IsChecked == true, language + "-new-package-defaults-all-available");
     }
 
     private static async Task CheckMergedModels(string language, Action<bool, string> require)
@@ -201,49 +497,89 @@ internal static class BoilerModelCatalogChecks
             ((PartitionPicker)result.FindName("PartitionSelector")).AutomaticReadEnabled = false;
             result.Show(); result.BoilerModeForChecks("custom"); return result;
         }
-        JsonElement Chosen(ComboBox list) => (JsonElement)((ComboBoxItem)list.SelectedItem).Tag;
         try
         {
             window = Open(_ => Task.FromResult(MatchingIndex()), _ => Task.FromResult(Catalog())); await Flush(window);
             var list = Field<ComboBox>(window, "deviceList");
-            require(list.Items.Count == 3, language + "-same-model-guide-and-two-signed-versions-merge-to-one-row");
+            var sourceTabs = Field<WrapPanel>(window, "deviceSourceTabs");
+            var bundledTab = Field<RadioButton>(window, "bundledDeviceTab");
+            var onlineTab = Field<RadioButton>(window, "onlineDeviceTab");
+            require(sourceTabs.IsVisible && bundledTab.IsChecked == true && list.Items.Count == 2
+                && ((JsonElement)((ComboBoxItem)list.Items[1]).Tag).GetProperty("guide_id").GetString() == "guide:oxp3",
+                language + "-bundled-model-is-default-and-lists-only-the-local-package-choice");
             list.SelectedIndex = 1; await Flush(window);
-            require(Chosen(list).TryGetProperty("guide_id", out _) && window.CurrentOptions.DevicePackage == null
-                && Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-merged-oxp3-prefers-bundled-test-without-granting-trust");
+            require(ChosenModelEntry(list).TryGetProperty("guide_id", out _) && window.CurrentOptions.DevicePackage == null
+                && Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-local-package-choice-does-not-grant-trust");
+            onlineTab.IsChecked = true; await Flush(window);
+            require(sourceTabs.IsVisible && onlineTab.IsChecked == true && list.SelectedIndex == 0 && list.Items.Count == 3,
+                language + "-online-switch-clears-the-uncommitted-local-candidate");
+            var onlineGuide = (JsonElement)((ComboBoxItem)list.Items[1]).Tag;
+            var onlineSigned = (JsonElement)((ComboBoxItem)list.Items[2]).Tag;
+            require(onlineGuide.GetProperty("id").GetString() == "device:x2-mini" && onlineGuide.TryGetProperty("guide_id", out _)
+                && onlineSigned.GetProperty("id").GetString() == "device:oxp3" && !onlineSigned.TryGetProperty("guide_id", out _)
+                && onlineSigned.GetProperty("sha256").GetString() == new string('a', 64),
+                language + "-same-model-online-signed-package-is-separate-and-preferred-over-bundled-guide");
+            list.SelectedIndex = 2; await Flush(window);
+            require(ChosenModelEntry(list).GetProperty("id").GetString() == "device:oxp3"
+                && !ChosenModelEntry(list).TryGetProperty("guide_id", out _) && window.CurrentOptions.DevicePackage == null
+                && Field<Button>(window, "inlineDeviceContinue").IsEnabled
+                && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed,
+                language + "-online-signed-choice-keeps-package-validation-explicit");
             window.Close(); window = null;
 
             var delayedCatalog = new TaskCompletionSource<JsonElement>();
             window = Open(_ => Task.FromResult(MatchingIndex()), _ => delayedCatalog.Task); await Flush(window);
-            list = Field<ComboBox>(window, "deviceList"); list.SelectedIndex = 1; await Flush(window);
-            var digest = Chosen(list).GetProperty("sha256").GetString();
+            list = Field<ComboBox>(window, "deviceList");
+            sourceTabs = Field<WrapPanel>(window, "deviceSourceTabs");
+            onlineTab = Field<RadioButton>(window, "onlineDeviceTab");
+            require(sourceTabs.Visibility == Visibility.Collapsed && onlineTab.IsChecked == true && list.Items.Count == 2,
+                language + "-source-stays-online-until-bundled-catalog-is-known");
+            list.SelectedIndex = 1; await Flush(window);
+            var digest = ChosenModelEntry(list).GetProperty("sha256").GetString();
             delayedCatalog.SetResult(Catalog()); await Flush(window);
-            require(list.Items.Count == 3 && Chosen(list).GetProperty("sha256").GetString() == digest
-                && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _),
-                language + "-late-bundle-keeps-explicit-signed-source-and-details");
+            require(sourceTabs.IsVisible && onlineTab.IsChecked == true && list.Items.Count == 3
+                && ChosenModelEntry(list).GetProperty("id").GetString() == "device:oxp3"
+                && ChosenModelEntry(list).GetProperty("sha256").GetString() == digest
+                && !ChosenModelEntry(list).TryGetProperty("guide_id", out _)
+                && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _)
+                && window.CurrentOptions.DevicePackage == null,
+                language + "-late-bundle-catalog-keeps-manual-online-package-choice");
             window.Close(); window = null;
 
             var delayedIndex = new TaskCompletionSource<JsonElement>();
             window = Open(_ => delayedIndex.Task, _ => Task.FromResult(Catalog())); await Flush(window);
-            list = Field<ComboBox>(window, "deviceList"); list.SelectedIndex = 1; await Flush(window);
+            list = Field<ComboBox>(window, "deviceList");
+            sourceTabs = Field<WrapPanel>(window, "deviceSourceTabs");
+            bundledTab = Field<RadioButton>(window, "bundledDeviceTab");
+            require(sourceTabs.IsVisible && bundledTab.IsChecked == true && list.Items.Count == 2,
+                language + "-bundled-default-does-not-wait-for-online-index");
+            list.SelectedIndex = 1; await Flush(window);
             delayedIndex.SetResult(MatchingIndex()); await Flush(window);
-            require(list.Items.Count == 3 && Chosen(list).TryGetProperty("guide_id", out _)
+            require(sourceTabs.IsVisible && bundledTab.IsChecked == true && list.Items.Count == 2
+                && ChosenModelEntry(list).TryGetProperty("guide_id", out _)
                 && Field<StackPanel>(window, "modelCatalogDetails").IsVisible && window.CurrentOptions.DevicePackage == null,
-                language + "-late-signed-index-keeps-bundled-choice-and-session-trust-boundary");
+                language + "-late-signed-index-does-not-enter-bundled-tab-or-grant-trust");
             window.Close(); window = null;
 
             delayedIndex = new TaskCompletionSource<JsonElement>();
             window = Open(_ => delayedIndex.Task, _ => Task.FromResult(Catalog(bundled: false))); await Flush(window);
-            list = Field<ComboBox>(window, "deviceList"); list.SelectedIndex = 1; await Flush(window);
+            list = Field<ComboBox>(window, "deviceList");
+            sourceTabs = Field<WrapPanel>(window, "deviceSourceTabs");
+            onlineTab = Field<RadioButton>(window, "onlineDeviceTab");
+            require(sourceTabs.Visibility == Visibility.Collapsed && onlineTab.IsChecked == true && list.Items.Count == 3,
+                language + "-without-bundled-model-tabs-are-hidden-and-online-is-default");
+            list.SelectedIndex = 1; await Flush(window);
             require(!Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-guide-only-model-stays-read-only");
             delayedIndex.SetResult(MatchingIndex()); await Flush(window);
-            require(list.Items.Count == 3 && Chosen(list).GetProperty("sha256").GetString() == new string('a', 64)
+            require(sourceTabs.Visibility == Visibility.Collapsed && onlineTab.IsChecked == true
+                && list.Items.Count == 3 && ChosenModelEntry(list).GetProperty("sha256").GetString() == new string('a', 64)
                 && Field<Button>(window, "inlineDeviceContinue").IsEnabled && window.CurrentOptions.DevicePackage == null
                 && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed
                 && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _),
                 language + "-guide-without-bundle-uses-late-signed-fallback-and-refreshes-details");
             window.DeviceIndexLoaderForChecks = _ => Task.FromResult(MatchingIndex(revoked: true));
             await (Task)Call(window, "LoadDeviceIndexAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!;
-            require(list.Items.Count == 3 && Chosen(list).TryGetProperty("guide_id", out _)
+            require(sourceTabs.Visibility == Visibility.Collapsed && list.Items.Count == 3 && ChosenModelEntry(list).TryGetProperty("guide_id", out _)
                 && !Field<Button>(window, "inlineDeviceContinue").IsEnabled && window.CurrentOptions.DevicePackage == null,
                 language + "-revoked-signed-packages-fall-back-to-read-only-guide");
         }

@@ -23,7 +23,7 @@ public partial class MainWindow
         && packages.EnumerateArray().Any(package => package.GetProperty("id").GetString() == id
             && package.TryGetProperty("trust", out var trust) && trust.GetString() == "local-test");
     private bool CanUseChosenDevice => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry }
-        && (!IsModelGuide(entry) || HasBundledModel(entry.GetProperty("id").GetString()!));
+        && (!IsModelGuide(entry) || deviceSourceBundled && HasBundledModel(entry.GetProperty("id").GetString()!));
     private string ChosenDeviceActionLabel => PartitionInventory.L("使用所选机型包", "Use selected device package");
     private string ChosenDeviceNotice => ChosenModelGuide is JsonElement model
         ? HasBundledModel(model.GetProperty("id").GetString()!)
@@ -88,7 +88,7 @@ public partial class MainWindow
                 + " " + source.GetProperty("repository").GetString() + " @ " + commit[..Math.Min(12, commit.Length)];
         }
         else modelCatalogStatus.Text = "";
-        if (modelCatalogError != null && deviceIndexRetry != null) deviceIndexRetry.Visibility = Visibility.Visible;
+        if (modelCatalogError != null && deviceIndexRetry != null && !deviceSourceBundled) deviceIndexRetry.Visibility = Visibility.Visible;
     }
 
     private void ClearModelGuide()
@@ -102,7 +102,7 @@ public partial class MainWindow
         if (modelCatalogDetails == null) return;
         displayedDeviceMetadata = model.Clone();
         ClearModelGuide(); modelCatalogDetails.Visibility = Visibility.Visible;
-        var bundled = HasBundledModel(model.GetProperty("id").GetString()!);
+        var bundled = deviceSourceBundled && HasBundledModel(model.GetProperty("id").GetString()!);
         TextBlock Text(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 8) };
         var notice = bundled
             ? ""
@@ -162,6 +162,7 @@ public partial class MainWindow
         if (generation != devicePanelGeneration || ChosenModelGuide is not JsonElement current || DeviceEntryKey(current) != chosenKey) return;
         if (selection.Package.GetProperty("id").GetString() != id) throw new IOException("Bundled package does not match the selected model.");
         if (installMode == "vanilla") PromoteDeviceMode();
+        importedDeviceFileName = null;
         ClearModelGuide(); CommitDeviceSelection(selection);
     }
 }

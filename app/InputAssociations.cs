@@ -356,7 +356,10 @@ public partial class MainWindow
                 try { deviceList!.SelectedIndex = 0; }
                 finally { updatingDeviceList = false; }
                 ClearModelGuide();
+                deviceSourceBundled = false; deviceSourceChosen = true; deviceChoiceChanged = true;
+                importedDeviceFileName = Path.GetFileName(paths[InputRole.Device].TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 CommitDeviceSelection(preparedDevice);
+                PopulateDeviceList();
             }
             if (paths.ContainsKey(InputRole.Image) || paths.ContainsKey(InputRole.Recovery)) ResetImageInspection();
             if (paths.ContainsKey(InputRole.Upgrade)) ResetOfficialSourceInspection();
