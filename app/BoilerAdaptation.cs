@@ -12,8 +12,9 @@ public partial class MainWindow
     private string? adaptationBranch;
     private Grid? adaptationChoices;
     private StackPanel? adaptationDevicePickerHost;
-    private Button? inlineDeviceContinue;
     private TextBlock? inlineDeviceStatus;
+    private Button? inlineDeviceContinue;
+    private Button? genericInstallationChoice;
     private StackPanel? adaptationDeviceHost;
     private Border? deviceOptionPreview;
     private JsonElement? previewDeviceMetadata;
@@ -23,6 +24,9 @@ public partial class MainWindow
     internal static string DeviceCompatibilityNotice() => PartitionInventory.L(
         "所选机型包可能与目标设备不兼容，仍可继续安装。",
         "This device package may be incompatible with the target device. You can continue installing.");
+    internal static string DeviceOptionsDescription() => PartitionInventory.L(
+        "机型适配项目已默认全选，可按需取消。",
+        "All device adaptation items are selected by default. Clear any you do not need.");
 
     private void ClearPackageOptionPreview()
     {
@@ -40,7 +44,7 @@ public partial class MainWindow
 
     private void CreateAdaptationFlow()
     {
-        adaptationChoices = new Grid { Name = "AdaptationChoices", Margin = new(0, 4, 0, 20) };
+        adaptationChoices = new Grid { Name = "AdaptationChoices", Margin = new(0, 0, 0, 16) };
         adaptationDeviceHost = new StackPanel { Name = "AdaptationDeviceHost", Visibility = Visibility.Collapsed };
         deviceOptionPreview = new Border { Name = "DeviceOptionPreview", Style = (Style)FindResource("Card"), Visibility = Visibility.Collapsed };
         adaptationDeviceHost.Children.Add(deviceOptionPreview);
@@ -58,17 +62,18 @@ public partial class MainWindow
         adaptationChoices.Children.Clear();
         var deviceBody = new StackPanel();
         deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("选择机型", "Choose a device"), FontSize = 24,
-            FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 10) });
-        deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("自动识别当前电脑，也可手动选择或导入本地机型包。", "Detect this computer, choose a model, or import a local device package."),
-            FontSize = 16, LineHeight = 26, Foreground = BoilerBrush("#61728A"), TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 16) });
+            FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 4) });
+        deviceBody.Children.Add(new TextBlock { Text = PartitionInventory.L("导入本地机型包，或从目录选择。导入后自动选用。", "Import a local package or choose from the directory. Imported packages are selected automatically."),
+            FontSize = 16, LineHeight = 26, Foreground = BoilerBrush("#61728A"), TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 12) });
         adaptationDevicePickerHost = new StackPanel(); deviceBody.Children.Add(adaptationDevicePickerHost);
-        inlineDeviceContinue = new Button { Name = "UseInlineDevice", MinHeight = 52, HorizontalContentAlignment = HorizontalAlignment.Center,
-            Content = new TextBlock { Text = PartitionInventory.L("使用所选机型包", "Use selected device package"), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center },
-            Background = BoilerBrush("#2968D9"), Foreground = System.Windows.Media.Brushes.White, Margin = new(0, 16, 0, 0) };
+        inlineDeviceContinue = new Button { Name = "UseInlineDevice", MinHeight = 52,
+            HorizontalContentAlignment = HorizontalAlignment.Center, Background = BoilerBrush("#2968D9"),
+            Foreground = System.Windows.Media.Brushes.White, Margin = new(0, 12, 0, 0) };
         inlineDeviceContinue.Click += async (_, _) =>
         {
-            if (deviceActionBusy || operation != null || DownloadsBusy) return;
-            if (deviceList?.SelectedItem is not ComboBoxItem { Tag: JsonElement }) return;
+            if (operation != null || DownloadsBusy || deviceActionBusy) return;
+            if (selectedDevicePackage != null && !HasPendingDevicePreview) { ContinueAfterDeviceSelection(); return; }
+            if (!CanUseChosenDevice) return;
             if (installMode == "vanilla") PromoteDeviceMode();
             await DeviceAction(SelectChosenDeviceAsync);
         };
@@ -76,11 +81,12 @@ public partial class MainWindow
         inlineDeviceStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 8, 0, 0), Visibility = Visibility.Collapsed };
         deviceBody.Children.Add(inlineDeviceStatus);
         var device = new Border { Name = "ChooseDeviceInstallation", Child = deviceBody, Background = System.Windows.Media.Brushes.White,
-            BorderBrush = BoilerBrush("#DFE6F0"), BorderThickness = new(1), CornerRadius = new(12), Padding = new(24) };
+            BorderBrush = BoilerBrush("#DFE6F0"), BorderThickness = new(1), CornerRadius = new(12), Padding = new(20) };
         var generic = CreateBoilerEntry("generic", PartitionInventory.L("通用安装", "Generic installation"),
             PartitionInventory.L("不加载机型脚本，按需选择无线固件和通用组件。", "Choose optional wireless firmware and common components without a device script."),
             PartitionInventory.L("通用安装", "Use generic installation"), "entry-vanilla", ChooseGenericInstallation);
         generic.Name = "ChooseGenericInstallation";
+        genericInstallationChoice = generic;
         adaptationChoices.Children.Add(device); adaptationChoices.Children.Add(generic);
         PlaceDeviceQuickPicker(adaptationScreen == AdaptationScreen.Choice);
         RefreshInlineDeviceChoice();
@@ -108,18 +114,17 @@ public partial class MainWindow
     private void PlaceDeviceQuickPicker(bool inline)
     {
         if (deviceQuickPicker == null || devicePanel == null || adaptationDevicePickerHost == null) return;
-        // Keep the action next to the model choice, ahead of potentially long guide details.
         if (inlineDeviceContinue != null && !ReferenceEquals(inlineDeviceContinue.Parent, deviceQuickPicker))
         {
             if (inlineDeviceContinue.Parent is Panel actionParent) actionParent.Children.Remove(inlineDeviceContinue);
             deviceQuickPicker.Children.Insert(Math.Min(2, deviceQuickPicker.Children.Count), inlineDeviceContinue);
         }
+        if (inlineDeviceContinue != null) inlineDeviceContinue.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
         if (inlineDeviceStatus != null && !ReferenceEquals(inlineDeviceStatus.Parent, deviceQuickPicker))
         {
             if (inlineDeviceStatus.Parent is Panel statusParent) statusParent.Children.Remove(inlineDeviceStatus);
             deviceQuickPicker.Children.Insert(Math.Min(3, deviceQuickPicker.Children.Count), inlineDeviceStatus);
         }
-        if (inlineDeviceContinue != null) inlineDeviceContinue.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
         if (inlineDeviceStatus != null && !inline) inlineDeviceStatus.Visibility = Visibility.Collapsed;
         var destination = inline ? adaptationDevicePickerHost : devicePanel;
         if (ReferenceEquals(deviceQuickPicker.Parent, destination)) return;
@@ -129,10 +134,24 @@ public partial class MainWindow
 
     private void RefreshInlineDeviceChoice()
     {
-        if (inlineDeviceContinue == null) return;
-        inlineDeviceContinue.IsEnabled = deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement }
-            && CanUseChosenDevice && !deviceActionBusy && operation == null && !DownloadsBusy;
-        if (inlineDeviceContinue.Content is TextBlock label) label.Text = ChosenDeviceActionLabel;
+        var canContinue = (selectedDevicePackage != null && !HasPendingDevicePreview || CanUseChosenDevice)
+            && operation == null && !DownloadsBusy && !deviceActionBusy && !inputInspectionBusy && !inputAssociationBusy;
+        if (inlineDeviceContinue != null)
+        {
+            inlineDeviceContinue.IsEnabled = canContinue;
+            inlineDeviceContinue.Content = selectedDevicePackage != null && !HasPendingDevicePreview
+                ? PartitionInventory.L("继续：系统来源", "Continue: system source") : ChosenDeviceActionLabel;
+        }
+        if (step == AdaptationStep) NextButton.IsEnabled = canContinue;
+        if (genericInstallationChoice != null)
+        {
+            var selected = adaptationBranch == "generic";
+            genericInstallationChoice.BorderBrush = BoilerBrush(selected ? "#2968D9" : "#DFE6F0");
+            if (genericInstallationChoice.Content is Grid container && container.Children[0] is Grid full
+                && full.Children.OfType<Border>().LastOrDefault()?.Child is TextBlock action)
+                action.Text = selected ? PartitionInventory.L("已选择 · 继续通用安装", "Selected · continue generic installation")
+                    : PartitionInventory.L("通用安装", "Use generic installation");
+        }
         if (signedDeviceUse != null)
         {
             signedDeviceUse.IsEnabled = CanUseChosenDevice;
@@ -141,7 +160,9 @@ public partial class MainWindow
         if (inlineDeviceStatus != null)
         {
             inlineDeviceStatus.Text = deviceActionBusy ? PartitionInventory.L("正在准备机型包…", "Preparing the device package…")
-                : deviceActionError ?? (deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement } ? ChosenDeviceNotice : "");
+                : deviceActionError ?? (selectedDevicePackage != null && displayedDeviceMetadata is JsonElement selected
+                    ? PartitionInventory.L("当前机型包：", "Current device package: ") + PreviewText(selected, "name", selected.GetProperty("id").GetString()!)
+                    : deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement } ? ChosenDeviceNotice : "");
             inlineDeviceStatus.Visibility = adaptationScreen != AdaptationScreen.Choice || string.IsNullOrEmpty(inlineDeviceStatus.Text) ? Visibility.Collapsed : Visibility.Visible;
         }
     }
@@ -149,14 +170,23 @@ public partial class MainWindow
     private void ChooseGenericInstallation()
     {
         if (operation != null || DownloadsBusy || deviceActionBusy) return;
+        if (adaptationBranch == "generic" && selectedDevicePackage == null && !HasPendingDevicePreview)
+        {
+            ClearModelGuide();
+            displayedDeviceMetadata = null;
+            updatingDeviceList = true;
+            try { deviceList!.SelectedIndex = 0; }
+            finally { updatingDeviceList = false; }
+            if (signedDeviceUse != null) signedDeviceUse.Visibility = Visibility.Collapsed;
+            ShowStep(1);
+            return;
+        }
         adaptationBranch = "generic";
         ClearModelGuide();
         ClearPackageOptionPreview();
         pendingDeviceDirectory = null;
         if (deviceOptionPreview != null) deviceOptionPreview.Visibility = Visibility.Collapsed;
         ClearDeviceSelection();
-        if (developerPackages != null) { developerPackages.IsChecked = false; developerPackages.Visibility = Visibility.Collapsed; }
-        if (externalDeviceUse != null) externalDeviceUse.Visibility = Visibility.Collapsed;
         if (signedDeviceUse != null) signedDeviceUse.Visibility = Visibility.Collapsed;
         if (deviceList != null) { updatingDeviceList = true; deviceList.SelectedIndex = 0; updatingDeviceList = false; }
         adaptationScreen = AdaptationScreen.Choice;
@@ -216,7 +246,7 @@ public partial class MainWindow
         body.Children.Add(new TextBlock { Text = previewDeviceName ?? "", TextWrapping = TextWrapping.Wrap, Margin = new(0, 6, 0, 8) });
         body.Children.Add(new TextBlock { Name = "DeviceCompatibilityNotice", Text = DeviceCompatibilityNotice(), TextWrapping = TextWrapping.Wrap,
             Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 8) });
-        body.Children.Add(new TextBlock { Text = PartitionInventory.L("确认来源并选用此包后，可调整安装项目。", "Confirm the source and use this package to edit its installation options."), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 8) });
+        body.Children.Add(new TextBlock { Text = PartitionInventory.L("校验通过后自动加入配置，可在安装选项中调整。", "After validation, this package is added automatically. Adjust it in Installation options."), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 8) });
         var count = 0;
         if (previewDeviceMetadata is JsonElement package && package.ValueKind == JsonValueKind.Object
             && package.TryGetProperty("components", out var components) && components.ValueKind == JsonValueKind.Array)
@@ -225,7 +255,7 @@ public partial class MainWindow
                 if (component.ValueKind != JsonValueKind.Object || !component.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String) continue;
                 var label = PreviewText(component, "name", id.GetString()!);
                 body.Children.Add(new CheckBox { Content = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap },
-                    IsChecked = component.TryGetProperty("default", out var enabled) && enabled.ValueKind == JsonValueKind.True, IsEnabled = false, MinHeight = 48 });
+                    IsChecked = true, IsEnabled = false, MinHeight = 48 });
                 count++;
             }
         if (count == 0) body.Children.Add(new TextBlock { Text = PartitionInventory.L("机型脚本适配；完整校验并选用后显示安装项目。", "Device script adaptation. Installation items appear after complete validation and selection."), TextWrapping = TextWrapping.Wrap });
@@ -284,22 +314,23 @@ public partial class MainWindow
         if (options)
         {
             PageTitle.Text = adaptationBranch == "device" ? PartitionInventory.L("机型安装选项", "Device installation options") : PartitionInventory.L("通用安装选项", "Generic installation options");
-            PageSubtitle.Text = adaptationBranch == "device" ? DeviceCompatibilityNotice() : PartitionInventory.L("选择通用组件、无线固件及核显候选补全。", "Choose common components, wireless firmware and optional graphics candidates.");
+            PageSubtitle.Text = adaptationBranch == "device" ? DeviceOptionsDescription() : PartitionInventory.L("选择通用组件、无线固件及核显候选补全。", "Choose common components, wireless firmware and optional graphics candidates.");
         }
         UpdateAdaptationLayout();
         if (!adaptation) return;
-        AdaptationBackButton.Content = PartitionInventory.L("← 返回上级菜单", "← Back to parent menu");
+        AdaptationBackButton.Content = adaptationScreen == AdaptationScreen.Choice
+            ? PartitionInventory.L("← 返回安装方式", "← Back to installation modes")
+            : PartitionInventory.L("← 返回适配方式", "← Back to device support");
         BackButton.Visibility = Visibility.Collapsed;
         PageFooter.Visibility = adaptationScreen == AdaptationScreen.Choice ? Visibility.Collapsed : Visibility.Visible;
         ModeBannerCard.Visibility = Visibility.Collapsed;
         PageTitle.Text = adaptationScreen == AdaptationScreen.Choice ? PartitionInventory.L("选择设备适配方式", "Choose device support") : PartitionInventory.L("选择机型", "Choose a device");
         PageSubtitle.Text = adaptationScreen == AdaptationScreen.Choice ? PartitionInventory.L("选择机型适配，或按通用配置安装。", "Choose a device package or use generic installation.") : PartitionInventory.L("选择目录中的机型，也可以拖入自己的机型包。", "Choose a device from the directory or drop your own package.");
         NextButton.Visibility = adaptationScreen == AdaptationScreen.Choice ? Visibility.Collapsed : Visibility.Visible;
-        if (adaptationScreen == AdaptationScreen.Device)
-        {
-            NextButton.Content = PartitionInventory.L("下一步：系统来源", "Next: system source");
-            NextButton.IsEnabled = selectedDevicePackage != null && !HasPendingDevicePreview && operation == null && !DownloadsBusy && !deviceActionBusy;
-        }
+        NextButton.Content = PartitionInventory.L("下一步：系统来源", "Next: system source");
+        NextButton.IsEnabled = (selectedDevicePackage != null && !HasPendingDevicePreview
+            || adaptationScreen == AdaptationScreen.Choice && CanUseChosenDevice)
+            && operation == null && !DownloadsBusy && !deviceActionBusy && !inputInspectionBusy && !inputAssociationBusy;
         UpdateAdaptationLayout();
     }
 
@@ -307,10 +338,10 @@ public partial class MainWindow
     {
         if (adaptationChoices == null) return;
         var wide = (WindowRoot.ActualWidth > 0 ? WindowRoot.ActualWidth : Width) >= 960;
-        var standalone = step == AdaptationStep;
-        SidebarPanel.Visibility = standalone ? Visibility.Collapsed : Visibility.Visible;
-        SidebarColumn.Width = new GridLength(standalone ? 0 : wide ? 216 : 152);
-        AdaptationBackButton.Visibility = standalone ? Visibility.Visible : Visibility.Collapsed;
+        var firstLayer = step == AdaptationStep;
+        SidebarPanel.Visibility = firstLayer ? Visibility.Collapsed : Visibility.Visible;
+        SidebarColumn.Width = new GridLength(firstLayer ? 0 : wide ? 216 : 152);
+        AdaptationBackButton.Visibility = firstLayer ? Visibility.Visible : Visibility.Collapsed;
         AdaptationBackButton.IsEnabled = operation == null && !DownloadsBusy && !deviceActionBusy;
         var columns = wide ? 2 : 1;
         if (adaptationChoices.ColumnDefinitions.Count != columns)
@@ -323,12 +354,16 @@ public partial class MainWindow
         {
             Grid.SetColumn(card, wide ? index : 0); Grid.SetRow(card, wide ? 0 : index);
             card.MinHeight = wide ? 392 : index == 0 ? 0 : 112;
-            card.Margin = wide ? new Thickness(0, 0, index == 0 ? 20 : 0, 0) : new(0, 0, 0, index == 0 ? 16 : 0);
+            card.Margin = wide ? new Thickness(index == 0 ? 0 : 10, 0, index == 0 ? 10 : 0, 0) : new(0, 0, 0, index == 0 ? 16 : 0);
             if (card is Border border) border.Padding = new(wide ? 24 : 16);
             if (card is Button button)
             {
                 button.Padding = new(wide ? 24 : 12);
-                if (button.Content is Grid adaptive) { adaptive.Children[0].Visibility = wide ? Visibility.Visible : Visibility.Collapsed; adaptive.Children[1].Visibility = wide ? Visibility.Collapsed : Visibility.Visible; }
+                if (button.Content is Grid adaptive)
+                {
+                    adaptive.Children[0].Visibility = wide ? Visibility.Visible : Visibility.Collapsed;
+                    adaptive.Children[1].Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
+                }
             }
         }
     }

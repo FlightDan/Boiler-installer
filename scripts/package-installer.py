@@ -111,6 +111,21 @@ def local_model_package_files(root, *, local_test=False):
     return files
 
 
+def model_catalog_package_files(root, source_files=None):
+    """Freeze the entire checked display snapshot inside the public whitelist."""
+    from protocol.model_catalog import read_lock, snapshot_records
+    root=Path(root).resolve()
+    if source_files is None:
+        policy=json.loads((root/'scripts/source-files.json').read_bytes())
+        source_files=set(policy.get('files',[]))
+    snapshot_records(root)
+    lock=read_lock(root)
+    names=['components/model-catalog/lock.json',*('components/model-catalog/snapshot/'+entry['path'] for entry in lock['files'])]
+    if not set(names)<=set(source_files):
+        raise ValueError('Pinned model snapshot is outside the reviewed source whitelist')
+    return {name:dict(path=name,size=confined(root,name).stat().st_size,sha256=digest(confined(root,name))) for name in names}
+
+
 def package(root, output, source_commit, configuration='Release', *, local_test=False):
     if len(source_commit)!=40 or any(c not in '0123456789abcdef' for c in source_commit):raise ValueError('Exact public source commit required')
     root=Path(root).resolve();output=Path(output).resolve()
@@ -128,6 +143,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
         committed[name]={'size':len(content),'sha256':hashlib.sha256(content).hexdigest()}
         if committed[name]['sha256']!=digest(confined(root,name)):
             raise ValueError('Working source differs from public source commit: '+name)
+    catalog_files=model_catalog_package_files(root,set(committed))
     records={}
     def add(name, expected=None):
         relative_path(name);p=confined(root,name)
@@ -140,6 +156,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     for name in whitelist['files']:
         if name.startswith(('guest/','components/','maintenance/','protocol/','schemas/','scripts/','licenses/','docs/')) or name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
             add(name,committed[name])
+    for name,entry in catalog_files.items(): add(name,entry)
     lock=json.loads((root/'scripts/runtime-dependencies.lock.json').read_text(encoding='utf-8'))
     groups=set(lock['profiles']['runtime'])
     for archive in lock['archives']:

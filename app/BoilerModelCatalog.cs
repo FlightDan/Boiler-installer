@@ -27,14 +27,14 @@ public partial class MainWindow
     private string ChosenDeviceActionLabel => PartitionInventory.L("使用所选机型包", "Use selected device package");
     private string ChosenDeviceNotice => ChosenModelGuide is JsonElement model
         ? HasBundledModel(model.GetProperty("id").GetString()!)
-            ? ""
+            ? DeviceCompatibilityNotice()
             : PartitionInventory.L("此机型只有适配指南，暂无随包适配。可查看建议或导入本地机型包。", "This model has guides only and no bundled adaptation. View recommendations or import a local device package.")
         : DeviceCompatibilityNotice();
 
     private void CreateModelCatalogDetails(StackPanel picker)
     {
         modelCatalogStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 6, 0, 4) };
-        picker.Children.Add(modelCatalogStatus);
+        deviceDirectoryBody!.Children.Add(modelCatalogStatus);
         modelCatalogDetails = new StackPanel { Name = "ModelCatalogDetails", Visibility = Visibility.Collapsed, Margin = new(0, 8, 0, 0) };
         picker.Children.Add(modelCatalogDetails);
         RefreshModelCatalogStatus();
@@ -74,7 +74,10 @@ public partial class MainWindow
         if (modelCatalogStatus == null) return;
         modelCatalogStatus.ToolTip = modelCatalogError;
         if (modelCatalogError != null)
+        {
+            deviceDirectoryDetails!.IsExpanded = true;
             modelCatalogStatus.Text = PartitionInventory.L("适配清单读取失败。请重新读取目录，或导入本地机型包。", "Could not load adaptation guides. Retry the directory or import a local device package.");
+        }
         else if (modelCatalog is JsonElement catalog)
         {
             var offline = catalog.TryGetProperty("offline", out var value) && value.GetBoolean();

@@ -1,0 +1,12 @@
+[
+  {
+    "path": "adaptations/brands/onexplayer/oxp3/manifest.json",
+    "size": 12883,
+    "sha256": "20b754dcb806091f6b316e08b61573cbec8698250efd093fcb7148f62af1d585"
+  },
+  {
+    "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
+    "size": 12916,
+    "sha256": "91b2c8ea86cd69a5e3f768d85588b329d05a81df3ddcde785c16dd929f96342a"
+  }
+]

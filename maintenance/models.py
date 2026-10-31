@@ -121,8 +121,8 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
         raise MaintenanceError('Unknown model identity')
     view = dict(model=model, capabilities=[], current=None, executable=False,
                 reasons=[], source=data['source'], offline=data['offline'], scope=SCOPE)
-    if identity == 'device:x2-mini':
-        view['reasons'] = ['X2 Mini currently has a source guide but no executable model package.']
+    if trust_local_test is not True:
+        view['reasons'] = ['Select and explicitly trust a model package to inspect executable maintenance.']
         return view
     engine = Engine(root, state_dir, read_only=True)
     item = _package(identity, engine, runtime_root, trust_local_test=trust_local_test)

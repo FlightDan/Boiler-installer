@@ -61,7 +61,6 @@ public partial class MainWindow
     private Button? inputDropButton;
     private TextBlock? inputAssociationHeading, inputAssociationNote, inputAssociationStatus;
     private StackPanel? inputRowsHost;
-    private CheckBox? inputDeviceTrust;
     private Button? inputApplyButton, inputClearButton, inputCancelButton, inputFolderButton;
     private readonly List<InputAssignment> inputAssignments = new();
     private readonly Queue<InputAssignment> inputQueue = new();
@@ -70,7 +69,6 @@ public partial class MainWindow
     private bool inputInspectionBusy, inputAssociationBusy;
     private bool inputDragHighlighted;
     private bool inputAssociationApplied;
-    private string? trustedInputDevicePath;
     internal Func<CancellationToken, Task>? InputPreparationGateForChecks { get; set; }
 
     private bool CanReceiveInputs => operation == null && !inputAssociationBusy && !sourceInspectionBusy && !deviceActionBusy
@@ -90,14 +88,11 @@ public partial class MainWindow
         inputFolderButton = new Button { MinHeight = 48 };
         inputFolderButton.Click += async (_, _) => { var picker = new OpenFolderDialog(); if (picker.ShowDialog(this) == true) await ReceiveInputFilesAsync([picker.FolderName]); };
         inputClearButton = new Button { MinHeight = 48 };
-        inputClearButton.Click += (_, _) => { if (inputInspectionBusy || inputAssociationBusy) return; inputAssignments.Clear(); inputQueue.Clear(); inputAssociationApplied = false; inputDeviceTrust!.IsChecked = false; RenderInputAssignments(); };
+        inputClearButton.Click += (_, _) => { if (inputInspectionBusy || inputAssociationBusy) return; inputAssignments.Clear(); inputQueue.Clear(); inputAssociationApplied = false; RenderInputAssignments(); };
         inputCancelButton = new Button { MinHeight = 48, Visibility = Visibility.Collapsed };
         inputCancelButton.Click += (_, _) => inputCancellation?.Cancel();
         actions.Children.Add(inputFolderButton); actions.Children.Add(inputClearButton); actions.Children.Add(inputCancelButton);
         inputRowsHost = new StackPanel { Margin = new(0, 8, 0, 0) };
-        inputDeviceTrust = new CheckBox { Name = "InputDeviceTrust", MinHeight = 48, Visibility = Visibility.Collapsed };
-        inputDeviceTrust.Checked += (_, _) => { trustedInputDevicePath = CurrentInputPlan.Files.GetValueOrDefault(InputRole.Device)?.Path; UpdateInputAssociationPlan(); };
-        inputDeviceTrust.Unchecked += (_, _) => { trustedInputDevicePath = null; UpdateInputAssociationPlan(); }; body.Children.Add(inputDeviceTrust);
         inputAssociationStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new(0, 8, 0, 8), Foreground = BoilerBrush("#485B73") };
         body.Children.Add(inputAssociationStatus);
         inputApplyButton = new Button { Name = "AssociateInputs", MinHeight = 48, HorizontalAlignment = HorizontalAlignment.Left, Background = BoilerBrush("#2968D9"), Foreground = Brushes.White, IsEnabled = false };
@@ -160,10 +155,11 @@ public partial class MainWindow
     private async Task ReceiveInputFilesAsync(IReadOnlyList<string> paths)
     {
         if (!CanReceiveInputs) return;
+        var generation = inputSessionGeneration;
         ShowInputSourcePage();
         if (paths.Count is 0 or > 32 || paths.Sum(path => (long)path.Length) > 131072)
         { inputAssociationStatus!.Text = PartitionInventory.L("每次最多添加 32 个文件或文件夹。", "Add up to 32 files or folders at a time."); return; }
-        if (inputAssociationApplied) { inputAssignments.Clear(); inputAssociationApplied = false; inputDeviceTrust!.IsChecked = false; }
+        if (inputAssociationApplied) { inputAssignments.Clear(); inputAssociationApplied = false; }
         foreach (var path in paths)
         {
             string key;
@@ -179,6 +175,15 @@ public partial class MainWindow
             inputInspectionTask = InspectQueuedInputsAsync(inputCancellation.Token);
         }
         await inputInspectionTask;
+        if (generation != inputSessionGeneration) return;
+        var plan = CurrentInputPlan;
+        if (!inputCancellation!.IsCancellationRequested && !inputAssociationBusy && plan.Conflict == null && plan.Files.Count > 0
+            && inputAssignments.All(row => row.Input != null))
+        {
+            preserveSourceUpgradeSkip = skipUpgradeChosen && Upgrade310.IsChecked != true;
+            try { await ApplyInputAssociationsAsync(); }
+            finally { preserveSourceUpgradeSkip = false; }
+        }
     }
     private async Task InspectQueuedInputsAsync(CancellationToken token)
     {
@@ -190,7 +195,9 @@ public partial class MainWindow
                 token.ThrowIfCancellationRequested();
                 if (!inputAssignments.Contains(row)) continue;
                 row.Input = await Task.Run(() => InputDiscovery.InspectAsync(row.Path, token), token);
-                row.Role = InputAssociations.DefaultRole(row.Input.Kind); RenderInputAssignments();
+                row.Role = InputAssociations.DefaultRole(row.Input.Kind);
+                if (row.Role == InputRole.Device) { deviceChoiceChanged = true; deviceDetectionState = "manual"; }
+                RenderInputAssignments();
             }
         }
         catch (OperationCanceledException)
@@ -227,7 +234,7 @@ public partial class MainWindow
             InputKind.UpgradeRoot => PartitionInventory.L("已选择 rootfs.img，版本将在安装准备时识别。", "rootfs.img selected; its version will be identified during installation preparation."),
             InputKind.UpgradeBundle => PartitionInventory.L("已识别 SteamOS 升级包；继续时完整检查。", "SteamOS update bundle identified; complete inspection when continuing."),
             InputKind.DevicePackage => PartitionInventory.L("已识别机型包，关联时校验内容。", "Device package identified; verify its contents when associating."),
-            InputKind.DeviceScript => PartitionInventory.L("已识别适配脚本，需要本次信任。", "Device script identified; session trust is required."), _ => input.Detail
+            InputKind.DeviceScript => PartitionInventory.L("已识别适配脚本，导入时校验内容。", "Device script identified; verify its contents during import."), _ => input.Detail
         };
     }
     private RaucManifestInfo? PendingRaucManifest
@@ -273,16 +280,12 @@ public partial class MainWindow
         if (inputApplyButton == null) return;
         var plan = CurrentInputPlan; var busy = inputInspectionBusy || inputAssociationBusy;
         SyncInputDevicePreview(plan);
-        if (inputDeviceTrust!.IsChecked == true && !string.Equals(trustedInputDevicePath, plan.Files.GetValueOrDefault(InputRole.Device)?.Path, StringComparison.OrdinalIgnoreCase)) inputDeviceTrust.IsChecked = false;
-        inputDeviceTrust!.Visibility = plan.Files.ContainsKey(InputRole.Device) ? Visibility.Visible : Visibility.Collapsed;
-        inputDeviceTrust.IsEnabled = !busy;
         inputApplyButton.Visibility = inputAssignments.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        inputApplyButton.IsEnabled = !busy && plan.Files.Count > 0 && plan.Conflict == null && (!plan.Files.ContainsKey(InputRole.Device) || inputDeviceTrust.IsChecked == true) && !inputAssociationApplied;
+        inputApplyButton.IsEnabled = !busy && plan.Files.Count > 0 && plan.Conflict == null && !inputAssociationApplied;
         inputClearButton!.Visibility = inputAssignments.Count > 0 ? Visibility.Visible : Visibility.Collapsed; inputClearButton.IsEnabled = !busy;
         inputRowsHost!.IsEnabled = !inputAssociationBusy;
         inputCancelButton!.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         inputDropButton!.IsEnabled = inputFolderButton!.IsEnabled = !inputAssociationBusy;
-        RefreshSourceInputReview();
         RefreshSourceInputReview();
         if (inputAssociationBusy) return;
         inputAssociationStatus!.Foreground = BoilerBrush(plan.Conflict != null ? "#A34727" : "#485B73");
@@ -318,7 +321,7 @@ public partial class MainWindow
     {
         if (operation != null || DownloadsBusy || inputAssociationApplied) return;
         var plan = CurrentInputPlan;
-        if (plan.Conflict != null || plan.Files.Count == 0 || plan.Files.ContainsKey(InputRole.Device) && inputDeviceTrust!.IsChecked != true) return;
+        if (plan.Conflict != null || plan.Files.Count == 0) return;
         inputAssociationBusy = true; inputCancellation?.Dispose(); inputCancellation = new(); var token = inputCancellation.Token;
         UpdateInputAssociationPlan(); UpdateNavigationState();
         try
@@ -348,9 +351,12 @@ public partial class MainWindow
             if (paths.TryGetValue(InputRole.Upgrade, out var upgrade)) { officialDownloadPanel.AssociateLocalSource(upgrade, plan.Files[InputRole.Upgrade]); if (!preserveSourceUpgradeSkip) Upgrade310.IsChecked = true; }
             if (preparedDevice != null)
             {
-                developerPackages!.IsChecked = true; reviewedDeviceMetadata = null;
+                reviewedDeviceMetadata = null;
+                updatingDeviceList = true;
+                try { deviceList!.SelectedIndex = 0; }
+                finally { updatingDeviceList = false; }
+                ClearModelGuide();
                 CommitDeviceSelection(preparedDevice);
-                developerPackages.Visibility = Visibility.Visible;
             }
             if (paths.ContainsKey(InputRole.Image) || paths.ContainsKey(InputRole.Recovery)) ResetImageInspection();
             if (paths.ContainsKey(InputRole.Upgrade)) ResetOfficialSourceInspection();
@@ -379,14 +385,14 @@ public partial class MainWindow
         inputAssociationNote!.Text = PartitionInventory.L("把相关文件一起拖入窗口，自动识别并填入当前安装配置。", "Drop related files anywhere in this window to identify and associate them with this installation.");
         inputDropButton!.Content = new TextBlock { Text = PartitionInventory.L("拖入 IMG、恢复镜像、SteamOS 升级包或机型包，也可点击多选", "Drop an IMG, recovery image, SteamOS update bundle or device package, or click to select files"), TextWrapping = TextWrapping.Wrap };
         inputFolderButton!.Content = PartitionInventory.L("添加机型包文件夹", "Add a device package folder"); inputClearButton!.Content = PartitionInventory.L("清空列表", "Clear list"); inputCancelButton!.Content = PartitionInventory.L("取消", "Cancel");
-        inputDeviceTrust!.Content = new TextBlock { Text = PartitionInventory.L("本次信任所选外部机型脚本，并关联到当前配置", "Trust the selected external device scripts for this session"), TextWrapping = TextWrapping.Wrap };
         inputApplyButton!.Content = PartitionInventory.L("一键关联当前配置", "Associate with current configuration"); RenderInputAssignments();
     }
     private void ResetInputAssociationSession()
     {
         inputSessionGeneration++; sourceIntakeActive = false;
-        inputAssociationApplied = false; trustedInputDevicePath = null;
-        if (inputDeviceTrust != null) inputDeviceTrust.IsChecked = false;
+        inputAssignments.Clear(); inputQueue.Clear();
+        inputAssociationApplied = false;
+        inputRowsHost?.Children.Clear();
         UpdateInputAssociationPlan();
     }
 }

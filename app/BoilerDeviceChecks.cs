@@ -89,22 +89,17 @@ internal static class BoilerDeviceChecks
                     var script = Path.Combine(directory, "example-device.sh");
                     await File.WriteAllTextAsync(script, "#!/bin/bash\n# boiler-script: 1\n# boiler-name: Device UI example\nexit 0\n", new UTF8Encoding(false));
                     await Import(window, script);
-                    Require(window.CurrentOptions.DevicePackage == null, "import-does-not-select-or-execute");
+                    Require(window.CurrentOptions.DevicePackage != null && Field<int>(window, "step") == 1,
+                        "explicit-import-selects-package-and-opens-source-without-extra-confirmation");
                     var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
                     Require(!options.IsVisible && window.CurrentOptions.Repairs.Length == 0,
                         "device-import-shows-package-preview-instead-of-generic-wireless");
-                    Require(!Field<Button>(window, "externalDeviceUse").IsEnabled, "external-use-requires-session-trust");
-                    Field<CheckBox>(window, "developerPackages").IsChecked = true;
-                    Require(window.CurrentOptions.DevicePackage == null, "trust-alone-does-not-select");
-                    Field<Button>(window, "externalDeviceUse").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    await Wait(window, () => !Field<bool>(window, "deviceActionBusy"));
-                    Require(window.CurrentOptions.DeviceTrust == "developer-session" && window.CurrentOptions.DeviceComponents?.Length == 1, "trusted-import-enters-installation-plan");
+                    Require(window.CurrentOptions.DeviceTrust == "developer-session" && window.CurrentOptions.DeviceComponents?.Length == 1,
+                        "local-import-keeps-local-trust-and-selects-all-components");
                     Require(options.RepairsExpander.Visibility == Visibility.Collapsed && window.CurrentOptions.Repairs.Length == 0
                         && InstallerOptions.WirelessComponents.All(id => options.OptionBoxes[id].IsChecked == false), "selected-device-package-hides-and-clears-wireless-plan");
-                    Field<CheckBox>(window, "developerPackages").IsChecked = false;
-                    Require(window.CurrentOptions.DevicePackage == null, "revoking-trust-clears-plan");
-                    Require(!options.IsVisible && window.CurrentOptions.Repairs.Length == 0,
-                        "revoking-device-trust-returns-to-device-picker-without-wireless");
+                    typeof(MainWindow).GetMethod("ChooseGenericInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+                    Require(window.CurrentOptions.DevicePackage == null, "choosing-generic-clears-local-package");
 
                     // Exercise the actual native Shell message parser and async UI intake.
                     var bytes = Encoding.Unicode.GetBytes(script + "\0\0");
@@ -113,13 +108,14 @@ internal static class BoilerDeviceChecks
                     Marshal.WriteInt32(memory, 0, 20); Marshal.WriteInt32(memory, 16, 1);
                     Marshal.Copy(bytes, 0, IntPtr.Add(memory, 20), bytes.Length); GlobalUnlock(drop);
                     SendMessage(new WindowInteropHelper(window).Handle, 0x233, drop, IntPtr.Zero);
-                    await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
-                    Require(Field<List<InputAssignment>>(window, "inputAssignments").Any(row => row.Input?.Kind == InputKind.DeviceScript) && window.CurrentOptions.DevicePackage == null,
-                        "native-file-drop-inspects-without-granting-trust");
+                    await Wait(window, () => !Field<bool>(window, "inputInspectionBusy") && !Field<bool>(window, "inputAssociationBusy") && window.CurrentOptions.DevicePackage != null);
+                    Require(Field<List<InputAssignment>>(window, "inputAssignments").Any(row => row.Input?.Kind == InputKind.DeviceScript) && window.CurrentOptions.DevicePackage != null && window.CurrentOptions.DeviceTrust == "developer-session",
+                        "native-file-drop-auto-imports-with-local-trust");
                     await Import(window, script);
 
                     // A valid inventory containing .pyc must survive both cache and guest transport.
-                    var imported = Field<string>(window, "pendingDeviceDirectory");
+                    var imported = Path.Combine(directory, "inventory-import");
+                    await BoilerProtocol.RunAsync(["import-device", script, imported, "--developer"], CancellationToken.None);
                     var data = Encoding.UTF8.GetBytes("inventoried bytes; never imported as Python\n" + Path.GetFileName(directory));
                     Directory.CreateDirectory(Path.Combine(imported, "data"));
                     await File.WriteAllBytesAsync(Path.Combine(imported, "data/cache.pyc"), data);
@@ -139,7 +135,7 @@ internal static class BoilerDeviceChecks
                     await BoilerProtocol.RunAsync(["package", guest, "--manifest-sha256", digest], CancellationToken.None);
                     Require(File.Exists(Path.Combine(guest, "data/cache.pyc")), "guest-transport-preserves-inventoried-pyc");
                     await Import(window, Path.Combine(directory, "missing.zip"));
-                    Require(window.CurrentOptions.DevicePackage == null && Field<Button>(window, "externalDeviceUse").Visibility == Visibility.Collapsed, "failed-import-has-no-stale-selection");
+                    Require(window.CurrentOptions.DevicePackage == null && Field<TextBlock>(window, "deviceStatus").Text.Length > 0, "failed-import-has-no-stale-selection");
 
                     var stale = new TaskCompletionSource<JsonElement>();
                     window.DeviceIndexLoaderForChecks = _ => stale.Task;
@@ -157,11 +153,11 @@ internal static class BoilerDeviceChecks
                     window.DeviceIndexLoaderForChecks = _ => delayed.Task;
                     window.BoilerModeForChecks("custom"); await Flush(window);
                     await Import(window, script); await Flush(window);
-                    var pendingLocal = Field<string>(window, "pendingDeviceDirectory");
+                    var pendingLocal = window.CurrentOptions.DevicePackage;
                     delayed.SetResult(IndexResponse()); await Flush(window);
-                    Require(Field<string>(window, "pendingDeviceDirectory") == pendingLocal && Field<Border>(window, "deviceOptionPreview").IsVisible
-                        && Field<CheckBox>(window, "developerPackages").IsVisible && Field<ComboBox>(window, "deviceList").SelectedIndex == 0,
-                        "late-matching-directory-does-not-replace-local-package-preview");
+                    Require(window.CurrentOptions.DevicePackage == pendingLocal && !Field<Border>(window, "deviceOptionPreview").IsVisible
+                        && Field<ComboBox>(window, "deviceList").SelectedIndex == 0,
+                        "late-matching-directory-does-not-replace-local-package-selection");
 
                     var droppedIndex = new TaskCompletionSource<JsonElement>();
                     window.DeviceIndexLoaderForChecks = _ => droppedIndex.Task;
@@ -169,9 +165,17 @@ internal static class BoilerDeviceChecks
                     await (Task)typeof(MainWindow).GetMethod("ReceiveInputFilesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new[] { script }])!;
                     await Flush(window);
                     droppedIndex.SetResult(IndexResponse()); await Flush(window);
-                    Require(Field<Border>(window, "deviceOptionPreview").IsVisible && Field<ComboBox>(window, "deviceList").SelectedIndex == 0
-                        && window.CurrentOptions.DevicePackage == null, "late-matching-directory-does-not-replace-dropped-device-preview");
+                    Require(!Field<Border>(window, "deviceOptionPreview").IsVisible && Field<ComboBox>(window, "deviceList").SelectedIndex == 0
+                        && window.CurrentOptions.DevicePackage != null, "late-matching-directory-does-not-replace-dropped-device-selection");
                 }
+                window.PreviewStep(MainWindow.AdaptationStep);
+                window.DeviceIndexLoaderForChecks = _ => throw new IOException("Directory unavailable fixture");
+                await (Task)typeof(MainWindow).GetMethod("LoadDeviceIndexAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Field<int>(window, "devicePanelGeneration"), CancellationToken.None])!;
+                await Flush(window);
+                Require(Field<Expander>(window, "deviceDirectoryDetails").IsExpanded
+                    && Field<Button>(window, "deviceIndexRetry").IsVisible,
+                    "directory-failure-exposes-retry-without-opening-details-manually-" + language);
                 window.Close(); window = null;
             }
         }

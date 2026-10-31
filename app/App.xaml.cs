@@ -69,6 +69,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "input-association-checks") { log.AppendLine(await InputAssociationChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "input-binding-checks") { log.AppendLine(await InputDiscoveryChecks.RunBindingAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "helper-binding-checks") { log.AppendLine(await HelperBindingChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "feedback-checks") { log.AppendLine(await FeedbackReportChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-image-checks") { log.AppendLine(await BoilerImageBuildChecks.RunAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-prepared-checks") { log.AppendLine(await BoilerImageBuildChecks.RecheckAsync(e.Args[2], e.Args[3])); }

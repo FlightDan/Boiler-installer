@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "kind": "LockedSingleFirmwareSources",
+  "resource": {
+    "schema_version": 1,
+    "kind": "BoilerResource",
+    "id": "resource:intel-be201-firmware",
+    "version": "0.1.0+wifi-single-source.20261031",
+    "status": "fixed-handler-project-single-source-hardware-pending",
+    "dependencies": [],
+    "brand_scope": "shared-by-actual-interface",
+    "model_name_policy": "advisory-only",
+    "hardware_requires": {
+      "wifi_driver": [
+        "iwlwifi"
+      ],
+      "wifi_firmware_prefix": [
+        "iwlwifi-sc-a0-fm-c0"
+      ],
+      "bluetooth_firmware_prefix": [
+        "ibt-00a0-0291"
+      ]
+    },
+    "compatibility": {
+      "architectures": [
+        "x86_64"
+      ],
+      "os_ids": [
+        "steamos"
+      ],
+      "os_versions": [
+        "3.10"
+      ],
+      "kernels": [
+        "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+      ]
+    },
+    "payload": {
+      "files": [
+        {
+          "path": "devices/network/intel/be201/files/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+          "size": 2305636,
+          "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2"
+        },
+        {
+          "path": "devices/network/intel/be201/files/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+          "size": 2311660,
+          "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec"
+        },
+        {
+          "path": "devices/network/intel/be201/files/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+          "size": 2326720,
+          "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c"
+        },
+        {
+          "path": "devices/network/intel/be201/files/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+          "size": 2226844,
+          "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd"
+        },
+        {
+          "path": "devices/network/intel/be201/files/004-ibt-00a0-0291-iml.sfi",
+          "size": 62892,
+          "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903"
+        },
+        {
+          "path": "devices/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+          "size": 4,
+          "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+        },
+        {
+          "path": "devices/network/intel/be201/files/006-ibt-00a0-0291-pci.sfi",
+          "size": 997224,
+          "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd"
+        },
+        {
+          "path": "devices/network/intel/be201/files/007-ibt-00a0-0291-usb.ddc",
+          "size": 4,
+          "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+        },
+        {
+          "path": "devices/network/intel/be201/files/008-ibt-00a0-0291-usb.sfi",
+          "size": 991052,
+          "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778"
+        }
+      ]
+    },
+    "install": {
+      "kind": "intel-be201-firmware-v1",
+      "files": [
+        {
+          "source": "devices/network/intel/be201/files/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+          "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c101.ucode",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+          "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c102.ucode",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+          "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c103.ucode",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+          "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c106.ucode",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": false
+        },
+        {
+          "source": "devices/network/intel/be201/files/004-ibt-00a0-0291-iml.sfi",
+          "target": "usr/lib/firmware/intel/ibt-00a0-0291-iml.sfi",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+          "target": "usr/lib/firmware/intel/ibt-00a0-0291-pci.ddc",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/006-ibt-00a0-0291-pci.sfi",
+          "target": "usr/lib/firmware/intel/ibt-00a0-0291-pci.sfi",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/007-ibt-00a0-0291-usb.ddc",
+          "target": "usr/lib/firmware/intel/ibt-00a0-0291-usb.ddc",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        },
+        {
+          "source": "devices/network/intel/be201/files/008-ibt-00a0-0291-usb.sfi",
+          "target": "usr/lib/firmware/intel/ibt-00a0-0291-usb.sfi",
+          "mode": 420,
+          "scope": "root-slots",
+          "missing_only": true
+        }
+      ]
+    },
+    "verify": {
+      "kind": "firmware-preserved-sha256-v1"
+    },
+    "restore": {
+      "kind": "transaction-backup-v1"
+    },
+    "license_files": [
+      "devices/network/intel/be201/sources/000-LICENCE.ibt_firmware",
+      "devices/network/intel/be201/sources/001-LICENCE.iwlwifi_firmware"
+    ],
+    "provenance": {
+      "source_lock": "provenance/wifi-single-source-lock.json",
+      "files": [
+        {
+          "payload": "devices/network/intel/be201/files/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+          "member": "cache/integration/wifi/000.bin",
+          "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+          "member": "cache/integration/wifi/001.bin",
+          "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+          "member": "cache/integration/wifi/002.bin",
+          "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+          "member": "cache/integration/wifi/003.bin",
+          "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/004-ibt-00a0-0291-iml.sfi",
+          "member": "cache/integration/wifi/004.bin",
+          "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+          "member": "cache/integration/wifi/005.bin",
+          "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/006-ibt-00a0-0291-pci.sfi",
+          "member": "cache/integration/wifi/006.bin",
+          "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/007-ibt-00a0-0291-usb.ddc",
+          "member": "cache/integration/wifi/007.bin",
+          "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+          "baseline_matches": [],
+          "module_info": []
+        },
+        {
+          "payload": "devices/network/intel/be201/files/008-ibt-00a0-0291-usb.sfi",
+          "member": "cache/integration/wifi/008.bin",
+          "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778",
+          "baseline_matches": [],
+          "module_info": []
+        }
+      ],
+      "build_input_kind": "project-relative-locked-single-files"
+    },
+    "acceptance": {
+      "source_bytes_verified": true,
+      "synthetic_lifecycle_only": true,
+      "hardware_verified": false,
+      "boot_recovery_verified": false,
+      "production_handler_registered": false,
+      "fixed_handler_registered": true
+    },
+    "limitations": [
+      "Eight missing-only targets preserve existing plain/.zst/.xz files and leaf symlinks, including dangling links.",
+      "c106 is the single replacement target; an existing compressed/linked c106 alias blocks this candidate for explicit inspection.",
+      "Trusted interface probes, A/B production coordination, firmware boot/load and radio tests remain pending.",
+      "Fixed handler file lifecycle is implemented; physical facts transport, firmware load, Wi-Fi/Bluetooth and boot/recovery acceptance are still required."
+    ]
+  },
+  "files": [
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "output": "devices/network/intel/be201/files/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "size": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2",
+      "public_member": "cache/integration/wifi/000.bin",
+      "crc32": "2ca922b8",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "output": "devices/network/intel/be201/files/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "size": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec",
+      "public_member": "cache/integration/wifi/001.bin",
+      "crc32": "b848d000",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "output": "devices/network/intel/be201/files/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "size": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c",
+      "public_member": "cache/integration/wifi/002.bin",
+      "crc32": "cb144579",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "output": "devices/network/intel/be201/files/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "size": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd",
+      "public_member": "cache/integration/wifi/003.bin",
+      "crc32": "7ea6b98a",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/004-ibt-00a0-0291-iml.sfi",
+      "output": "devices/network/intel/be201/files/004-ibt-00a0-0291-iml.sfi",
+      "size": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903",
+      "public_member": "cache/integration/wifi/004.bin",
+      "crc32": "97f504d9",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-iml.sfi",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/005-ibt-00a0-0291-pci.ddc",
+      "output": "devices/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+      "public_member": "cache/integration/wifi/005.bin",
+      "crc32": "0fd8cebd",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.ddc",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/006-ibt-00a0-0291-pci.sfi",
+      "output": "devices/network/intel/be201/files/006-ibt-00a0-0291-pci.sfi",
+      "size": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd",
+      "public_member": "cache/integration/wifi/006.bin",
+      "crc32": "f5492ae3",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.sfi",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/007-ibt-00a0-0291-usb.ddc",
+      "output": "devices/network/intel/be201/files/007-ibt-00a0-0291-usb.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+      "public_member": "cache/integration/wifi/007.bin",
+      "crc32": "0fd8cebd",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.ddc",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/inputs/008-ibt-00a0-0291-usb.sfi",
+      "output": "devices/network/intel/be201/files/008-ibt-00a0-0291-usb.sfi",
+      "size": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778",
+      "public_member": "cache/integration/wifi/008.bin",
+      "crc32": "36374a13",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-usb.sfi",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/000-LICENCE.ibt_firmware",
+      "output": "devices/network/intel/be201/sources/000-LICENCE.ibt_firmware",
+      "size": 2040,
+      "sha256": "5181b0b51efc79d5acb2c9bb92042878fdbad97a92114d4ab5e32e2b5b52fce4",
+      "public_member": "cache/integration/sources/be201/licenses/LICENCE.ibt_firmware",
+      "crc32": "1504fe3a",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.ibt_firmware",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/001-LICENCE.iwlwifi_firmware",
+      "output": "devices/network/intel/be201/sources/001-LICENCE.iwlwifi_firmware",
+      "size": 2046,
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5",
+      "public_member": "cache/integration/sources/be201/licenses/LICENCE.iwlwifi_firmware",
+      "crc32": "e9c556c5",
+      "upstream_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.iwlwifi_firmware",
+      "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+    },
+    {
+      "path": "adaptations/common/resource-inputs/intel-be201/sources/002-provenance.json",
+      "output": "devices/network/intel/be201/sources/002-provenance.json",
+      "size": 4512,
+      "sha256": "e820cc0d41fdb7ddbd73a8c8432ecc5f70b44e4a0148b26bc5a1e486f68b47d8",
+      "public_member": "cache/integration/sources/be201/provenance.json",
+      "crc32": "01dfd934"
+    }
+  ],
+  "origin": {
+    "upstream_revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+    "public_archive": {
+      "url": "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/v1.0.6%2Binstaller.20261022.220437/oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+      "size": 555684389,
+      "sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4"
+    },
+    "note": "Historical acquisition evidence only; normal builds read these twelve project-local single files, never the archive or model cache."
+  }
+}

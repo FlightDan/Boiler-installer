@@ -72,9 +72,10 @@ internal static class BoilerModelCatalogChecks
                 Require(details.IsVisible && recommendations.Children.OfType<TextBlock>().Any(block => block.Text.Contains("PL4"))
                     && !recommendations.Children.OfType<CheckBox>().Any(), language + "-pending-guide-items-are-read-only");
                 list.SelectedIndex = 1; await Flush(window);
-                Require(use.IsEnabled && ((TextBlock)use.Content).Text == PartitionInventory.L("使用所选机型包", "Use selected device package")
-                    && Field<TextBlock>(window, "inlineDeviceStatus").Visibility == Visibility.Collapsed
-                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-oxp3-simple-action-without-test-warning");
+                Require(use.IsEnabled && (string)use.Content == PartitionInventory.L("使用所选机型包", "Use selected device package")
+                    && Field<TextBlock>(window, "inlineDeviceStatus").Visibility == Visibility.Visible
+                    && !string.IsNullOrWhiteSpace(Field<TextBlock>(window, "inlineDeviceStatus").Text)
+                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-oxp3-simple-action-with-advisory");
                 foreach (var width in new[] { 1060d, 640d })
                 {
                     window.Width = width; await Flush(window);
@@ -95,7 +96,7 @@ internal static class BoilerModelCatalogChecks
                 // A minimal validated local fixture exercises the actual package anchoring path.
                 var folder = Path.Combine(directory, language + "-bundle"); Directory.CreateDirectory(folder);
                 var package = JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "DevicePackage", id = "device:oxp3", version = "0.1.0",
-                    name = new { zh = "本地测试", en = "Local test fixture" }, status = "experimental", source = new { kind = "local", path = "fixture" },
+                    name = new { zh = "本地测试", en = "Local test fixture" }, status = "experimental", source = new { kind = "local", path = "fixture/" + Path.GetFileName(directory) },
                     compatibility = new { }, files = Array.Empty<object>(), components = new[] { new { schema_version = 1, kind = "ComponentManifest",
                         id = "oxp3:legacy-adaptation", version = "0.1.0", files = Array.Empty<object>(), hooks = new { } } } });
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(package); await File.WriteAllBytesAsync(Path.Combine(folder, "manifest.json"), bytes);
@@ -103,7 +104,8 @@ internal static class BoilerModelCatalogChecks
                 window.BundledModelLoaderForChecks = (_, _) => { bundleCalls++; return Task.FromResult(JsonSerializer.SerializeToElement(new { directory = folder, manifest_sha256 = sha, package })); };
                 use.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Wait(window);
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && window.CurrentOptions.DeviceTrust == "developer-session",
-                    language + "-bundled-package-uses-real-validation-and-session-trust");
+                    language + "-bundled-package-uses-real-validation-and-session-trust: " + Field<TextBlock>(window, "deviceStatus").Text + " / " + Field<string?>(window, "deviceActionError"));
+                Require(Field<int>(window, "step") == 1, language + "-single-first-layer-action-selects-package-and-opens-second-layer-source");
                 await (Task)Call(window, "LoadModelCatalogAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!;
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _)
                     && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed,

@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from protocol.manifest import validate_package
+from protocol.model_catalog import model_identities
 
 
 def prepare(root, packages):
@@ -17,13 +18,14 @@ def prepare(root, packages):
         raise ValueError('Use a fresh local test bundle descriptor')
     entries = []
     identities = set()
+    allowed=model_identities(root)
     for directory in packages:
         directory = Path(directory).resolve()
         manifest_data = (directory/'manifest.json').read_bytes()
         sha256 = hashlib.sha256(manifest_data).hexdigest()
         package = validate_package(directory, expected_manifest_sha256=sha256)
         identity = package['id']
-        if identity not in ('device:oxp3', 'device:x2-mini') or identity in identities:
+        if identity not in allowed or identity in identities:
             raise ValueError('Unexpected or duplicate local test model')
         identities.add(identity)
         relative = 'cache/model-bundles/packages/'+identity.removeprefix('device:')

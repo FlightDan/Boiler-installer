@@ -83,7 +83,6 @@ public partial class MainWindow
     private Expander? deviceNotesExpander;
     private JsonElement? reviewedDeviceMetadata;
     private ComboBox? deviceList;
-    private CheckBox? developerPackages;
     private bool deviceActionBusy;
     private string? deviceActionError;
     private readonly Dictionary<string, CheckBox> deviceComponentChoices = new();
@@ -185,7 +184,7 @@ public partial class MainWindow
     private sealed record PreparedDeviceSelection(string Key, string Digest, string Trust, JsonElement Package, JsonElement? Reviewed);
     private async Task<PreparedDeviceSelection> PrepareDeviceSelectionAsync(string folder, string trust, string? expected, CancellationToken token, bool sessionTrusted = false)
     {
-        if (trust == "developer-session" && !sessionTrusted && developerPackages?.IsChecked != true) throw new IOException("Enable developer mode explicitly.");
+        if (trust == "developer-session" && !sessionTrusted) throw new IOException("A local import must be explicitly requested.");
         if (trust == "signed-index" && expected == null) throw new IOException("Signed package anchor is missing.");
         var manifestPath = Path.Combine(folder, "manifest.json");
         if (new FileInfo(manifestPath).Length > 8 * 1024 * 1024) throw new IOException("Device manifest exceeds size limit.");
@@ -256,8 +255,7 @@ public partial class MainWindow
             foreach (var check in deviceComponentChoices.Values) deviceComponentsPanel.Children.Add(check);
         ComponentOptionsHost.Children.Insert(0, deviceComponentsPanel);
         ShowDeviceDetails(selection.Reviewed is JsonElement reviewed ? reviewed : package);
-        deviceStatus!.Text += "\n" + (selection.Trust == "signed-index" ? PartitionInventory.L("来源：已验签目录中的固定版本", "Source: fixed version from the verified index") : PartitionInventory.L("来源：仅本次信任的开发包", "Source: development package trusted for this session"));
-        if (externalDeviceUse != null) externalDeviceUse.Visibility = Visibility.Collapsed;
+        deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         ConfigurationChanged();
         if (homeScreen == null && !inputAssociationBusy) ContinueAfterDeviceSelection();
     }

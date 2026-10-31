@@ -1,0 +1,123 @@
+schema_version: 1
+kind: BoilerComponentDefinitions
+definitions:
+  battery:
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.2.2
+    name:
+      en: "Battery 0.2.2: consistent charge and sleep sliders"
+      zh: Battery 0.2.2：统一充电与待机滑块
+    description:
+      en: "Charge limit, three charging modes and seven sleep choices use consistent slider sections. Existing preferences are preserved until changed. Saving never initiates sleep. X2 charge controls remain disabled."
+      zh: 充电上限、三档充电方式与七档待机统一使用滑块区块；调整前保留既有偏好，保存不会立即睡眠。X2 不启用充电控制。
+    default: false
+    optional: true
+    requires: []
+    conflicts: []
+    files[7]{source,target,size,sha256,mode}:
+      shared-adaptations/battery/000.bin,var/lib/oxp3-battery/battery_control.py,837,c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e,420
+      shared-adaptations/battery/001.bin,var/lib/oxp3-battery/sleep_control.py,8463,b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99,420
+      shared-adaptations/battery/002.bin,etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf,171,a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2,420
+      shared-adaptations/battery/003.bin,home/deck/homebrew/plugins/OXP3-battery/main.py,947,17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb,420
+      shared-adaptations/battery/004.bin,home/deck/homebrew/plugins/OXP3-battery/dist/index.js,11336,2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb,420
+      shared-adaptations/battery/005.bin,home/deck/homebrew/plugins/OXP3-battery/plugin.json,96,ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668,420
+      shared-adaptations/battery/006.bin,home/deck/homebrew/plugins/OXP3-battery/package.json,62,b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f,420
+    compatibility:
+      architectures[1]: x86_64
+      os_ids[1]: steamos
+      os_versions[1]: "3.10"
+  microphone:
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.1.0
+    name:
+      en: Microphone native mute synchronization
+      zh: 麦克风原生静音联动
+    description:
+      en: Event-driven ALSA Capture Switch synchronization; keeps source mute and gain settings. Restart the desktop session to activate.
+      zh: 按音频事件同步 ALSA 录音开关，保留原生静音和增益设置；重新登录桌面后启用。
+    default: false
+    optional: true
+    requires: []
+    conflicts: []
+    files[3]{source,target,size,sha256,mode}:
+      shared-adaptations/microphone/000.bin,usr/local/lib/oxp-microphone/microphone.py,9440,25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269,420
+      shared-adaptations/microphone/001.bin,etc/systemd/user/oxp-microphone.service,364,902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a,420
+      shared-adaptations/microphone/002.bin,etc/systemd/user/default.target.d/90-oxp-microphone.conf,36,40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888,420
+    compatibility:
+      architectures[1]: x86_64
+      os_ids[1]: steamos
+      os_versions[1]: "3.10"
+  "gamescope-env":
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.1.0
+    name:
+      en: Game mode environment isolation
+      zh: 游戏模式启动环境隔离
+    description:
+      en: Explicit opt-in. Clear inherited KDE Wayland client sockets on the next game-mode session start. No restart is initiated. Exact accepted SteamOS baseline only.
+      zh: 默认不选。下次游戏模式会话启动时清除继承的 KDE Wayland 客户端 socket 环境；保存不会触发重启，仅限已接受的精确 SteamOS 基线。
+    default: false
+    optional: true
+    selection_policy: explicit-opt-in
+    requires: []
+    conflicts: []
+    files[1]{source,target,size,sha256,mode}:
+      shared-adaptations/gamescope-env/000.bin,home/deck/.config/systemd/user/gamescope-session.service.d/90-oxp3-desktop-env-isolation.conf,222,9616729dac8be729b56bd201b8cfbbb1fcd0eb2fb7163944638306856e85a13b,420
+    compatibility:
+      architectures[1]: x86_64
+      os_ids[1]: steamos
+      os_versions[1]: "3.10"
+      kernels[1]: 7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9
+  "slot-switch":
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.1.0
+    name:
+      en: KDE SteamOS slot switch / recovery tools
+      zh: KDE SteamOS 槽位切换 / 系统回退工具
+    description:
+      en: "Explicit opt-in. Installs existing guarded desktop tools only; installation never changes a boot slot or requests reboot. Each later action checks A/B state, update services and a fresh confirmation token. Exact SteamOS baseline and all tools required."
+      zh: 默认不选。仅安装现有受保护桌面工具；安装不会切换槽位或重启。以后每次点击均核对 A/B 状态、更新服务和新的确认令牌。仅限精确 SteamOS 基线且所有依赖齐全。
+    default: false
+    optional: true
+    selection_policy: explicit-opt-in
+    requires: []
+    conflicts: []
+    files[7]{source,target,size,sha256,mode}:
+      shared-adaptations/slot-switch/000.bin,home/.oxp3-slot-switch/boot.py,20555,94d98f74d6025d79d2f6af07d59657117c6a80316e591e235d4e4e9ab75dcf85,420
+      shared-adaptations/slot-switch/001.bin,home/.oxp3-slot-switch/desktop.py,9643,ebfc65ff86e4dcf33011d1884e487fee00b072c134fb1fc0815d7d841cf0294d,420
+      shared-adaptations/slot-switch/002.bin,home/.oxp3-slot-switch/oxp3-switch-slot,75,4d58916cc7d5d31405d0d189e2ea7963c8d8a29776242bf8dd967e38c421dd46,493
+      shared-adaptations/slot-switch/003.bin,etc/polkit-1/rules.d/49-oxp3-slot-switch.rules,298,f95d37f73f87532e6827a2e50cd03f86703a2def50fe036f9e54a280f155c317,420
+      shared-adaptations/slot-switch/004.bin,home/deck/Desktop/oxp3-slot-switch.desktop,236,05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a,493
+      shared-adaptations/slot-switch/005.bin,home/deck/.local/share/applications/oxp3-slot-switch.desktop,236,05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a,493
+      shared-adaptations/slot-switch/006.bin,usr/share/licenses/boiler-x2-slot-switch/LICENSE-MIT,1070,1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a,420
+    compatibility:
+      architectures[1]: x86_64
+      os_ids[1]: steamos
+      os_versions[1]: "3.10"
+      kernels[1]: 7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9
+  keyboard:
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.1.0-localtest.20261031.keyboard.1
+    minimum_engine_version: 0.1.1
+    name:
+      en: KDE virtual keyboard configuration
+      zh: KDE 屏幕键盘配置
+    description:
+      en: Explicit opt-in. Merge two Wayland keys in kwinrc. Preserve post-install user edits; exact original restored only after the last managed slot releases an unedited file. No guest program is executed; fixed desktop entry presence does not establish activation.
+      zh: 明确可选。在 kwinrc 合并两个 Wayland 键；保留安装后的用户修改，最后一个管理槽释放未编辑文件时恢复真实原文件。不执行目标程序；桌面入口存在不代表已验证启动。
+    default: false
+    optional: true
+    selection_policy: explicit-opt-in
+    requires: []
+    conflicts: []
+    files: []
+    hooks:
+    dynamic_handler: x2-keyboard-v1
+    dynamic_targets[1]: home/deck/.config/kwinrc
+    compatibility:
+      os_ids[1]: steamos

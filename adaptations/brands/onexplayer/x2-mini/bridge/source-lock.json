@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "kind": "X2SharedSourceLock",
+  "delivery_scope": "partial-shared-adaptations",
+  "provenance": {
+    "public_repository": "FlightDan/OneXPlayer3-SteamOS",
+    "source_baseline": "72f864e0498c10366493c74608c5ffed62cc99ca",
+    "published_resource_lock": "adaptations/brands/onexplayer/oxp3/bridge/upstream-lock.json",
+    "source_notes": "Gamescope environment resource is byte-exact to the authenticated public installer. Battery 0.2.2 and microphone are reviewed independent-root sources. No private performance research."
+  },
+  "inputs": [
+    {
+      "location": "bridge",
+      "source": "assets/90-oxp3-desktop-env-isolation.conf",
+      "output": "shared-adaptations/gamescope-env/000.bin",
+      "size": 222,
+      "sha256": "9616729dac8be729b56bd201b8cfbbb1fcd0eb2fb7163944638306856e85a13b"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/LICENSE",
+      "output": "LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/oxp3/bridge/THIRD_PARTY_NOTICES.md",
+      "output": "THIRD_PARTY_NOTICES.md",
+      "size": 11690,
+      "sha256": "99f0bce28d6b10958e4ad7dcc075366ba9463ae475940db39a38d4bb499b2eb6"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/records/shared-20261030/inputs.json",
+      "output": "shared-adaptations-inputs.json",
+      "size": 9654,
+      "sha256": "089a7c31bd1e96a4b7396f40adbd142ce14af7abd5c1858ef9aba86a955ea7a0"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/x2-mini/current/battery_control.py",
+      "output": "shared-adaptations/battery/000.bin",
+      "size": 837,
+      "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/sleep_control.py",
+      "output": "shared-adaptations/battery/001.bin",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/sleep-router.conf",
+      "output": "shared-adaptations/battery/002.bin",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/battery-plugin-main.py",
+      "output": "shared-adaptations/battery/003.bin",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/battery-plugin-index.js",
+      "output": "shared-adaptations/battery/004.bin",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/templates/plugin.json",
+      "output": "shared-adaptations/battery/005.bin",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/battery/templates/package.json",
+      "output": "shared-adaptations/battery/006.bin",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/microphone/microphone.py",
+      "output": "shared-adaptations/microphone/000.bin",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/microphone/oxp-microphone.service",
+      "output": "shared-adaptations/microphone/001.bin",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/brands/onexplayer/common/microphone/90-oxp-microphone.conf",
+      "output": "shared-adaptations/microphone/002.bin",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/boot.py",
+      "output": "shared-adaptations/slot-switch/000.bin",
+      "size": 20555,
+      "sha256": "94d98f74d6025d79d2f6af07d59657117c6a80316e591e235d4e4e9ab75dcf85"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/desktop.py",
+      "output": "shared-adaptations/slot-switch/001.bin",
+      "size": 9643,
+      "sha256": "ebfc65ff86e4dcf33011d1884e487fee00b072c134fb1fc0815d7d841cf0294d"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/oxp3-switch-slot",
+      "output": "shared-adaptations/slot-switch/002.bin",
+      "size": 75,
+      "sha256": "4d58916cc7d5d31405d0d189e2ea7963c8d8a29776242bf8dd967e38c421dd46"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/49-oxp3-slot-switch.rules",
+      "output": "shared-adaptations/slot-switch/003.bin",
+      "size": 298,
+      "sha256": "f95d37f73f87532e6827a2e50cd03f86703a2def50fe036f9e54a280f155c317"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/oxp3-slot-switch.desktop",
+      "output": "shared-adaptations/slot-switch/004.bin",
+      "size": 236,
+      "sha256": "05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/slot-switch/oxp3-slot-switch.desktop",
+      "output": "shared-adaptations/slot-switch/005.bin",
+      "size": 236,
+      "sha256": "05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a"
+    },
+    {
+      "location": "project",
+      "source": "adaptations/common/scripts/licenses/upstream-fixes-MIT.txt",
+      "output": "shared-adaptations/slot-switch/006.bin",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    }
+  ]
+}

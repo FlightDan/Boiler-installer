@@ -28,7 +28,7 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _VERSION = re.compile(r"[0-9]+(?:\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?\Z")
 MAX_MANIFEST = 8 * 1024 * 1024
-ENGINE_VERSION = "0.1.0"
+ENGINE_VERSION = "0.1.2"
 
 
 def _fail(message):
@@ -216,6 +216,10 @@ def validate_manifest(obj, kind=None):
     if "minimum_engine_version" in obj and not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", str(obj["minimum_engine_version"])):
         _fail("Minimum engine version must be a stable three-part version")
     if actual == "ComponentManifest":
+        if 'cpu_mutable_config' in obj:
+            from .cpu_contract import mutable_target
+            try: mutable_target(obj)
+            except ValueError as error: _fail(str(error))
         if "retain_owned_paths" in obj and type(obj["retain_owned_paths"]) is not bool:
             _fail("Retained ownership must be an explicit boolean")
         if obj.get("retain_owned_paths") and (obj.get("hooks") or not obj.get("files")):

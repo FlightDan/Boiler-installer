@@ -14,7 +14,7 @@ public partial class MainWindow
 
     private void NavigateStep(object sender, RoutedEventArgs e)
     {
-        if (deviceActionBusy) return;
+        if (deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
         if (sender is Button { Tag: string tag } && int.TryParse(tag, out var destination) && destination is >= 0 and <= AdaptationStep)
         {
             if (destination is 1 or 2 && DeviceSupportIssue() != null) destination = AdaptationStep;
@@ -80,8 +80,8 @@ public partial class MainWindow
         if (installMode is "custom" or "vanilla")
         {
             if (adaptationBranch == null) return PartitionInventory.L("请选择机型适配或通用安装。", "Choose a device package or generic installation.");
-            if (adaptationBranch == "device" && HasPendingDevicePreview) return PartitionInventory.L("请确认并选用当前预览的机型包，或移除该预览。", "Confirm and use the previewed device package, or remove the preview.");
-            if (adaptationBranch == "device" && selectedDevicePackage == null) return PartitionInventory.L("请先确认来源并选用机型包。", "Confirm the source and select a device package first.");
+            if (adaptationBranch == "device" && HasPendingDevicePreview) return PartitionInventory.L("机型包尚未导入完成，请检查文件列表。", "The device package import is incomplete. Check the file list.");
+            if (adaptationBranch == "device" && selectedDevicePackage == null) return PartitionInventory.L("请选择或导入机型包。", "Choose or import a device package.");
         }
         return null;
     }
@@ -142,7 +142,7 @@ public partial class MainWindow
         {
             var incomplete = !complete[i] && (departedSteps[i] || checkedAllSteps);
             var configured = complete[i] && (finished || i <= 1 || i == 2 && contentSeen || i == 3 && reviewed || i == 4 && (departedSteps[i] || session != null) || i is 5 or 6);
-            labels[i].Foreground = new SolidColorBrush(incomplete ? Color.FromRgb(255, 139, 139) : configured ? Color.FromRgb(134, 239, 172) : i == step ? Colors.White : Color.FromRgb(148, 169, 195));
+            labels[i].Foreground = new SolidColorBrush(i == step ? Colors.White : incomplete ? Color.FromRgb(255, 139, 139) : configured ? Color.FromRgb(134, 239, 172) : Color.FromRgb(148, 169, 195));
             tabs[i].Background = i == step ? new SolidColorBrush(Color.FromRgb(41, 104, 217)) : Brushes.Transparent;
             labels[i].FontWeight = i == step ? FontWeights.Bold : FontWeights.Normal;
             labels[i].ToolTip = incomplete ? (i == 0 ? targetIssue : i == 1 ? sourceIssue : i == 2 ? contentIssue : null)
@@ -150,7 +150,7 @@ public partial class MainWindow
         }
         var supportComplete = supportIssue == null;
         var supportIncomplete = !supportComplete && (departedSteps[AdaptationStep] || checkedAllSteps);
-        NavAdaptation.Foreground = new SolidColorBrush(supportIncomplete ? Color.FromRgb(255, 139, 139) : supportComplete ? Color.FromRgb(134, 239, 172) : step == AdaptationStep ? Colors.White : Color.FromRgb(148, 169, 195));
+        NavAdaptation.Foreground = new SolidColorBrush(step == AdaptationStep ? Colors.White : supportIncomplete ? Color.FromRgb(255, 139, 139) : supportComplete ? Color.FromRgb(134, 239, 172) : Color.FromRgb(148, 169, 195));
         NavAdaptation.FontWeight = step == AdaptationStep ? FontWeights.Bold : FontWeights.Normal;
         NavAdaptation.ToolTip = supportIssue;
         AdaptationTab.Background = step == AdaptationStep ? new SolidColorBrush(Color.FromRgb(41, 104, 217)) : Brushes.Transparent;
@@ -171,7 +171,7 @@ public partial class MainWindow
         IncompleteHeading.Text = PartitionInventory.L("还有项目未完成", "Some items are incomplete");
         IncompleteItems.Text = string.Join("\n", missing.Select(item => "• " + item));
 
-        var idle = operation == null && !deviceActionBusy;
+        var idle = operation == null && !deviceActionBusy && !inputInspectionBusy && !inputAssociationBusy;
         var written = session?.Physical == true && finished;
         ResultCard.Background = new SolidColorBrush(finished ? Color.FromRgb(236, 253, 243) : Colors.White);
         ResultCard.BorderBrush = new SolidColorBrush(finished ? Color.FromRgb(117, 199, 148) : Color.FromRgb(222, 229, 239));
@@ -198,6 +198,7 @@ public partial class MainWindow
         officialDownloadPanel.IsEnabled = idle && !downloadPanel.IsBusy && !sourceInspectionBusy;
         officialDownloadPanel.SetRequired(UsePrepared.IsChecked != true && Upgrade310.IsChecked == true);
         StopButton.IsEnabled = operation != null && !operation.IsCancellationRequested;
+        FeedbackButton.Content = PartitionInventory.L("反馈…", "Feedback…");
         ExportLogButton.Content = PartitionInventory.L("导出详细日志…", "Export logs…");
         ExportLogButton.IsEnabled = !exportingLog && (session != null || LogText.Text.Length > 0);
         RefreshBoilerNavigation();

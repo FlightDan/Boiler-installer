@@ -22,20 +22,10 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from protocol.manifest import confined, load_json, relative_path, validate_manifest, validate_package
+from maintenance.engine import RUNTIME_FILES
 
 REPOSITORY = 'FlightDan/Boiler-installer'
 PUBLIC_KEY_SHA256 = 'c3f443312c74bcdc3013d7a9deb306473dc6c3b21f6625319012c9dbdb9b1e86'
-# Explicit additions require source review; do not turn this into a directory walk.
-RUNTIME_FILES = (
-    'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
-    'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
-    'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
-    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py',
-    'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',
-    'components/model-catalog/lock.json', 'components/model-catalog/snapshot/adaptations.json',
-    'components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json',
-    'components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json',
-)
 LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
             b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
             b'from maintenance.__main__ import main; raise SystemExit(main())\' "$@"\n')
@@ -57,6 +47,20 @@ def json_bytes(value):
 
 def record(name, data):
     return {'path': name, 'size': len(data), 'sha256': sha256(data)}
+
+
+def runtime_inventory(root):
+    # Use the same explicit runtime members as the installer; ignored working
+    # files remain outside the export instead of being scanned into it.
+    from protocol.model_catalog import read_lock, snapshot_records
+    from protocol.resource_pool import decoder
+    root = Path(root).resolve()
+    snapshot_records(root)
+    model_lock = read_lock(root)
+    decoder(root/'adaptations')
+    parser_lock = json.loads((root/'adaptations/toon-parser-lock.json').read_bytes())
+    return (*RUNTIME_FILES, *('adaptations/vendor/'+entry['path'] for entry in parser_lock['files']),
+            *('components/model-catalog/snapshot/'+entry['path'] for entry in model_lock['files']))
 
 
 def committed_sources(root, source_commit):
@@ -145,7 +149,8 @@ def package(root, output, source_commit, asset_url):
     else:
         raise ValueError('Release artifacts must be outside the clean source checkout')
     contents = committed_sources(root, source_commit)
-    required = {*RUNTIME_FILES, 'LICENSE', 'maintenance/release.json'}
+    runtime_names=runtime_inventory(root)
+    required = {*runtime_names, 'LICENSE', 'maintenance/release.json'}
     if not required <= contents.keys():
         raise ValueError('Required maintenance sources are absent from the source whitelist')
     if contents.get('scripts/package-maintenance.py') != Path(__file__).read_bytes():
@@ -154,7 +159,7 @@ def package(root, output, source_commit, asset_url):
         raise ValueError('Ordinary maintenance releases cannot change the existing public key')
     release = release_settings(contents)
     payload, runtime = {}, []
-    for name in RUNTIME_FILES:
+    for name in runtime_names:
         data = contents[name]
         source = 'maintenance-runtime/'+name
         payload[source] = data

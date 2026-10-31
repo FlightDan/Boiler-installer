@@ -17,7 +17,6 @@ public partial class MainWindow
     private TextBlock? deviceIndexStatus;
     private Button? deviceIndexRetry;
     private Button? signedDeviceUse;
-    private Button? externalDeviceUse;
     private Button? deviceDropTarget;
     private string? pendingDeviceDirectory;
     private string? deviceIndexError;
@@ -27,6 +26,8 @@ public partial class MainWindow
     private readonly List<Action> deviceLanguageUpdates = new();
     private StackPanel? deviceQuickPicker;
     private TextBlock? deviceDetectionStatus;
+    private StackPanel? deviceDirectoryBody;
+    private Expander? deviceDirectoryDetails;
     private BoilerHardware.Identity? detectedComputer;
     private bool deviceChoiceChanged, applyingDeviceDetection;
     private string deviceDetectionState = "pending";
@@ -63,12 +64,12 @@ public partial class MainWindow
             var label = Text(zh, en); button.Content = label;
             return button;
         }
-        var heading = Text("目标机型", "Target device", 19); heading.FontWeight = FontWeights.SemiBold;
+        var heading = Text("目录机型", "Device directory", 14); heading.FontWeight = FontWeights.SemiBold;
         picker.Children.Add(heading);
         var actions = new WrapPanel { Margin = new(0, 6, 0, 2) };
-        var detect = Button("DetectDeviceModel", "自动识别本机机型", "Detect this computer");
+        var detect = Button("DetectDeviceModel", "自动识别", "Detect this computer");
         detect.Click += (_, _) => DetectDeviceModel(explicitRequest: true);
-        var browse = Button("BrowseLocalDevice", "选择本地机型包…", "Choose a local package…");
+        var browse = Button("BrowseLocalDevice", "浏览机型包…", "Browse package…");
         browse.Click += async (_, _) =>
         {
             if (operation != null || DownloadsBusy || deviceActionBusy) return;
@@ -78,15 +79,20 @@ public partial class MainWindow
             if (installMode == "vanilla") PromoteDeviceMode();
             await ImportDeviceInputAsync(dialog.FileName);
         };
-        actions.Children.Add(detect); actions.Children.Add(browse); picker.Children.Add(actions);
+        actions.Children.Add(browse); actions.Children.Add(detect); picker.Children.Add(actions);
+        deviceDirectoryBody = new StackPanel();
+        deviceDirectoryDetails = new Expander { Name = "DeviceDirectoryDetails", MinHeight = 48,
+            Content = deviceDirectoryBody, Margin = new(0, 8, 0, 0) };
+        void DirectoryLabel() => deviceDirectoryDetails.Header = PartitionInventory.L("目录与识别信息", "Directory and detection details");
+        deviceLanguageUpdates.Add(DirectoryLabel); DirectoryLabel(); picker.Children.Add(deviceDirectoryDetails);
         deviceDetectionStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 2, 0, 6) };
-        picker.Children.Add(deviceDetectionStatus);
+        deviceDirectoryBody.Children.Add(deviceDetectionStatus);
         deviceIndexStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new Thickness(0, 6, 0, 4) };
-        picker.Children.Add(deviceIndexStatus);
+        deviceDirectoryBody.Children.Add(deviceIndexStatus);
         deviceIndexRetry = Button("RetryDeviceIndex", "重新读取目录", "Retry device directory");
         deviceIndexRetry.Visibility = Visibility.Collapsed;
         deviceIndexRetry.Click += async (_, _) => await Task.WhenAll(LoadDeviceIndexAsync(generation, token), LoadModelCatalogAsync(generation, token));
-        picker.Children.Add(deviceIndexRetry);
+        deviceDirectoryBody.Children.Add(deviceIndexRetry);
         deviceList = new ModelSearchComboBox { DeviceModels = true, SearchText = DeviceSearchText,
             Name = "DeviceList", MinHeight = 48, Margin = new Thickness(0, 8, 0, 4), HorizontalContentAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(deviceList, PartitionInventory.L("目标机型", "Target device"));
@@ -115,28 +121,6 @@ public partial class MainWindow
         };
         links.Children.Add(guide); panel.Children.Add(links);
 
-        var trustLabel = Text("我已了解来源，本次信任此外部机型脚本", "I trust this external device script for this session");
-        developerPackages = new CheckBox { Name = "TrustExternalDevice", Content = trustLabel, MinHeight = 48, Visibility = Visibility.Collapsed };
-        developerPackages.Checked += (_, _) => externalDeviceUse!.IsEnabled = pendingDeviceDirectory != null;
-        developerPackages.Unchecked += (_, _) =>
-        {
-            externalDeviceUse!.IsEnabled = false;
-            if (selectedDeviceTrust == "developer-session")
-            {
-                ClearDeviceSelection();
-                deviceStatus.Text = PartitionInventory.L("已取消本次信任，请重新选用机型包。", "Session trust removed. Select a device package to continue.");
-            }
-        };
-        panel.Children.Add(developerPackages);
-        externalDeviceUse = Button("UseExternalDevice", "使用此外部机型包", "Use this external device package");
-        externalDeviceUse.Visibility = Visibility.Collapsed; externalDeviceUse.IsEnabled = false;
-        externalDeviceUse.Click += async (_, _) => await DeviceAction(async () =>
-        {
-            if (pendingDeviceDirectory == null) throw new IOException("Import a device package first.");
-            reviewedDeviceMetadata = null;
-            await SelectDeviceDirectory(pendingDeviceDirectory, "developer-session", null);
-        });
-        panel.Children.Add(externalDeviceUse);
         deviceNotes = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 8, 12, 12) };
         deviceNotesExpander = new Expander { Content = deviceNotes, MinHeight = 48, Visibility = Visibility.Collapsed };
         void NotesLabel() => deviceNotesExpander.Header = PartitionInventory.L("适配备注与验证记录", "Compatibility notes and validation records");
@@ -203,6 +187,7 @@ public partial class MainWindow
         }
         if (deviceIndexError != null)
         {
+            deviceDirectoryDetails!.IsExpanded = true;
             deviceIndexStatus!.Text = PartitionInventory.L("签名机型包目录暂时无法读取。可以重试，仍可查看适配清单或导入本地包。", "The signed package directory is unavailable. Retry, view adaptation guides, or import a local package.");
             deviceIndexStatus.ToolTip = deviceIndexError; return;
         }
@@ -248,8 +233,6 @@ public partial class MainWindow
         if (!applyingDeviceDetection) { deviceChoiceChanged = true; deviceDetectionState = "manual"; }
         ClearPackageOptionPreview();
         ClearDeviceSelection(); pendingDeviceDirectory = null;
-        developerPackages!.IsChecked = false; developerPackages.Visibility = Visibility.Collapsed;
-        externalDeviceUse!.Visibility = Visibility.Collapsed;
         if (deviceList!.SelectedItem is ComboBoxItem { Tag: JsonElement item })
         {
             if (IsModelGuide(item)) ShowModelGuide(item); else { ClearModelGuide(); ShowDeviceDetails(item); }
@@ -386,8 +369,7 @@ public partial class MainWindow
             adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
             ClearPackageOptionPreview(); ShowStep(AdaptationStep);
             ClearDeviceSelection(); pendingDeviceDirectory = null;
-            developerPackages!.IsChecked = false; developerPackages.Visibility = Visibility.Collapsed;
-            externalDeviceUse!.Visibility = signedDeviceUse!.Visibility = Visibility.Collapsed;
+            signedDeviceUse!.Visibility = Visibility.Collapsed;
             updatingDeviceList = true; deviceList!.SelectedIndex = 0; updatingDeviceList = false;
             ClearModelGuide();
             deviceStatus!.Text = PartitionInventory.L("正在识别并校验外部机型内容…", "Inspecting and verifying the external device content…");
@@ -396,11 +378,9 @@ public partial class MainWindow
             var package = result.GetProperty("package");
             if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
                 throw new IOException(PartitionInventory.L("这是维护专用包，请使用维护器导入。", "This is a maintenance package. Import it with the maintainer."));
-            pendingDeviceDirectory = result.GetProperty("directory").GetString();
-            ShowDeviceDetails(package);
-            ShowPackageOptionPreview(package, PreviewText(package, "name", package.GetProperty("id").GetString()!), path, fromInputs: false);
-            deviceStatus.Text += "\n" + PartitionInventory.L("已识别并校验；尚未加入安装方案。确认来源后勾选本次信任。", "Recognized and verified; not yet added to the installation. Confirm its source and grant session trust.");
-            developerPackages.Visibility = externalDeviceUse.Visibility = Visibility.Visible;
+            reviewedDeviceMetadata = null;
+            CommitDeviceSelection(await PrepareDeviceSelectionAsync(result.GetProperty("directory").GetString()!,
+                "developer-session", result.GetProperty("manifest_sha256").GetString(), CancellationToken.None, sessionTrusted: true));
         });
     }
 
@@ -415,8 +395,7 @@ public partial class MainWindow
         if (displayedDeviceMetadata is JsonElement metadata)
         {
             if (IsModelGuide(metadata)) ShowModelGuide(metadata); else ShowDeviceDetails(metadata);
-            if (pendingDeviceDirectory != null) deviceStatus!.Text += "\n" + PartitionInventory.L("已识别并校验；尚未加入安装方案。确认来源后勾选本次信任。", "Recognized and verified; not yet added to the installation. Confirm its source and grant session trust.");
-            else if (selectedDeviceTrust != null) deviceStatus!.Text += "\n" + (selectedDeviceTrust == "signed-index" ? PartitionInventory.L("来源：已验签目录中的固定版本", "Source: fixed version from the verified index") : PartitionInventory.L("来源：仅本次信任的开发包", "Source: development package trusted for this session"));
+            if (selectedDeviceTrust != null) deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         }
         else deviceStatus!.Text = PartitionInventory.L("请选择机型，或拖入外部机型脚本与包。", "Choose a device, or drop an external device script or package.");
     }

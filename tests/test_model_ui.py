@@ -54,7 +54,7 @@ class Dialog:
 
     def confirm(self, text):
         self.confirm_texts.append(text)
-        return self.confirms.pop(0)
+        return self.confirms.pop(0) if self.confirms else False
 
     def message(self, text, *, error=False):
         self.messages.append((text, error))
@@ -98,7 +98,8 @@ class ModelUITests(unittest.TestCase):
         ui, backend = self.ui(dialog)
         self.assertEqual(ui.run(), 0)
         self.assertEqual(backend.calls, [('list', '--offline')])
-        self.assertEqual(len(dialog.menu_rows[0][1]), 2)
+        self.assertEqual(len(dialog.menu_rows[0][1]), 3)
+        self.assertEqual(dialog.menu_rows[0][1][-1][0], 'feedback')
         self.assertIn('Pinned commit', dialog.menu_rows[0][0])
 
     def test_trust_cancel_never_inspects_private_target(self):

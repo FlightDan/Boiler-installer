@@ -115,7 +115,7 @@ internal static class SystemSourceCardChecks
                 Field<Button>(w,"inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 var script=Path.Combine(dir,lang+"-device.sh");await File.WriteAllTextAsync(script,"#!/bin/bash\n# boiler-script: 1\n# boiler-name: Source card fixture\nexit 0\n");
                 await (Task)Call(w,"ReceiveDroppedInputFilesAsync",new object?[]{new[]{script}})!;await Flush(w);
-                Require(w.CurrentOptions.DevicePackage==null && !Field<Button>(w,"inputApplyButton").IsEnabled,lang+"-device-script-never-auto-trusted");
+                Require(w.CurrentOptions.DevicePackage!=null && w.CurrentOptions.DeviceTrust=="developer-session" && !Field<Button>(w,"inputApplyButton").IsEnabled,lang+"-explicit-device-drop-auto-imports-with-local-trust");
                 Field<Button>(w,"inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 w.BoilerModeForChecks("local");await Flush(w);
                 Require(a.IsVisible && b.IsVisible && !b.SkipUpgrade.IsVisible && a.DownloadButton.Visibility==Visibility.Collapsed && b.DownloadButton.Visibility==Visibility.Collapsed,lang+"-local-pair-requires-upgrade-and-local-files");
