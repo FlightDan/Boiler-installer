@@ -50,8 +50,11 @@
      <RadioButton x:Name="ChineseLanguage" Content="中文" Tag="zh-CN" GroupName="Language" Style="{StaticResource LanguageOption}" Checked="LanguageChanged" AutomationProperties.Name="简体中文"/>
      <RadioButton x:Name="EnglishLanguage" Content="English" Tag="en-US" GroupName="Language" Style="{StaticResource LanguageOption}" Checked="LanguageChanged"/>
     </UniformGrid>
+    <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <Button x:Name="FeedbackButton" Content="反馈…" Click="OpenFeedback" HorizontalAlignment="Stretch" Margin="0,0,4,0" MinHeight="48" Padding="4,6" FontSize="12" Background="#253F5F" Foreground="White"/>
+     <Button x:Name="ExitButton" Grid.Column="1" Content="退出" Click="ExitWindow" HorizontalAlignment="Stretch" Margin="0" MinHeight="48" MinWidth="48" Padding="4,6" FontSize="12" Background="#253F5F" Foreground="White"/>
+    </Grid>
     <Button x:Name="BackHomeButton" Content="返回安装方式" Click="BackToBoilerHome" HorizontalAlignment="Stretch" Margin="0,0,0,8" MinHeight="48" Padding="8,6" Background="#E8EDF4" Foreground="#192B43"/>
-    <Button x:Name="ExitButton" Content="退出" Click="ExitWindow" HorizontalAlignment="Stretch" Margin="0" MinHeight="48" Padding="8,6" Background="#253F5F" Foreground="White"/>
    </StackPanel>
   </Grid></Border>
   <Grid x:Name="MainContent" Grid.Column="1" Margin="20,16,20,12">

@@ -274,4 +274,7 @@ def write_scope(engine,*,recover=False):
         raise MaintenanceError('Existing legacy maintenance store has no protected lock')
     with _legacy_lock(engine,blocking=False) if os.path.lexists(legacy) else contextlib.nullcontext():
         with ProtectionWindow(engine.state_dir).open(recover=recover):
-            yield
+            from .resource_access import write_scope as held_write_scope
+            token=held_write_scope.set(str(engine.root))
+            try: yield
+            finally: held_write_scope.reset(token)

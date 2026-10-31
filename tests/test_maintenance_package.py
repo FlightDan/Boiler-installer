@@ -33,7 +33,7 @@ class MaintenancePackageTests(unittest.TestCase):
         self.work = Path(temporary.name)
         self.source = self.work/'source'
         self.source.mkdir()
-        files = {*builder.RUNTIME_FILES, 'LICENSE', 'maintenance/release.json', 'scripts/package-maintenance.py'}
+        files = {*builder.runtime_inventory(ROOT), 'LICENSE', 'maintenance/release.json', 'scripts/package-maintenance.py'}
         for name in files:
             path = self.source/name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,10 +63,10 @@ class MaintenancePackageTests(unittest.TestCase):
         self.assertEqual(maintenance_engine.RUNTIME_FILES, builder.RUNTIME_FILES)
         with mock.patch.object(maintenance_engine, '__file__', str(self.source/'maintenance/engine.py')):
             self.assertEqual({path.relative_to(self.source.resolve()).as_posix() for path in maintenance_engine.runtime_files()},
-                             set(builder.RUNTIME_FILES))
+                             set(builder.runtime_inventory(self.source)))
             (self.source/'maintenance/__pycache__').mkdir()
             (self.source/'maintenance/__pycache__/ignored.pyc').write_bytes(b'ignored cache')
-            self.assertEqual(len(maintenance_engine.runtime_files()),len(builder.RUNTIME_FILES))
+            self.assertEqual(len(maintenance_engine.runtime_files()),len(builder.runtime_inventory(self.source)))
             (self.source/'maintenance/unlisted.py').write_bytes(b'unreviewed runtime')
             with self.assertRaisesRegex(maintenance_engine.MaintenanceError,'Unreviewed maintenance runtime'):
                 maintenance_engine.runtime_files()
@@ -91,7 +91,7 @@ class MaintenancePackageTests(unittest.TestCase):
                              (ROOT/'protocol/trusted-public-key.pem').read_bytes())
             self.assertFalse(any('unreviewed' in name or name.endswith('.key') for name in actual))
             component = json.loads(actual['component.json'])
-            expected_targets = {'usr/local/lib/boiler/'+name for name in builder.RUNTIME_FILES} | {
+            expected_targets = {'usr/local/lib/boiler/'+name for name in builder.runtime_inventory(self.source)} | {
                 'usr/local/bin/boiler-maintenance','usr/local/bin/boiler-maintenance-ui',
                 'usr/share/applications/Boiler-Maintenance.desktop'}
             self.assertEqual({entry['target'] for entry in component['files']}, expected_targets)

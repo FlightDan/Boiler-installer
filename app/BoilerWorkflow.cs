@@ -18,6 +18,7 @@ public partial class MainWindow
     {
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
         if (operation != null || DownloadsBusy || deviceActionBusy || PartitionSelector.IsBusy) return;
+        ClearResourceSelection();
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
         deviceActionError = null;
         ResetInputAssociationSession();

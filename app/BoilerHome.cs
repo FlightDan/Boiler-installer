@@ -103,6 +103,8 @@ public partial class MainWindow
             languages.Children.Add(button);
         }
         controls.Children.Add(languages);
+        var feedback = new Button { Name = "HomeFeedback", Content = PartitionInventory.L("反馈…", "Feedback…"), MinHeight = 48, Margin = new(0, 0, 8, 0), Padding = new(12, 8, 12, 8) };
+        feedback.Click += OpenFeedback; controls.Children.Add(feedback);
         var exit = new Button { Content = PartitionInventory.L("退出", "Exit"), MinWidth = 64, Margin = new(0), Padding = new(12, 8, 12, 8) };
         exit.Click += ExitWindow;
         controls.Children.Add(exit);

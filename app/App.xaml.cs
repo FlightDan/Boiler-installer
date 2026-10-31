@@ -53,6 +53,8 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-ui-checks") { log.AppendLine(await BoilerUiChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "steamos-partition-checks") { log.AppendLine(await SteamOsPartitionChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-device-checks") { log.AppendLine(await BoilerDeviceChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "resource-selection-checks") { log.AppendLine(await BoilerResourceSelectionChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "integration-payload-checks") { log.AppendLine(IntegrationPayloadChecks.Run()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "model-catalog-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "device-choice-checks") { log.AppendLine(await BoilerAdaptationChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "source-card-checks") { log.AppendLine(await SystemSourceCardChecks.RunAsync()); }
@@ -69,6 +71,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "input-association-checks") { log.AppendLine(await InputAssociationChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "input-binding-checks") { log.AppendLine(await InputDiscoveryChecks.RunBindingAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "helper-binding-checks") { log.AppendLine(await HelperBindingChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "feedback-checks") { log.AppendLine(await FeedbackReportChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-checks") { log.AppendLine(await BoilerChecks.RunAsync()); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-image-checks") { log.AppendLine(await BoilerImageBuildChecks.RunAsync(e.Args[2], e.Args[3])); }
                 else if (e.Args.Length == 4 && e.Args[1] == "boiler-prepared-checks") { log.AppendLine(await BoilerImageBuildChecks.RecheckAsync(e.Args[2], e.Args[3])); }

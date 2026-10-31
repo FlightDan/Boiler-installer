@@ -26,6 +26,7 @@ public sealed class ImageDownloadPanel : UserControl
     public bool IsBusy => operation != null;
     public void RefreshWorkspace() { if (!IsBusy) { status.Text = ""; progress.Value = 0; Choose(); } }
     public event Action<bool>? BusyChanged;
+    internal event Action<FeedbackDiagnostic>? DownloadFailed;
     public event Action<string>? Completed;
     internal void UseSourceCardLayout()
     {
@@ -115,11 +116,14 @@ public sealed class ImageDownloadPanel : UserControl
         action.Content = L("暂停下载", "Pause"); progress.Visibility = Visibility.Visible; progress.IsIndeterminate = true;
         BusyChanged?.Invoke(true);
         var completed = false;
+        var failed = false;
+        var diagnostic = new FeedbackDiagnostic(); diagnostic.Stage("download-probe");
         try
         {
             status.Text = L("正在检查下载来源…", "Checking the download source…");
             var job = fresh ? null : AriaDownload.Find(url);
             job ??= await AriaDownload.CreateAsync(url, operation.Token);
+            diagnostic.Stage("download-transfer");
             var result = await AriaDownload.RunAsync(job, p => Dispatcher.Invoke(() =>
             {
                 progress.IsIndeterminate = false; progress.Value = p.Total > 0 ? p.Completed * 100d / p.Total : 0;
@@ -131,7 +135,7 @@ public sealed class ImageDownloadPanel : UserControl
             status.Text = L("下载完成，已选为下方的系统镜像。可以继续下一步。", "Downloaded and selected below. Continue to the next step.");
         }
         catch (OperationCanceledException) { status.Text = L("下载已暂停。再次点击“下载 / 继续”可续传。", "Paused. Click Download / resume to continue."); }
-        catch (Exception error) { status.Text = error.Message; }
+        catch (Exception error) { status.Text = error.Message; diagnostic.Failure(error); diagnostic.Append(error.ToString()); failed = true; }
         finally
         {
             operation.Dispose(); operation = null; progress.IsIndeterminate = false;
@@ -139,5 +143,6 @@ public sealed class ImageDownloadPanel : UserControl
             action.Content = L("下载 / 继续", "Download / resume"); BusyChanged?.Invoke(false);
             if (completed) SourceReady?.Invoke();
         }
+        if (failed) DownloadFailed?.Invoke(diagnostic);
     }
 }

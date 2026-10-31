@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace OxpInstaller;
 
 public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null, bool CleanupTemporaryFiles = false);
-public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null);
+public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null, string? FailureType = null);
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
     string? DesktopRebootScript = null, string? DesktopRebootWarning = null, bool CleanupTemporaryFiles = false, bool TemporaryFilesCleaned = false, string? CleanupWarning = null);
@@ -144,6 +144,8 @@ public static partial class InstallationController
         request = request with { Source = snapshot.Path };
         var journal = Path.Combine(directory, "session.json");
         using var sessionLease = LeaseSession(directory);
+        using var resourcePreparation = request.Options?.ResourceSelection == null ? null
+            : await ResourcePreparationChain.BeginAsync(directory, id, sessionLease, snapshot.Path, snapshot.Sha256, token);
         var state = new InstallationSession(1, id, request.Kind, Path.GetFullPath(request.Source), request.Prepared, "running", "preparing", null, null, DateTime.UtcNow, request.Options, request.Physical, request.Refind, request.MakeDefaultBoot, CleanupTemporaryFiles: request.CleanupTemporaryFiles);
         Save(journal, state); created?.Invoke(state);
         var progress = new InstallationProgressTracker();
@@ -178,28 +180,35 @@ public static partial class InstallationController
             if (!request.Prepared && !importedPrepared)
             {
                 Phase("preparing", "正在解压并准备系统镜像…", "01.01");
-                var imported = await Backend.ImportAsync(image, log, token);
+                var imported = resourcePreparation == null ? await Backend.ImportAsync(image, log, token)
+                    : await resourcePreparation.ImportAsync(log, token);
                 progress.Advance("preparing", 2d / 32);
                 if(request.UpgradeTo310)
                 {
                     Phase("preparing","正在准备官方 SteamOS 3.10 系统…", "01.02");
-                    imported = await OfficialSystem.PrepareAsync(imported, directory, log, token, update =>
+                    Action<OfficialPreparationProgress> updatePreparation = update =>
                     {
                         step = update.Step;
                         report(new("preparing", update.Message,
                             progress.Advance("preparing", (2 + 10 * update.Fraction) / 32), update.Step));
-                    }, request.OfficialSource);
+                    };
+                    imported = resourcePreparation == null
+                        ? await OfficialSystem.PrepareAsync(imported, directory, log, token, updatePreparation, request.OfficialSource)
+                        : await resourcePreparation.UpgradeAsync(log, token, updatePreparation, request.OfficialSource);
                 }
                 progress.Advance("preparing", 12d / 32);
                 Phase("preparing", "正在创建独立测试盘…", "01.03");
-                var fixture = await Backend.CreateFixtureAsync(log, token);
+                var fixture = resourcePreparation == null ? await Backend.CreateFixtureAsync(log, token)
+                    : await resourcePreparation.CreateFixtureAsync(log, token);
                 progress.Advance("preparing", 16d / 32);
                 Phase("preparing", "正在准备 SteamOS 系统，这一步可能需要较长时间…", "01.04");
-                await Backend.GuestAsync("deployment-test", imported, false, log, token, fixture: fixture);
+                if (resourcePreparation == null) await Backend.GuestAsync("deployment-test", imported, false, log, token, fixture: fixture);
+                else await resourcePreparation.DeployAsync(log, token);
                 progress.Advance("preparing", 29d / 32);
                 Phase("preparing", "正在导出可写入的系统内容…", "01.05");
                 image = Path.Combine(directory, "prepared.img");
-                await RawImageStaging.ConvertAsync(QcowReadOnlyGraph.Filename(fixture), image, log, token);
+                if (resourcePreparation == null) await RawImageStaging.ConvertAsync(QcowReadOnlyGraph.Filename(fixture), image, log, token);
+                else await resourcePreparation.ExportAsync(image, log, token);
             }
             progress.Advance("preparing", 1);
             token.ThrowIfCancellationRequested();
@@ -208,11 +217,18 @@ public static partial class InstallationController
                 Phase("components", InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…"), "02.01");
                 var expected = Math.Max(1, 2 * ComponentOutcome.Expected(request.Options).Count);
                 var componentMessage = InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…");
+                ResourceIntegrityProgress? integrity=null;
                 void ComponentLog(string text)
                 {
                     log(text);
                     bool changed;
-                    lock (progress) changed = progress.ObserveComponents(text, expected, request.Physical);
+                    string? integrityDetail=null;
+                    lock (progress)
+                    {
+                        changed = progress.ObserveComponents(text, expected, request.Physical);
+                        if(integrity?.Observe(text)==true)integrityDetail=integrity.Detail;
+                    }
+                    if(integrityDetail is not null)report(new("components",integrityDetail,progress.Percent,step));
                     if (changed)
                     {
                         step = progress.ComponentStep;
@@ -230,19 +246,32 @@ public static partial class InstallationController
                 var selectedImage = image;
                 if (request.Prepared) {
                     selectedImage = Path.Combine(directory, "selected-options.img");
-                    await RawImageStaging.ConvertAsync(image, selectedImage, log, token);
+                    if (resourcePreparation == null) await RawImageStaging.ConvertAsync(image, selectedImage, log, token);
+                    else await resourcePreparation.CopyPreparedAsync(selectedImage, log, token);
                 }
+                // The guest deploys complete files under this exact image lease.
+                // Only the target first-boot runtime may establish live facts.
+                JsonElement? resourceTargetDisk = optionPayload["_target_disk"] == null ? null : JsonSerializer.SerializeToElement(optionPayload["_target_disk"]);
+                using var resourceBinding = request.Options.ResourceSelection is not { } reviewedResources ? null
+                    : ResourceGuestBinding.OpenFirstbootSession(directory, id, sessionLease, snapshot.Path, snapshot.Sha256,
+                        selectedImage, Path.Combine(Backend.Root, "cache/integration/resource-pool"), reviewedResources,
+                        "apply", Path.Combine(Backend.Root, "adaptations"), resourcePreparation!, resourceTargetDisk);
+                if(resourceBinding is not null)integrity=new ResourceIntegrityProgress(resourceBinding.PreparedLength);
                 MediaSpace.RequireAvailable(directory, 8ul * 1024 * 1024 * 1024);
                 var firmwarePayload = await FirmwareDownloads.PrepareAsync(selectedImage, directory, repairSelection, ComponentLog, token);
-                var resultFile = await Backend.GuestAsync("integration", selectedImage, true, ComponentLog, token,
-                    selection: repairSelection,
-                    secureInput: request.Options.SetDeckPassword ? request.InitialDeckPassword : null, integrationPayload: firmwarePayload);
+                var resultFile = resourcePreparation == null
+                    ? await Backend.GuestAsync("integration", selectedImage, true, ComponentLog, token, selection: repairSelection,
+                        secureInput: request.Options.SetDeckPassword ? request.InitialDeckPassword : null, integrationPayload: firmwarePayload)
+                    : await resourcePreparation.IntegrateAsync(selectedImage, repairSelection,
+                        request.Options.SetDeckPassword ? request.InitialDeckPassword : null, firmwarePayload,
+                        resourceBinding!, ComponentLog, token);
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.log"), resultFile, token);
                 var componentResults = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("OXP_COMPONENT_RESULT=", StringComparison.Ordinal)).Select(x => JsonDocument.Parse(x[21..]).RootElement.Clone()).ToArray();
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.json"), JsonSerializer.Serialize(componentResults, new JsonSerializerOptions { WriteIndented = true }), token);
                 ComponentOutcome.Validate(componentResults, request.Options);
                 var slotPlans = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("BOILER_INSTALL_PLAN_JSON=", StringComparison.Ordinal))
                     .Select(x => JsonDocument.Parse(x["BOILER_INSTALL_PLAN_JSON=".Length..]).RootElement.Clone()).ToArray();
+                ComponentOutcome.ValidatePlans(slotPlans, componentResults, request.Options);
                 if (slotPlans.Length != 2 || slotPlans.Select(p => p.GetProperty("slot").GetString()).Distinct().Count() != 2)
                     throw new IOException("Both slot installation plans are required.");
                 foreach (var plan in slotPlans)
@@ -256,8 +285,12 @@ public static partial class InstallationController
                     progress.Advance("components", .88);
                     componentMessage = PartitionInventory.L("正在独立复核 A/B 系统槽的组件…", "Independently verifying components on both system slots…");
                     Phase("components", componentMessage, "02.03");
+                    using var verifyResourceBinding = request.Options.ResourceSelection is not { } verifyResources ? null
+                        : ResourceGuestBinding.OpenFirstbootSession(directory, id, sessionLease, snapshot.Path, snapshot.Sha256,
+                            selectedImage, Path.Combine(Backend.Root, "cache/integration/resource-pool"), verifyResources,
+                            "verify", Path.Combine(Backend.Root, "adaptations"), resourcePreparation!, resourceTargetDisk);
                     await Backend.GuestAsync("integration-verify",selectedImage,false,ComponentLog,token,
-                        selection:repairSelection, integrationPayload:firmwarePayload);
+                        selection:repairSelection, integrationPayload:firmwarePayload, resourceBinding:verifyResourceBinding);
                 }
                 image = selectedImage;
             }
@@ -363,7 +396,7 @@ public static partial class InstallationController
         {
             var denied = error is Win32Exception { NativeErrorCode: 1223 };
             state = state with { Status = error is OperationCanceledException || denied ? "cancelled" : "failed", Error = denied ? "管理员权限请求已取消。" : error.Message, UpdatedUtc = DateTime.UtcNow };
-            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!));
+            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!, FailureType: FeedbackDiagnostic.Classify(error)));
         }
         return state;
     }

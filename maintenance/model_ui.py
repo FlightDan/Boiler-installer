@@ -14,6 +14,8 @@ import subprocess
 import sys
 import tempfile
 
+from .feedback import FeedbackClient
+
 
 KDIALOG = '/usr/bin/kdialog'
 MAINTENANCE = '/usr/local/bin/boiler-maintenance'
@@ -84,6 +86,10 @@ class KDialog:
     def message(self, text, *, error=False):
         self._run('--error' if error else '--msgbox', self._rich(text))
 
+    def input(self, text, *, multiline=False):
+        result = self._run('--textinputbox' if multiline else '--inputbox', self._rich(text), '')
+        return result.stdout.rstrip('\n') if result.returncode == 0 else None
+
     def details(self, text):
         # QTextEdit.append auto-detects rich text, so escape all source content.
         with tempfile.TemporaryDirectory(prefix='boiler-dialog-') as directory:
@@ -121,13 +127,18 @@ class Backend:
 
 
 class ModelUI:
-    def __init__(self, dialog, backend, *, lang='en-US', offline=False):
+    def __init__(self, dialog, backend, *, lang='en-US', offline=False, feedback=None):
         self.dialog, self.backend = dialog, backend
         self.lang, self.offline = lang, offline
         self.trusted = False
+        self.feedback = feedback if feedback is not None else FeedbackClient()
 
     def tr(self, zh, en):
         return zh if self.lang == 'zh-CN' else en
+
+    def compatibility_notice(self):
+        return self.tr('所选机型包可能与目标设备不兼容；由您决定是否继续维护。',
+                       'This device package may be incompatible with the target device. You can choose whether to continue maintenance.')
 
     def label(self, value):
         if isinstance(value, dict):
@@ -155,9 +166,14 @@ class ModelUI:
                 text += '\n' + self.tr('固定提交：', 'Pinned commit: ') + str(source.get('commit', ''))
                 if catalog.get('offline'):
                     text += '\n' + self.tr('离线：使用已固定的本地指南。', 'Offline: using the pinned local guides.')
-                identity = self.dialog.menu(text, [(key, self.label(model['name'])) for key, model in models.items()])
+                rows = [(key, self.label(model['name'])) for key, model in models.items()]
+                rows.append(('feedback', self.tr('手动反馈', 'Send feedback')))
+                identity = self.dialog.menu(text, rows)
                 if identity is None:
                     return 0
+                if identity == 'feedback':
+                    self.manual_feedback()
+                    continue
                 self.model(models[identity], catalog)
         except (BackendError, OSError, ValueError, KeyError, TypeError) as error:
             detail = str(error)
@@ -165,15 +181,98 @@ class ModelUI:
                 detail = self.tr('更改现有适配前，必须先使用“恢复已安装的适配”完整恢复当前适配，再重新安装。\n',
                                  'Before changing this adaptation, use Restore installed adaptations to fully restore the current adaptation, then install again.\n') + detail
             self.dialog.message(self.tr('操作未完成：\n', 'The operation did not complete:\n') + detail, error=True)
+            self.offer_failure('MAINTENANCE_OPERATION_FAILED')
+            self.failure_feedback()
             return 1
+
+    def failure_feedback(self):
+        # Available even when the catalog could not be loaded. Reporting never
+        # causes another maintenance request or changes the failure exit code.
+        try:
+            choice = self.dialog.menu(self.tr('维护操作未完成，也可以手动填写反馈。',
+                                               'Maintenance did not complete. You can also write feedback.'), [
+                ('feedback', self.tr('手动反馈', 'Send feedback')),
+                ('close', self.tr('关闭', 'Close'))])
+            if choice == 'feedback':
+                self.manual_feedback()
+        except Exception:
+            pass
+
+    def report_result(self, result):
+        if result.code == 'response_timeout':
+            self.dialog.message(self.tr('等待发送结果超时，发送结果尚未确认；不会自动重试。此次维护操作的结果未改变。',
+                                        'Timed out waiting for confirmation. Sending is unconfirmed; no automatic retry will occur. '
+                                        'The maintenance result is unchanged.'), error=True)
+            return
+        sent = result.status == 'sent'
+        self.dialog.message(self.tr('反馈已发送。', 'Report sent.') if sent else self.tr(
+            '反馈未发送。可稍后通过“手动反馈”重试；此次维护操作的结果未改变。',
+            'Report was not sent. Try Send feedback later; the maintenance result is unchanged.'), error=not sent)
+
+    def offer_failure(self, code):
+        try:
+            report = self.feedback.failure(code)
+            if not self.dialog.confirm(self.tr(
+                    '是否发送本次操作失败的错误报告？每次发送都需要您同意。\n'
+                    '仅发送固定错误码、维护器版本、来源、SteamOS 平台标识和随机报告编号；不发送原始错误、日志、路径或设备信息。\n'
+                    '接收方：Boiler 反馈服务（Cloudflare）。发送等待最多 6 秒。',
+                    'Send a report for this failed operation? Each report requires your consent.\n'
+                    'Only fixed error codes, maintenance version, source, SteamOS platform label and a random report ID are sent; '
+                    'original errors, logs, paths and device information are excluded.\n'
+                    'Recipient: Boiler feedback service (Cloudflare). Sending waits at most 6 seconds.')):
+                return
+            self.report_result(self.feedback.send(report))
+        except Exception:
+            # The original failure was already displayed. Reporting must never
+            # replace it, change its return code, or trigger another report.
+            self.reporting_unavailable()
+
+    def reporting_unavailable(self):
+        try:
+            self.dialog.message(self.tr('反馈暂时不可用。此次维护操作的结果未改变。',
+                                        'Reporting is unavailable. The maintenance result is unchanged.'), error=True)
+        except Exception:
+            pass
+
+    def manual_feedback(self):
+        try:
+            title = self.dialog.input(self.tr('反馈标题（最多 240 UTF-8 字节）',
+                                             'Feedback title (up to 240 UTF-8 bytes)'))
+            if title is None:
+                return
+            description = self.dialog.input(self.tr('请描述问题、复现步骤或建议（最多 2048 UTF-8 字节）。',
+                                                    'Describe the problem, steps or suggestion (up to 2048 UTF-8 bytes).'),
+                                            multiline=True)
+            if description is None:
+                return
+            try:
+                report = self.feedback.manual(title, description)
+            except ValueError:
+                self.dialog.message(self.tr('标题和描述不能为空或超出限制，请重新填写。',
+                                            'Provide a nonempty title and description within the limits.'), error=True)
+                return
+            if self.dialog.details(self.tr(
+                    '以下为脱敏后的实际发送内容。请检查是否仍包含敏感信息；取消可返回重新填写。\n'
+                    '不会附加日志或文件。\n\n',
+                    'These are the exact redacted contents to send. Check for remaining sensitive information; '
+                    'cancel to return and rewrite.\nNo logs or files are attached.\n\n') + self.feedback.preview(report)) is False:
+                return
+            if not self.dialog.confirm(self.tr('将刚刚预览的反馈发送给 Boiler 反馈服务（Cloudflare）？发送等待最多 6 秒。',
+                                                'Send the feedback just previewed to the Boiler feedback service (Cloudflare)? '
+                                                'Sending waits at most 6 seconds.')):
+                return
+            self.report_result(self.feedback.send(report))
+        except Exception:
+            self.reporting_unavailable()
 
     def model(self, model, catalog):
         # Reading private installed journals and target evidence also needs root.
         bundle = next((item for item in catalog.get('bundled_packages', []) if item['id'] == model['id']), None)
         while True:
-            choice = self.dialog.menu(self.label(model['name']), [
+            choice = self.dialog.menu(self.label(model['name']) + '\n' + self.compatibility_notice(), [
                 ('options', self.tr('查看选项与维护操作', 'Options and maintenance actions')),
-                ('shared', self.tr('Battery 0.2 / 麦克风修复', 'Battery 0.2 / microphone repairs')),
+                ('shared', self.tr('机型附加修复', 'Additional device repairs')),
+                *([('keyboard', self.tr('屏幕键盘配置与恢复', 'Keyboard configuration and recovery'))] if model['id']=='device:x2-mini' else []),
                 ('guide', self.tr('查看完整适配指南', 'Read the full adaptation guide')),
                 ('back', self.tr('返回机型列表', 'Back to models'))])
             if choice in (None, 'back'):
@@ -181,7 +280,7 @@ class ModelUI:
             if choice == 'guide':
                 self.guide(model)
                 continue
-            needs_trust = choice == 'shared' or bundle is not None or model['id'] == 'device:oxp3'
+            needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] == 'device:oxp3'
             if needs_trust and not self.trusted:
                 if not self.dialog.confirm(self.tr(
                         '此包为本地测试包，尚未公开发布，也不代表实机运行验收通过。\n仅在本次会话信任该包并读取本机维护状态？',
@@ -191,7 +290,7 @@ class ModelUI:
                     return
                 self.trusted = True
             flags = ['--trust-local-test'] if needs_trust and self.trusted else []
-            options = self.backend.call('shared-options' if choice == 'shared' else 'options', model['id'], *flags)
+            options = self.backend.call({'shared':'shared-options','keyboard':'keyboard-options'}.get(choice,'options'), model['id'], *flags)
             self.actions(model, options)
 
     def unavailable(self, options, model):
@@ -199,6 +298,7 @@ class ModelUI:
         capability_ids = {item['id'] for item in options['capabilities']}
         # A guide entry must remain visible even if it has no payload mapping.
         for item in model.get('components', []):
+            if options.get('dynamic_adapter') == 'keyboard' and item['id'] != 'x2-mini:keyboard': continue
             if item['id'] not in capability_ids:
                 rows.append(dict(item, reason=self.tr('仅指南项目，没有可执行选项。',
                                                       'Guide only; no executable option.') +
@@ -226,15 +326,19 @@ class ModelUI:
             actions.append(('apply', self.tr('安装 / 更改所选项目', 'Install / change selected items')))
         if owned_current and not pending:
             actions.append(('verify', self.tr('验证已安装项目', 'Verify installed items')))
-        if owned_current or pending:
+        if pending and options.get('dynamic_adapter') == 'keyboard':
+            if pending.get('recover_available') is True:
+                actions.append(('recover',self.tr('恢复中断的键盘事务','Recover interrupted keyboard transaction')))
+        elif owned_current or pending:
             actions.append(('restore', self.tr('恢复已安装的适配', 'Restore installed adaptations')))
         actions.extend([('guide', self.tr('查看适配指南', 'Read adaptation guide')),
                         ('back', self.tr('返回', 'Back'))])
         text = self.label(model['name']) + '\n' + self.tr(
             '安装作用于当前活动系统槽；共享 /home 中的插件和配置可能同时影响另一系统槽。',
             'Installation targets the active OS slot; plugins and configuration in shared /home may also affect the other OS slot.')
+        text += '\n' + self.compatibility_notice()
         if pending:
-            text += '\n' + self.tr('有中断的维护操作。请先选择恢复。', 'Maintenance was interrupted. Choose Restore first.')
+            text += '\n' + (self.label(pending.get('reason','')) if options.get('dynamic_adapter')=='keyboard' else self.tr('有中断的维护操作。请先选择恢复。', 'Maintenance was interrupted. Choose Restore first.'))
         elif legacy_current:
             text += '\n' + self.tr('安装器已有配置，安装后才纳入 Boiler 维护。',
                                     'Installer configuration exists. Install it to bring it under Boiler maintenance.')
@@ -262,7 +366,8 @@ class ModelUI:
                                         'I agree to keep system updates on hold and have read the adaptation limits.'), False)])
             if consent != {'update-hold'}:
                 return
-        args = ['shared-plan' if shared else 'plan', model['id'], '--action', action, '--trust-local-test']
+        dynamic = options.get('dynamic_adapter') == 'keyboard'
+        args = ['keyboard-plan' if dynamic else 'shared-plan' if shared else 'plan', model['id'], '--action', action, '--trust-local-test']
         if not shared:
             args.extend(['--installer-language', self.lang, '--kde-language', 'system'])
         if action == 'apply' and not shared:
@@ -291,7 +396,7 @@ class ModelUI:
                 json.dump(plan, output, ensure_ascii=False, indent=2)
                 output.flush()
                 os.fsync(output.fileno())
-            receipt = self.backend.call('shared-execute' if shared else 'execute', str(path), '--reviewed-sha256', digest, '--trust-local-test')
+            receipt = self.backend.call('keyboard-execute' if dynamic else 'shared-execute' if shared else 'execute', str(path), '--reviewed-sha256', digest, '--trust-local-test')
         self.receipt(receipt, action)
 
     def receipt(self, receipt, action):
@@ -315,11 +420,16 @@ class ModelUI:
             reason = result.get('reason')
             if reason:
                 text += '\n' + self.label(reason)
+        if any(row.get('user_edits_preserved') for row in result.get('components',[]) if isinstance(row,dict)):
+            text += '\n' + self.tr('已保留用户修改的完整配置文件；键盘设置可能仍保留，未宣称配置已恢复。',
+                'The edited configuration was preserved in full. Keyboard settings may remain; configuration restoration is not claimed.')
         if receipt.get('restart_required') is True:
             text += '\n' + self.tr('请重启以应用更改。', 'Restart to apply the changes.')
         elif receipt.get('restart_required') is False:
             text += '\n' + self.tr('此次操作无需重启。', 'No restart is required for this operation.')
         self.dialog.message(text, error=failed)
+        if failed:
+            self.offer_failure('MODEL_VERIFICATION_FAILED')
 
     def review(self, model, options, plan, action_label):
         lines = [self.tr('确认此次操作', 'Review this operation'), self.label(model['name']), action_label]
@@ -399,6 +509,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Boiler native KDE model maintenance')
     parser.add_argument('--language', choices=('zh-CN', 'en-US'))
     parser.add_argument('--offline', action='store_true')
+    parser.add_argument('--feedback', action='store_true', help='Open manual feedback without loading the model catalog')
+    parser.add_argument('--resources',action='store_true',help='Maintain installed shared hardware resources')
     args = parser.parse_args(argv)
     lang = language(args.language)
     if not Path(KDIALOG).is_file():
@@ -409,7 +521,23 @@ def main(argv=None):
     if hasattr(os, 'geteuid') and os.geteuid() == 0:
         print('请以桌面用户运行 / Run this interface as the desktop user.', file=sys.stderr)
         return 1
-    return ModelUI(KDialog(lang), Backend(), lang=lang, offline=args.offline).run()
+    ui = ModelUI(KDialog(lang), Backend(), lang=lang, offline=args.offline)
+    if args.feedback:
+        ui.manual_feedback()
+        return 0
+    if args.resources:
+        from .resource_ui import ResourceUI
+        return ResourceUI(ui.dialog,feedback=ui.manual_feedback,failure=ui.offer_failure).run()
+    while True:
+        choice=ui.dialog.menu(ui.tr('请选择维护内容','Choose what to maintain'),[
+            ('resources',ui.tr('已安装的机型适配','Installed device support')),
+            ('tools',ui.tr('其他维护工具与机型指南','Other maintenance tools and model guides')),
+            ('feedback',ui.tr('反馈','Feedback'))])
+        if choice is None:return 0
+        if choice=='feedback':ui.manual_feedback();continue
+        if choice=='tools':return ui.run()
+        from .resource_ui import ResourceUI
+        return ResourceUI(ui.dialog,feedback=ui.manual_feedback,failure=ui.offer_failure).run()
 
 
 if __name__ == '__main__':

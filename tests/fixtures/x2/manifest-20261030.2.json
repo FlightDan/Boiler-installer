@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "kind": "DevicePackage",
+  "id": "device:x2-mini",
+  "version": "0.1.0-localtest.20261030.2",
+  "minimum_engine_version": "0.1.0",
+  "name": {
+    "en": "ONEXPLAYER X2 Mini shared repairs",
+    "zh": "ONEXPLAYER X2 Mini 共用修复"
+  },
+  "source": {
+    "kind": "local",
+    "path": "Boiler-oxp3/shared-adaptations"
+  },
+  "trust": {
+    "status": "unsigned-development",
+    "official_release": false
+  },
+  "components": [
+    {
+      "schema_version": 1,
+      "kind": "ComponentManifest",
+      "id": "x2-mini:battery",
+      "version": "0.2.2",
+      "name": {
+        "en": "Battery 0.2.2: consistent charge and sleep sliders",
+        "zh": "Battery 0.2.2：统一充电与待机滑块"
+      },
+      "description": {
+        "en": "Charge limit, three charging modes and seven sleep choices use consistent slider sections. Existing preferences are preserved until changed. Saving never initiates sleep. X2 charge controls remain disabled.",
+        "zh": "充电上限、三档充电方式与七档待机统一使用滑块区块；调整前保留既有偏好，保存不会立即睡眠。X2 不启用充电控制。"
+      },
+      "default": false,
+      "optional": true,
+      "requires": [],
+      "conflicts": [],
+      "files": [
+        {
+          "source": "shared-adaptations/battery/000.bin",
+          "target": "var/lib/oxp3-battery/battery_control.py",
+          "size": 837,
+          "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/001.bin",
+          "target": "var/lib/oxp3-battery/sleep_control.py",
+          "size": 8463,
+          "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/002.bin",
+          "target": "etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf",
+          "size": 171,
+          "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/003.bin",
+          "target": "home/deck/homebrew/plugins/OXP3-battery/main.py",
+          "size": 947,
+          "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/004.bin",
+          "target": "home/deck/homebrew/plugins/OXP3-battery/dist/index.js",
+          "size": 11336,
+          "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/005.bin",
+          "target": "home/deck/homebrew/plugins/OXP3-battery/plugin.json",
+          "size": 96,
+          "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/battery/006.bin",
+          "target": "home/deck/homebrew/plugins/OXP3-battery/package.json",
+          "size": 62,
+          "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f",
+          "mode": 420
+        }
+      ],
+      "compatibility": {
+        "architectures": [
+          "x86_64"
+        ],
+        "os_ids": [
+          "steamos"
+        ],
+        "os_versions": [
+          "3.10"
+        ]
+      }
+    },
+    {
+      "schema_version": 1,
+      "kind": "ComponentManifest",
+      "id": "x2-mini:microphone",
+      "version": "0.1.0",
+      "name": {
+        "en": "Microphone native mute synchronization",
+        "zh": "麦克风原生静音联动"
+      },
+      "description": {
+        "en": "Event-driven ALSA Capture Switch synchronization; keeps source mute and gain settings. Restart the desktop session to activate.",
+        "zh": "按音频事件同步 ALSA 录音开关，保留原生静音和增益设置；重新登录桌面后启用。"
+      },
+      "default": false,
+      "optional": true,
+      "requires": [],
+      "conflicts": [],
+      "files": [
+        {
+          "source": "shared-adaptations/microphone/000.bin",
+          "target": "usr/local/lib/oxp-microphone/microphone.py",
+          "size": 9440,
+          "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/microphone/001.bin",
+          "target": "etc/systemd/user/oxp-microphone.service",
+          "size": 364,
+          "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a",
+          "mode": 420
+        },
+        {
+          "source": "shared-adaptations/microphone/002.bin",
+          "target": "etc/systemd/user/default.target.d/90-oxp-microphone.conf",
+          "size": 36,
+          "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888",
+          "mode": 420
+        }
+      ],
+      "compatibility": {
+        "architectures": [
+          "x86_64"
+        ],
+        "os_ids": [
+          "steamos"
+        ],
+        "os_versions": [
+          "3.10"
+        ]
+      }
+    }
+  ],
+  "compatibility": {
+    "architectures": [
+      "x86_64"
+    ],
+    "os_ids": [
+      "steamos"
+    ],
+    "os_versions": [
+      "3.10"
+    ]
+  },
+  "shared_adaptations": {
+    "kind": "boiler-shared-static-v1",
+    "components": [
+      "x2-mini:battery",
+      "x2-mini:microphone"
+    ],
+    "input_lock_sha256": "089a7c31bd1e96a4b7396f40adbd142ce14af7abd5c1858ef9aba86a955ea7a0",
+    "warnings": [
+      "Local development package; no sleep or X2 hardware acceptance is claimed."
+    ]
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "shared-adaptations/battery/000.bin",
+      "size": 837,
+      "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e"
+    },
+    {
+      "path": "shared-adaptations/battery/001.bin",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "path": "shared-adaptations/battery/002.bin",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "path": "shared-adaptations/battery/003.bin",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "path": "shared-adaptations/battery/004.bin",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "path": "shared-adaptations/battery/005.bin",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "path": "shared-adaptations/battery/006.bin",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    },
+    {
+      "path": "shared-adaptations/microphone/000.bin",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269"
+    },
+    {
+      "path": "shared-adaptations/microphone/001.bin",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
+    },
+    {
+      "path": "shared-adaptations/microphone/002.bin",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888"
+    },
+    {
+      "path": "shared-adaptations-inputs.json",
+      "size": 9424,
+      "sha256": "23f0041aba50909c72afc51552acd513b2d1a2a2051015e36f4241fc2de501a5"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "size": 11690,
+      "sha256": "99f0bce28d6b10958e4ad7dcc075366ba9463ae475940db39a38d4bb499b2eb6"
+    }
+  ]
+}

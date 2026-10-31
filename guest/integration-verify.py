@@ -29,6 +29,11 @@ def guest_marker(name, content):
             raise RuntimeError('Untrusted managed guest marker')
         os.fchmod(stream.fileno(), 0o600); stream.truncate(0); stream.write(content)
 options = json.loads(Path('/mnt/payload/selection.json').read_text())
+if any(isinstance(key, str) and key.startswith('resource_') and value is not None
+       for key, value in options.items()):
+    from resource_entrypoint import run as resource_entry
+    resource_entry('/mnt/payload', options, readonly=True)
+    raise SystemExit(0)
 validate_options(options)
 if options.get('install_mode') == 'imported':
     print('OXP_INTEGRATION_VERIFIED=preserved-image', flush=True)

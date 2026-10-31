@@ -24,6 +24,8 @@ internal static class BoilerModelCatalogChecks
         models = new[] { Model("device:oxp3", "guide:oxp3", "OXP3"), Model("device:x2-mini", "guide:x2-mini", "X2 Mini") },
         bundled_packages = bundled ? new[] { new { id = "device:oxp3", trust = "local-test", directory = "unused-metadata-path" } } : []
     });
+    private static JsonElement EmptyResources() => JsonSerializer.SerializeToElement(new
+    { schema_version = 1, kind = "LocalResourceSelectionCatalog", deployment_available = false, catalog_sha256 = new string('0', 64), models = Array.Empty<object>() });
     private static JsonElement MatchingIndex(bool revoked = false) => JsonSerializer.SerializeToElement(new
     {
         offline = true, index = new { sequence = 1, revocations = revoked ? new[] { new string('a', 64), new string('b', 64) } : [],
@@ -57,6 +59,7 @@ internal static class BoilerModelCatalogChecks
                 var bundleCalls = 0;
                 window = new MainWindow(rehearsal: true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false,
                     DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()), ModelCatalogLoaderForChecks = _ => Task.FromResult(Catalog()),
+                    ResourceCatalogLoaderForChecks = _ => Task.FromResult(EmptyResources()),
                     DeviceHardwareReaderForChecks = () => null,
                     BundledModelLoaderForChecks = (_, _) => { bundleCalls++; throw new IOException("fixture request reached explicit trust boundary"); } };
                 ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
@@ -72,9 +75,10 @@ internal static class BoilerModelCatalogChecks
                 Require(details.IsVisible && recommendations.Children.OfType<TextBlock>().Any(block => block.Text.Contains("PL4"))
                     && !recommendations.Children.OfType<CheckBox>().Any(), language + "-pending-guide-items-are-read-only");
                 list.SelectedIndex = 1; await Flush(window);
-                Require(use.IsEnabled && ((TextBlock)use.Content).Text == PartitionInventory.L("使用所选机型包", "Use selected device package")
-                    && Field<TextBlock>(window, "inlineDeviceStatus").Visibility == Visibility.Collapsed
-                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-oxp3-simple-action-without-test-warning");
+                Require(!use.IsEnabled && ((TextBlock)use.Content).Text == PartitionInventory.L("确认资源选择（本地测试）", "Confirm resource choices (local test)")
+                    && Field<TextBlock>(window, "inlineDeviceStatus").Visibility == Visibility.Visible
+                    && !string.IsNullOrWhiteSpace(Field<TextBlock>(window, "inlineDeviceStatus").Text)
+                    && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-model-declared-local-test-does-not-authorize-old-bundle");
                 foreach (var width in new[] { 1060d, 640d })
                 {
                     window.Width = width; await Flush(window);
@@ -90,7 +94,7 @@ internal static class BoilerModelCatalogChecks
                     using (var stream = File.Create(path)) encoder.Save(stream); captures.Add(path);
                 }
                 use.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Wait(window);
-                Require(bundleCalls == 1 && window.CurrentOptions.DevicePackage == null, language + "-explicit-click-enters-bundle-loader-without-pretrust");
+                Require(bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-model-action-cannot-enter-old-bundle-loader");
 
                 // A minimal validated local fixture exercises the actual package anchoring path.
                 var folder = Path.Combine(directory, language + "-bundle"); Directory.CreateDirectory(folder);
@@ -100,10 +104,11 @@ internal static class BoilerModelCatalogChecks
                         id = "oxp3:legacy-adaptation", version = "0.1.0", files = Array.Empty<object>(), hooks = new { } } } });
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(package); await File.WriteAllBytesAsync(Path.Combine(folder, "manifest.json"), bytes);
                 var sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-                window.BundledModelLoaderForChecks = (_, _) => { bundleCalls++; return Task.FromResult(JsonSerializer.SerializeToElement(new { directory = folder, manifest_sha256 = sha, package })); };
-                use.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Wait(window);
+                await (Task)Call(window, "ImportDeviceInputAsync", folder)!;
+                Field<CheckBox>(window, "developerPackages").IsChecked = true;
+                await (Task)Call(window, "SelectDeviceDirectory", folder, "developer-session", sha)!;
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && window.CurrentOptions.DeviceTrust == "developer-session",
-                    language + "-bundled-package-uses-real-validation-and-session-trust");
+                    language + "-external-package-uses-real-validation-and-explicit-session-trust");
                 await (Task)Call(window, "LoadModelCatalogAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!;
                 Require(window.CurrentOptions.DeviceManifestSha256 == sha && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _)
                     && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed,
@@ -195,7 +200,8 @@ internal static class BoilerModelCatalogChecks
         MainWindow Open(Func<CancellationToken, Task<JsonElement>> index, Func<CancellationToken, Task<JsonElement>> catalog)
         {
             var result = new MainWindow(rehearsal: true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false,
-                DeviceIndexLoaderForChecks = index, ModelCatalogLoaderForChecks = catalog, DeviceHardwareReaderForChecks = () => null };
+                DeviceIndexLoaderForChecks = index, ModelCatalogLoaderForChecks = catalog,
+                ResourceCatalogLoaderForChecks = _ => Task.FromResult(EmptyResources()), DeviceHardwareReaderForChecks = () => null };
             ((PartitionPicker)result.FindName("PartitionSelector")).AutomaticReadEnabled = false;
             result.Show(); result.BoilerModeForChecks("custom"); return result;
         }
@@ -206,8 +212,8 @@ internal static class BoilerModelCatalogChecks
             var list = Field<ComboBox>(window, "deviceList");
             require(list.Items.Count == 3, language + "-same-model-guide-and-two-signed-versions-merge-to-one-row");
             list.SelectedIndex = 1; await Flush(window);
-            require(Chosen(list).TryGetProperty("guide_id", out _) && window.CurrentOptions.DevicePackage == null
-                && Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-merged-oxp3-prefers-bundled-test-without-granting-trust");
+            require(!Chosen(list).TryGetProperty("guide_id", out _) && window.CurrentOptions.DevicePackage == null
+                && Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-merged-model-prefers-signed-source-without-model-self-trust");
             window.Close(); window = null;
 
             var delayedCatalog = new TaskCompletionSource<JsonElement>();
@@ -224,9 +230,9 @@ internal static class BoilerModelCatalogChecks
             window = Open(_ => delayedIndex.Task, _ => Task.FromResult(Catalog())); await Flush(window);
             list = Field<ComboBox>(window, "deviceList"); list.SelectedIndex = 1; await Flush(window);
             delayedIndex.SetResult(MatchingIndex()); await Flush(window);
-            require(list.Items.Count == 3 && Chosen(list).TryGetProperty("guide_id", out _)
-                && Field<StackPanel>(window, "modelCatalogDetails").IsVisible && window.CurrentOptions.DevicePackage == null,
-                language + "-late-signed-index-keeps-bundled-choice-and-session-trust-boundary");
+            require(list.Items.Count == 3 && !Chosen(list).TryGetProperty("guide_id", out _)
+                && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed && window.CurrentOptions.DevicePackage == null,
+                language + "-late-signed-source-does-not-trust-model-declared-bundle");
             window.Close(); window = null;
 
             delayedIndex = new TaskCompletionSource<JsonElement>();

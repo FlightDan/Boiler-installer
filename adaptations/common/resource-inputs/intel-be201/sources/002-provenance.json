@@ -1,0 +1,82 @@
+{
+  "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+  "files": [
+    {
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "target": "iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "bytes": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2"
+    },
+    {
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "target": "iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "bytes": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec"
+    },
+    {
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "target": "iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "bytes": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c"
+    },
+    {
+      "source": "intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "target": "iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "bytes": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd"
+    },
+    {
+      "source": "intel/ibt-00a0-0291-iml.sfi",
+      "target": "intel/ibt-00a0-0291-iml.sfi",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-iml.sfi",
+      "bytes": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903"
+    },
+    {
+      "source": "intel/ibt-00a0-0291-pci.ddc",
+      "target": "intel/ibt-00a0-0291-pci.ddc",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.ddc",
+      "bytes": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "source": "intel/ibt-00a0-0291-pci.sfi",
+      "target": "intel/ibt-00a0-0291-pci.sfi",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.sfi",
+      "bytes": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd"
+    },
+    {
+      "source": "intel/ibt-00a0-0291-usb.ddc",
+      "target": "intel/ibt-00a0-0291-usb.ddc",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-usb.ddc",
+      "bytes": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "source": "intel/ibt-00a0-0291-usb.sfi",
+      "target": "intel/ibt-00a0-0291-usb.sfi",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-usb.sfi",
+      "bytes": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778"
+    },
+    {
+      "source": "LICENSES/LICENCE.iwlwifi_firmware",
+      "target": "licenses/LICENCE.iwlwifi_firmware",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.iwlwifi_firmware",
+      "bytes": 2046,
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5"
+    },
+    {
+      "source": "LICENSES/LICENCE.ibt_firmware",
+      "target": "licenses/LICENCE.ibt_firmware",
+      "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENCE.ibt_firmware",
+      "bytes": 2040,
+      "sha256": "5181b0b51efc79d5acb2c9bb92042878fdbad97a92114d4ab5e32e2b5b52fce4"
+    }
+  ]
+}

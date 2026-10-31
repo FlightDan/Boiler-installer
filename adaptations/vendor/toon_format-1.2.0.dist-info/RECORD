@@ -1,0 +1,12 @@
+toon_format/__init__.py,sha256=W2VQmF_-Oy4ReAh-xELOT1qfZ6Xjd50ugvAA4ZRthk8,1287
+toon_format/_api.py,sha256=Pu2z-ymnw7HV2tKBQVT1k5G7cSDxkxDv82v3uwm2tV0,6222
+toon_format/_decoder.py,sha256=IIAK3iG5jlaZ9OhJqxrOOchkn0zkHt784mJI3nIo7aM,25143
+toon_format/_encoder.py,sha256=Ob6LGA5JkcwC-6dDcHFRSF-sh-K4NQKWxn8e1yFLUL0,14028
+toon_format/_errors.py,sha256=iicwsJ-2foRNtFRiuodccy6uczEbgRCiyR5yvGya7Sc,1127
+toon_format/_text.py,sha256=tuH8JJ7kc76Ado1gi2PO8ZP_YJwz5mI69dswGWC0Z80,4289
+toon_format/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+toon_format/pydantic.py,sha256=9EuTQBomtBfZ87YNqdyE5a9buJmRFv5XQyeJWahvlmY,2502
+toon_format-1.2.0.dist-info/licenses/LICENSE,sha256=JtqV78Ni66OZm0typ-Fjw3kI9VFcrKw2xGAR5ZXujUI,1244
+toon_format-1.2.0.dist-info/WHEEL,sha256=9IUYslYuG_asT4WlWvfk_K76nveuLvSTKDoLeL0cV-Q,80
+toon_format-1.2.0.dist-info/METADATA,sha256=uaKIo1t498nXkAU3QrsOfBkUDuEM7-Q6RmYkRq_RolE,8292
+toon_format-1.2.0.dist-info/RECORD,,

@@ -19,15 +19,14 @@ public partial class MainWindow
     private static string DeviceEntryKey(JsonElement entry) => IsModelGuide(entry) ? entry.GetProperty("guide_id").GetString()!
         : entry.GetProperty("id").GetString() + ":" + entry.GetProperty("sha256").GetString();
     private JsonElement? ChosenModelGuide => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry } && IsModelGuide(entry) ? entry : null;
-    private bool HasBundledModel(string id) => modelCatalog is JsonElement catalog && catalog.TryGetProperty("bundled_packages", out var packages)
-        && packages.EnumerateArray().Any(package => package.GetProperty("id").GetString() == id
-            && package.TryGetProperty("trust", out var trust) && trust.GetString() == "local-test");
     private bool CanUseChosenDevice => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry }
-        && (!IsModelGuide(entry) || HasBundledModel(entry.GetProperty("id").GetString()!));
-    private string ChosenDeviceActionLabel => PartitionInventory.L("使用所选机型包", "Use selected device package");
+        && (!IsModelGuide(entry) || HasResourceModel(entry.GetProperty("id").GetString()!) && CanChooseResources);
+    private string ChosenDeviceActionLabel => ChosenModelGuide is JsonElement
+        ? PartitionInventory.L("确认资源选择（本地测试）", "Confirm resource choices (local test)")
+        : PartitionInventory.L("使用所选机型包", "Use selected device package");
     private string ChosenDeviceNotice => ChosenModelGuide is JsonElement model
-        ? HasBundledModel(model.GetProperty("id").GetString()!)
-            ? ""
+        ? HasResourceModel(model.GetProperty("id").GetString()!)
+            ? PartitionInventory.L("选择完整共享资源；安装后首次启动检查实际接口并启用。", "Choose complete shared resources; first boot checks actual interfaces and activates them.")
             : PartitionInventory.L("此机型只有适配指南，暂无随包适配。可查看建议或导入本地机型包。", "This model has guides only and no bundled adaptation. View recommendations or import a local device package.")
         : DeviceCompatibilityNotice();
 
@@ -49,6 +48,8 @@ public partial class MainWindow
         if (modelCatalogStatus != null) modelCatalogStatus.Text = PartitionInventory.L("正在读取固定版本机型适配清单…", "Loading the pinned model adaptation guides…");
         try
         {
+            await LoadResourceCatalogAsync(generation, token);
+            if (generation != devicePanelGeneration || token.IsCancellationRequested) return;
             var result = ModelCatalogLoaderForChecks != null ? await ModelCatalogLoaderForChecks(token)
                 : await BoilerProtocol.RunAsync(["model-catalog"], token);
             if (generation != devicePanelGeneration || token.IsCancellationRequested) return;
@@ -62,6 +63,7 @@ public partial class MainWindow
         {
             if (generation != devicePanelGeneration || token.IsCancellationRequested) return;
             modelCatalogError = error.Message;
+            PopulateDeviceList();
         }
         finally
         {
@@ -85,6 +87,11 @@ public partial class MainWindow
                 + " " + source.GetProperty("repository").GetString() + " @ " + commit[..Math.Min(12, commit.Length)];
         }
         else modelCatalogStatus.Text = "";
+        if (resourceCatalogError != null)
+        {
+            modelCatalogStatus.Text += PartitionInventory.L(" 共享资源池校验失败，无法选择资源。", " Resource pool validation failed; resource choices are unavailable.");
+            modelCatalogStatus.ToolTip = resourceCatalogError;
+        }
         if (modelCatalogError != null && deviceIndexRetry != null) deviceIndexRetry.Visibility = Visibility.Visible;
     }
 
@@ -96,10 +103,11 @@ public partial class MainWindow
 
     private void ShowModelGuide(JsonElement model)
     {
+        if (ResourceModel(model.GetProperty("id").GetString()!) is JsonElement resourceModel) { ShowResourceModel(resourceModel); return; }
         if (modelCatalogDetails == null) return;
         displayedDeviceMetadata = model.Clone();
         ClearModelGuide(); modelCatalogDetails.Visibility = Visibility.Visible;
-        var bundled = HasBundledModel(model.GetProperty("id").GetString()!);
+        var bundled = false;
         TextBlock Text(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 8) };
         var notice = bundled
             ? ""
@@ -146,19 +154,9 @@ public partial class MainWindow
     private async Task SelectChosenDeviceAsync()
     {
         if (ChosenModelGuide is not JsonElement model) { await SelectSignedDeviceAsync(); return; }
-        var id = model.GetProperty("id").GetString()!;
-        if (!HasBundledModel(id)) throw new IOException(PartitionInventory.L("此机型尚无随包测试适配。", "This model has no bundled test adaptation."));
-        var generation = devicePanelGeneration;
-        var chosenKey = DeviceEntryKey(model);
-        var token = deviceIndexCancellation?.Token ?? CancellationToken.None;
-        var response = BundledModelLoaderForChecks != null ? await BundledModelLoaderForChecks(id, token)
-            : await BoilerProtocol.RunAsync(["bundled-model-package", id, "--trust-local-test"], token);
-        if (generation != devicePanelGeneration || ChosenModelGuide is not JsonElement chosen || DeviceEntryKey(chosen) != chosenKey) return;
-        var selection = await PrepareDeviceSelectionAsync(response.GetProperty("directory").GetString()!, "developer-session",
-            response.GetProperty("manifest_sha256").GetString(), token, sessionTrusted: true);
-        if (generation != devicePanelGeneration || ChosenModelGuide is not JsonElement current || DeviceEntryKey(current) != chosenKey) return;
-        if (selection.Package.GetProperty("id").GetString() != id) throw new IOException("Bundled package does not match the selected model.");
-        if (installMode == "vanilla") PromoteDeviceMode();
-        ClearModelGuide(); CommitDeviceSelection(selection);
+        if (ResourceModel(model.GetProperty("id").GetString()!) is JsonElement resourceModel)
+        { await SelectResourceModelAsync(resourceModel); return; }
+        throw new IOException(PartitionInventory.L("此机型没有可选择的共享资源池。可导入外部机型包。", "This model has no selectable shared resource pool. Import an external device package instead."));
+
     }
 }

@@ -321,9 +321,19 @@ public static class Backend
         using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false);
         await source.CopyToAsync(target, token); await target.FlushAsync(token);
     }
-    public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null)
+    public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null, ResourceGuestBinding? resourceBinding = null)
     {
         if (secureInput != null && (task is not ("integration" or "secret-input-check") || string.IsNullOrEmpty(secureInput))) throw new ArgumentException("Secure input is available only for integration or its isolated handshake check.", nameof(secureInput));
+        if (resourceBinding != null && (image == null || selection == null || task is not ("integration" or "integration-verify")))
+            throw new IOException("Resource session capability requires an explicit integration image and selection.");
+        if (task is "integration" or "integration-verify" && selection != null)
+        {
+            using var resourceOptions = System.Text.Json.JsonDocument.Parse(selection);
+            var hasResourceSelection = resourceOptions.RootElement.TryGetProperty("resource_selection", out var chosenResources)
+                && chosenResources.ValueKind != System.Text.Json.JsonValueKind.Null;
+            if (hasResourceSelection != (resourceBinding != null)) throw new IOException("Resource selection requires its host-owned session capability.");
+            resourceBinding?.ValidateForGuest(image!, task, selection);
+        }
         byte[]? secureBytes = null;
         char[]? secureEncoded = null;
         var secureEncodedLength = 0;
@@ -420,6 +430,7 @@ public static class Backend
             }
         }
         if (selection != null) await File.WriteAllTextAsync(Path.Combine(payload, "selection.json"), selection, token);
+        resourceBinding?.StagePayload(payload);
         if (faultBoundary != null) await File.WriteAllTextAsync(Path.Combine(payload, "fault-boundary.txt"), faultBoundary, token);
         if (task is "build" or "refine-preview" && selection != null)
         {
@@ -458,7 +469,7 @@ public static class Backend
             "-device", "virtio-blk-pci,drive=boiler-scratch,serial=boiler-scratch",
             "-drive", $"file=fat:ro:{Option(payloadVolumes[0])},format=raw,if=none,id=payload-0,readonly=on",
             "-device", "virtio-blk-pci,drive=payload-0,serial=boiler-payload-0" };
-        if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=none,id=boiler-image{(writable ? "" : ",readonly=on")}", "-device", "virtio-blk-pci,drive=boiler-image"]);
+        if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=none,id=boiler-image{(writable ? "" : ",readonly=on")}", "-device", "virtio-blk-pci,drive=boiler-image,serial=boiler-image"]);
         if (task is "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test")
         {
             if (fixture == null) throw new InvalidOperationException("没有选择本工具创建的虚拟测试盘。");
@@ -499,6 +510,7 @@ public static class Backend
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = start };
         var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task is "home-copy-plan-checks" or "refind-image" or "integration" or "integration-check" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
+        if(resourceBinding is not null)taskTimeout=ResourceExecutionPolicy.ForResourceImage(task,resourceBinding.PreparedLength);
         using var timeout = new CancellationTokenSource(taskTimeout);
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
         // Open the log before starting QEMU: an unwritable/full log disk must
@@ -506,6 +518,7 @@ public static class Backend
         var logPath = Path.Combine(Root, "logs", id + ".txt"); Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
         using var liveLog = new StreamWriter(new FileStream(logPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
         combined.Token.ThrowIfCancellationRequested();
+        if (resourceBinding != null) await resourceBinding.RevalidateAsync(image!, task, selection!, combined.Token,log);
         process.Start();
         void StopGuest()
         {
@@ -530,9 +543,10 @@ public static class Backend
                     {
                         // Only the secret file uses 077. Applying it to the task also makes
                         // public runtime directories root-only and breaks the deck session.
+                        var resourceAnchor = resourceBinding == null ? "" : resourceBinding.AnchorCommand() + " && ";
                         var command = secureInput == null
-                            ? $"( umask 022; {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
-                            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {payloadMount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
+                            ? $"( umask 022; {resourceAnchor}{payloadMount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
+                            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {resourceAnchor}{payloadMount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
                         for (var offset = 0; offset < command.Length; offset += 8)
                         {
                             await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);
@@ -602,11 +616,13 @@ public static class Backend
         }
     }
     internal static void CopyIntegrationPayload(string? privatePayload, string payload, bool metadataOnly = false)
+        => CopyIntegrationPayloadAtRoot(Root, privatePayload, payload, metadataOnly);
+    internal static void CopyIntegrationPayloadAtRoot(string root, string? privatePayload, string payload, bool metadataOnly = false)
     {
-        var source = privatePayload == null ? Path.Combine(Root, "cache/integration") : Path.Combine(privatePayload, "integration");
+        var source = privatePayload == null ? Path.Combine(root, "cache/integration") : Path.Combine(privatePayload, "integration");
         var manifestPath = Path.Combine(source, "manifest.json");
         var manifestBytes = File.ReadAllBytes(manifestPath);
-        var currentBytes = File.ReadAllBytes(Path.Combine(Root, "cache/integration/manifest.json"));
+        var currentBytes = File.ReadAllBytes(Path.Combine(root, "cache/integration/manifest.json"));
         if (!manifestBytes.SequenceEqual(currentBytes)) throw new IOException("Component payload catalogue changed after planning.");
         using var manifest = System.Text.Json.JsonDocument.Parse(manifestBytes);
         var inventory = new Dictionary<string, (long Size, string Sha256)>();
@@ -638,6 +654,7 @@ public static class Backend
                     throw new IOException("Firmware binaries must be acquired into a private download plan.");
                 files.Add((file, relative));
             }
+        // The canonical shared pool is already included and hash-checked above.
         var destination = Path.Combine(payload, "integration"); Directory.CreateDirectory(destination);
         File.WriteAllBytes(Path.Combine(destination, "manifest.json"), manifestBytes);
         foreach (var file in files)

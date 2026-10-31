@@ -2,6 +2,7 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 from protocol import load_json
 from . import Engine
 
@@ -46,18 +47,49 @@ def main(argv=None):
     command.add_argument('--trust-local-test',action='store_true')
     command=actions.add_parser('shared-execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
     command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('keyboard-options'); command.add_argument('model_id'); command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('keyboard-plan'); command.add_argument('model_id')
+    command.add_argument('--action',choices=('apply','verify','restore','recover'),default='apply')
+    command.add_argument('--repair',action='append',default=[]); command.add_argument('--plugin',action='append',default=[])
+    command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('keyboard-execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
+    command.add_argument('--trust-local-test',action='store_true')
     command=commands.add_parser("plugins",help="Maintain known Boiler Decky/plugin transactions without a payload cache")
     plugins=command.add_subparsers(dest="plugin_command",required=True)
     plugins.add_parser("list")
     for action in ("verify","restore"):
         plugin=plugins.add_parser(action); plugin.add_argument("plugin",choices=("decky","steamgriddb","protondb"))
+    command=commands.add_parser('resource-lifecycle',help='Inspect, retry or restore the fixed installed resource activation lifecycle')
+    command.add_argument('action',choices=('status','verify','retry','plan-restore','restore','restore-activation'))
+    command.add_argument('identity',nargs='?')
+    command.add_argument('--reviewed-sha256')
+    from . import resource_cli
+    resource_cli.add_parser(commands)
     args=parser.parse_args(argv)
     try:
+        if args.command=='resource-lifecycle':
+            if args.action!='status' and (Path(args.root).resolve()!=Path('/') or args.state_dir not in (None,'/var/lib/boiler/maintenance')):raise ValueError('Installed lifecycle actions require the current root and canonical state directory')
+            from . import resource_firstboot,resource_lifecycle
+            if args.action=='status':result=resource_firstboot.status(args.root)
+            elif args.action=='verify':result=resource_lifecycle.verify()
+            elif args.action=='retry':result=resource_lifecycle.retry()
+            elif args.action=='plan-restore':result=resource_lifecycle.plan_restore(args.identity)
+            elif args.action=='restore':result=resource_lifecycle.restore(args.identity,args.reviewed_sha256)
+            else:result=resource_firstboot.restore_activation(args.identity,args.root)
+            print(json.dumps({'ok':True,'result':result})); return 0
+        if args.command=='resources':
+            result=resource_cli.dispatch(args)
+            print(json.dumps({'ok':True,'result':result})); return 0
         from .live_root import check_state_directory,pending
         check_state_directory(args.root,args.state_dir)
         if args.command=='models':
             from . import models
-            if args.model_command.startswith('shared-'):
+            if args.model_command.startswith('keyboard-'):
+                from . import keyboard_models
+                if args.model_command=='keyboard-options': result=keyboard_models.options(args.root,args.model_id,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+                elif args.model_command=='keyboard-plan': result=keyboard_models.plan(args.root,args.model_id,args.repair,args.plugin,action=args.action,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+                else: result=keyboard_models.execute(args.root,args.plan,reviewed_sha256=args.reviewed_sha256,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
+            elif args.model_command.startswith('shared-'):
                 from . import shared_models
                 if args.model_command=='shared-options': result=shared_models.options(args.root,args.model_id,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
                 elif args.model_command=='shared-plan': result=shared_models.plan(args.root,args.model_id,args.repair,args.plugin,action=args.action,trust_local_test=args.trust_local_test,state_dir=args.state_dir)

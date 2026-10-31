@@ -156,7 +156,7 @@ public static partial class InstallationController
             var denied = error is Win32Exception { NativeErrorCode: 1223 };
             state = state with { Status = error is OperationCanceledException || denied ? "cancelled" : "failed",
                 Error = denied ? "管理员权限请求已取消。" : error.Message, UpdatedUtc = DateTime.UtcNow };
-            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!));
+            Save(journal, state); log(error.ToString()); report(new(state.Status, state.Error!, FailureType: FeedbackDiagnostic.Classify(error)));
         }
         return state;
     }

@@ -6,7 +6,7 @@ from .manifest import ProtocolError
 
 def validated_selection(package, repairs, plugins, *, installer_language='en-US',
                         kde_language='system', acknowledge_update_hold=False):
-    if package.get('id') != 'device:oxp3' or package.get('selection_contract') != {
+    if package.get('id') not in ('device:oxp3', 'device:x2-mini') or package.get('selection_contract') != {
             'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}:
         raise ProtocolError('Package does not declare per-adaptation selections')
     if acknowledge_update_hold is not True:

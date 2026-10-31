@@ -14,16 +14,25 @@ spec.loader.exec_module(collection)
 
 class AdaptationCollectionTests(unittest.TestCase):
     def copy_collection(self, destination):
-        for name in ('adaptations.json', 'source-plan.json', 'source-lock.json'):
+        for name in ('adaptations.json', 'models.toon', 'model-index.json', 'toon-parser-lock.json',
+                     'source-plan.json', 'source-lock.json', 'current-source-lock.json', 'upstream-source-lock.json'):
             shutil.copyfile(ROOT/name, destination/name)
-        for name in ('common', 'brands', 'licenses'):
+        for name in ('common', 'brands', 'licenses', 'vendor'):
             shutil.copytree(ROOT/name, destination/name)
 
     def update_model(self, root, transform):
-        path = root/'brands/onexplayer/x2-mini/manifest.json'
-        model = json.loads(path.read_text(encoding='utf-8'))
+        path = root/'brands/onexplayer/x2-mini/x2-mini.toon'
+        parser = collection.toon_catalog.decoder(ROOT)
+        model = parser.loads(path.read_text(encoding='utf-8'))
         transform(model)
-        path.write_text(json.dumps(model, ensure_ascii=False), encoding='utf-8')
+        path.write_text(parser.dumps(model), encoding='utf-8')
+        # Mutation tests change the authoritative file and refresh compatibility
+        # views before testing semantic checks or Markdown guide drift.
+        try:
+            collection.toon_catalog.generate(root)
+        except collection.toon_catalog.CatalogError:
+            # Semantically invalid fixtures must reach the check under test.
+            pass
 
     def test_collection_and_source_only_choices(self):
         result = collection.check()
@@ -37,7 +46,7 @@ class AdaptationCollectionTests(unittest.TestCase):
         self.assertEqual(x2['desktop-hdr']['status'], 'external_runtime_required')
         self.assertEqual(len(x2['desktop-hdr']['sources']), 4)
         self.assertEqual(x2['hdr']['sources'], [])
-        self.assertTrue(all(x2[name]['recommendation'] == 'excluded'
+        self.assertTrue(all(x2[name]['recommendation'] != 'excluded'
                             for name in ('xe-dsb', 'fan-driver', 'charging', 'oxp3-light', 'legacy-runtime')))
 
     def test_tampered_source_fails_inventory_check(self):
@@ -61,15 +70,16 @@ class AdaptationCollectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.copy_collection(root)
-            self.update_model(root, lambda model: model['components'][0].update(notes='Changed recommendation'))
-            with self.assertRaisesRegex(ValueError, 'Guide differs'):
+            guide = root/'brands/onexplayer/x2-mini/model.md'
+            guide.write_text(guide.read_text(encoding='utf-8').replace('SteamOS、按芯片匹配的固件与维护运行时', 'Stale generated table'), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'Generated view is stale'):
                 collection.check(root)
 
     def test_missing_dependencies_and_runtime_defaults_are_rejected(self):
         for change, message in (
             (lambda model: model['components'][0].update(dependencies=['missing-component']), 'dependency'),
             (lambda model: model['components'][0].update(default=True), 'installation defaults'),
-            (lambda model: model.update(installable=True), 'not a DevicePackage'),
+            (lambda model: model.update(installable=True), 'non-installable'),
         ):
             with self.subTest(message=message), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)

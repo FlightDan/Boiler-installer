@@ -15,7 +15,8 @@ public sealed record SelectedOptions(int Schema, string[] Repairs, string[] Plug
     string InstallMode = "custom", string? DevicePackage = null, string[]? Wireless = null,
     string? DeviceManifestSha256 = null, string? DeviceTrust = null, string[]? DeviceComponents = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? GraphicsProfile = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DeviceLegacySelection? DeviceLegacyOptions = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DeviceLegacySelection? DeviceLegacyOptions = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ResourceSelection? ResourceSelection = null);
 public sealed record DeviceLegacySelection(int SchemaVersion, string[] Repairs, string[] Plugins, bool AcknowledgeLegacyUpdateHold);
 public sealed record OptionItem(string Id, string Zh, string En, bool Default, string[] Dependencies,
     bool Available = true, string? UnavailableZh = null, string? UnavailableEn = null);
@@ -49,6 +50,12 @@ public static class InstallerOptions
         Catalog.Plugins.Where(IsDefault).Select(x => x.Id).ToArray(), InstallerI18n.Language, DefaultKdeLanguage);
     public static void Validate(SelectedOptions value)
     {
+        if (value.ResourceSelection is { } resources)
+        {
+            ResourceSelections.Validate(resources);
+            if (value.DevicePackage != null || value.DeviceComponents is { Length: > 0 }) throw new IOException("Resource installation cannot execute a legacy model package.");
+            if (!value.Plugins.Contains("core:maintenance")) throw new IOException("Resource installation requires retained maintenance.");
+        }
         if (value.DeviceLegacyOptions is { } legacy)
         {
             if (value.DevicePackage == null || value.InstallMode != "custom" || legacy.SchemaVersion != 1

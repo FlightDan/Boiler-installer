@@ -58,14 +58,23 @@ def local_test_model_assets():
     return files
 
 
-def prepare(output, decky=None, wireless=(), development_firmware_cache=False, local_test_models=False):
+def local_test_resource_pool_assets(pool_root=None):
+    """Reference one verified pool; session delivery materializes it later."""
+    from protocol.resource_pool import inventory
+    return inventory(Path(pool_root) if pool_root is not None else ROOT/'cache/resource-pool')
+
+
+def prepare(output, decky=None, wireless=(), development_firmware_cache=False, local_test_models=False,
+            local_test_resource_pool=False, resource_pool=None):
     output = Path(output)
     if output.exists(): raise FileExistsError('Output exists; use a fresh preparation directory')
     if wireless and not development_firmware_cache:
         raise ValueError('Explicit firmware inputs require --development-firmware-cache')
+    if local_test_models and local_test_resource_pool:
+        raise ValueError('Shared resource pools cannot include legacy full model bundles')
     graphics = graphics_metadata(ROOT)
     components = {'core:decky': {'available': False, 'reason': 'Explicit locked Decky input required'}}
-    components.update(firmware_metadata())
+    components.update(firmware_metadata(ROOT))
     components.update(graphics_firmware_metadata(ROOT))
     staged = {}
     if decky:
@@ -101,7 +110,7 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
         components[identity] = dict(bundle, available=True, files=files, licenses=licenses,
                                    metadata_available=False, payload_cached=True, delivery='development-cache')
     runtime = []
-    for source in runtime_files():
+    for source in runtime_files(root=ROOT):
         if not source.is_file() or source.is_symlink(): raise FileNotFoundError('Maintenance runtime missing')
         relative = source.relative_to(ROOT).as_posix()
         data = source.read_bytes(); name = 'maintenance-runtime/' + relative
@@ -128,8 +137,20 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
             name = 'maintenance-runtime/' + relative
             staged[name] = data
             runtime.append(record(name, data, target='usr/local/lib/boiler/' + relative, mode=0o644))
+    if local_test_resource_pool:
+        for entry in local_test_resource_pool_assets(resource_pool):
+            source_root=Path(resource_pool) if resource_pool is not None else ROOT/'cache/resource-pool'
+            data=(source_root/entry['path']).read_bytes()
+            if len(data)!=entry['size'] or __import__('hashlib').sha256(data).hexdigest()!=entry['sha256']:raise ValueError('Resource pool changed while preparing the canonical payload')
+            staged['resource-pool/'+entry['path']]=data
+            runtime.append(dict(source='resource-pool/'+entry['path'],
+                target='usr/local/lib/boiler/cache/resource-pool/'+entry['path'],
+                size=entry['size'], sha256=entry['sha256'], mode=0o644))
     maintenance_release = json.loads((ROOT / 'maintenance/release.json').read_text(encoding='utf-8'))
     component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance', version=maintenance_release['version'], files=runtime)
+    if local_test_resource_pool:
+        from maintenance.core_retention import CORE_MARKER
+        component['core_retention']=dict(CORE_MARKER)
     components['core:maintenance'] = dict(available=True, files=runtime, component=component)
     output.mkdir(parents=True)
     for name, data in sorted(staged.items()):
@@ -138,6 +159,8 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
                     graphics_candidates=graphics)
     if local_test_models:
         manifest['local_test_models'] = True
+    if local_test_resource_pool:
+        manifest['local_test_resource_pool'] = True
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     return manifest
 
@@ -150,6 +173,10 @@ if __name__ == '__main__':
     parser.add_argument('--development-firmware-cache', action='store_true',
                         help='Development fixtures only: include explicitly prepared firmware bytes')
     parser.add_argument('--local-test-models', action='store_true', help='Persist explicit verified local test model bundles for on-device maintenance')
+    parser.add_argument('--local-test-resource-pool', action='store_true',
+                        help='Reference one verified offline pool for installation and retained maintenance')
+    parser.add_argument('--resource-pool',type=Path,help='Explicit final compiled pool input; materialized once under the integration payload')
     args = parser.parse_args()
-    result = prepare(args.output, args.decky, args.wireless, args.development_firmware_cache, args.local_test_models)
+    result = prepare(args.output, args.decky, args.wireless, args.development_firmware_cache,
+                     args.local_test_models, args.local_test_resource_pool, args.resource_pool)
     print(json.dumps(dict(output=str(args.output), components={key: dict(available=value.get('available', False), files=len(value.get('files', []))) for key,value in result['components'].items()})))

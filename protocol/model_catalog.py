@@ -13,11 +13,19 @@ from .manifest import ProtocolError, confined, relative_path, validate_package
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = 'FlightDan/Boiler-installer'
 SOURCE_SUBTREE = 'adaptations'
-MODELS = {
+MAX_MODELS = 128
+MAX_CATALOG_BYTES = 32 * 1024 * 1024
+# Compatibility for immutable catalogs predating TOON runtime metadata only.
+# New catalogs are completely data-driven and never extend this legacy table.
+_LEGACY_MODELS = {
     'device:oxp3': ('guide:oxp3', 'ONEXPLAYER 3', ['ONEXPLAYER 3']),
     'device:x2-mini': ('guide:x2-mini', 'ONEXPLAYER X2 Mini / Mini PRO',
                        ['ONEXPLAYER X2 Mini', 'ONEXPLAYER X2 Mini PRO']),
 }
+# Compatibility API consumed by the existing legacy maintenance facades. This
+# stays an executable-facade capability limit, never the display catalog. Adding
+# a TOON runtime record cannot authorize a new model maintenance implementation.
+MODELS = _LEGACY_MODELS
 ENGLISH = {
     'base-system': 'SteamOS, firmware and maintenance runtime', 'input': 'Back buttons / MCU input',
     'multifunction': 'Multifunction key', 'gyro': 'BMI260 gyroscope',
@@ -46,7 +54,83 @@ def document(data):
                 raise ProtocolError('Duplicate model metadata field')
             result[key] = value
         return result
-    return json.loads(data.decode('utf-8'), object_pairs_hook=pairs)
+    try:
+        return json.loads(data.decode('utf-8'), object_pairs_hook=pairs,
+            parse_constant=lambda value: (_ for _ in ()).throw(ProtocolError('Invalid model JSON constant')))
+    except (UnicodeError,json.JSONDecodeError,RecursionError) as exc:
+        raise ProtocolError('Invalid model metadata JSON') from exc
+
+
+def model_path(path):
+    relative_path(path)
+    if not re.fullmatch(r'brands/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*/manifest\.json',path):
+        raise ProtocolError('Invalid canonical model manifest path')
+    return path
+
+
+def _display_text(value, maximum=512):
+    return (isinstance(value,str) and 0<len(value)<=maximum and value.strip()
+            and not any(ord(c)<32 or 127<=ord(c)<=159 for c in value))
+
+
+def runtime_record(value):
+    """Validate display metadata only; no executable/trust fields are accepted."""
+    if (not isinstance(value,dict) or set(value)!={'id','guide_id','manifest','name','hardware_matching'}
+            or not isinstance(value['id'],str) or not re.fullmatch('device:[a-z][a-z0-9-]*',value['id'])
+            or value['guide_id']!='guide:'+value['id'].split(':',1)[1]):
+        raise ProtocolError('Invalid runtime model identity')
+    path=model_path(value['manifest'])
+    if path.split('/')[2]!=value['id'].split(':',1)[1]:
+        raise ProtocolError('Runtime identity and model path differ')
+    if not isinstance(value['name'],dict) or set(value['name'])!={'en','zh'} or not all(_display_text(v) for v in value['name'].values()):
+        raise ProtocolError('Invalid bilingual model display name')
+    hardware=value['hardware_matching']
+    if (not isinstance(hardware,dict) or set(hardware)!={'mode','pairs'} or hardware['mode']!='advisory-exact-dmi-v1'
+            or not isinstance(hardware['pairs'],list) or not 1<=len(hardware['pairs'])<=32):
+        raise ProtocolError('Invalid advisory model hardware metadata')
+    seen=set()
+    for pair in hardware['pairs']:
+        if (not isinstance(pair,dict) or set(pair)!={'manufacturer','model'}
+                or not all(_display_text(v,256) for v in pair.values())):
+            raise ProtocolError('Invalid advisory DMI pair')
+        identity=(pair['manufacturer'],pair['model'])
+        if identity in seen: raise ProtocolError('Duplicate advisory DMI pair')
+        seen.add(identity)
+    return value
+
+
+def catalog_records(catalog):
+    """One-to-one guide/display records from pinned bytes, with old-lock support."""
+    if (not isinstance(catalog,dict) or catalog.get('kind')!='AdaptationSourceCatalog'
+            or type(catalog.get('schema_version')) is not int or catalog['schema_version']!=1
+            or catalog.get('installable') is not False or not isinstance(catalog.get('models'),list)
+            or not 1<=len(catalog['models'])<=MAX_MODELS):
+        raise ProtocolError('Invalid repository model catalog')
+    paths=[model_path(path) for path in catalog['models']]
+    if len({path.casefold() for path in paths})!=len(paths):
+        raise ProtocolError('Duplicate model manifest path')
+    records=catalog.get('runtime_models')
+    if 'runtime_models' not in catalog:
+        expected={'brands/onexplayer/'+identity.split(':',1)[1]+'/manifest.json' for identity in _LEGACY_MODELS}
+        if set(paths)!=expected:
+            raise ProtocolError('New model catalogs require TOON-derived runtime metadata')
+        records=[]
+        for identity,(guide,name,products) in _LEGACY_MODELS.items():
+            records.append(dict(id=identity,guide_id=guide,manifest='brands/onexplayer/'+identity.split(':',1)[1]+'/manifest.json',
+                name={'en':name,'zh':name},hardware_matching=dict(mode='advisory-exact-dmi-v1',
+                    pairs=[dict(manufacturer='ONE-NETBOOK',model=product) for product in products])))
+    if not isinstance(records,list) or len(records)!=len(paths):
+        raise ProtocolError('Runtime metadata must match every model guide')
+    identities,manifests=set(),set()
+    for row in records:
+        runtime_record(row)
+        if row['id'] in identities or row['manifest'].casefold() in manifests:
+            raise ProtocolError('Duplicate runtime model identity or path')
+        identities.add(row['id']); manifests.add(row['manifest'].casefold())
+    if manifests!={path.casefold() for path in paths}:
+        raise ProtocolError('Runtime metadata refers to an unknown model guide')
+    by_path={row['manifest']:row for row in records}
+    return [by_path[path] for path in paths]
 
 
 def checked(data, expected):
@@ -68,20 +152,28 @@ def remote_bytes(url, maximum):
 
 def read_lock(root):
     value = document(confined(root, 'components/model-catalog/lock.json').read_bytes())
+    if not isinstance(value,dict): raise ProtocolError('Invalid model catalog lock object')
     source = value.get('source', {})
     if (value.get('kind') != 'ModelCatalogLock' or value.get('schema_version') != 1
+            or type(value.get('schema_version')) is not int or not isinstance(source,dict)
             or source.get('repository') != REPOSITORY
-            or not re.fullmatch('[0-9a-f]{40}', source.get('commit', ''))):
+            or not isinstance(source.get('commit'),str) or not re.fullmatch('[0-9a-f]{40}', source['commit'])):
         raise ProtocolError('Invalid pinned model catalog lock')
     relative_path(source.get('subtree'))
-    paths = [entry['path'] for entry in value['files']]
-    if len(paths) != len(set(paths)) or len(paths) != 3 or paths[0] != 'adaptations.json':
+    files=value.get('files')
+    if not isinstance(files,list) or not 2<=len(files)<=MAX_MODELS+1 or any(not isinstance(row,dict) for row in files):
         raise ProtocolError('Unexpected model catalog source inventory')
-    for entry in value['files']:
+    paths=[entry.get('path') for entry in files]
+    if any(not isinstance(path,str) for path in paths) or len({path.casefold() for path in paths})!=len(paths) or paths[0]!='adaptations.json':
+        raise ProtocolError('Unexpected model catalog source inventory')
+    for entry in files:
         if (type(entry.get('size')) is not int or not 0 < entry['size'] <= 2 * 1024 * 1024
-                or not re.fullmatch('[0-9a-f]{64}', entry.get('sha256', ''))):
+                or not isinstance(entry.get('sha256'),str) or not re.fullmatch('[0-9a-f]{64}', entry['sha256'])):
             raise ProtocolError('Invalid model source digest')
+        if entry['path']!='adaptations.json': model_path(entry['path'])
         confined(root/'components/model-catalog/snapshot', entry['path'])
+    if sum(row['size'] for row in files)>MAX_CATALOG_BYTES:
+        raise ProtocolError('Model catalog inventory exceeds total size limit')
     return value
 
 
@@ -90,22 +182,35 @@ def source_member(source, path):
     return relative_path(source['subtree']) + '/' + relative_path(path)
 
 
-def guide_model(value, path, source):
-    identity = next((identity for identity, (guide, _, _) in MODELS.items() if guide == value.get('id')), None)
-    if (identity is None or value.get('kind') != 'ModelInstallGuide' or value.get('schema_version') != 1
+def guide_model(value, path, source, metadata=None):
+    model_path(path)
+    if metadata is None:
+        legacy=dict(schema_version=1,kind='AdaptationSourceCatalog',installable=False,
+            models=['brands/onexplayer/'+identity.split(':',1)[1]+'/manifest.json' for identity in _LEGACY_MODELS])
+        metadata=next((row for row in catalog_records(legacy) if row['manifest']==path),None)
+    if metadata is not None: runtime_record(metadata)
+    if (not isinstance(value,dict) or metadata is None or metadata['manifest']!=path or metadata['guide_id']!=value.get('id')
+            or value.get('kind') != 'ModelInstallGuide' or type(value.get('schema_version')) is not int or value['schema_version'] != 1
             or value.get('installable') is not False):
         raise ProtocolError('Model guide cannot authorize an executable package')
+    identity=metadata['id']
+    if value.get('guide')!=path.removesuffix('manifest.json')+'model.md':
+        raise ProtocolError('Model guide documentation path differs from its canonical model path')
     items = value.get('components')
     if not isinstance(items, list) or not 1 <= len(items) <= 128:
         raise ProtocolError('Invalid model component list')
-    ids = {item.get('id') for item in items}
-    if len(ids) != len(items) or any(not isinstance(name, str) or not re.fullmatch('[a-z][a-z0-9-]*', name) for name in ids):
+    if any(not isinstance(item,dict) for item in items): raise ProtocolError('Invalid model component metadata')
+    names=[item.get('id') for item in items]
+    if any(not isinstance(name,str) or not re.fullmatch('[a-z][a-z0-9-]*',name) for name in names):
+        raise ProtocolError('Invalid guide component identity')
+    ids=set(names)
+    if len(ids) != len(items):
         raise ProtocolError('Invalid or duplicate guide component identity')
     components = []
     for item in items:
         if (item.get('default') is not False or item.get('recommendation') not in
                 {'required', 'recommended', 'optional', 'conditional', 'pending', 'excluded'}
-                or not isinstance(item.get('dependencies'), list) or any(dep not in ids for dep in item['dependencies'])
+                or not isinstance(item.get('dependencies'), list) or any(not isinstance(dep,str) or dep not in ids for dep in item['dependencies'])
                 or not isinstance(item.get('name'), str) or not isinstance(item.get('notes'), str)):
             raise ProtocolError('Invalid model option metadata')
         english_note = ('Not offered for this model.' if item['recommendation'] == 'excluded'
@@ -113,30 +218,59 @@ def guide_model(value, path, source):
                         else 'Check hardware, software and runtime requirements in the model guide.')
         components.append(dict(item, name={'zh': item['name'], 'en': ENGLISH.get(item['id'], item['name'])},
                                notes={'zh': item['notes'], 'en': english_note}))
-    _, name, products = MODELS[identity]
     guide_url = ('https://github.com/' + source['repository'] + '/blob/' + source['commit']
                  + '/' + source_member(source, value['guide']))
-    return dict(id=identity, guide_id=value['id'], name={'zh': name, 'en': name}, guide_url=guide_url,
+    return dict(id=identity, guide_id=value['id'], name=metadata['name'], guide_url=guide_url,
                 components=components, installable=False,
-                hardware_matching={'mode': 'advisory-exact-dmi-v1',
-                                   'pairs': [{'manufacturer': 'ONE-NETBOOK', 'model': product} for product in products]})
+                hardware_matching=metadata['hardware_matching'])
+
+
+def _snapshot_files(root, lock):
+    return {entry['path']:checked(confined(root/'components/model-catalog/snapshot',entry['path']).read_bytes(),entry)
+            for entry in lock['files']}
+
+
+def snapshot_records(root):
+    root=Path(root).resolve()
+    lock=read_lock(root); files=_snapshot_files(root,lock)
+    records=catalog_records(files['adaptations.json'])
+    if {row['manifest'] for row in records}!=set(files)-{'adaptations.json'}:
+        raise ProtocolError('Catalog snapshot inventory differs from listed guides')
+    for row in records: guide_model(files[row['manifest']],row['manifest'],lock['source'],row)
+    return records
+
+
+def model_identities(root):
+    """Known display IDs constrain local-test descriptors, never authorize them.
+
+    Retain the original two-model developer behavior for legacy retained test
+    runtimes without a guide snapshot. New identities require the pinned
+    snapshot; a guide ID alone cannot grant package trust.
+    """
+    root=Path(root).resolve()
+    if not (root/'components/model-catalog/lock.json').exists():
+        return set(_LEGACY_MODELS)
+    return {row['id'] for row in snapshot_records(root)}
 
 
 def bundled_packages(root):
+    root=Path(root).resolve()
     descriptor = root/'cache/model-bundles/manifest.json'
     if not descriptor.exists():
         return []
+    allowed=model_identities(root)
     value = document(confined(root, 'cache/model-bundles/manifest.json').read_bytes())
     if value.get('kind') != 'LocalTestModelBundles' or value.get('schema_version') != 1:
         raise ProtocolError('Invalid local test bundle descriptor')
     items = value.get('packages')
-    if not isinstance(items, list) or len(items) > len(MODELS):
+    if not isinstance(items, list) or len(items) > len(allowed):
         raise ProtocolError('Invalid bundled model list')
     result, identities = [], set()
     for item in items:
+        if not isinstance(item,dict): raise ProtocolError('Invalid bundled model record')
         identity = item.get('id')
-        if (identity not in MODELS or identity in identities
-                or not re.fullmatch('[0-9a-f]{64}', item.get('manifest_sha256', ''))
+        if (not isinstance(identity,str) or identity not in allowed or identity in identities
+                or not isinstance(item.get('manifest_sha256'),str) or not re.fullmatch('[0-9a-f]{64}', item['manifest_sha256'])
                 or not isinstance(item.get('version'), str)):
             raise ProtocolError('Invalid bundled model identity or anchor')
         identities.add(identity)
@@ -181,17 +315,11 @@ def load_models(*, root=ROOT, online=True, reader=None, include_bundles=True):
             offline = True
             files.clear()
     if offline:
-        for entry in lock['files']:
-            path = confined(root/'components/model-catalog/snapshot', entry['path'])
-            files[entry['path']] = checked(path.read_bytes(), entry)
+        files=_snapshot_files(root,lock)
     catalog = files['adaptations.json']
-    if (catalog.get('kind') != 'AdaptationSourceCatalog' or catalog.get('schema_version') != 1
-            or catalog.get('installable') is not False
-            or not isinstance(catalog.get('models'), list)
-            or set(catalog['models']) != set(files) - {'adaptations.json'}):
+    records=catalog_records(catalog)
+    if {row['manifest'] for row in records} != set(files) - {'adaptations.json'}:
         raise ProtocolError('Invalid repository model catalog')
-    models = [guide_model(files[path], path, lock['source']) for path in catalog['models']]
-    if {item['id'] for item in models} != set(MODELS):
-        raise ProtocolError('Pinned catalog does not contain the expected models')
+    models = [guide_model(files[row['manifest']],row['manifest'],lock['source'],row) for row in records]
     return dict(source=lock['source'], offline=offline, models=models,
                 bundled_packages=bundled_packages(root) if include_bundles else [])

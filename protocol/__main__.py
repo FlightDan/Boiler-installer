@@ -15,6 +15,9 @@ def main(argv=None):
     command=commands.add_parser("index"); command.add_argument("manifest"); command.add_argument("signature")
     command.add_argument("--public-key"); command.add_argument("--openssl",default="openssl")
     command=commands.add_parser("cached-index"); command.add_argument("cache")
+    command=commands.add_parser("resource-catalog")
+    command=commands.add_parser("resource-selection"); command.add_argument("model"); command.add_argument("catalog_sha256"); command.add_argument("components",nargs="+"); command.add_argument("--trust-local-test",action="store_true")
+    command=commands.add_parser("import-resource"); command.add_argument("source"); command.add_argument("destination"); command.add_argument("--trust-local-test",action="store_true")
     command=commands.add_parser("model-catalog"); command.add_argument("--offline",action="store_true")
     command=commands.add_parser("bundled-model-package"); command.add_argument("identity")
     command.add_argument("--trust-local-test",action="store_true")
@@ -32,12 +35,21 @@ def main(argv=None):
     command.add_argument("--ref",default="HEAD"); command.add_argument("--package-path"); command.add_argument("--developer",action="store_true")
     args=parser.parse_args(argv)
     try:
-        if args.command=="model-catalog":
+        if args.command=="resource-catalog":
+            from .resource_selection import resource_catalog
+            result=resource_catalog()
+        elif args.command=="resource-selection":
+            from .resource_selection import select_resources
+            result=select_resources(args.model,args.components,args.catalog_sha256,trust_local_test=args.trust_local_test)
+        elif args.command=="model-catalog":
             from .model_catalog import load_models
             result=load_models(online=not args.offline)
         elif args.command=="bundled-model-package":
             from .model_catalog import bundled_model_package
             result=bundled_model_package(args.identity,trust_local_test=args.trust_local_test)
+        elif args.command=="import-resource":
+            from .resource_import import import_resource_pool
+            result=import_resource_pool(args.source,args.destination,trust_local_test=args.trust_local_test)
         elif args.command=="import-device":
             from .local import import_local
             result=import_local(args.source,args.destination,developer=args.developer)

@@ -13,11 +13,16 @@ from system_presets import selected as presets_selected
 from offload_mounts import mount_opt, mount_etc
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip()!='QEMU': raise RuntimeError('Managed VM required')
 if Path('/sys/class/block/vdc/ro').read_text().strip()!='0': raise RuntimeError('Prepared image must be writable')
+options=json.loads(Path('/mnt/payload/selection.json').read_text())
+if any(isinstance(key, str) and key.startswith('resource_') and value is not None
+       for key, value in options.items()):
+    from resource_entrypoint import run as resource_entry
+    resource_entry('/mnt/payload', options, readonly=False)
+    raise SystemExit(0)
+validate_options(options)
 table=json.loads(subprocess.check_output(['sfdisk','--json','/dev/vdc']))['partitiontable']
 parts={p.get('name'):p['node'] for p in table['partitions']}
 if not {'rootfs-A','rootfs-B','var-A','var-B','home'}.issubset(parts): raise RuntimeError('Not a prepared A/B image')
-options=json.loads(Path('/mnt/payload/selection.json').read_text())
-validate_options(options)
 if options.get('install_mode')=='imported':
     print('OXP_INTEGRATION_PRESERVED=imported-image',flush=True)
     raise SystemExit(0)
@@ -81,6 +86,17 @@ for slot in ('A','B'):
                     unavailable_requirements=value['unavailable_requirements'],
                     unavailable_companions=value.get('unavailable_companions',[]),runtime='not_validated')),flush=True)
     finally:
+        original_error = sys.exc_info()[1]
+        cleanup_errors = []
         if root in mounts:
-            subprocess.run(['btrfs','property','set','-ts',str(root),'ro','true'],check=True)
-        for path in reversed(mounts): subprocess.run(['umount',str(path)],check=True)
+            try:
+                subprocess.run(['btrfs','property','set','-ts',str(root),'ro','true'],check=True)
+            except Exception as error:
+                cleanup_errors.append('root protection: ' + str(error))
+        for path in reversed(mounts):
+            try:
+                subprocess.run(['umount',str(path)],check=True)
+            except Exception as error:
+                cleanup_errors.append('unmount ' + str(path) + ': ' + str(error))
+        if cleanup_errors:
+            raise RuntimeError('Prepared image cleanup incomplete; preserve image: ' + '; '.join(cleanup_errors)) from original_error

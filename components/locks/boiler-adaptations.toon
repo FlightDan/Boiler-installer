@@ -1,0 +1,16 @@
+schema_version: 1
+kind: BoilerAdaptationsDependency
+repository: "https://github.com/FlightDan/Boiler-adaptations.git"
+commit: b554c37d6138abb2b624cad0136d7d049e12ed74
+configuration_format: TOON
+sdk_manifest: sdk-source-contract.toon
+sdk_sha256: 5efe5a80c4aa077dcd7d933a523cbf9cbc8fc4dac9c2125eba2553237b966a1a
+compiler: scripts/compile-adaptations.py
+native_archive:
+  url: "https://github.com/FlightDan/Boiler-adaptations/releases/download/native-hdr-20261031.1/native-output.tar.gz"
+  size: 25810444
+  sha256: 9a612934745583aa581a502190b3a32f3d089c6a41ba0caed910f03e13f157a5
+corresponding_source:
+  url: "https://github.com/FlightDan/Boiler-adaptations/releases/download/native-hdr-20261031.1/corresponding-source.tar.gz"
+  size: 13996029
+  sha256: 4bf7ce54a38a65e06890e593d0f3e69f9aedbc4b2e71c8a0522e489d8dbf1c23

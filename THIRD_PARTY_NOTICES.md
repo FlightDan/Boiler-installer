@@ -34,3 +34,18 @@ SteamOS, Steam and their system packages are supplied by Valve and other
 rights holders under their own terms. System images are obtained separately
 from official sources. This project does not relicense SteamOS or imply vendor
 affiliation. Product names and marks belong to their respective owners.
+
+## OXP3 upstream repairs (20261029)
+
+Speaker and connector adaptations retain the MIT notice of HHHHanasak1/onexplayer3-steamos-setup at commit e72e814da1944da3792076689995b6fe961f5768. Their complete notice and provenance are under adaptations/brands/onexplayer/oxp3/current/upstream-20261029 (relative to the Boiler root).
+
+The xevmafix kernel module declares GPL, independently of the enclosing upstream repository MIT license. GPL-2.0 text, original C source, Makefile, build instructions and exact official build-input records are retained under adaptations/brands/onexplayer/oxp3/current/xevma-20261029 and in its device payload. No kernel package or toolchain binary is added to the public source export.
+
+## Fixed keyboard host runtime
+
+The fixed keyboard handler retains the public OneXPlayer3-SteamOS transaction
+Store and its helpers under maintenance/keyboard_runtime/vendor, together with
+the original AGPL-3.0 license. public-source-lock.json records the exact public
+installer asset and source/member hashes. The original configuration merge is
+retained for provenance; the host wrapper fixes its indented-section boundary
+handling. No current experimental CPU policy is imported by this runtime.

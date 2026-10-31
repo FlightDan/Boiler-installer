@@ -88,6 +88,19 @@ internal static class InputDiscoveryChecks
             await Kind(Zip("wrapper-extra.zip", ("model/manifest.json", model), ("unlisted", [])), InputKind.Unknown, "wrapper-extra-file-rejected");
             var folder = Path.Combine(directory, "model-folder"); Directory.CreateDirectory(folder); File.WriteAllBytes(Path.Combine(folder, "manifest.json"), model);
             var folderInput = await Kind(folder, InputKind.DevicePackage, "device-folder-metadata");
+            foreach (var catalogMember in new[] { "catalog.toon", "data/catalog.toon" })
+            {
+                var package = JsonSerializer.SerializeToUtf8Bytes(new { schema_version = 1, kind = "DevicePackage", id = "device:catalog-data", version = "1.0.0",
+                    files = new[] { new { path = catalogMember } }, components = Array.Empty<object>() });
+                var name = catalogMember.Replace('/', '-'); var payload = "ordinary package data, not a resource catalog"u8.ToArray();
+                await Kind(Zip("device-with-" + name + ".zip", ("manifest.json", package), (catalogMember, payload)), InputKind.DevicePackage, "device-zip-preserves-catalog-toon-data-" + name);
+                await Kind(Zip("wrapped-device-with-" + name + ".zip", ("wrapper/manifest.json", package), ("wrapper/" + catalogMember, payload)), InputKind.DevicePackage, "wrapped-device-zip-preserves-catalog-toon-data-" + name);
+                var packageFolder = Path.Combine(directory, "device-with-" + name); Directory.CreateDirectory(packageFolder);
+                File.WriteAllBytes(Path.Combine(packageFolder, "manifest.json"), package);
+                var member = Path.Combine(packageFolder, catalogMember); Directory.CreateDirectory(Path.GetDirectoryName(member)!); File.WriteAllBytes(member, payload);
+                var discovered = await Kind(packageFolder, InputKind.DevicePackage, "device-folder-preserves-catalog-toon-data-" + name);
+                InputDiscovery.VerifyStamp(discovered); checks.Add("device-with-catalog-data-still-stamps-manifest-" + name);
+            }
             Text("model-folder/extra", "unlisted"); await Kind(folder, InputKind.Unknown, "folder-extra-file-rejected"); File.Delete(Path.Combine(folder, "extra"));
             var script = Text("script-disguised.img", "#!/bin/bash\n# boiler-script: 1\n# boiler-name: Test model\nexit 0\n");
             var scriptInput = await Kind(script, InputKind.DeviceScript, "script-contract-not-extension");

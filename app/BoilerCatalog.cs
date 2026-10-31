@@ -105,6 +105,7 @@ public partial class MainWindow
 
     private void ClearDeviceSelection()
     {
+        ClearResourceSelection();
         selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
         optionsPanel.SetWirelessContext(installMode, hasPackage: adaptationBranch != "generic");
         displayedDeviceMetadata = null;
@@ -205,6 +206,7 @@ public partial class MainWindow
         => CommitDeviceSelection(await PrepareDeviceSelectionAsync(folder, trust, expected, CancellationToken.None));
     private void CommitDeviceSelection(PreparedDeviceSelection selection)
     {
+        ClearResourceSelection();
         var samePackage = selectedDeviceDigest == selection.Digest;
         var priorChoices = samePackage ? deviceComponentChoices.ToDictionary(pair => pair.Key, pair => pair.Value.IsChecked == true) : new Dictionary<string, bool>();
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
@@ -227,7 +229,10 @@ public partial class MainWindow
             var componentText = component.TryGetProperty("name", out var name) ? LocalizedValue(name) : id;
             if (component.TryGetProperty("description", out var description)) componentText += "\n" + LocalizedValue(description);
             var check = new CheckBox { Content = new TextBlock { Text = componentText, TextWrapping = TextWrapping.Wrap },
-                IsChecked = priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : true, MinHeight = 48, Tag = component.Clone() };
+                IsChecked = priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice
+                    : !(component.TryGetProperty("selection_policy", out var selectionPolicy)
+                        && selectionPolicy.ValueKind == JsonValueKind.String
+                        && selectionPolicy.GetString() == "explicit-opt-in"), MinHeight = 48, Tag = component.Clone() };
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;

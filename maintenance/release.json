@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "product": "Boiler Maintenance",
-  "version": "0.1.0+maintenance.9",
-  "display_version": "0.1.0-preview",
-  "channel": "preview",
+  "version": "0.2.0+maintenance.1",
+  "display_version": "0.2.0-pre.20261031.1",
+  "channel": "pre-release",
   "minimum_engine_version": "0.1.0",
   "compatibility": {
     "architectures": [
@@ -17,5 +17,5 @@
       "3.10"
     ]
   },
-  "acceptance": "Generic runtime software scope only; device upgrade, restart and hardware acceptance are separate release gates."
+  "acceptance": "Software verification is recorded in the release audit; physical installation acceptance is performed separately."
 }

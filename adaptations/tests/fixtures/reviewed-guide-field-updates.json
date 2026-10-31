@@ -1,0 +1,28 @@
+{
+  "adaptations/brands/onexplayer/x2-mini/manifest.json": [
+    {
+      "component": "slot-switch",
+      "field": "status",
+      "before": "external_or_validation_required",
+      "after": "static_tool_lifecycle_candidate"
+    },
+    {
+      "component": "slot-switch",
+      "field": "notes",
+      "before": "A/B 布局及系统工具满足时可选；真实切换与重启分别验证。 X2 新装与恢复需分别验证。",
+      "after": "精确 SteamOS 基线及所有系统工具齐全后可选；仅部署工具，不切槽或重启。实际动作继续由原公开脚本核对 A/B、更新器和令牌；新装/维护文件恢复采用 Engine，真实切槽重启仍待验收。"
+    },
+    {
+      "component": "keyboard",
+      "field": "status",
+      "before": "external_or_validation_required",
+      "after": "host_lifecycle_candidate"
+    },
+    {
+      "component": "keyboard",
+      "field": "notes",
+      "before": "按 KDE 会话与目标软件检查；验证实际输入及恢复。 X2 新装与恢复需分别验证。",
+      "after": "固定主程序动态合并两个 KWin 键；共用 home 的唯一恢复账本。已通过受控 Linux Btrfs 双根、共享 home、生产权限、新装、维护、验证和恢复夹具；保留用户编辑，实际键盘启动与实机未验收。"
+    }
+  ]
+}

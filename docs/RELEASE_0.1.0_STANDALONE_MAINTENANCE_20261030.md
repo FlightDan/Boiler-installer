@@ -1,0 +1,11 @@
+# 0.1.0-preview — standalone maintenance bootstrap candidate
+
+2026-10-30. This is a local candidate, not a published or hardware-accepted release.
+
+- Added a self-contained Python zipapp builder and first-install bootstrap. The bootstrap verifies a signed generic maintenance index and package, checks the actual target environment and installs the static maintenance component with the existing transaction engine. It exposes explicit recovery and refuses unknown existing state and conflicting files.
+- The candidate embeds maintenance `0.1.0+maintenance.10` from the current working tree. It is not bound to a final public source commit. The known published generic maintenance index contains the earlier `0.1.0`, so this candidate cannot install the current runtime from that index.
+- The local candidate is `boiler-maintenance-bootstrap-local-candidate.pyz`, size 349041 bytes, SHA-256 `a0b0b2afdd0ca6295906731634fd884d880ee2a98e917cc11d727902a3606479`. It is not an independently authenticated public bootstrap. The internal index signature check does not authenticate the bootstrap itself.
+- Windows source checks: bootstrap 6 passed, package 8 passed, standalone source 4 passed, maintenance updates 27 passed (4 platform skips), maintenance/protocol/fetch 28 passed (1 skip). Tests use synthetic signed fixtures. Independent review covered installation, recovery and the bootstrap trust boundary.
+- Linux offline QEMU audit `.local/linux-audits/20261030T122854.086032Z`: passed, 605 tests and 23 skips; model-cache and Opti suites were not requested. The audit attached no physical disk. SteamOS live-root installation, restart, recovery and physical-device acceptance remain unverified.
+- Installation and update metadata: existing Windows install and maintenance package entries remain unchanged; the new bootstrap is a separate first-install entry. The explicit source whitelist includes the new builder, bootstrap, tests and documentation. README version changes are not applicable.
+- Blocked: final source commit and rebuilt signed maintenance assets, independent authentication of the bootstrap distribution, public downloads, required upgrade/recovery/device acceptance and matching Windows release. Complete those gates before calling this a public install script.

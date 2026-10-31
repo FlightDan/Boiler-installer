@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace OxpInstaller;
 
-internal enum InputKind { RecoveryImage, DiskImage, UpgradeRoot, UpgradeBundle, DevicePackage, DeviceScript, Unknown }
+internal enum InputKind { RecoveryImage, DiskImage, UpgradeRoot, UpgradeBundle, DevicePackage, DeviceScript, ResourcePool, Unknown }
 // HeaderSha256 covers only the first 128 KiB. This is a preview freshness hint,
 // never an authenticated full-file digest or permission to execute anything.
 internal sealed record InputFileStamp(long Length, long LastWriteUtcTicks, string HeaderSha256);
@@ -56,7 +56,7 @@ internal static class InputDiscovery
     internal static InputFileStamp ReadStamp(string path)
     {
         path = SafePath(path);
-        if (Directory.Exists(path)) path = SafePath(System.IO.Path.Combine(path, "manifest.json"));
+        if (Directory.Exists(path)) path = SafePath(System.IO.Path.Combine(path, File.Exists(System.IO.Path.Combine(path, "manifest.json")) ? "manifest.json" : "catalog.toon"));
         using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         var length = source.Length;
         var bytes = new byte[(int)Math.Min(length, HeaderLimit)];
@@ -86,6 +86,12 @@ internal static class InputDiscovery
             DiscoveredInput result;
             if (Directory.Exists(path))
             {
+                if (!File.Exists(System.IO.Path.Combine(path, "manifest.json")) && File.Exists(System.IO.Path.Combine(path, "catalog.toon")))
+                {
+                    ParseResourceCatalog(await ReadBoundedFileAsync(System.IO.Path.Combine(path, "catalog.json"), ManifestLimit, token));
+                    result = Result(InputKind.ResourcePool, ResourcePoolDetail());
+                    VerifyStamp(result); return result;
+                }
                 var metadata = ParseDevice(await ReadBoundedFileAsync(System.IO.Path.Combine(path, "manifest.json"), ManifestLimit, token));
                 var entries = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var files = new HashSet<string>(StringComparer.Ordinal);
@@ -264,6 +270,19 @@ internal static class InputDiscovery
         ? L("维护专用包；不能关联为新装机型包。", "Maintenance-only package; it cannot be assigned as an installation device package.")
         : L("已识别机型包清单；完整文件摘要与本次信任将在关联时检查。", "Device package manifest detected; full file digests and session trust are checked when assigning it.");
 
+    private static string ResourcePoolDetail() => L("外部资源池候选；确认后完整校验并复制到隔离预览目录，不执行或替换内置资源。", "External resource pool candidate. Confirm to validate and copy into an isolated preview directory; no execution or bundled resource replacement.");
+    private static void ParseResourceCatalog(byte[] raw)
+    {
+        using var document = JsonDocument.Parse(raw, new JsonDocumentOptions { MaxDepth = 64 });
+        var value = document.RootElement; CheckJsonDuplicates(value);
+        if (value.ValueKind != JsonValueKind.Object || value.GetProperty("schema_version").GetInt32() != 1
+            || value.GetProperty("kind").GetString() != "BoilerResourceCatalog" || value.GetProperty("trust").GetString() != "unsigned-development"
+            || value.GetProperty("official_release").ValueKind != JsonValueKind.False
+            || value.GetProperty("resources").ValueKind != JsonValueKind.Array || value.GetProperty("resources").GetArrayLength() > EntryLimit
+            || value.GetProperty("files").ValueKind != JsonValueKind.Array || value.GetProperty("files").GetArrayLength() > EntryLimit)
+            throw new IOException("Unsupported local resource catalog. Full TOON, inventory and digest checks follow confirmation.");
+    }
+
     private static void ArchivePath(string name)
     {
         if (string.IsNullOrEmpty(name) || name.Length > 4096 || name.Contains('\\') || name.Contains(':') || name.Any(char.IsControl)
@@ -290,7 +309,11 @@ internal static class InputDiscovery
             if (entry.Length < 0 || entry.Length > ImageImportStreams.MaximumImageBytes) throw new IOException("Oversized archive entry.");
         }
         var files = zip.Entries.Where(entry => !entry.FullName.EndsWith('/')).ToArray();
-        var manifests = files.Where(entry => entry.FullName == "manifest.json" || entry.FullName.Count(c => c == '/') == 1 && entry.Name == "manifest.json").ToArray();
+        // A nested manifest is a package root only when the complete archive is
+        // inside that wrapper; resource payloads may also contain manifest.json.
+        var manifests = files.Where(entry => entry.FullName == "manifest.json"
+            || entry.FullName.Count(c => c == '/') == 1 && entry.Name == "manifest.json"
+            && files.All(file => file.FullName.StartsWith(entry.FullName[..^"manifest.json".Length], StringComparison.Ordinal))).ToArray();
         if (manifests.Length == 1)
         {
             var manifest = manifests[0];
@@ -301,6 +324,18 @@ internal static class InputDiscovery
             var inventory = metadata.GetProperty("files").EnumerateArray().Select(entry => prefix + entry.GetProperty("path").GetString()).Append(manifest.FullName).ToHashSet(StringComparer.Ordinal);
             if (!inventory.SetEquals(files.Select(entry => entry.FullName))) throw new IOException("Package archive inventory differs from manifest.");
             return new(path, InputKind.DevicePackage, DeviceName(metadata) ?? System.IO.Path.GetFileName(path), DeviceDetail(metadata), stamp, metadata);
+        }
+        if (manifests.Length > 1) throw new IOException("ZIP has ambiguous package manifests.");
+        var catalogs = files.Where(entry => entry.FullName == "catalog.toon" || entry.FullName.Count(c => c == '/') == 1 && entry.Name == "catalog.toon").ToArray();
+        if (catalogs.Length > 0)
+        {
+            if (catalogs.Length != 1) throw new IOException("Ambiguous resource catalogs.");
+            var prefix = catalogs[0].FullName[..^"catalog.toon".Length];
+            if (files.Any(entry => !entry.FullName.StartsWith(prefix, StringComparison.Ordinal)))
+                throw new IOException("Resource archive has extra wrapper contents.");
+            var catalog = files.SingleOrDefault(entry => entry.FullName == prefix + "catalog.json") ?? throw new IOException("Resource catalog JSON is missing.");
+            using var stream = catalog.Open(); ParseResourceCatalog(await ReadBoundedAsync(stream, ManifestLimit, token));
+            return new(path, InputKind.ResourcePool, System.IO.Path.GetFileName(path), ResourcePoolDetail(), stamp);
         }
         if (manifests.Length > 1 || files.Length is < 1 or > 2) throw new IOException("ZIP has ambiguous or unsupported contents.");
         var imageManifest = files.SingleOrDefault(entry => entry.FullName == "image-manifest.json");
@@ -348,7 +383,7 @@ internal static class InputDiscovery
                 metadata = ParseDevice(bytes); prefix = name[..^"manifest.json".Length];
             }
         }
-        if (metadata == null) throw new IOException("No DevicePackage manifest in bounded TAR preview.");
+        if (metadata == null) throw new IOException("No DevicePackage manifest in bounded TAR preview. For external resource pools, use a folder or ZIP in this Windows preview.");
         var inventory = metadata.Value.GetProperty("files").EnumerateArray().Select(item => prefix + item.GetProperty("path").GetString()).Append(prefix + "manifest.json").ToHashSet(StringComparer.Ordinal);
         if (!inventory.SetEquals(files)) throw new IOException("TAR package inventory differs from manifest.");
         return new(path, InputKind.DevicePackage, DeviceName(metadata.Value) ?? System.IO.Path.GetFileName(path), DeviceDetail(metadata.Value), stamp, metadata);

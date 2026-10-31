@@ -1,0 +1,156 @@
+{
+  "kind": "VerifiedPublicCurrentResourceSources",
+  "repository": "FlightDan/Boiler-installer",
+  "public_repository": true,
+  "commit": "00d26ea7ed0aa4f1d1002216242199bc72736e80",
+  "commit_url": "https://github.com/FlightDan/Boiler-installer/commit/00d26ea7ed0aa4f1d1002216242199bc72736e80",
+  "branch_observation": "codex/capacity-cleanup-tested-20261030",
+  "verification": "Content fetched at the immutable commit; UTF-8 byte length/SHA-256 matched local source lock, and independently computed Git blob SHA-1 matched the API blob identity. No line-ending normalization.",
+  "files": [
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/battery-plugin-index.js",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb",
+      "git_blob": "176eb4df7af85596227073b3abc5c92f2009c0b0",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/battery-plugin-index.js",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/battery-plugin-main.py",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb",
+      "git_blob": "844979d2930ced80a5a864c217c8e233f79a7076",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/battery-plugin-main.py",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/battery_control.py",
+      "size": 2616,
+      "sha256": "1ea349b1a679a9859a918459dd55d39716934746c5c52783e314daa4505decb3",
+      "git_blob": "a6795f5c31fa0d27b97d1061c2ff7a35423bba27",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/battery_control.py",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/battery_provider.py",
+      "size": 4432,
+      "sha256": "33dbd7a324656c28abcfad841c3ba324ed03aeee18321a02f4c7d275f829ff57",
+      "git_blob": "6d6ef214875c8d5c1f4bc063d58608190ae1fd05",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/battery_provider.py",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/sleep-router.conf",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2",
+      "git_blob": "d711351de2ca5da343497e9d056d56af74088ca9",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/sleep-router.conf",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/sleep_control.py",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99",
+      "git_blob": "2b2482ac0323000336e22d3cb9509e69d39c2f47",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/sleep_control.py",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/templates/battery-dbus.conf",
+      "size": 418,
+      "sha256": "df9acac75b4b2906c6c0d953460de16f6e7de30789ec74fdea00f2faffabef43",
+      "git_blob": "3b4a4dcb8f763dc995192034bf58407360368160",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/templates/battery-dbus.conf",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/templates/oxp3-battery.service",
+      "size": 618,
+      "sha256": "d5771cac38919a517f3ff228de56add0700fdac9e3e7f4d92c461f8ee2fe4767",
+      "git_blob": "1e24c09d635f6c16b33fe3c05ae23580bb8ea26a",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/templates/oxp3-battery.service",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/templates/oxp3-battery.toml",
+      "size": 128,
+      "sha256": "98367b4ecf45d8a48c1349b9931cd192d55b462aed49b71f14d21f92d5ef1f48",
+      "git_blob": "74257ae89b3f910b86b14857e5936fad81a7f701",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/templates/oxp3-battery.toml",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/templates/package.json",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f",
+      "git_blob": "f30c12ad179f17c471cf6f1ee0c26127816e257d",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/templates/package.json",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/templates/plugin.json",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668",
+      "git_blob": "9e753af823e76c4af8a22b988da45669a554dfa5",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/battery/templates/plugin.json",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/microphone/90-oxp-microphone.conf",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888",
+      "git_blob": "6569050fb89334b3fbe3cbd7df50609c0ba4aca3",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/microphone/90-oxp-microphone.conf",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/microphone/install.json",
+      "size": 455,
+      "sha256": "43c21e89edee043c784ac3c72b5debba17b116abd0cb9d452c14a4211e4d393e",
+      "git_blob": "e1eae32f4f61ed7e2a4a2aa6b264fdb29d363067",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/microphone/install.json",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/microphone/microphone.py",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269",
+      "git_blob": "939a66d80882bd38f97a549725d1708bf3d24acb",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/microphone/microphone.py",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/microphone/oxp-microphone.service",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a",
+      "git_blob": "9d8f7f7471d39bd07125ed4a17f4112beed1faba",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/brands/onexplayer/common/microphone/oxp-microphone.service",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    },
+    {
+      "path": "adaptations/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "git_blob": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e",
+      "url": "https://github.com/FlightDan/Boiler-installer/blob/00d26ea7ed0aa4f1d1002216242199bc72736e80/adaptations/LICENSE",
+      "byte_sha256_matches_local": true,
+      "git_blob_matches_api": true
+    }
+  ],
+  "scope": "All fifteen current-source members actually used by the independent resources plus the adaptations license. This does not prove hardware/service acceptance or xevma binary origin."
+}

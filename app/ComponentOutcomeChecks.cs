@@ -37,6 +37,20 @@ internal static class ComponentOutcomeChecks
                 if (!refused) throw new IOException("Incomplete system preset reports accepted.");
             }
         }
+        var inputSelection = new ResourceSelection(1, "device:oxp3", new string('a',64),
+            ["resource:onexplayer-input", "resource:bosch-bmi260-gyro"], "local-test");
+        var inputOptions = new SelectedOptions(1, [], ["core:maintenance"], "en-US", "system", ResourceSelection: inputSelection);
+        JsonElement Scheduled(string slot, string id, string status = "firstboot_scheduled") => JsonSerializer.SerializeToElement(new {
+            slot, id, status, runtime = "pending_firstboot", handler = "boiler-input-runtime-v1",
+            resource_receipt = new string('a',32), bundle_sha256 = new string('b',64) });
+        var inputRows = new[] { "A", "B" }.SelectMany(slot => new[] { Row(slot,"core:maintenance"),
+            Scheduled(slot,"resource:onexplayer-input"), Scheduled(slot,"resource:bosch-bmi260-gyro") }).ToArray();
+        ComponentOutcome.Validate(inputRows,inputOptions);
+        var fakeInputCompletion = inputRows.ToArray();
+        fakeInputCompletion[1] = Scheduled("A","resource:onexplayer-input","files_installed");
+        var refusedFakeCompletion = false;
+        try { ComponentOutcome.Validate(fakeInputCompletion,inputOptions); } catch (IOException) { refusedFakeCompletion = true; }
+        if (!refusedFakeCompletion) throw new IOException("An unexecuted input lifecycle was accepted as installed files.");
         return "Exact selected component coverage on both slots; empty Vanilla requires no implicit policy. Missing, duplicate, failed, skipped and unexpected results block deployment.";
     }
 }

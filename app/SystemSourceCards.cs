@@ -43,6 +43,7 @@ public partial class MainWindow
     {
         if (!CanReceiveInputs) return;
         var generation = inputSessionGeneration;
+        importedResourcePreview = null; RefreshInputResourcePreview();
         inputAssignments.RemoveAll(row => row.Applied);
         inputAssociationApplied = false; sourceIntakeActive = true;
         await ReceiveInputFilesAsync(paths);
@@ -100,7 +101,7 @@ public partial class MainWindow
         if (inputAssociationPanel == null) return;
         var inSource = ReferenceEquals(inputAssociationPanel.Parent, SourceInputReviewHost);
         var pending = inputAssignments.Any(row => !row.Applied && (row.Role != InputRole.Ignore || row.Input?.Error != null || row.Input == null));
-        SourceInputReview.Visibility = inSource && pending ? Visibility.Visible : Visibility.Collapsed;
+        SourceInputReview.Visibility = inSource && (pending || !string.IsNullOrEmpty(inputResourcePreview?.Text)) ? Visibility.Visible : Visibility.Collapsed;
         var needsAttention = inSource && pending && !inputInspectionBusy && !inputAssociationBusy;
         if (needsAttention && !sourceReviewNeedsAttention) SourceInputReview.IsExpanded = true;
         sourceReviewNeedsAttention = needsAttention;

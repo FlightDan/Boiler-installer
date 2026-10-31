@@ -142,6 +142,7 @@ internal static class InputAssociationChecks
             var correction = new DiscoveredInput(misleading, InputKind.UpgradeRoot, "fixture", "", InputDiscovery.ReadStamp(misleading));
             var normalized = (Task<string>)typeof(MainWindow).GetMethod("NormalizeAssociationInputAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [correction, CancellationToken.None])!;
             Require((await normalized).EndsWith(".img", StringComparison.Ordinal), "root-role-cannot-inherit-rauc-bundle-suffix");
+            await ResourcePoolChecks(window, directory, checks, captures);
         }
         finally
         {
@@ -153,6 +154,108 @@ internal static class InputAssociationChecks
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), result); return result;
     }
     private static void CallRender(MainWindow window) => typeof(MainWindow).GetMethod("RenderInputAssignments", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(window, null);
+    private static async Task ResourcePoolChecks(MainWindow window, string directory, List<string> checks, List<string> captures)
+    {
+        void Require(bool value, string name) { if (!value) throw new IOException("Resource drop check failed: " + name + " / " + Field<TextBlock>(window, "inputAssociationStatus").Text); checks.Add(name); }
+        void Clear() => Field<Button>(window, "inputClearButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        var pool = Path.Combine(directory, "external-pool");
+        await Backend.ProcessAsync(Path.Combine(Backend.Root, "runtime", "python", "python.exe"),
+            ["-B", "-c", "import sys,hashlib,json; from pathlib import Path; sys.path[:0]=[sys.argv[1],str(Path(sys.argv[1])/'tests')]; from test_resource_import import fixture; from protocol.resource_pool import decoder; p=Path(sys.argv[2]); p.mkdir(); fixture(p); data=b'ordinary resource data'; member='common/manifest.json'; (p/member).write_bytes(data); toon=decoder(); catalog=toon.loads((p/'catalog.toon').read_text()); catalog['files'].append(dict(path=member,size=len(data),sha256=hashlib.sha256(data).hexdigest())); (p/'catalog.toon').write_text(toon.dumps(catalog)+'\\n'); (p/'catalog.json').write_text(json.dumps(catalog)+'\\n')", Backend.Root, pool], _ => { }, CancellationToken.None);
+        var zip = Path.Combine(directory, "external-pool.zip");
+        ZipFile.CreateFromDirectory(pool, zip);
+        var wrapped = Path.Combine(directory, "external-wrapped.blob");
+        using (var archive = ZipFile.Open(wrapped, ZipArchiveMode.Create))
+            foreach (var file in Directory.EnumerateFiles(pool, "*", SearchOption.AllDirectories)) archive.CreateEntryFromFile(file, "wrapper/" + Path.GetRelativePath(pool, file).Replace('\\', '/'));
+        var catalogPath = Path.Combine(Backend.Root, "cache", "resource-pool", "catalog.toon");
+        var builtinCatalog = File.Exists(catalogPath) ? File.ReadAllBytes(catalogPath) : null;
+        Clear(); var originalOptions = JsonSerializer.Serialize(window.CurrentOptions); var originalImage = ((TextBox)window.FindName("ImagePath")).Text;
+        var originalSession = Field<InstallationSession?>(window, "session");
+        foreach (var path in new[] { pool, zip, wrapped })
+        {
+            Clear(); NativeDrop(window, [path]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+            var rows = Field<List<InputAssignment>>(window, "inputAssignments");
+            Require(rows.Count == 1 && rows[0].Input?.Kind == InputKind.ResourcePool && rows[0].Role == InputRole.Resource, "native-resource-drop-recognized-" + Path.GetFileName(path));
+            var confirm = Field<CheckBox>(window, "inputResourceConsent");
+            Require(confirm.Visibility == Visibility.Visible && confirm.IsChecked != true && !Field<Button>(window, "inputApplyButton").IsEnabled
+                && Field<CheckBox>(window, "inputDeviceTrust").Visibility == Visibility.Collapsed, "resource-confirmation-is-separate-from-script-trust-" + Path.GetFileName(path));
+            await Call(window, "ApplyInputAssociationsAsync");
+            Require(!rows[0].Applied, "resource-no-import-without-confirmation-" + Path.GetFileName(path));
+            confirm.IsChecked = true; await Call(window, "ApplyInputAssociationsAsync");
+            Require(rows[0].Applied && Field<bool>(window, "inputAssociationApplied"), "resource-import-calls-real-validator-" + Path.GetFileName(path));
+            var preview = Field<TextBlock>(window, "inputResourcePreview").Text;
+            Require(preview.Contains("1") && preview.Contains("resource-imports") && preview.Contains("不能部署"), "resource-import-displays-isolated-preview-" + Path.GetFileName(path));
+            Require(JsonSerializer.Serialize(window.CurrentOptions) == originalOptions && ((TextBox)window.FindName("ImagePath")).Text == originalImage
+                && Field<InstallationSession?>(window, "session") == originalSession, "resource-preview-preserves-installation-state-" + Path.GetFileName(path));
+            Require(((Expander)window.FindName("SourceInputReview")).Visibility == Visibility.Visible, "resource-success-preview-remains-visible-" + Path.GetFileName(path));
+            if (path == pool)
+            {
+                await Flush(window); var capture = Path.Combine(directory, "external-resource-success.png");
+                if (Capture((FrameworkElement)window.Content, capture)) captures.Add(capture);
+            }
+        }
+        Require(builtinCatalog == null || File.ReadAllBytes(catalogPath).SequenceEqual(builtinCatalog), "external-resource-preview-never-overwrites-builtin-pool");
+        NativeDrop(window, [zip]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+        Require(Field<TextBlock>(window, "inputResourcePreview").Text.Length == 0 && Field<CheckBox>(window, "inputResourceConsent").IsChecked != true,
+            "consecutive-native-resource-drop-clears-previous-success-and-confirmation");
+        Field<CheckBox>(window, "inputResourceConsent").IsChecked = true; await Call(window, "ApplyInputAssociationsAsync");
+        Require(Field<bool>(window, "inputAssociationApplied"), "consecutive-native-resource-drop-validates-new-source");
+        NativeDrop(window, [Path.Combine(directory, "recovery.img")]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy") && !Field<bool>(window, "inputAssociationBusy"));
+        Require(Field<TextBlock>(window, "inputResourcePreview").Text.Length == 0 && Field<List<InputAssignment>>(window, "inputAssignments").All(row => row.Input?.Kind != InputKind.ResourcePool),
+            "native-installation-source-drop-clears-previous-resource-success");
+        foreach (var action in new[] { "ignore", "remove" })
+        {
+            NativeDrop(window, [wrapped]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+            Field<CheckBox>(window, "inputResourceConsent").IsChecked = true; await Call(window, "ApplyInputAssociationsAsync");
+            Require(Field<bool>(window, "inputAssociationApplied"), "resource-prepares-preview-before-" + action);
+            var line = Field<StackPanel>(window, "inputRowsHost").Children.OfType<DockPanel>().Single();
+            if (action == "ignore")
+            {
+                var roles = line.Children.OfType<ComboBox>().Single();
+                roles.SelectedItem = roles.Items.OfType<ComboBoxItem>().Single(item => (InputRole)item.Tag == InputRole.Ignore);
+            }
+            else line.Children.OfType<Button>().Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(Field<TextBlock>(window, "inputResourcePreview").Text.Length == 0, "resource-" + action + "-clears-associated-preview");
+            Clear();
+        }
+        Clear(); NativeDrop(window, [pool, Path.Combine(directory, "recovery.img")]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+        Field<CheckBox>(window, "inputResourceConsent").IsChecked = true;
+        Require(!Field<Button>(window, "inputApplyButton").IsEnabled, "resource-preview-cannot-be-mixed-with-installation-assignment");
+        Clear(); NativeDrop(window, [pool]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+        Field<CheckBox>(window, "inputResourceConsent").IsChecked = true;
+        await File.WriteAllTextAsync(Path.Combine(pool, "common", "example", "files", "data"), "corrupt");
+        await Call(window, "ApplyInputAssociationsAsync");
+        Require(!Field<bool>(window, "inputAssociationApplied") && Field<TextBlock>(window, "inputResourcePreview").Text.Length == 0
+            && Field<TextBlock>(window, "inputAssociationStatus").Text.Contains("mismatch"), "resource-payload-corruption-rejected-by-full-import-validation");
+        Clear(); NativeDrop(window, [zip]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+        Require(Field<CheckBox>(window, "inputResourceConsent").IsChecked != true, "resource-new-source-requires-new-confirmation");
+        Field<CheckBox>(window, "inputResourceConsent").IsChecked = true;
+        File.SetLastWriteTimeUtc(zip, File.GetLastWriteTimeUtc(zip).AddSeconds(10));
+        await Call(window, "ApplyInputAssociationsAsync");
+        Require(!Field<bool>(window, "inputAssociationApplied") && Field<TextBlock>(window, "inputAssociationStatus").Text.Contains("改变"), "resource-changed-source-needs-reinspection");
+        var traversal = Path.Combine(directory, "resource-traversal.zip");
+        using (var archive = ZipFile.Open(traversal, ZipArchiveMode.Create))
+        {
+            archive.CreateEntryFromFile(Path.Combine(pool, "catalog.toon"), "catalog.toon");
+            archive.CreateEntryFromFile(Path.Combine(pool, "catalog.json"), "catalog.json");
+            using var stream = archive.CreateEntry("../outside").Open(); stream.Write("bad"u8);
+        }
+        Require((await InputDiscovery.InspectAsync(traversal, CancellationToken.None)).Kind == InputKind.Unknown, "resource-archive-traversal-rejected-before-confirmation");
+        var catalog = Path.Combine(pool, "catalog.json"); var catalogText = await File.ReadAllTextAsync(catalog);
+        await File.WriteAllTextAsync(catalog, catalogText.Replace("unsigned-development", "production"));
+        Require((await InputDiscovery.InspectAsync(pool, CancellationToken.None)).Kind == InputKind.Unknown, "resource-self-declared-production-trust-rejected");
+        await File.WriteAllTextAsync(catalog, catalogText);
+        Clear(); NativeDrop(window, [wrapped]); await Wait(window, () => !Field<bool>(window, "inputInspectionBusy"));
+        foreach (var language in new[] { "zh-CN", "en-US" })
+        {
+            ((RadioButton)window.FindName(language == "en-US" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true;
+            foreach (var width in new[] { 1060d, 640d })
+            {
+                window.Width = width; window.Height = width == 1060 ? 720 : 640; await Flush(window);
+                var path = Path.Combine(directory, "external-resource-" + language + "-" + width + ".png");
+                if (Capture((FrameworkElement)window.Content, path)) captures.Add(path);
+            }
+        }
+    }
     private static async Task Wait(MainWindow window, Func<bool> done) { var limit = DateTime.UtcNow.AddSeconds(15); while (!done()) { if (DateTime.UtcNow > limit) throw new IOException("Input UI timeout."); await Task.Delay(20); await Flush(window); } }
     private static void NativeDrop(MainWindow window, string[] paths)
     {

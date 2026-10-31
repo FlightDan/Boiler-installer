@@ -1,0 +1,304 @@
+schema_version: 1
+kind: ModelInstallGuide
+id: "guide:x2-mini"
+name: ONEXPLAYER X2 Mini / Mini PRO
+installable: false
+guide: brands/onexplayer/x2-mini/model.md
+source_inventory: source-lock.json
+source_revision:
+  kind: github
+  repository: FlightDan/OneXPlayer3-SteamOS
+  commit: 72f864e0498c10366493c74608c5ffed62cc99ca
+components[33]:
+  - id: slot-switch
+    name: KDE 槽位切换 / 系统回退
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[3]: common/scripts/slot_switch.py,common/scripts/slot-switch/boot.py,common/scripts/slot-switch/desktop.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: partition-mount
+    name: KDE 图形分区持久挂载
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[3]: common/scripts/partition_mount.py,common/scripts/shared_storage.py,common/scripts/ntfs_steam.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: refind
+    name: rEFInd · 双系统图形启动菜单
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: opti2xmx
+    name: Opti2XMX · 每游戏 XMX / Opti 注入与版本管理
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources: []
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: gamescope-env
+    name: 游戏模式启动环境隔离 · 修复桌面切回黑屏
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: flathub-ustc
+    name: SteamOS 桌面模式 应用商店 · 中科大 Flathub 源（可选）
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/integration.py,brands/onexplayer/oxp3/scripts/flathub.flatpakrepo
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: hdr
+    name: 游戏模式 HDR
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: model_implementation_unverified
+    notes: 复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。
+  - id: desktop-hdr
+    name: KDE 桌面 HDR 475/700 安全试用
+    recommendation: recommended
+    default: false
+    dependencies: []
+    sources[4]: brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py,brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py
+    status: external_runtime_required
+    notes: 复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。
+  - id: keyboard
+    name: KDE 屏幕键盘配置
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: input
+    name: 背键驱动 · M1/L4、M2/R4、Home/L5
+    recommendation: recommended
+    default: false
+    dependencies: []
+    sources[3]: brands/onexplayer/common/scripts/input_profile.py,brands/onexplayer/common/scripts/input-profile.yaml,brands/onexplayer/common/scripts/input-profile.conf
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: multifunction
+    name: 多功能键映射为 R5
+    recommendation: recommended
+    default: false
+    dependencies[1]: input
+    sources[1]: brands/onexplayer/common/scripts/input-profile.yaml
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: gyro
+    name: BMI260 陀螺仪（新装需校准）
+    recommendation: recommended
+    default: false
+    dependencies[1]: input
+    sources[4]: brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c,brands/onexplayer/common/scripts/gyro/launch.sh,brands/onexplayer/common/scripts/gyro/oxp3-gyro.service,brands/onexplayer/common/scripts/gyro/gyro_binding.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: xe-dsb
+    name: OXP3 显示兼容修复 · 暂停 DSB
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: gm7-resume
+    name: GM7 休眠恢复 · 自动匹配目标 SSD
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: split-lock
+    name: Split-lock 报告洪泛修复 · 需要重启
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[1]: common/scripts/split_lock.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: wifi
+    name: BE201 无线 c106 与蓝牙固件
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: manager
+    name: SteamOS Manager 状态与错误修复
+    recommendation: recommended
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/integration.py,brands/onexplayer/oxp3/scripts/controls/compatibility.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: native-tdp
+    name: 原生 TDP 10–40W 控制
+    recommendation: conditional
+    default: false
+    dependencies[1]: manager
+    sources[1]: brands/onexplayer/oxp3/scripts/controls/rapl/provider.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: overlay
+    name: CPU/GPU/APU 功耗与 PVRAM 叠加层
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/controls/overlay/telemetry.py,brands/onexplayer/oxp3/scripts/controls/overlay/allow-read.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: fan-driver
+    name: OXP3 风扇与充电接口驱动
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: oxp3-fan
+    name: OXP3 风扇 · 自动与曲线
+    recommendation: optional
+    default: false
+    dependencies[2]: fan-driver,decky
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: oxp3-cpu
+    name: OXP3 CPU · EPP 与分组限频
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources[2]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: charging
+    name: OXP3 Battery · 充电上限与模式
+    recommendation: optional
+    default: false
+    dependencies[2]: fan-driver,decky
+    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: oxp3-light
+    name: OXP3 Light · 三分区灯光控制
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources[2]: brands/onexplayer/oxp3/scripts/light/main.py,brands/onexplayer/oxp3/scripts/light/light_control.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: legacy-runtime
+    name: 音量键与电量显示修复
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[1]: brands/onexplayer/oxp3/scripts/integration_runtime.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: windows-reboot
+    name: 重启进入 Windows · Decky 按钮与桌面快捷方式
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources[2]: common/scripts/windows_reboot.py,common/scripts/windows-reboot/boot.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: decky
+    name: Decky Loader · 插件运行环境
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/plugin_installer.py,brands/onexplayer/oxp3/scripts/decky_order.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: waydroid
+    name: Waydroid r2 · Android 宿主适配
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/waydroid_setup.py,brands/onexplayer/oxp3/scripts/waydroid/compatibility.py
+    status: shared_oxp3_implementation
+    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: base-system
+    name: SteamOS、按芯片匹配的固件与维护运行时
+    recommendation: required
+    default: false
+    dependencies: []
+    sources: []
+    status: external_boiler_core
+    notes: 由 Boiler 通用流程提供；核对实际系统和内核版本。
+  - id: pl4-175w
+    name: PL4 175W（用户指定需求）
+    recommendation: pending
+    default: false
+    dependencies: []
+    sources: []
+    status: implementation_missing
+    notes: 已有用户测试反馈；未找到独立公开脚本，原值备份、应用与恢复入口待补，不能以 PL1/PL2 代替。
+  - id: lsfg-vk
+    name: LSFG-VK
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources: []
+    status: external_plugin
+    notes: 默认不选；需要 Decky、用户购买 Lossless Scaling 并按插件流程安装。
+  - id: speaker-route
+    name: 扬声器声道修复
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: shared_oxp3_implementation
+    notes: 复用 OXP3 公开载荷；核对实际系统与依赖，硬件验收单独记录。
+  - id: xevmafix
+    name: xevma 显示模块修复
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: shared_oxp3_implementation
+    notes: 复用 OXP3 公开载荷；核对实际系统与依赖，硬件验收单独记录。
+build:
+  adapter: x2-complete-v1
+  complete: true
+  missing: []
+  materials[3]{scope,lock,sha256}:
+    common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
+    brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
+    model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
+  inputs[3]{name,kind,path,lock,sha256,note}:
+    base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."
+    bridge_overlay,locked-directory,adaptations/inputs/x2-bridge-overlay,adaptations/inputs/x2-bridge-overlay/overlay-lock.json,a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d,Explicit reviewed X2 identity and recovery bridge overlay.
+    hdr_overlay,locked-directory,adaptations/inputs/x2-hdr-overlay,adaptations/inputs/x2-hdr-overlay/overlay-lock.json,f1c159d826106eb038fe1845efc515fbd4ed2897089b0e1f8b68cd80c554d1d6,Explicit reviewed X2 HDR mapping overlay.
+package:
+  kind: BoilerInheritedPackageDefinition
+  base_input: base
+  inherited_components[4]: "oxp3:legacy-adaptation","oxp3:microphone","oxp3:speaker-route","oxp3:xevmafix"
+  inherited_legacy_capabilities[28]: "oxp3:slot-switch","oxp3:partition-mount","oxp3:refind","oxp3:opti2xmx","oxp3:gamescope-env","oxp3:flathub-ustc","oxp3:hdr","oxp3:desktop-hdr","oxp3:keyboard","oxp3:input","oxp3:multifunction","oxp3:gyro","oxp3:xe-dsb","oxp3:gm7-resume","oxp3:split-lock","oxp3:wifi","oxp3:manager","oxp3:native-tdp","oxp3:overlay","oxp3:fan-driver","oxp3:oxp3-fan","oxp3:oxp3-cpu","oxp3:charging","oxp3:oxp3-light","oxp3:legacy-runtime","oxp3:windows-reboot","oxp3:decky","oxp3:waydroid"
+  definitions: []
+runtime:
+  id: "device:x2-mini"
+  name:
+    en: ONEXPLAYER X2 Mini / Mini PRO
+    zh: ONEXPLAYER X2 Mini / Mini PRO
+  hardware_matching:
+    mode: advisory-exact-dmi-v1
+    pairs[2]{manufacturer,model}:
+      ONE-NETBOOK,ONEXPLAYER X2 Mini
+      ONE-NETBOOK,ONEXPLAYER X2 Mini PRO

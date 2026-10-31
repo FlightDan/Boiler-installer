@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerUpstreamRepairSources",
+  "upstream": {
+    "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+    "tag": "20261029",
+    "commit": "e72e814da1944da3792076689995b6fe961f5768",
+    "license": "MIT; xevma module declares GPL"
+  },
+  "files": [
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/dock_input.py",
+      "size": 1782,
+      "sha256": "6c98018c8106924cfb5036c32b162a4155a3a06bd420246b8767cfa3cddbfeb1"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/speaker_route.py",
+      "size": 5510,
+      "sha256": "b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/install.json",
+      "size": 1580,
+      "sha256": "e99f5e6240d8271ef41b7055026d8915d697ac2992a8524ca50fd1b6fe8c6490"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-route.service",
+      "size": 221,
+      "sha256": "327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/90-oxp3-speaker-route.conf",
+      "size": 40,
+      "sha256": "7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-resume.service",
+      "size": 284,
+      "sha256": "efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/20-oxp3-speaker-resume.conf",
+      "size": 41,
+      "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/PROVENANCE.json",
+      "size": 1347,
+      "sha256": "198409b82781c0d7885de76c667cceee81411dacb9191d1c95caffc1b61782d2"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/90-boiler-oxp3-xevmafix.conf",
+      "size": 42,
+      "sha256": "ba2a8b4edebc640910521643e7962d09546a043cd8f539fcb1b504047e503132"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/boiler-oxp3-xevmafix.service",
+      "size": 218,
+      "sha256": "4e05053564db612fab03dd7c838aa85b7472c4dc3791a5bee5f1162acc6641e8"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/install.json",
+      "size": 2187,
+      "sha256": "bb427afb8db3152dec0b2cb79ff47631a06dc183582c2156c6f69736936fe76e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/load.py",
+      "size": 2330,
+      "sha256": "bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/README.md",
+      "size": 2300,
+      "sha256": "3382fb696e004bc00ddabb8729ca16ba2b32f6e5be0b6ca244ced88f4cc74b00"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_README.md",
+      "size": 3528,
+      "sha256": "bc478f9e972bc5ace5d594d337e5e16c83e7fd9b6729321ebb084471877638c7"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/module-lock.json",
+      "size": 26919,
+      "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41"
+    }
+  ]
+}

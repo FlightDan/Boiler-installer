@@ -55,9 +55,13 @@ def validate_integration(root, integration, *, local_test=False):
     persist_models=integration.get('local_test_models') is True
     if persist_models and not local_test:
         raise ValueError('Local maintenance model assets require explicit local-test packaging')
+    persist_pool=integration.get('local_test_resource_pool') is True
+    if persist_pool and (not local_test or persist_models):
+        raise ValueError('Shared resource pools require local-test packaging without full model bundles')
     # Rebuild from final sources to cover launchers, guides and retained model bytes.
     with tempfile.TemporaryDirectory(prefix='boiler-runtime-verification-') as temporary:
-        expected=module.prepare(Path(temporary)/'payload',local_test_models=persist_models)['components']['core:maintenance']
+        expected=module.prepare(Path(temporary)/'payload',local_test_models=persist_models,
+                                local_test_resource_pool=persist_pool, resource_pool=root/'cache/integration/resource-pool' if persist_pool else None)['components']['core:maintenance']
     if components['core:maintenance']!=expected:raise ValueError('Maintenance runtime differs from final sources')
 
 
@@ -76,9 +80,29 @@ def integration_package_files(root, integration, *, local_test=False):
             selected[name]=entry
     base=Path(root)/'cache/integration'
     actual={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
+    external={name for name in selected if name.startswith('resource-pool/')}
+    if external:
+        pool=resource_pool_package_files(root,local_test=local_test)
+        if {'cache/integration/'+name for name in external}!=set(pool):
+            raise ValueError('Maintenance resource references differ from the complete verified pool')
+        for name in external:
+            if any(selected[name][key]!=pool['cache/integration/'+name][key] for key in ('size','sha256')):
+                raise ValueError('Maintenance resource reference differs from the verified pool')
     if actual!=set(selected)|{'manifest.json'}:
         raise ValueError('Integration payload contains unlisted files; firmware must be downloaded on demand')
     return selected
+
+
+def resource_pool_package_files(root, *, local_test=False):
+    """Include one complete verified pool; its inventory grants no production trust."""
+    base=Path(root)/'cache/integration/resource-pool'
+    if not base.exists():return {}
+    if not local_test:
+        raise ValueError('Shared resource candidates require explicit --local-test packaging')
+    if (Path(root)/'cache/model-bundles/manifest.json').exists():
+        raise ValueError('Shared resource pool cannot accompany legacy full model bundles')
+    from protocol.resource_pool import inventory
+    return {'cache/integration/resource-pool/'+entry['path']:entry for entry in inventory(base)}
 
 
 def local_model_package_files(root, *, local_test=False):
@@ -111,6 +135,21 @@ def local_model_package_files(root, *, local_test=False):
     return files
 
 
+def model_catalog_package_files(root, source_files=None):
+    """Freeze the entire checked display snapshot inside the public whitelist."""
+    from protocol.model_catalog import read_lock, snapshot_records
+    root=Path(root).resolve()
+    if source_files is None:
+        policy=json.loads((root/'scripts/source-files.json').read_bytes())
+        source_files=set(policy.get('files',[]))
+    snapshot_records(root)
+    lock=read_lock(root)
+    names=['components/model-catalog/lock.json',*('components/model-catalog/snapshot/'+entry['path'] for entry in lock['files'])]
+    if not set(names)<=set(source_files):
+        raise ValueError('Pinned model snapshot is outside the reviewed source whitelist')
+    return {name:dict(path=name,size=confined(root,name).stat().st_size,sha256=digest(confined(root,name))) for name in names}
+
+
 def package(root, output, source_commit, configuration='Release', *, local_test=False):
     if len(source_commit)!=40 or any(c not in '0123456789abcdef' for c in source_commit):raise ValueError('Exact public source commit required')
     root=Path(root).resolve();output=Path(output).resolve()
@@ -128,6 +167,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
         committed[name]={'size':len(content),'sha256':hashlib.sha256(content).hexdigest()}
         if committed[name]['sha256']!=digest(confined(root,name)):
             raise ValueError('Working source differs from public source commit: '+name)
+    catalog_files=model_catalog_package_files(root,set(committed))
     records={}
     def add(name, expected=None):
         relative_path(name);p=confined(root,name)
@@ -140,6 +180,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     for name in whitelist['files']:
         if name.startswith(('guest/','components/','maintenance/','protocol/','schemas/','scripts/','licenses/','docs/')) or name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
             add(name,committed[name])
+    for name,entry in catalog_files.items(): add(name,entry)
     lock=json.loads((root/'scripts/runtime-dependencies.lock.json').read_text(encoding='utf-8'))
     groups=set(lock['profiles']['runtime'])
     for archive in lock['archives']:
@@ -158,6 +199,10 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     integration_files=integration_package_files(root,integration,local_test=local_test)
     if local_test and (root/'cache/model-bundles/manifest.json').exists() and integration.get('local_test_models') is not True:
         raise ValueError('Local model tests must synchronize the on-device maintenance model assets')
+    pool_files=resource_pool_package_files(root,local_test=local_test)
+    if pool_files and integration.get('local_test_resource_pool') is not True:
+        raise ValueError('Offline pool must be retained by the on-device maintenance component')
+    for name,entry in pool_files.items():add(name,entry)
     add('cache/integration/manifest.json',{'size':len(integration_bytes),'sha256':hashlib.sha256(integration_bytes).hexdigest()})
     for name,entry in integration_files.items():add('cache/integration/'+name,entry)
     # Display metadata remains pinned and verified even for offline test use.
@@ -176,6 +221,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
           'source_commit':source_commit,'built_utc':datetime.now(timezone.utc).isoformat(),'configuration':configuration,
           'package_channel':'local-test' if local_test else 'preview','source_published':not local_test,
           'model_catalog_source':catalog['source'],
+          'resource_pool':{'bundled':bool(pool_files),'files':len(pool_files),'delivery':'single-copy-offline'},
           'dependency_lock_sha256':digest(root/'scripts/runtime-dependencies.lock.json'),
           'files':[records[name] for name in sorted(records)],
           'acceptance':('local physical-test candidate; no device acceptance claimed' if local_test else 'preview; see release record for separate hardware/release gates')}
@@ -203,3 +249,4 @@ if __name__=='__main__':
     parser.add_argument('--source-commit',required=True);parser.add_argument('--configuration',choices=('Debug','Release'),default='Release')
     parser.add_argument('--local-test',action='store_true',help='Mark an unpublished source build and permit explicitly inventoried model test packages')
     args=parser.parse_args();print(json.dumps(package(args.root,args.output,args.source_commit,args.configuration,local_test=args.local_test),indent=2))
+

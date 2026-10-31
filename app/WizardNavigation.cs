@@ -198,6 +198,7 @@ public partial class MainWindow
         officialDownloadPanel.IsEnabled = idle && !downloadPanel.IsBusy && !sourceInspectionBusy;
         officialDownloadPanel.SetRequired(UsePrepared.IsChecked != true && Upgrade310.IsChecked == true);
         StopButton.IsEnabled = operation != null && !operation.IsCancellationRequested;
+        FeedbackButton.Content = PartitionInventory.L("反馈…", "Feedback…");
         ExportLogButton.Content = PartitionInventory.L("导出详细日志…", "Export logs…");
         ExportLogButton.IsEnabled = !exportingLog && (session != null || LogText.Text.Length > 0);
         RefreshBoilerNavigation();

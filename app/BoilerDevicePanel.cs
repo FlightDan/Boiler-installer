@@ -43,6 +43,8 @@ public partial class MainWindow
         var generation = ++devicePanelGeneration;
         lastDeviceIndex = displayedDeviceMetadata = null;
         modelCatalog = null; modelCatalogError = null;
+        resourceCatalog = null; resourceCatalogError = null; selectedResourceSelection = null;
+        resourceConsent = null; resourceChoices.Clear();
         deviceIndexError = pendingDeviceDirectory = null;
         detectedComputer = null; deviceDetectionState = "pending"; deviceChoiceChanged = false;
         deviceLanguageUpdates.Clear();
@@ -267,14 +269,15 @@ public partial class MainWindow
 
     private IEnumerable<JsonElement> DeviceModelEntries(string? preferredKey)
     {
-        var guides = modelCatalog is JsonElement catalog ? catalog.GetProperty("models").EnumerateArray().ToArray() : [];
+        var pinnedGuides = modelCatalog is JsonElement catalog ? catalog.GetProperty("models").EnumerateArray().ToArray() : [];
+        var guides = ResourceModels.Concat(pinnedGuides).GroupBy(entry => entry.GetProperty("id").GetString()).Select(group => group.First()).ToArray();
         var packages = lastDeviceIndex is JsonElement index ? index.GetProperty("packages").EnumerateArray().Where(IsAvailableDeviceEntry).ToArray() : [];
         foreach (var model in guides.Concat(packages).GroupBy(entry => entry.GetProperty("id").GetString(), StringComparer.Ordinal))
         {
             // One model can have both a guide and a package. Keep an explicit
             // choice during refresh; otherwise prefer this build's bundled payload.
             yield return model.OrderBy(entry => DeviceEntryKey(entry) == preferredKey ? 0
-                : IsModelGuide(entry) && HasBundledModel(model.Key!) ? 1 : !IsModelGuide(entry) ? 2 : 3).First();
+                : IsModelGuide(entry) && HasResourceModel(model.Key!) ? 1 : !IsModelGuide(entry) ? 2 : 3).First();
         }
     }
 
@@ -283,7 +286,7 @@ public partial class MainWindow
         var previous = deviceList!.SelectedItem is ComboBoxItem { Tag: JsonElement selected } ? selected : (JsonElement?)null;
         var old = previous is JsonElement before ? DeviceEntryKey(before) : null;
         var keepSource = previous is JsonElement chosen && (selectedDevicePackage != null
-            || (deviceChoiceChanged || deviceActionBusy) && (!IsModelGuide(chosen) || HasBundledModel(chosen.GetProperty("id").GetString()!)));
+            || selectedResourceSelection != null || (deviceChoiceChanged || deviceActionBusy) && (!IsModelGuide(chosen) || HasResourceModel(chosen.GetProperty("id").GetString()!)));
         updatingDeviceList = true;
         try
         {

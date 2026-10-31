@@ -83,6 +83,7 @@ public sealed class OfficialDownloadPanel : UserControl
         RefreshStatus(); SourceChanged?.Invoke();
     }
     public event Action<bool>? BusyChanged;
+    internal event Action<FeedbackDiagnostic>? DownloadFailed;
     public event Action? SourceChanged;
     private static string L(string zh, string en) => PartitionInventory.L(zh, en);
     private static Border Card(UIElement content) => new()
@@ -222,6 +223,8 @@ public sealed class OfficialDownloadPanel : UserControl
         BusyChanged?.Invoke(true);
         var logPath = Path.Combine(InstallerWorkspace.DirectoryPath, "official-3.10-download.log");
         var completed = false;
+        var failed = false;
+        var diagnostic = new FeedbackDiagnostic(); diagnostic.Stage("update-preparation");
         try
         {
             Directory.CreateDirectory(InstallerWorkspace.DirectoryPath);
@@ -229,6 +232,7 @@ public sealed class OfficialDownloadPanel : UserControl
             using var log = new StreamWriter(new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
             void Report(OfficialPreparationProgress update) => Dispatcher.Invoke(() =>
             {
+                diagnostic.Stage(update.Step);
                 progress.IsIndeterminate = update.Step == "01.02.02" || update.Fraction == 0;
                 progress.Value = Math.Max(progress.Value, update.Fraction * 100);
                 SetStatus(update.Message);
@@ -236,7 +240,7 @@ public sealed class OfficialDownloadPanel : UserControl
             });
             localPath.Text = importing
                 ? await OfficialSystem.ImportRootAsync(local!, operation.Token, Report)
-                : await OfficialSystem.StageBundleAsync(line => { lock (log) log.WriteLine(line); }, operation.Token, Report, local, fresh);
+                : await OfficialSystem.StageBundleAsync(line => { lock (log) { log.WriteLine(line); diagnostic.Append(line + "\n"); } }, operation.Token, Report, local, fresh);
             AssociatedSourcePath = null;
             associatedInspection = null;
             completed = true;
@@ -247,7 +251,7 @@ public sealed class OfficialDownloadPanel : UserControl
         {
             SetStatus(L("准备已暂停。再次点击可继续；已有系统数据块会重新检查并复用。", "Preparation paused. Click again to continue; existing system chunks will be checked and reused."));
         }
-        catch (Exception error) { SetStatus(L("准备未完成：", "Preparation incomplete: ") + error.Message); }
+        catch (Exception error) { SetStatus(L("准备未完成：", "Preparation incomplete: ") + error.Message); diagnostic.Failure(error); diagnostic.Append(error.ToString()); failed = local == null; }
         finally
         {
             operation.Dispose(); operation = null; progress.IsIndeterminate = false;
@@ -259,5 +263,6 @@ public sealed class OfficialDownloadPanel : UserControl
             if (completed) SourceReady?.Invoke();
             if (local != null) localStatus.BringIntoView();
         }
+        if (failed) DownloadFailed?.Invoke(diagnostic);
     }
 }

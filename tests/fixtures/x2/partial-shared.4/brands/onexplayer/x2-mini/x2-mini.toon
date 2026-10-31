@@ -1,0 +1,314 @@
+schema_version: 1
+kind: ModelInstallGuide
+id: "guide:x2-mini"
+name: ONEXPLAYER X2 Mini / Mini PRO
+installable: false
+guide: brands/onexplayer/x2-mini/model.md
+source_inventory: source-lock.json
+source_revision:
+  kind: github
+  repository: FlightDan/OneXPlayer3-SteamOS
+  commit: 72f864e0498c10366493c74608c5ffed62cc99ca
+components[31]:
+  - id: base-system
+    name: SteamOS、按芯片匹配的固件与维护运行时
+    recommendation: required
+    default: false
+    dependencies: []
+    sources: []
+    status: external_boiler_core
+    notes: 由 Boiler 通用流程提供；核对实际系统和内核版本。
+  - id: input
+    name: 背键 / MCU 输入适配
+    recommendation: recommended
+    default: false
+    dependencies: []
+    sources[3]: brands/onexplayer/common/scripts/input_profile.py,brands/onexplayer/common/scripts/input-profile.yaml,brands/onexplayer/common/scripts/input-profile.conf
+    status: source_reference_only
+    notes: 唯一 MCU 接口满足后推荐；需匹配公开驱动、capability map；新 Boiler 包未验收。
+  - id: multifunction
+    name: 多功能键
+    recommendation: recommended
+    default: false
+    dependencies[1]: input
+    sources[1]: brands/onexplayer/common/scripts/input-profile.yaml
+    status: source_reference_only
+    notes: 逐实体键确认映射，不能仅凭品牌套用模板。
+  - id: gyro
+    name: BMI260 陀螺仪
+    recommendation: conditional
+    default: false
+    dependencies[1]: input
+    sources[4]: brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c,brands/onexplayer/common/scripts/gyro/launch.sh,brands/onexplayer/common/scripts/gyro/oxp3-gyro.service,brands/onexplayer/common/scripts/gyro/gyro_binding.py
+    status: source_reference_only
+    notes: 核对 ACPI/I2C、0x27 芯片 ID、精确内核和配套 InputPlumber；新装重新校准。
+  - id: desktop-hdr
+    name: KDE 桌面 HDR 475/700 安全试用
+    recommendation: recommended
+    default: false
+    dependencies: []
+    sources[4]: brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py,brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py
+    status: external_runtime_required
+    notes: 显式试用；固定 KWin/ABI、SDC4301 内屏、无启用外屏；10 秒未确认恢复；需配套完整原生运行时。
+  - id: hdr
+    name: 游戏模式 HDR
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: model_implementation_unverified
+    notes: 现有 OXP3 游戏配置为 472/1100，不能作为 X2 475/700 实现；需单独核实面板和方案。
+  - id: gm7-resume
+    name: GM7 休眠恢复
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: hardware_validation_required
+    notes: 只有实际 SSD 命中适用条件时安装；验证休眠与恢复。
+  - id: split-lock
+    name: Split-lock 报告洪泛修复
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[1]: common/scripts/split_lock.py
+    status: hardware_validation_required
+    notes: 确认存在报告洪泛且启动文件受支持时使用；重启生效，按原事务恢复。
+  - id: wifi
+    name: 按芯片选择无线固件
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: hardware_validation_required
+    notes: 按实际无线芯片选择 Boiler 通用固件；不固定为所有机器均需 BE201。
+  - id: overlay
+    name: 功耗 / PVRAM 叠加层
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources[2]: brands/onexplayer/oxp3/scripts/controls/overlay/telemetry.py,brands/onexplayer/oxp3/scripts/controls/overlay/allow-read.py
+    status: hardware_validation_required
+    notes: 仅公开常规遥测参考；核对 X2 实际接口、单位与读数。
+  - id: manager
+    name: SteamOS Manager 修复
+    recommendation: conditional
+    default: false
+    dependencies: []
+    sources: []
+    status: hardware_validation_required
+    notes: 核对实际 Manager 和硬件接口；不继承 OXP3 验收结论。
+  - id: native-tdp
+    name: 原生 TDP
+    recommendation: conditional
+    default: false
+    dependencies[1]: manager
+    sources: []
+    status: hardware_validation_required
+    notes: 单独确认 X2 处理器、RAPL/Manager 接口与范围；不套用 OXP3 的 10–40W。
+  - id: pl4-175w
+    name: PL4 175W（用户指定需求）
+    recommendation: pending
+    default: false
+    dependencies: []
+    sources: []
+    status: implementation_missing
+    notes: 已有用户测试反馈；未找到独立公开脚本，原值备份、应用与恢复入口待补，不能以 PL1/PL2 代替。
+  - id: decky
+    name: Decky Loader
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: external_boiler_core
+    notes: Boiler 通用部署入口；所选插件的依赖。
+  - id: slot-switch
+    name: KDE 槽位切换 / 系统回退
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[3]: common/scripts/slot_switch.py,common/scripts/slot-switch/boot.py,common/scripts/slot-switch/desktop.py
+    status: static_tool_lifecycle_candidate
+    notes: 精确 SteamOS 基线及所有系统工具齐全后可选；仅部署工具，不切槽或重启。实际动作继续由原公开脚本核对 A/B、更新器和令牌；新装/维护文件恢复采用 Engine，真实切槽重启仍待验收。
+  - id: partition-mount
+    name: KDE 图形分区持久挂载
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[3]: common/scripts/partition_mount.py,common/scripts/shared_storage.py,common/scripts/ntfs_steam.py
+    status: external_or_validation_required
+    notes: 共享 home/NTFS 布局核对后可选；本次归档基线不代表工作区后续 NTFS 修复。 X2 新装与恢复需分别验证。
+  - id: gamescope-env
+    name: 游戏模式启动环境隔离 · 修复桌面切回黑屏
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: external_or_validation_required
+    notes: 仅用于已确认的游戏模式环境问题；保留原环境恢复。 X2 新装与恢复需分别验证。
+  - id: keyboard
+    name: KDE 屏幕键盘配置
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: host_lifecycle_candidate
+    notes: 固定主程序动态合并两个 KWin 键；共用 home 的唯一恢复账本。已通过受控 Linux Btrfs 双根、共享 home、生产权限、新装、维护、验证和恢复夹具；保留用户编辑，实际键盘启动与实机未验收。
+  - id: flathub-ustc
+    name: SteamOS 桌面模式 应用商店 · 中科大 Flathub 源（可选）
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: external_or_validation_required
+    notes: 用户主动选择；保留原 remote，当前归档不补写尚未接入的换源流程。 X2 新装与恢复需分别验证。
+  - id: refind
+    name: rEFInd · 双系统图形启动菜单
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: external_or_validation_required
+    notes: 独立启动管理器入口；脚本不归机型适配所有，核对 EFI 与双系统布局。 X2 新装与恢复需分别验证。
+  - id: windows-reboot
+    name: 重启进入 Windows · Decky 按钮与桌面快捷方式
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources[2]: common/scripts/windows_reboot.py,common/scripts/windows-reboot/boot.py
+    status: external_or_validation_required
+    notes: 核对 Windows EFI 启动项、授权入口及恢复。 X2 新装与恢复需分别验证。
+  - id: opti2xmx
+    name: Opti2XMX · 每游戏 XMX / Opti 注入与版本管理
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources: []
+    status: external_or_validation_required
+    notes: 使用独立公开插件与运行库；需要受支持 Intel GPU，逐游戏验证。 X2 新装与恢复需分别验证。
+  - id: waydroid
+    name: Waydroid r2 · Android 宿主适配
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources: []
+    status: external_or_validation_required
+    notes: 可选；另需公开 r2 资源，核对内核与 Android 容器条件。 X2 新装与恢复需分别验证。
+  - id: lsfg-vk
+    name: LSFG-VK
+    recommendation: optional
+    default: false
+    dependencies[1]: decky
+    sources: []
+    status: external_plugin
+    notes: 默认不选；需要 Decky、用户购买 Lossless Scaling 并按插件流程安装。
+  - id: xe-dsb
+    name: OXP3 DSB 显示修复
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: fan-driver
+    name: OXP3 风扇/充电驱动
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: oxp3-fan
+    name: OXP3 风扇插件
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: charging
+    name: OXP3 充电插件
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: oxp3-light
+    name: OXP3 灯光插件
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: oxp3-cpu
+    name: OXP3 CPU 专用配置
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+  - id: legacy-runtime
+    name: OXP3 音量/电量旧运行时
+    recommendation: excluded
+    default: false
+    dependencies: []
+    sources: []
+    status: model_specific_exclusion
+    notes: 不直接用于 X2 Mini；同硬件证据、独立组件及恢复验证完成后另行接入。
+build:
+  adapter: x2-current-v1
+  complete: false
+  missing[3]: "Full X2 package remains incomplete: this entry implements Battery, microphone, gamescope-env, slot-switch and fixed keyboard configuration only; other declared X2 capabilities still require implementations.","PL4 175W public implementation, original-value backup, persistence and restore are missing.",X2 game HDR 475/700 implementation and complete native desktop HDR runtime are not delivered here.
+  materials[5]{scope,lock,sha256}:
+    common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
+    brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
+    model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
+    model,adaptations/brands/onexplayer/x2-mini/bridge/source-lock.json,d14b0cc281f9f29ce2faf587d02aab384d7beb98dc7c0f071114a05e2a887c6b
+    model,adaptations/records/x2-keyboard/runtime-source-lock.json,0df9fbd4289a890db80e84e3a8d5036bb79129f851de4d83aed5360ddbb7fe7b
+  inputs: []
+package:
+  kind: BoilerPackageAssembly
+  metadata:
+    schema_version: 1
+    kind: DevicePackage
+    id: "device:x2-mini"
+    version: 0.1.0-localtest.20261031.x2-shared.4
+    minimum_engine_version: 0.1.1
+    name:
+      en: ONEXPLAYER X2 Mini shared repairs
+      zh: ONEXPLAYER X2 Mini 共用修复
+    source:
+      kind: local
+      path: adaptations/brands/onexplayer/x2-mini/bridge
+    trust:
+      status: unsigned-development
+      official_release: false
+    compatibility:
+      architectures[1]: x86_64
+      os_ids[1]: steamos
+    shared_adaptations:
+      kind: boiler-shared-host-v1
+      components[5]: "x2-mini:battery","x2-mini:microphone","x2-mini:gamescope-env","x2-mini:slot-switch","x2-mini:keyboard"
+      input_lock_sha256: 089a7c31bd1e96a4b7396f40adbd142ce14af7abd5c1858ef9aba86a955ea7a0
+      warnings[2]: Local development package; no sleep or X2 hardware acceptance is claimed.,"Battery, microphone, gamescope-env, slot-switch tools and the fixed host keyboard handler are candidates. Other X2 adaptations remain pending; physical-device activation and recovery are not accepted."
+      additive_upgrade_from[2]: 874ee0c4bf0f46ec5af94f7452ebe0d656b50bb2b5c673a42392c8ba9191db6c,4765603630661f26e925be214d5da684bae81109240a23aa306333a2d99459e6
+    delivery_scope: partial-shared-adaptations
+  components[5]{id,definition,key,sha256}:
+    "x2-mini:battery",brands/onexplayer/common/components.toon,battery,b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f
+    "x2-mini:microphone",brands/onexplayer/common/components.toon,microphone,b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f
+    "x2-mini:gamescope-env",brands/onexplayer/common/components.toon,gamescope-env,b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f
+    "x2-mini:slot-switch",brands/onexplayer/common/components.toon,slot-switch,b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f
+    "x2-mini:keyboard",brands/onexplayer/common/components.toon,keyboard,b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f
+runtime:
+  id: "device:x2-mini"
+  name:
+    en: ONEXPLAYER X2 Mini / Mini PRO
+    zh: ONEXPLAYER X2 Mini / Mini PRO
+  hardware_matching:
+    mode: advisory-exact-dmi-v1
+    pairs[2]{manufacturer,model}:
+      ONE-NETBOOK,ONEXPLAYER X2 Mini
+      ONE-NETBOOK,ONEXPLAYER X2 Mini PRO

@@ -23,6 +23,11 @@ def wireless_identity(selection):
 def validate_options(options):
     if not isinstance(options, dict) or options.get('schema') != 1:
         raise ValueError('SelectedOptions schema 1 required')
+    # Until the guest has an authenticated resource coordinator, never treat
+    # an unconsumed resource selection as a successful generic installation.
+    if any(isinstance(key, str) and key.startswith('resource_') and value is not None
+           for key, value in options.items()):
+        raise ValueError('Resource selection requires the A/B resource coordinator')
     graphics_profile = graphics.selected(options)
     for key in ('repairs', 'plugins', 'device_components'):
         values = options.get(key, [])
@@ -151,7 +156,7 @@ def device_legacy_selection(package, options, components):
     if requested is None:
         return None
     contract = {'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}
-    if package.get('id') != 'device:oxp3' or package.get('selection_contract') != contract:
+    if package.get('id') not in ('device:oxp3', 'device:x2-mini') or package.get('selection_contract') != contract:
         raise ValueError('Device package does not support legacy option selection')
     if contract['component'] not in {item['id'] for item in components}:
         raise ValueError('Legacy selection requires the adaptation component')
@@ -206,6 +211,11 @@ def verify_device_components(root, payload, options, slot, installed):
     Engine = maintenance_api(payload)
     engine = Engine(root, Path(root) / 'var/lib/boiler/maintenance', read_only=True)
     for component in components:
+        if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
+            from maintenance.keyboard_models import installer_verify
+            installer_verify(root, component, slot)
+            print('BOILER_DEVICE_VERIFIED=' + json.dumps(dict(slot=slot,id=component['id'],hook=False,readonly=True)),flush=True)
+            continue
         if not engine.verify_readonly(component['id'])['ok']:
             raise ValueError('Device managed files differ: ' + component['id'])
         hooks = component.get('hooks', {})
@@ -268,8 +278,22 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     if (unknown or options.get('device_components')) and not package:
         raise ValueError('Device components require an explicitly trusted package')
     package_root, device_components, environment = (None, [], {})
+    dynamic_plans = {}
     if package:
         package_root, device_components, environment, descriptor = device_plan(payload, options, result['source'])
+        from maintenance.engine import Engine as DeviceCheckEngine
+        from maintenance.shared_models import check_static_component
+        for component in device_components:
+            if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
+                from maintenance.keyboard_models import installer_plan
+                dynamic_plans[component['id']] = installer_plan(root, component, slot)
+                if 'core:maintenance' not in choices: choices.append('core:maintenance')
+            else:
+                check_static_component(DeviceCheckEngine(root, read_only=True), component)
+            if component['id'] != 'x2-mini:keyboard' and any(row.get('target') == 'home/deck/.config/kwinrc' for row in component.get('files', [])):
+                raise ValueError('Keyboard target requires its unique fixed handler')
+        if dynamic_plans:
+            result['install_plan']['dynamic_plans'] = dynamic_plans
         result['install_plan'].update(environment=environment, device_package=descriptor)
         result['install_plan']['device_warnings'] = descriptor['device_warnings']
         for warning in descriptor['device_warnings']:
@@ -382,7 +406,13 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
                 result['components'][component_id] = dict(status='files_installed', operation=operation, **plan)
                 result['install_plan']['components'].append(component)
     for component in device_components:
-        if component['id'] == 'x2-mini:battery':
+        if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
+            from maintenance.keyboard_models import installer_execute
+            operation = installer_execute(root, component, slot, dynamic_plans[component['id']])
+            result['components'][component['id']] = dict(status='files_installed',runtime='not_validated',operation=operation)
+            result['install_plan']['components'].append(component)
+            continue
+        if component['id'] in ('x2-mini:battery', 'x2-mini:gamescope-env', 'x2-mini:slot-switch'):
             from maintenance.shared_models import prepare_component_dirs
             prepare_component_dirs(engine, component)
         operation = engine.apply(component, package_root, allow_hooks=True, environment=environment,

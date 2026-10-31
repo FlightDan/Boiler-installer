@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "HistoricalX2PartialTestFixture",
+  "version": "0.1.0-localtest.20261031.x2-shared.4",
+  "scope": "Existing partial component lifecycle tests only; never a current product model or migration input.",
+  "files": [
+    {
+      "path": "brands/onexplayer/x2-mini/x2-mini.toon",
+      "size": 14228,
+      "sha256": "cafb1972164a620f354841215fdba3cb692e5f92c3239d6fcdd603f2f5768779"
+    },
+    {
+      "path": "brands/onexplayer/common/components.toon",
+      "size": 7490,
+      "sha256": "b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f"
+    }
+  ]
+}

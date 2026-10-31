@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
+import importlib.util
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -34,7 +35,7 @@ def reviewed_files(root=ROOT):
 
 
 def verify_adaptation_snapshots(root, files):
-    for name in ('source-lock.json', 'current-source-lock.json'):
+    for name in ('source-lock.json', 'current-source-lock.json', 'upstream-source-lock.json'):
         lock = root/'adaptations'/name
         if not lock.exists():
             raise ValueError('Required adaptation source inventory is missing: '+name)
@@ -45,6 +46,41 @@ def verify_adaptation_snapshots(root, files):
             data = confined(root, relative).read_bytes()
             if len(data) != entry['size'] or hashlib.sha256(data).hexdigest() != entry['sha256']:
                 raise ValueError('Adaptation source differs from reviewed inventory: '+relative)
+    verify_model_catalog(root, files)
+
+
+def verify_model_catalog(root, files):
+    """TOON is authoritative; reject omitted models/parser or stale JSON views."""
+    path = confined(root, 'adaptations/scripts/toon_catalog.py')
+    spec = importlib.util.spec_from_file_location('boiler_source_toon_catalog', path)
+    catalog = importlib.util.module_from_spec(spec); spec.loader.exec_module(catalog)
+    adaptations = root/'adaptations'
+    catalog.generate(adaptations, check=True)
+    required = {'adaptations/scripts/toon_catalog.py', 'adaptations/toon-parser-lock.json'}
+    required.update('adaptations/'+name for name in catalog.views(adaptations))
+    required.update('adaptations/'+name for name in catalog.definition_sources(adaptations))
+    for name,model in catalog.models(adaptations):
+        required.add('adaptations/'+name)
+        required.add(catalog.ADAPTERS[model['build']['adapter']][0])
+        if model['build']['adapter']=='oxp3-current-v1':
+            required.update(('adaptations/scripts/build-upstream-repairs.py','adaptations/scripts/build-shared-base.py'))
+        if model['build']['adapter']=='x2-complete-v1':
+            required.update(('adaptations/scripts/build-complete-bridge.py','adaptations/scripts/build-x2-hdr-overlay.py'))
+        required.update(row['lock'] for row in model['build']['materials'])
+        catalog.check_sources(root,model)
+        for material in model['build']['materials']:
+            inventory=catalog.json_document(catalog.local(root,material['lock']).read_bytes())
+            if inventory.get('kind')=='KeyboardRuntimeSourceInventory':
+                required.update(row['source'] for row in inventory['runtime_sources'])
+                required.add('adaptations/scripts/build-keyboard-runtime.py')
+    parser = catalog.json_document((adaptations/'toon-parser-lock.json').read_bytes())
+    required.update('adaptations/vendor/'+row['path'] for row in parser['files'])
+    from protocol.model_catalog import read_lock, snapshot_records
+    snapshot_records(root)
+    required.add('components/model-catalog/lock.json')
+    required.update('components/model-catalog/snapshot/'+row['path'] for row in read_lock(root)['files'])
+    if not required.issubset(files):
+        raise ValueError('TOON source, generated view or parser omitted from whitelist: '+str(sorted(required-set(files))))
 
 
 def export(destination):
