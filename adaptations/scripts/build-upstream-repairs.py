@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261101.10'
+VERSION = '0.1.0-localtest.20261101.11'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 

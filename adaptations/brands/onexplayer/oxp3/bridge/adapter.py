@@ -372,18 +372,16 @@ def verify_staged(root, slot, options, *, reader=None):
     for name, prefix in (('opti2xmx', 'opt/oxp3-opti2xmx'), ('desktop-hdr', 'opt/oxp3-desktop-gamma22')):
         if name not in selected or not any(path.startswith(prefix+'/') for path in reports[name].get('files', [])):
             continue
-        document(prefix+'/.installer-state/state.json')
+        record = document(prefix+'/.installer-state/state.json')
         import importlib.util
         spec = importlib.util.spec_from_file_location('oxp3_verification_decoder', PACKAGE/'payload/legacy/maintenance/app/oxp3_maintenance/adoption.py')
         decoder = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(decoder)
-        for target, entry in decoder._directory_originals(root, name).items():
-            # Directory runtimes retain their own backups and support 256 MiB
-            # members. Read-only verification must not impose the generic
-            # inline adoption/backup limit on these files (notably Intel IGC).
-            applied = _normal_snapshot(entry['applied'], maximum=256*1024*1024)
-            add(target, applied.get('data'), {key: applied[key] for key in ('mode', 'uid', 'gid')},
-                maximum=256*1024*1024)
+        for target, summary in _directory_summaries(root, name, record, decoder).items():
+            _relative(target)
+            if target in files:
+                raise RuntimeError('Overlapping model verification journals: '+target)
+            files[target] = {'path': target, 'exists': True, **summary}
     for name, report in reports.items():
         if report.get('status') != 'files_installed':
             raise RuntimeError('Model result contains a failed component: '+name)
@@ -417,6 +415,114 @@ def _pairs(entries):
             raise RuntimeError('Duplicate legacy metadata key')
         result[key] = value
     return result
+
+
+def _directory_summaries(root, component, record, decoder):
+    """Verify directory journals without retaining runtime file contents."""
+    prefix = decoder._RUNTIMES[component]
+    if record.get('destination') != prefix:
+        raise RuntimeError('Legacy runtime destination does not match component: '+component)
+    if record.get('phase') == 'rolled_back':
+        return {}
+    if record.get('phase') != 'installed' or type(record.get('original_exists')) is not bool:
+        raise RuntimeError('Recover interrupted legacy runtime before migration: '+component)
+    destination = root/prefix
+    state = destination.parent/'.installer-state'
+
+    def tree(path, expected):
+        expected = decoder._metadata(expected)
+        actual, files, total = {}, {}, 0
+
+        def visit(directory, relative):
+            nonlocal total
+            decoder._trusted(directory, root, directory=True)
+            info = directory.lstat()
+            if decoder._linked(info) or not stat.S_ISDIR(info.st_mode):
+                raise RuntimeError('Unsafe legacy runtime directory')
+            actual[relative] = {'directory': True, 'mode': stat.S_IMODE(info.st_mode), 'uid': info.st_uid, 'gid': info.st_gid}
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    child = directory/entry.name
+                    child_relative = child.name if relative == '.' else relative+'/'+child.name
+                    _relative(child_relative)
+                    if len(actual) >= 12000:
+                        raise RuntimeError('Oversized legacy runtime tree')
+                    info = child.lstat()
+                    if decoder._linked(info):
+                        raise RuntimeError('Legacy runtime contains a link')
+                    if stat.S_ISDIR(info.st_mode):
+                        visit(child, child_relative)
+                    elif stat.S_ISREG(info.st_mode):
+                        summary = _runtime_file_summary(child, root, decoder)
+                        total += summary['size']
+                        if total > 1024*1024*1024:
+                            raise RuntimeError('Oversized legacy runtime tree')
+                        files[child_relative] = summary
+                        actual[child_relative] = {'directory': False, **{key: summary[key] for key in ('mode', 'uid', 'gid')}}
+                    else:
+                        raise RuntimeError('Legacy runtime contains a special file')
+        visit(path, '.')
+        if actual != expected:
+            raise RuntimeError('Legacy runtime metadata differs from installer journal: '+str(path))
+        return files
+
+    installed = tree(state/'installed', record.get('installed_metadata'))
+    current = tree(destination, record.get('installed_metadata'))
+    if current != installed:
+        raise RuntimeError('Legacy runtime bytes changed after install: '+component)
+    backups = [state/name for name in ('original-reference', 'original') if os.path.lexists(state/name)]
+    if record['original_exists']:
+        if not backups:
+            raise RuntimeError('Original legacy runtime backup is missing: '+component)
+        original = None
+        for backup in backups:
+            candidate = tree(backup, record.get('original_metadata'))
+            if original is not None and candidate != original:
+                raise RuntimeError('Original legacy runtime backups disagree: '+component)
+            original = candidate
+        if set(original) - set(installed):
+            raise RuntimeError('Cannot migrate runtime with original-only files: '+component)
+    elif record.get('original_metadata') is not None or backups:
+        raise RuntimeError('Unexpected original legacy runtime backup: '+component)
+    return {prefix+'/'+relative: summary for relative, summary in installed.items()}
+
+
+def _runtime_file_summary(path, root, decoder):
+    decoder._trusted(path, root)
+    info = path.lstat()
+    limit = 256*1024*1024
+    if decoder._linked(info) or not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > limit:
+        raise RuntimeError('Unsafe legacy runtime file: '+str(path))
+    if os.name == 'posix':
+        directory = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            for part in path.parts[1:-1]:
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+                os.close(directory)
+                directory = child
+            descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        finally:
+            os.close(directory)
+    else:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_BINARY', 0))
+    with os.fdopen(descriptor, 'rb') as stream:
+        opened = os.fstat(stream.fileno())
+        fields = ('st_dev', 'st_ino', 'st_size', 'st_mode', 'st_uid', 'st_gid', 'st_nlink')
+        if tuple(getattr(opened, key) for key in fields) != tuple(getattr(info, key) for key in fields):
+            raise RuntimeError('Legacy runtime file changed during reading')
+        digest, size = hashlib.sha256(), 0
+        while True:
+            chunk = stream.read(1024*1024)
+            if not chunk:
+                break
+            size += len(chunk)
+            if size > limit:
+                raise RuntimeError('Oversized legacy runtime file')
+            digest.update(chunk)
+        after = os.fstat(stream.fileno())
+        if size != opened.st_size or after.st_nlink != 1 or (after.st_size, after.st_mtime_ns, after.st_ctime_ns) != (opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns):
+            raise RuntimeError('Legacy runtime file changed during reading')
+    return {'sha256': digest.hexdigest(), 'size': size, 'mode': stat.S_IMODE(opened.st_mode), 'uid': opened.st_uid, 'gid': opened.st_gid}
 
 
 def _normal_snapshot(value, *, maximum=128*1024*1024):
