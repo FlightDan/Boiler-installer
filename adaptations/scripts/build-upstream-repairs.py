@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261101.9'
+VERSION = '0.1.0-localtest.20261101.10'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 
@@ -115,6 +115,10 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
     manifest['version'] = VERSION
     manifest['components'][0]['version'] = VERSION
     changed = []
+    # The immutable base predates directory-runtime verification size support.
+    # Ship the reviewed bridge source, then inventory its final bytes normally.
+    (directory/'adapter.py').write_bytes((root/'adaptations/brands/onexplayer/oxp3/bridge/adapter.py').read_bytes())
+    changed.append('adapter.py')
     # Both templates feed the original managed input owner, including gyro.
     integration = directory/'payload/legacy/integration'
     resources = json.loads((integration/'manifest.json').read_bytes())

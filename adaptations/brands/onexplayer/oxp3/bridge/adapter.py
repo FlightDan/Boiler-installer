@@ -321,7 +321,7 @@ def verify_staged(root, slot, options, *, reader=None):
         raise RuntimeError('Exactly one legacy desktop account is required')
     owner = tuple(int(users[0][i]) for i in (2, 3))
 
-    def add(name, applied, metadata):
+    def add(name, applied, metadata, *, maximum=128*1024*1024):
         _relative(name)
         if name in files:
             raise RuntimeError('Overlapping model verification journals: '+name)
@@ -330,7 +330,7 @@ def verify_staged(root, slot, options, *, reader=None):
                 raise RuntimeError('Deleted model target reappeared: '+name)
             files[name] = {'path': name, 'exists': False}
             return
-        expected_snapshot = _normal_snapshot({'exists': True, 'data': applied, **metadata})
+        expected_snapshot = _normal_snapshot({'exists': True, 'data': applied, **metadata}, maximum=maximum)
         expected = base64.b64decode(expected_snapshot['data'], validate=True)
         actual = read(name, user_uid=owner[0] if name.startswith('home/deck/') else None)
         data = base64.b64decode(actual['data'], validate=True)
@@ -378,8 +378,12 @@ def verify_staged(root, slot, options, *, reader=None):
         decoder = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(decoder)
         for target, entry in decoder._directory_originals(root, name).items():
-            applied = _normal_snapshot(entry['applied'])
-            add(target, applied.get('data'), {key: applied[key] for key in ('mode', 'uid', 'gid')})
+            # Directory runtimes retain their own backups and support 256 MiB
+            # members. Read-only verification must not impose the generic
+            # inline adoption/backup limit on these files (notably Intel IGC).
+            applied = _normal_snapshot(entry['applied'], maximum=256*1024*1024)
+            add(target, applied.get('data'), {key: applied[key] for key in ('mode', 'uid', 'gid')},
+                maximum=256*1024*1024)
     for name, report in reports.items():
         if report.get('status') != 'files_installed':
             raise RuntimeError('Model result contains a failed component: '+name)
@@ -415,7 +419,7 @@ def _pairs(entries):
     return result
 
 
-def _normal_snapshot(value):
+def _normal_snapshot(value, *, maximum=128*1024*1024):
     if not isinstance(value, dict) or type(value.get('exists')) is not bool:
         raise RuntimeError('Invalid legacy snapshot')
     if not value['exists']:
@@ -426,8 +430,8 @@ def _normal_snapshot(value):
         data = base64.b64decode(value['data'], validate=True)
     except (KeyError, ValueError, TypeError) as error:
         raise RuntimeError('Invalid legacy snapshot bytes') from error
-    if len(data) > 128*1024*1024:
-        raise RuntimeError('Legacy snapshot exceeds generic maintenance backup limit')
+    if len(data) > maximum:
+        raise RuntimeError('Legacy snapshot exceeds size limit: ' + str(maximum))
     return {key: value[key] for key in ('exists', 'data', 'mode', 'uid', 'gid')} | {'sha256': hashlib.sha256(data).hexdigest()}
 
 
