@@ -494,6 +494,7 @@
     "components/system_presets.py",
     "components/wireless.py",
     "docs/AUDIT_WINDOWS_20261030.md",
+    "docs/CANONICAL_SHARED_REHEARSAL_20261101.md",
     "docs/DEPENDENCY_BOOTSTRAP.md",
     "docs/DEVICE_CATALOG_UPDATE_20261024.md",
     "docs/DEVICE_PACKAGES.md",

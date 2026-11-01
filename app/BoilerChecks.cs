@@ -117,6 +117,17 @@ internal static class BoilerChecks
         using (var canonical = new PreparedDiskImage(ab.Path))
         {
             Require(canonical.Layout.Protected.Length == 0, "export-removes-protected-partition-entries");
+            await Reject(() => Task.Run(() => canonical.Layout.For(InstallationTargetKind.InternalShared)), "canonical-direct-shared-layout-still-refused");
+            await Reject(() => Task.Run(() => VirtualSharedTarget.Plan(canonical.Layout, InstallationTargetKind.InternalShared, Guid.NewGuid())), "canonical-shared-no-leading-fixture-space-refused");
+            var spacious = canonical.Layout with { Size = 512L * 1024 * 1024,
+                Partitions = canonical.Layout.System.Select(p => p with { Offset = p.Offset + 160L * 1024 * 1024 }).ToArray() };
+            var id = Guid.NewGuid(); var target = VirtualSharedTarget.Plan(spacious, InstallationTargetKind.InternalShared, id);
+            var repeated = VirtualSharedTarget.Plan(spacious, InstallationTargetKind.InternalShared, id);
+            var other = VirtualSharedTarget.Plan(spacious, InstallationTargetKind.InternalShared, Guid.NewGuid());
+            Require(target.Protected.Length == 2 && target.Protected.SequenceEqual(repeated.Protected)
+                && !target.Protected.Select(p => p.Id).SequenceEqual(other.Protected.Select(p => p.Id))
+                && target.System.Select(p => p with { Number = p.Number - 2 }).SequenceEqual(spacious.System), "canonical-virtual-target-plan-is-bound-and-preserves-system");
+            Require(VirtualSharedTarget.Plan(spacious, InstallationTargetKind.ExternalDisk, id) == spacious, "canonical-external-plan-unchanged");
             foreach (var part in original.Layout.System)
             {
                 var bytesA = new byte[(int)part.Size]; var bytesB = new byte[(int)part.Size];

@@ -26,6 +26,36 @@ public sealed record PreparedDisk(Guid Id, long Size, PreparedPartition[] Partit
     };
 }
 
+// Only the owned shared-disk rehearsal may add these two synthetic partitions.
+// The source GPT and its identity remain unchanged; the target plan is recreated
+// from the receipted VHD identity during recovery.
+internal static class VirtualSharedTarget
+{
+    private const long MiB = 1024 * 1024;
+    internal static bool NeedsFixture(PreparedDisk source, InstallationTargetKind kind) =>
+        kind == InstallationTargetKind.InternalShared && source.Protected.Length == 0;
+    internal static PreparedDisk Plan(PreparedDisk source, InstallationTargetKind kind, Guid targetId)
+    {
+        if (!Enum.IsDefined(kind)) throw new IOException("Unknown installation target kind.");
+        if (!NeedsFixture(source, kind)) return source;
+        if (targetId == Guid.Empty || source.Partitions.Length != 8 || !source.System.Select(p => p.Name).SequenceEqual(PreparedDisk.Roles)
+            || source.System[0].Offset < 129 * MiB)
+            throw new IOException("Canonical shared rehearsal requires a 1 MiB boundary and 128 MiB leading fixture space.");
+        Guid FixtureId(string label)
+        {
+            var data = Encoding.UTF8.GetBytes("Boiler owned shared fixture v1:" + targetId.ToString("N") + ":" + label);
+            return new Guid(System.Security.Cryptography.SHA256.HashData(data).AsSpan(0, 16));
+        }
+        var parts = new[] {
+            new PreparedPartition(1, "Windows EFI fixture", Guid.Parse("c12a7328-f81f-11d2-ba4b-00a0c93ec93b"), FixtureId("efi"), MiB, 64 * MiB, 0),
+            new PreparedPartition(2, "Windows data fixture", Guid.Parse("ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"), FixtureId("data"), 65 * MiB, 64 * MiB, 0x8000000000000000)
+        }.Concat(source.System.Select((part, index) => part with { Number = index + 3 })).ToArray();
+        if (parts.Any(p => p.Id == Guid.Empty) || parts.Select(p => p.Id).Distinct().Count() != parts.Length)
+            throw new IOException("Virtual fixture partition identities conflict.");
+        return new PreparedDisk(source.Id, source.Size, parts);
+    }
+}
+
 // An immutable ordinary staging file, never an attached or caller-selected disk.
 // GPT identifiers, bounded entries and primary/backup bytes are read directly;
 // no extra content hash or fingerprint is introduced.
@@ -443,6 +473,9 @@ public static class PartitionDeployment
             throw new IOException("Recovery journal source or kind differs.");
         token.ThrowIfCancellationRequested();
         using var owned = VirtualMediaDisk.ReopenOwned(path, image.Layout.Size, root.GetProperty("target_id").GetGuid());
+        var targetLayout = VirtualSharedTarget.Plan(image.Layout, kind, owned.Id);
+        using var frozen = VirtualSharedTarget.NeedsFixture(image.Layout, kind)
+            ? PartitionVolumeLocks.Acquire(owned, targetLayout.Protected) : null;
         await ApplyOwnedAsync(image, owned, kind, statePath, log, token, resume: true, approvedState: approvedState);
     }
     private static JsonDocument ReadState(string path)
@@ -475,7 +508,8 @@ public static class PartitionDeployment
     {
         if (!Enum.IsDefined(kind)) throw new IOException("Unknown installation target kind.");
         image.Recheck(); token.ThrowIfCancellationRequested();
-        var targets = image.Layout.For(kind).Where(p => PreparedDisk.Roles.Contains(p.Name)).ToArray();
+        var targetLayout = VirtualSharedTarget.Plan(image.Layout, kind, owned.Id);
+        var targets = targetLayout.For(kind).Where(p => PreparedDisk.Roles.Contains(p.Name)).ToArray();
         RequireSourceOutsideTargets(image.Stream, owned.BoundDiskNumber(), targets);
         MediaSource.Ordinary(statePath, InstallerWorkspace.DirectoryPath, false);
         if (File.Exists(statePath) != resume) throw new IOException("Existing deployment journals require explicit recovery; new jobs require an unused path.");
@@ -498,7 +532,7 @@ public static class PartitionDeployment
                 throw new IOException("Incomplete partition list marked complete.");
             attempt = checked(root.GetProperty("attempt").GetInt32() + 1);
             if (attempt < 2 || attempt > 1000) throw new IOException("Invalid recovery attempt.");
-            OwnedPartitionLayout.Require(owned, image.Layout.Id, image.Layout.For(kind));
+            OwnedPartitionLayout.Require(owned, targetLayout.Id, targetLayout.For(kind));
             complete.AddRange(recorded);
             var audit = statePath + ".before-resume-" + Guid.NewGuid().ToString("N") + ".json";
             using var record = new FileStream(audit, FileMode.CreateNew, FileAccess.Write, FileShare.None);
@@ -521,7 +555,7 @@ public static class PartitionDeployment
         try
         {
             Save(); token.ThrowIfCancellationRequested();
-            if (!resume) { phase = "creating-partitions"; Save(); OwnedPartitionLayout.Append(owned, image.Layout, kind); }
+            if (!resume) { phase = "creating-partitions"; Save(); OwnedPartitionLayout.Append(owned, targetLayout, kind); }
             phase = "locking-targets"; Save();
             using var locks = PartitionVolumeLocks.Acquire(owned, targets);
             using var target = owned.OpenDevice();
@@ -539,7 +573,7 @@ public static class PartitionDeployment
             foreach (var p in targets.Skip(complete.Count).ToArray())
             {
                 phase = p.Name; written = verified = 0; Save(); image.Recheck();
-                OwnedPartitionLayout.Require(owned, image.Layout.Id, image.Layout.For(kind));
+                OwnedPartitionLayout.Require(owned, targetLayout.Id, targetLayout.For(kind));
                 RequireSourceOutsideTargets(image.Stream, owned.BoundDiskNumber(), targets);
                 var sourcePart = image.Layout.System.Single(s => s.Id == p.Id);
                 var lastSaved = DateTime.UtcNow; var lastProgressStage = "";
@@ -559,7 +593,7 @@ public static class PartitionDeployment
                 if (!check.AsSpan().SequenceEqual(backup)) throw new IOException("Partition write changed backup GPT.");
                 complete.Add(p.Name); Save(); log("PARTITION_DEPLOYED=" + p.Name);
             }
-            OwnedPartitionLayout.Require(owned, image.Layout.Id, image.Layout.For(kind));
+            OwnedPartitionLayout.Require(owned, targetLayout.Id, targetLayout.For(kind));
             phase = "partition-content-complete"; status = "complete"; Save();
         }
         catch (Exception ex)

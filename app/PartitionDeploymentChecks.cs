@@ -73,25 +73,31 @@ public static partial class PartitionDeploymentChecks
         }
         return image;
     }
-    private static async Task<PartitionVolumeLocks> SeedProtectedAsync(PreparedDiskImage image, VirtualMediaDisk disk, CancellationToken token = default)
+    private static async Task<PartitionVolumeLocks> SeedProtectedAsync(PreparedDiskImage image, VirtualMediaDisk disk, CancellationToken token = default, PreparedDisk? targetLayout = null)
     {
-        var locks = PartitionVolumeLocks.Acquire(disk, image.Layout.Protected);
+        var targets = (targetLayout ?? image.Layout).Protected; var originals = image.Layout.Protected;
+        if (targets.Length != originals.Length || targets.Where((p, i) => p.Name != originals[i].Name || p.Type != originals[i].Type || p.Size != originals[i].Size).Any())
+            throw new IOException("Protected fixture source and target differ.");
+        var locks = PartitionVolumeLocks.Acquire(disk, targets);
         try
         {
             using var target = disk.OpenDevice();
-            foreach (var p in image.Layout.Protected)
-                await PartitionDeployment.CopyRangeAsync(image.Stream, target, p.Offset, p.Offset, p.Size, disk.Size, _ => { }, token);
+            for (var i = 0; i < originals.Length; i++)
+                await PartitionDeployment.CopyRangeAsync(image.Stream, target, originals[i].Offset, targets[i].Offset, originals[i].Size, disk.Size, _ => { }, token);
             return locks;
         }
         catch { locks.Dispose(); throw; }
     }
-    private static async Task CompareProtectedAsync(PreparedDiskImage image, VirtualMediaDisk disk, bool alreadyLocked = false)
+    private static async Task CompareProtectedAsync(PreparedDiskImage image, VirtualMediaDisk disk, bool alreadyLocked = false, PreparedDisk? targetLayout = null)
     {
-        using var locks = alreadyLocked ? null : PartitionVolumeLocks.Acquire(disk, image.Layout.Protected);
+        var targets = (targetLayout ?? image.Layout).Protected; var originals = image.Layout.Protected;
+        if (targets.Length != originals.Length || targets.Where((p, i) => p.Name != originals[i].Name || p.Type != originals[i].Type || p.Size != originals[i].Size).Any())
+            throw new IOException("Protected fixture source and target differ.");
+        using var locks = alreadyLocked ? null : PartitionVolumeLocks.Acquire(disk, targets);
         using var target = disk.OpenDevice(); var first = new byte[4 * 1024 * 1024]; var second = new byte[first.Length];
-        foreach (var p in image.Layout.Protected)
+        for (var i = 0; i < originals.Length; i++)
         {
-            image.Stream.Position = target.Position = p.Offset;
+            var p = originals[i]; image.Stream.Position = p.Offset; target.Position = targets[i].Offset;
             for (long n = 0; n < p.Size; n += first.Length)
             {
                 var count = (int)Math.Min(first.Length, p.Size - n);
@@ -274,14 +280,21 @@ public static partial class PartitionDeploymentChecks
         token.ThrowIfCancellationRequested();
         using var image = new PreparedDiskImage(imagePath);
         if (image.Layout.Size != 80L * 1024 * 1024 * 1024) throw new IOException("Full native deployment validation requires an 80GiB prepared fixture.");
+        // Reject a canonical image without enough leading space before creating
+        // either the destination VHD or the compact protected-volume fixture.
+        _ = VirtualSharedTarget.Plan(image.Layout, kind, image.Layout.Id);
         MediaSpace.RequirePartitionStaging(directory, image.Layout.Size);
+        using var generated = VirtualSharedTarget.NeedsFixture(image.Layout, kind)
+            ? new PreparedDiskImage(await CompactImageAsync()) : null;
+        var protectedSource = generated ?? image;
         using (var disk = new VirtualMediaDisk(path, image.Layout.Size))
         {
-            OwnedPartitionLayout.Initialize(disk, image.Layout, kind == InstallationTargetKind.InternalShared ? image.Layout.Protected : []);
+            var targetLayout = VirtualSharedTarget.Plan(image.Layout, kind, disk.Id);
+            OwnedPartitionLayout.Initialize(disk, targetLayout, kind == InstallationTargetKind.InternalShared ? targetLayout.Protected : []);
             log("PARTITION_PHASE=preserving");
-            using var frozen = kind == InstallationTargetKind.InternalShared ? await SeedProtectedAsync(image, disk, token) : null;
+            using var frozen = kind == InstallationTargetKind.InternalShared ? await SeedProtectedAsync(protectedSource, disk, token, targetLayout) : null;
             await PartitionDeployment.ApplyOwnedAsync(image, disk, kind, Path.Combine(directory, "state.json"), log, token);
-            if (kind == InstallationTargetKind.InternalShared) await CompareProtectedAsync(image, disk, true);
+            if (kind == InstallationTargetKind.InternalShared) await CompareProtectedAsync(protectedSource, disk, true, targetLayout);
         }
         File.WriteAllText(Path.Combine(directory, "result.json"), JsonSerializer.Serialize(new { passed = true, kind = kind.ToString(), path, imagePath,
             detached = true, scope = "Real prepared SteamOS partition contents written/read back through native Windows owned VHD; host UEFI and hardware remain unaccepted" }));
