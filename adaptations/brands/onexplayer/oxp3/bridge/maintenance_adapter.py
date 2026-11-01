@@ -475,7 +475,7 @@ def execute(action, root, request, *, package=PACKAGE, api=None, system=None, en
         future = (pending or {}).get('index_after', {}).get('slots', {}).get(system['slot']['id'], {}).get('current') or {}
         saved_choice = public_selection((current.get('release', {}).get('boiler_selection') if current.get('paths') else None) or future.get('release', {}).get('boiler_selection'))
         legacy_choice = installer_selection(root, system, package, api, consumed=current.get('legacy_adopted', [])) if not saved_choice and not pending else None
-        choice = saved_choice or read_json(Path(package)/'selection.json')
+        choice = saved_choice or legacy_choice or read_json(Path(package)/'selection.json')
         report, *_ = prepare(root, dict(request, selection=choice), package=package, api=api, system=system, enforce_owner=enforce_owner, inspection=True)
         shown_choice = saved_choice or legacy_choice
         if shown_choice is not None:

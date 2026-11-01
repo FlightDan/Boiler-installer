@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261101.12'
+VERSION = '0.1.0-localtest.20261101.13'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 
@@ -33,6 +33,22 @@ def encoded(value):
 
 def record(path, data):
     return dict(path=path, size=len(data), sha256=digest(data))
+
+
+def refresh_bridge_sources(directory, root, changed):
+    bridge = Path(root)/'adaptations/brands/onexplayer/oxp3/bridge'
+    for name in ('adapter.py', 'maintenance_adapter.py'):
+        (Path(directory)/name).write_bytes((bridge/name).read_bytes())
+        changed.append(name)
+
+
+def package_inventory(directory):
+    directory = Path(directory)
+    rows = [record(path.relative_to(directory).as_posix(), path.read_bytes())
+            for path in sorted(directory.rglob('*')) if path.is_file() and path.name != 'manifest.json']
+    rows += [record(path.relative_to(directory).as_posix(), path.read_bytes())
+             for path in sorted(directory.rglob('manifest.json')) if path != directory/'manifest.json']
+    return sorted(rows, key=lambda row: row['path'])
 
 
 def refresh_maintenance_manifest(directory):
@@ -117,8 +133,7 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
     changed = []
     # The immutable base predates directory-runtime verification size support.
     # Ship the reviewed bridge source, then inventory its final bytes normally.
-    (directory/'adapter.py').write_bytes((root/'adaptations/brands/onexplayer/oxp3/bridge/adapter.py').read_bytes())
-    changed.append('adapter.py')
+    refresh_bridge_sources(directory, root, changed)
     # Both templates feed the original managed input owner, including gyro.
     integration = directory/'payload/legacy/integration'
     resources = json.loads((integration/'manifest.json').read_bytes())
@@ -250,12 +265,7 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
         'the enclosing upstream repository MIT license.\n\n'
         'Decky Loader 3.3.1 retains GPL-2.0 and its corresponding official source archive '
         'under payload/legacy/plugins/decky/source-v3.3.1.zip.\n', encoding='utf-8')
-    manifest['files'] = [record(path.relative_to(directory).as_posix(), path.read_bytes())
-                         for path in sorted(directory.rglob('*')) if path.is_file() and path.name != 'manifest.json']
-    # Nested integration manifests are regular inventory members too.
-    manifest['files'] += [record(path.relative_to(directory).as_posix(), path.read_bytes())
-                          for path in sorted(directory.rglob('manifest.json')) if path != directory/'manifest.json']
-    manifest['files'].sort(key=lambda row: row['path'])
+    manifest['files'] = package_inventory(directory)
     (directory/'manifest.json').write_bytes(encoded(manifest))
     anchor = digest((directory/'manifest.json').read_bytes())
     validate_package(directory, expected_manifest_sha256=anchor)
