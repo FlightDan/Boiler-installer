@@ -320,6 +320,65 @@ class MaintenanceAdapterTests(unittest.TestCase):
                 self.call('plan', dict(self.request, action='restore'))
         self.assertEqual(before, (request.read_bytes(), result.read_bytes()))
 
+    def test_inspect_materializes_authenticated_nondefault_legacy_selection_readonly(self):
+        directory = self.root/'home/.oxp3-installer/integration/A'
+        directory.mkdir(parents=True)
+        options = dict(schema=1, repairs=['slot-switch', 'partition-mount', 'opti2xmx'],
+                       plugins=['decky'], installer_language='en-US', kde_language='system')
+        (directory/'request.json').write_text(json.dumps(options))
+        (directory/'result.json').write_text(json.dumps(dict(schema=1, slot='A', options=options,
+            components={name: {'status': 'files_installed'} for name in options['repairs']+options['plugins']})))
+        before = {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
+        with mock.patch.object(self.api['adoption'], '_trusted'), mock.patch.object(adapter, '_hold_status', return_value=(True, '')):
+            report = adapter.execute('inspect', self.root, dict(schema_version=1, scope='active-root-and-shared-home'),
+                package=BUNDLE, api=self.api, system=copy.deepcopy(self.system), enforce_owner=False)
+            direct = adapter.execute('plan', self.root, dict(schema_version=1, scope='active-root-and-shared-home', selection=report['current']),
+                package=BUNDLE, api=self.api, system=copy.deepcopy(self.system), enforce_owner=False)
+        self.assertEqual(report['current_source'], 'legacy-installer')
+        self.assertEqual(report['current']['repairs'], ['oxp3:slot-switch', 'oxp3:partition-mount', 'oxp3:opti2xmx'])
+        self.assertEqual(report['current']['plugins'], ['oxp3:decky'])
+        rows = {row['id']: row for row in report['capabilities']}
+        planned = {row['id']: row for row in direct['capabilities']}
+        for name in ('slot-switch', 'partition-mount', 'opti2xmx', 'decky'):
+            self.assertTrue(rows['oxp3:'+name]['selected'])
+            self.assertIn('status', rows['oxp3:'+name])
+            self.assertEqual({key: rows['oxp3:'+name].get(key) for key in ('status','reason','available')},
+                             {key: planned['oxp3:'+name].get(key) for key in ('status','reason','available')})
+        self.assertIn('oxp3:decky', rows['oxp3:opti2xmx']['dependencies'])
+        self.assertFalse((self.root/adapter.STATE).exists())
+        self.assertEqual(before, {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()})
+
+    def test_inspect_rejects_inconsistent_legacy_selection_without_writes(self):
+        directory = self.root/'home/.oxp3-installer/integration/A'
+        directory.mkdir(parents=True)
+        options = dict(schema=1, repairs=['xe-dsb'], plugins=[], installer_language='en-US', kde_language='system')
+        (directory/'request.json').write_text(json.dumps(options))
+        changed = dict(options, repairs=['input'])
+        (directory/'result.json').write_text(json.dumps(dict(schema=1, slot='A', options=changed,
+            components={'xe-dsb': {'status': 'files_installed'}})))
+        before = {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
+        with mock.patch.object(self.api['adoption'], '_trusted'), self.assertRaisesRegex(RuntimeError, 'selection proof is incomplete'):
+            self.call('inspect', dict(schema_version=1, scope='active-root-and-shared-home'))
+        self.assertFalse((self.root/adapter.STATE).exists())
+        self.assertEqual(before, {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()})
+
+    def test_inspect_prioritizes_saved_choice_over_legacy(self):
+        request = dict(self.request, expected_plan_sha256=self.call('plan')['plan_sha256'])
+        with mock.patch.object(adapter, '_require_root'):
+            self.call('apply', request)
+        directory = self.root/'home/.oxp3-installer/integration/A'
+        directory.mkdir(parents=True)
+        options = dict(schema=1, repairs=['input'], plugins=[], installer_language='en-US', kde_language='system')
+        (directory/'request.json').write_text(json.dumps(options))
+        (directory/'result.json').write_text(json.dumps(dict(schema=1, slot='A', options=options,
+            components={'input': {'status': 'files_installed'}})))
+        before = {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
+        with mock.patch.object(self.api['adoption'], '_trusted'):
+            report = self.call('inspect', dict(schema_version=1, scope='active-root-and-shared-home'))
+        self.assertEqual(report['current_source'], 'boiler-model')
+        self.assertEqual(report['current'], self.request['selection'])
+        self.assertEqual(before, {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob('*') if path.is_file()})
+
     def test_explicit_outer_intent_recovery_before_first_store_write_is_readonly(self):
         directory = self.root/'home/.oxp3-installer/integration/A'
         directory.mkdir(parents=True)

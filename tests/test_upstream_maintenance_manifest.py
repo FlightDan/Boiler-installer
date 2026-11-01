@@ -21,6 +21,25 @@ loader = load('repair_manifest_loader', ROOT/'adaptations/brands/onexplayer/oxp3
 
 
 class MaintenanceInventory(unittest.TestCase):
+    def test_final_inventory_contains_current_bridge_shim(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory/'adapter.py').write_bytes(b'old adapter')
+            (directory/'maintenance_adapter.py').write_bytes(b'old maintenance bridge')
+            nested = directory/'payload/manifest.json'
+            nested.parent.mkdir()
+            nested.write_bytes(b'{}')
+            changed = []
+            builder.refresh_bridge_sources(directory, ROOT, changed)
+            expected = (ROOT/'adaptations/brands/onexplayer/oxp3/bridge/maintenance_adapter.py').read_bytes()
+            self.assertEqual((directory/'maintenance_adapter.py').read_bytes(), expected)
+            self.assertIn('maintenance_adapter.py', changed)
+            inventory = {row['path']: row for row in builder.package_inventory(directory)}
+            self.assertEqual(inventory['maintenance_adapter.py'],
+                             {'path': 'maintenance_adapter.py', 'size': len(expected), 'sha256': hashlib.sha256(expected).hexdigest()})
+            self.assertIn('payload/manifest.json', inventory)
+            self.assertEqual(builder.VERSION, '0.1.0-localtest.20261101.13')
+
     def fixture(self, directory):
         payload = directory/'payload/legacy'
         app = payload/'maintenance/app'
