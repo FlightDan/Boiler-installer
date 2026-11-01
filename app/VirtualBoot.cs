@@ -7,6 +7,32 @@ using System.Text.RegularExpressions;
 namespace OxpInstaller;
 public static class VirtualBoot
 {
+    internal static JsonElement SerialReceipt(string transcript)
+    {
+        const string prefix = "OXP_VM_SERIAL_RECEIPT=";
+        var lines = transcript.Split('\n').Select(line => line.TrimEnd('\r')).Where(line => line.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+        if (lines.Length != 1) throw new IOException("Expected one VM serial preparation receipt.");
+        try
+        {
+            using var document = JsonDocument.Parse(lines[0][prefix.Length..]);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || root.EnumerateObject().Count() != 2)
+                throw new IOException("VM serial receipt must cover both slots.");
+            foreach (var slot in new[] { "A", "B" })
+            {
+                if (!root.TryGetProperty(slot, out var row) || row.ValueKind != JsonValueKind.Object
+                    || !row.TryGetProperty("path", out var path) || path.GetString() != "efi-" + slot + "/EFI/steamos/grub.cfg"
+                    || !row.TryGetProperty("entries", out var entries) || !entries.TryGetInt32(out var count) || count <= 0
+                    || !row.TryGetProperty("before_sha256", out var before) || !row.TryGetProperty("after_sha256", out var after)
+                    || before.ValueKind != JsonValueKind.String || after.ValueKind != JsonValueKind.String
+                    || !Regex.IsMatch(before.GetString()!, "^[0-9a-f]{64}$") || !Regex.IsMatch(after.GetString()!, "^[0-9a-f]{64}$"))
+                    throw new IOException("Invalid VM serial preparation slot receipt.");
+            }
+            return root.Clone();
+        }
+        catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException)
+        { throw new IOException("Invalid VM serial preparation receipt.", error); }
+    }
     public static async Task<string> RefindImageAsync(string image, bool windowsProbe, bool manual, Action<string> log, CancellationToken token)
     {
         image=Path.GetFullPath(image); MediaSource.Ordinary(image,InstallationController.Work);
@@ -81,11 +107,22 @@ public static class VirtualBoot
     }
     private static async Task<string> BootAsync(string fixture, string format, bool preview, Action<string> log, CancellationToken token, string? uiBaseline = null, bool uiInstall = false, bool uiResume = false, bool uiCancel = false, bool refindManual = false, bool windowsProbe = false)
     {
+        var serialInstrumented = !preview && !windowsProbe && uiBaseline == null;
+        using var reviewedSource = serialInstrumented ? new FileStream(fixture, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
         var directory = Path.Combine(InstallerWorkspace.DirectoryPath, "uefi-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var runtime = Path.Combine(Backend.Root, "runtime/qemu-min");
         var overlay = Path.Combine(directory, "boot.qcow2");
         await Backend.ProcessAsync(Path.Combine(runtime, "qemu-img.exe"), ["create", "-f", "qcow2", "-F", format, "-b", Path.GetRelativePath(directory, fixture), overlay], log, token);
+        if (serialInstrumented)
+        {
+            var source = new FileInfo(fixture);
+            var descriptor = new Backend.VmSerialOverlay(directory, overlay, Path.GetFullPath(fixture), format, source.Length, source.LastWriteTimeUtc.Ticks);
+            var preparation = await Backend.PrepareVmSerialAsync(descriptor, log, token);
+            var receipt = SerialReceipt(preparation);
+            await File.WriteAllTextAsync(Path.Combine(directory, "serial-instrumentation.json"), JsonSerializer.Serialize(new
+            { scope = "COW-instrumented VM overlay only", slots = receipt }, new JsonSerializerOptions { WriteIndented = true }), token);
+        }
         string? target = null, state = null, contextDirectory = null;
         if (uiBaseline != null)
         {
@@ -346,7 +383,7 @@ public static class VirtualBoot
                 passed, failure, refindManual, windowsProbe, cancelled = token.IsCancellationRequested, timedOut = timeout.IsCancellationRequested,
                 scope = windowsProbe ? "rEFInd GPT-bound Windows EFI probe, not Windows OS boot" : uiBaseline != null ? (uiCancel ? "Real C-key cancellation during root-A copy; worker cleanup and return to recovery menu; isolated overlays, no full installation or physical acceptance"
                     : uiInstall ? "Real SteamOS boot UI key events through review/resources/recovery and separate install confirmation; isolated target/state overlays, no Windows OS or physical acceptance" : "Real SteamOS boot UI key events through review/resources/empty recovery and back; no install confirmation, isolated overlays")
-                    : preview ? "UEFI preview service in an image overlay; visible framebuffer requires inspection" : "UEFI SteamOS fixture boot to serial login; no Windows OS, Steam frontend or hardware acceptance", fixture,
+                    : preview ? "UEFI preview service in an image overlay; visible framebuffer requires inspection" : "COW-instrumented UEFI SteamOS VM boot to serial login; no Windows OS, Steam frontend or hardware acceptance", fixture,
                 uiBaseline, target, state, uiResume, uiCancel
             }, new JsonSerializerOptions { WriteIndented = true }));
             log("启动验证记录：" + directory);

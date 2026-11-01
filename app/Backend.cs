@@ -321,8 +321,14 @@ public static class Backend
         using var target = new FileStream(output, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false);
         await source.CopyToAsync(target, token); await target.FlushAsync(token);
     }
-    public static async Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null)
+    internal sealed record VmSerialOverlay(string Directory, string Overlay, string Backing, string BackingFormat, long BackingLength, long BackingWriteTicks);
+    internal static Task<string> PrepareVmSerialAsync(VmSerialOverlay descriptor, Action<string> log, CancellationToken token) =>
+        GuestCoreAsync("vm-boot-serial", null, false, log, token, vmSerial: descriptor);
+    public static Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null) =>
+        GuestCoreAsync(task, image, writable, log, token, selection, fixture, stateDisk, faultBoundary, updateRoot, secureInput, integrationPayload);
+    private static async Task<string> GuestCoreAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null, VmSerialOverlay? vmSerial = null)
     {
+        if ((task == "vm-boot-serial") != (vmSerial != null)) throw new ArgumentException("VM serial preparation requires its owned overlay descriptor.");
         if (secureInput != null && (task is not ("integration" or "secret-input-check") || string.IsNullOrEmpty(secureInput))) throw new ArgumentException("Secure input is available only for integration or its isolated handshake check.", nameof(secureInput));
         byte[]? secureBytes = null;
         char[]? secureEncoded = null;
@@ -330,7 +336,7 @@ public static class Backend
         if (fixture != null) fixture = Path.GetFullPath(fixture);
         if (stateDisk != null) stateDisk = Path.GetFullPath(stateDisk);
         if (task is "build" or "refine-preview") throw new InvalidOperationException("旧 OXP3 预览构建入口已迁移到机型包；请使用 Boiler 三种安装流程。 / Legacy model preview builders are disabled; use the Boiler installation workflow.");
-        if (task is not ("firmware-plan" or "source-info" or "home-copy-plan" or "home-copy-plan-checks" or "secret-input-check" or "resize-prepared" or "capacity-check" or "refind-image" or "physical-readiness" or "upgrade-source" or "model-maintenance-check" or "integration-delta-check" or "integration-verify" or "integration-check" or "integration" or "smoke" or "inspect" or "build" or "verify" or "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" or "refine-preview")) throw new ArgumentException("Unknown task");
+        if (task is not ("vm-boot-serial" or "firmware-plan" or "source-info" or "home-copy-plan" or "home-copy-plan-checks" or "secret-input-check" or "resize-prepared" or "capacity-check" or "refind-image" or "physical-readiness" or "upgrade-source" or "model-maintenance-check" or "integration-delta-check" or "integration-verify" or "integration-check" or "integration" or "smoke" or "inspect" or "build" or "verify" or "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" or "refine-preview")) throw new ArgumentException("Unknown task");
         if (task is "model-maintenance-check" or "integration" or "refind-image" or "resize-prepared" or "capacity-check")
         {
             if (image == null) throw new ArgumentException("Missing independent prepared image.");
@@ -459,6 +465,29 @@ public static class Backend
             "-drive", $"file=fat:ro:{Option(payloadVolumes[0])},format=raw,if=none,id=payload-0,readonly=on",
             "-device", "virtio-blk-pci,drive=payload-0,serial=boiler-payload-0" };
         if (image != null) arguments.AddRange(["-drive", $"file={Option(Path.GetFullPath(image))},format=raw,if=none,id=boiler-image{(writable ? "" : ",readonly=on")}", "-device", "virtio-blk-pci,drive=boiler-image"]);
+        if (vmSerial != null)
+        {
+            var directory = Path.GetFullPath(vmSerial.Directory);
+            var overlay = Path.GetFullPath(vmSerial.Overlay);
+            var backing = Path.GetFullPath(vmSerial.Backing);
+            var expectedDirectory = Path.GetFullPath(Path.Combine(InstallerWorkspace.DirectoryPath, Path.GetFileName(directory)));
+            var source = new FileInfo(backing);
+            if (!string.Equals(directory, expectedDirectory, StringComparison.OrdinalIgnoreCase)
+                || !Regex.IsMatch(Path.GetFileName(directory), "^uefi-[0-9a-f]{32}$")
+                || !string.Equals(overlay, Path.Combine(directory, "boot.qcow2"), StringComparison.OrdinalIgnoreCase)
+                || vmSerial.BackingFormat is not ("raw" or "vpc" or "qcow2") || !source.Exists
+                || source.Length != vmSerial.BackingLength || source.LastWriteTimeUtc.Ticks != vmSerial.BackingWriteTicks
+                || (File.GetAttributes(overlay) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("VM serial overlay descriptor does not match the reviewed source.");
+            var infoText = await ProcessAsync(Path.Combine(Root, "runtime/qemu-min/qemu-img.exe"), ["info", "--output=json", overlay], _ => { }, token);
+            using var info = System.Text.Json.JsonDocument.Parse(infoText);
+            var details = info.RootElement;
+            if (details.GetProperty("format").GetString() != "qcow2" || details.GetProperty("virtual-size").GetInt64() != 80L * 1024 * 1024 * 1024
+                || details.GetProperty("backing-filename-format").GetString() != vmSerial.BackingFormat
+                || !string.Equals(Path.GetFullPath(details.GetProperty("full-backing-filename").GetString()!), backing, StringComparison.OrdinalIgnoreCase))
+                throw new IOException("VM overlay backing does not match its descriptor.");
+            arguments.AddRange(["-drive", $"file={Option(overlay)},format=qcow2,if=none,id=boiler-vm-serial", "-device", "virtio-blk-pci,drive=boiler-vm-serial,serial=boiler-vm-serial-overlay"]);
+        }
         if (task is "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test")
         {
             if (fixture == null) throw new InvalidOperationException("没有选择本工具创建的虚拟测试盘。");
