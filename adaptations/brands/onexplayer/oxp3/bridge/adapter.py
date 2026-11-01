@@ -339,8 +339,8 @@ def verify_staged(root, slot, options, *, reader=None):
         files[name] = {'path': name, 'exists': True, 'sha256': hashlib.sha256(data).hexdigest(),
                        'size': len(data), **metadata}
 
-    counts = {}
-    for name in sorted(set(reports) | {'runtime', 'release-note', 'desktop-session', 'decky-order-light'}):
+    counts, journal_targets = {}, {}
+    for name in sorted(set(reports) | {'runtime', 'release-note', 'desktop-session', 'decky-order', 'decky-order-light'}):
         if not isinstance(name, str) or not re.fullmatch(r'[a-z][a-z0-9-]*', name):
             raise RuntimeError('Unknown model result component')
         for group in (slot, 'shared'):
@@ -363,8 +363,20 @@ def verify_staged(root, slot, options, *, reader=None):
                     item = journal.get('metadata', {}).get(target, {})
                     uid, gid = owner if item.get('user') else (0, 0)
                     metadata = {'mode': item.get('mode', 0o644), 'uid': uid, 'gid': gid}
-                add(target, journal['applied'][target], metadata)
+                journal_targets.setdefault(target, []).append((name, original, journal['applied'][target], metadata))
             counts[name] = counts.get(name, 0)+len(allowed)
+    for target, entries in journal_targets.items():
+        if any(entry[0] == 'decky-order-light' for entry in entries) and not any(entry[0] == 'decky-order' for entry in entries):
+            raise RuntimeError('Model journal predecessor is missing: '+target)
+        if len(entries) > 1:
+            if (target != 'var/lib/oxp3-installer/decky/runtime/settings/loader.json'
+                    or [entry[0] for entry in entries] != ['decky-order', 'decky-order-light']):
+                raise RuntimeError('Overlapping model verification journals: '+target)
+            _, _, predecessor, metadata = entries[0]
+            if predecessor is None or _normal_snapshot({'exists': True, 'data': predecessor, **metadata}) != entries[1][1]:
+                raise RuntimeError('Model journal lineage differs: '+target)
+        _, _, applied, metadata = entries[-1]
+        add(target, applied, metadata)
     for name in ('runtime', 'release-note'):
         if not counts.get(name):
             raise RuntimeError('Missing required internal model journal: '+name)

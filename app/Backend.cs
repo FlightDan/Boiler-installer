@@ -448,7 +448,7 @@ public static class Backend
             System.Text.Json.JsonSerializer.Serialize(new { source = payload, volumes = payloadVolumes }), token);
         var payloadMount = PayloadVolumes.MountCommand(payloadVolumes.Length);
         var scratch = Path.Combine(work, "scratch.raw");
-        using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task == "home-copy-plan-checks" ? 4L * 1024 * 1024 * 1024 : task == "integration-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
+        using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task is "home-copy-plan-checks" or "integration-check" or "integration-delta-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
         var arguments = new List<string> { "-accel", "tcg", "-m", "1024", "-smp", "2", "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
             "-kernel", Path.Combine(Root, "runtime/alpine/boot/vmlinuz-virt"), "-initrd", Path.Combine(Root, "runtime/alpine/boot/initramfs-virt"),
@@ -498,7 +498,7 @@ public static class Backend
         var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = start };
-        var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task is "home-copy-plan-checks" or "refind-image" or "integration" or "integration-check" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
+        var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task is "home-copy-plan-checks" or "refind-image" or "integration" or "integration-check" or "integration-delta-check" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
         using var timeout = new CancellationTokenSource(taskTimeout);
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
         // Open the log before starting QEMU: an unwritable/full log disk must
