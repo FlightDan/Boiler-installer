@@ -171,7 +171,9 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             'scripts/maintenance_bootstrap.py'}
         names.discard('components/model-catalog/lock.json')
         policy=json.loads((ROOT/'scripts/source-files.json').read_bytes())
-        names.update(name for name in policy['files'] if name.startswith('components/') and not name.startswith('components/model-catalog/'))
+        names.update(name for name in policy['files']
+            if (name.startswith('components/') and not name.startswith('components/model-catalog/'))
+            or name.startswith('adaptations/vendor/'))
         for name in names:
             target=consumer/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(ROOT/name,target)
         files=sorted(p.relative_to(consumer).as_posix() for p in consumer.rglob('*') if p.is_file())
