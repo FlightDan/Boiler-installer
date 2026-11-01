@@ -23,6 +23,16 @@ required for this fix.
 
 ## Delivery behavior
 
+The disposable overlay uses the exact 16-byte virtio block serial
+`boiler-vm-serial`. An actual packaged-QEMU probe reproduced truncation of the
+previous 24-byte identifier to 20 bytes, which caused the guest to refuse the
+overlay before any mounts or writes. The shorter identifier arrived intact;
+the exact serial, read-write status and 80-GiB size checks remain mandatory.
+The transport limit is also defined by the kernel's
+[`VIRTIO_BLK_ID_BYTES`](https://github.com/torvalds/linux/blob/master/include/uapi/linux/virtio_blk.h).
+Five focused tests passed in the isolated Linux probe. Both probe disks were
+read-only regular images; no installed source or VHD was attached.
+
 The normal SteamOS VM boot path prepares its newly created disposable overlay
 with one fixed offline guest task before starting the EFI observation timer.
 Preparation preserves the existing EFI chain and kernel paths, changes only

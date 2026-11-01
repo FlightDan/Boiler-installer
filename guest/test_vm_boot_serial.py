@@ -10,6 +10,14 @@ serial = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(serial)
 
 class SerialPolicyTests(unittest.TestCase):
+    def test_virtio_id_transport_and_overlay_identity_remain_strict(self):
+        # Virtio block GET_ID carries at most 20 bytes; the old 24-byte ID was truncated.
+        expected = 'boiler-vm-serial'
+        self.assertEqual(expected.encode('ascii')[:20].decode('ascii'), expected)
+        serial.validate_overlay(expected, '0', 80 * 1024**3)
+        for label, readonly, size in (('boiler-vm-serial-overlay'[:20], '0', 80 * 1024**3), (expected, '1', 80 * 1024**3), (expected, '0', 80 * 1024**3 - 512)):
+            with self.subTest(label=label, readonly=readonly, size=size), self.assertRaisesRegex(RuntimeError, 'Unexpected VM overlay'):
+                serial.validate_overlay(label, readonly, size)
     def test_filesystem_and_partition_uuid_select_the_mounted_slot(self):
         partition = b'11111111-2222-3333-4444-555555555555'
         filesystem = b'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
@@ -50,7 +58,7 @@ class SerialPolicyTests(unittest.TestCase):
             base = Path(temporary)
             def local(path):
                 return base / str(path).lstrip('/')
-            for path, value in [('/sys/class/dmi/id/sys_vendor', 'QEMU'), ('/sys/block/vdc/serial', 'boiler-vm-serial-overlay')]:
+            for path, value in [('/sys/class/dmi/id/sys_vendor', 'QEMU'), ('/sys/block/vdc/serial', 'boiler-vm-serial')]:
                 target = local(path); target.parent.mkdir(parents=True, exist_ok=True); target.write_text(value)
             parts = []
             for index, name in enumerate(('esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home'), 1):
