@@ -486,7 +486,7 @@ public static class Backend
                 || details.GetProperty("backing-filename-format").GetString() != vmSerial.BackingFormat
                 || !string.Equals(Path.GetFullPath(details.GetProperty("full-backing-filename").GetString()!), backing, StringComparison.OrdinalIgnoreCase))
                 throw new IOException("VM overlay backing does not match its descriptor.");
-            arguments.AddRange(["-drive", $"file={Option(overlay)},format=qcow2,if=none,id=boiler-vm-serial", "-device", "virtio-blk-pci,drive=boiler-vm-serial,serial=boiler-vm-serial-overlay"]);
+            arguments.AddRange(["-drive", $"file={Option(overlay)},format=qcow2,if=none,id=boiler-vm-serial", "-device", "virtio-blk-pci,drive=boiler-vm-serial,serial=boiler-vm-serial"]);
         }
         if (task is "partition-test" or "handoff-metadata" or "handoff-binding" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "journal-migration-check" or "ui-installed-check" or "ui-cancelled-check" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test")
         {

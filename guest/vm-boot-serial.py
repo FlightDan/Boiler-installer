@@ -11,6 +11,12 @@ SUFFIX = b' console=ttyS0,115200n8 oxp3.serial-console=1'
 BOOT = re.compile(rb'^[ \t]*steamenv_boot[ \t]+linux[ \t]+(/boot/vmlinuz-[A-Za-z0-9_.+-]+)(?:[ \t]+[^\r\n]*)?$')
 COMMAND = re.compile(rb'^[ \t]*(?:steamenv_boot|linux|linuxefi|linux16)(?:[ \t]|$)')
 LIMIT = 1024 * 1024
+OVERLAY_SERIAL = 'boiler-vm-serial'
+
+
+def validate_overlay(serial, readonly, size):
+    if serial != OVERLAY_SERIAL or readonly != '0' or size != 80 * 1024**3:
+        raise RuntimeError('Unexpected VM overlay: serial=' + repr(serial) + ' readonly=' + repr(readonly) + ' size=' + str(size))
 
 
 def transform(data, kernels, root_uuid=None, filesystem_uuid=None):
@@ -56,8 +62,7 @@ def run():
     if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU':
         raise RuntimeError('Managed QEMU required')
     disk = '/dev/vdc'
-    if Path('/sys/block/vdc/serial').read_text().strip() != 'boiler-vm-serial-overlay' or command('blockdev', '--getro', disk) != '0' or int(command('blockdev', '--getsize64', disk)) != 80 * 1024**3:
-        raise RuntimeError('Unexpected VM overlay')
+    validate_overlay(Path('/sys/block/vdc/serial').read_text().strip(), command('blockdev', '--getro', disk), int(command('blockdev', '--getsize64', disk)))
     table = json.loads(command('sfdisk', '--json', disk))['partitiontable']
     rows = table['partitions']
     required = ('esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home')
