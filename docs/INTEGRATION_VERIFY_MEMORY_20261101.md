@@ -1,0 +1,11 @@
+# Read-only integration verification memory test — 2026-11-01
+
+The UI6 local-test verification task used a 1 GiB VM and a five-minute outer deadline, while full installation used 2 GiB. A native UI6 check on a closed test image was killed during slot A verification. Its first log did not establish the cause.
+
+A controlled comparison used the exact UI6 frozen installer TAR (SHA-256 `1115ed1530dc78c06718b3e4efe21a1fe0a44a78b19ed108343e92921c9ba977`), model package manifest `bcb8fc5bd665d2afb0d1d64f19cf5f93dd6a2bfc7e4e06775815218beb93af2e`, the same authenticated multi-volume payload, selection and closed disposable raw image. Both offline QEMU runs attached the source read-only; the shipped task retained its read-only Btrfs, ext4 and EFI mounts. A separate guest watcher recorded memory and OOM counters without changing the packaged verification code. Evidence is retained privately under `work/verify-memory-diagnostic/`.
+
+- At 1024 MiB, the packaged slot A hook died with SIGKILL. The guest `oom_kill` counter rose from 0 to 1, and the kernel recorded an out-of-memory kill of the model verifier. The run ended after 142.61 seconds; the sampled verifier high-water mark reached 786,100 KiB.
+- At 2048 MiB, the model hook verified 2,095 slot A files and 44 journals, and the outer task emitted `OXP_INTEGRATION_VERIFIED=A`. The guest OOM counter remained 0; the sampled verifier high-water mark reached 927,236 KiB. After 430.63 seconds the task refused slot B because the incomplete test image's root protection was missing. That refusal is expected and is not a successful full-image verification.
+- Both QEMU processes exited, and source image length and modification time remained unchanged. The source image was an incomplete test fixture, never a candidate for adoption or repair.
+
+The installer now allocates 2 GiB and a 20-minute outer deadline to `integration-verify`. The model hook's existing 900-second timeout, read-only validation, cancellation behavior, formats and model limits remain unchanged. The resource-only change does not establish verification of both slots, packaged release acceptance, upgrade/recovery, or physical hardware acceptance. Those gates require a clean completed image and the final generated package.
