@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace OxpInstaller;
 
-// Owned synthetic PowerShell children only; no device or installation commands.
+// Owned synthetic files and PowerShell children; no device or installation commands.
 internal static class ProcessChecks
 {
     internal static async Task<string> RunAsync()
@@ -26,6 +26,55 @@ internal static class ProcessChecks
         string[] Arguments(string mode, string pidFile) => ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", child, mode, pidFile];
         var checks = new List<string>();
         void Require(bool value, string name) { if (!value) throw new IOException(name); checks.Add(name); }
+        void RejectReceipt(string value, string name)
+        {
+            try { VirtualBoot.SerialReceipt(value); }
+            catch (IOException) { checks.Add(name); return; }
+            throw new IOException("Accepted invalid VM serial receipt: " + name);
+        }
+        Dictionary<string, object> Slot(string slot) => new()
+        {
+            ["path"] = "efi-" + slot + "/EFI/steamos/grub.cfg", ["entries"] = 2,
+            ["before_sha256"] = new string('a', 64), ["after_sha256"] = new string('b', 64)
+        };
+        string Receipt(Dictionary<string, object> a, Dictionary<string, object> b) =>
+            "guest output\r\nOXP_VM_SERIAL_RECEIPT=" + JsonSerializer.Serialize(new { A = a, B = b }) + "\r\nOXP_TASK_RESULT=passed\r\n";
+        var validReceipt = Receipt(Slot("A"), Slot("B"));
+        Require(VirtualBoot.SerialReceipt(validReceipt).GetProperty("B").GetProperty("entries").GetInt32() == 2,
+            "vm-serial-receipt-requires-and-retains-both-slots");
+        RejectReceipt("OXP_TASK_RESULT=passed\n", "vm-serial-missing-receipt-rejected");
+        RejectReceipt(validReceipt + validReceipt, "vm-serial-duplicate-receipt-rejected");
+        RejectReceipt("OXP_VM_SERIAL_RECEIPT={}\n", "vm-serial-missing-slots-rejected");
+        RejectReceipt(validReceipt.Replace("\"B\":", "\"A\":"), "vm-serial-duplicate-slot-rejected");
+        foreach (var field in new[] { "path", "entries", "before_sha256" })
+        {
+            var invalid = Slot("B");
+            invalid[field] = field == "entries" ? 0 : field == "path" ? "../rootfs-B/boot/grub.cfg" : "unverified";
+            RejectReceipt(Receipt(Slot("A"), invalid), "vm-serial-invalid-slot-" + field + "-rejected");
+        }
+        try
+        {
+            await Backend.GuestAsync("vm-boot-serial", null, false, _ => { }, CancellationToken.None);
+            throw new IOException("Public guest API accepted a VM serial task without its descriptor.");
+        }
+        catch (ArgumentException) { checks.Add("vm-serial-public-task-without-descriptor-rejected"); }
+        var owned = Path.Combine(InstallationController.Work, "uefi-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(owned);
+        var syntheticSource = Path.Combine(owned, "synthetic-source.bin");
+        var syntheticOverlay = Path.Combine(owned, "boot.qcow2");
+        await File.WriteAllTextAsync(syntheticSource, "synthetic source");
+        await File.WriteAllTextAsync(syntheticOverlay, "synthetic overlay; not a disk image");
+        var sourceInfo = new FileInfo(syntheticSource);
+        var descriptor = new Backend.VmSerialOverlay(owned, syntheticOverlay, syntheticSource, "raw", sourceInfo.Length, sourceInfo.LastWriteTimeUtc.Ticks);
+        foreach (var invalid in new[] { descriptor with { BackingLength = sourceInfo.Length + 1 }, descriptor with { Overlay = syntheticSource } })
+        {
+            var refused = false;
+            try { await Backend.PrepareVmSerialAsync(invalid, _ => { }, CancellationToken.None); }
+            catch (IOException error) when (error.Message == "VM serial overlay descriptor does not match the reviewed source.") { refused = true; }
+            Require(refused, "vm-serial-mismatched-descriptor-rejected-before-guest-" + checks.Count);
+        }
+        Require(await File.ReadAllTextAsync(syntheticSource) == "synthetic source"
+            && await File.ReadAllTextAsync(syntheticOverlay) == "synthetic overlay; not a disk image", "vm-serial-refused-inputs-unchanged");
         void Exited(string pidFile)
         {
             var pid = int.Parse(File.ReadAllText(pidFile));
