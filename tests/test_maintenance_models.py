@@ -328,15 +328,32 @@ class MaintenanceModelsTests(unittest.TestCase):
         with self.assertRaisesRegex(MaintenanceError, 'Interrupted model maintenance'):
             Engine(self.root).recover()
 
-    def test_real_runner_uses_action_specific_timeouts(self):
+    def test_inspect_timeout_after_completed_apply_preserves_state_and_receipt(self):
+        receipt = self.execute(self.plan([BASE, FAN]))
+        self.assertEqual(receipt['status'], 'verified')
+        receipt_path = Path(receipt['receipt_path'])
+        self.assertTrue(receipt_path.is_file())
+        before = self.files()
+        self.assertFalse((self.state/'models/pending.json').exists())
+        with patch.object(models, '_run', REAL_RUN), \
+             patch.object(models.subprocess, 'run', side_effect=subprocess.TimeoutExpired('model-hook', 3600)) as process:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                models.options(self.root, MODEL, trust_local_test=True, runtime_root=self.runtime)
+        process.assert_called_once()
+        self.assertEqual(process.call_args.args[0][2], 'inspect')
+        self.assertEqual(process.call_args.kwargs['timeout'], 3600)
+        self.assertEqual(self.files(), before)
+        self.assertFalse((self.state/'models/pending.json').exists())
+
+    def test_real_runner_uses_one_hour_timeout_for_all_actions(self):
         class Result:
             returncode = 0
             stdout = b'BOILER_MODEL_RESULT={"ok":true}\n'
             stderr = b''
-        for action, expected in (('inspect',900),('plan',900),('apply',3600),('verify',900),('restore',3600)):
+        for action in ('inspect', 'plan', 'apply', 'verify', 'restore'):
             with self.subTest(action=action), patch.object(models.subprocess, 'run', return_value=Result()) as process:
                 REAL_RUN(self.package, action, self.root, {})
-                self.assertEqual(process.call_args.kwargs['timeout'], expected)
+                self.assertEqual(process.call_args.kwargs['timeout'], 3600)
 
     def test_declared_underscore_and_hyphen_locales_are_accepted_without_broadening(self):
         for locale in ('system', 'zh_CN', 'zh-CN', 'en_US', 'en-US'):

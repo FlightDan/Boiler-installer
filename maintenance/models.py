@@ -95,7 +95,7 @@ def _run(package_directory, action, root, request, transaction='0'*32):
                                  action, str(root), str(request_path)],
                                 cwd=package_directory, env=build_hook_environment(root, transaction),
                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                timeout=3600 if action in ('apply', 'restore') else 900, check=False)
+                                timeout=3600, check=False)
     rows = [line[len('BOILER_MODEL_RESULT='):] for line in result.stdout.decode('utf-8').splitlines()
             if line.startswith('BOILER_MODEL_RESULT=')]
     if result.returncode or len(rows) != 1:
