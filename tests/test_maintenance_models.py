@@ -11,6 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -29,6 +30,7 @@ MODEL = 'device:oxp3'
 BASE = 'oxp3:base'
 FAN = 'oxp3:fan'
 PLUGIN = 'oxp3:decky'
+REAL_RUN = models._run
 
 
 def digest(value):
@@ -306,6 +308,35 @@ class MaintenanceModelsTests(unittest.TestCase):
         self.assertFalse(marker.exists())
         self.assertEqual(json.loads(original.read_text())['status'], 'failed-preserved')
         self.assertEqual(Engine(self.root).recover(), [])
+
+    def test_actual_apply_timeout_preserves_receipt_and_recovery_barrier(self):
+        plan = self.plan([BASE, FAN])
+        def dispatch(package, action, root, request, transaction='0'*32):
+            if action == 'apply':
+                return REAL_RUN(package, action, root, request, transaction)
+            return self.run_adapter(package, action, root, request, transaction)
+        with patch.object(models, '_run', side_effect=dispatch), \
+             patch.object(models.subprocess, 'run', side_effect=subprocess.TimeoutExpired('model-hook', 3600)) as process:
+            with self.assertRaisesRegex(MaintenanceError, 'receipt preserved'):
+                self.execute(plan)
+        self.assertEqual(process.call_args.kwargs['timeout'], 3600)
+        pending = json.loads((self.state/'models/pending.json').read_text())
+        receipt = json.loads((self.state/'models/actions'/(pending['id']+'.json')).read_text())
+        self.assertEqual(receipt['id'], pending['id'])
+        self.assertEqual(receipt['status'], 'failed-preserved')
+        self.assertIn('3600 seconds', receipt['error'])
+        with self.assertRaisesRegex(MaintenanceError, 'Interrupted model maintenance'):
+            Engine(self.root).recover()
+
+    def test_real_runner_uses_action_specific_timeouts(self):
+        class Result:
+            returncode = 0
+            stdout = b'BOILER_MODEL_RESULT={"ok":true}\n'
+            stderr = b''
+        for action, expected in (('inspect',900),('plan',900),('apply',3600),('verify',900),('restore',3600)):
+            with self.subTest(action=action), patch.object(models.subprocess, 'run', return_value=Result()) as process:
+                REAL_RUN(self.package, action, self.root, {})
+                self.assertEqual(process.call_args.kwargs['timeout'], expected)
 
     def test_declared_underscore_and_hyphen_locales_are_accepted_without_broadening(self):
         for locale in ('system', 'zh_CN', 'zh-CN', 'en_US', 'en-US'):
