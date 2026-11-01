@@ -182,6 +182,65 @@ public static partial class PartitionDeploymentChecks
             await ExpectRefusalAsync(() => Task.Run(() => { using var disk = VirtualMediaDisk.ReopenOwned(path, image.Layout.Size, id); }), "ordinary existing file");
             events.Add("missing-ownership-record-refused");
         }
+        // A canonical export has no protected entries. Build a fresh shared
+        // rehearsal target with the existing compact FAT/NTFS sentinel bytes,
+        // interrupt after one role, then verify resume and tamper refusal.
+        {
+            var directory = DirectoryFor(); cases.Add(directory);
+            var canonicalPath = Path.Combine(directory, "canonical.img");
+            using (var exported = new BoilerExportStream(source))
+            using (var output = new FileStream(canonicalPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await exported.CopyToAsync(output);
+            using var canonical = new PreparedDiskImage(canonicalPath);
+            if (canonical.Layout.Protected.Length != 0) throw new IOException("Expected canonical source without protected entries.");
+            var state = Path.Combine(directory, "state.json"); var vhd = Path.Combine(directory, "media.vhd"); Guid targetId;
+            _ = VirtualSharedTarget.Plan(canonical.Layout, InstallationTargetKind.InternalShared, canonical.Layout.Id);
+            using (var disk = new VirtualMediaDisk(vhd, canonical.Layout.Size))
+            {
+                targetId = disk.Id;
+                var targetLayout = VirtualSharedTarget.Plan(canonical.Layout, InstallationTargetKind.InternalShared, targetId);
+                OwnedPartitionLayout.Initialize(disk, targetLayout, targetLayout.Protected);
+                using var frozen = await SeedProtectedAsync(image, disk, targetLayout: targetLayout);
+                using var cancel = new CancellationTokenSource();
+                var stopped = false;
+                try
+                {
+                    await PartitionDeployment.ApplyOwnedAsync(canonical, disk, InstallationTargetKind.InternalShared, state,
+                        message => { log(message); if (message == "PARTITION_DEPLOYED=esp") cancel.Cancel(); }, cancel.Token);
+                }
+                catch (OperationCanceledException) { stopped = true; }
+                if (!stopped || Journal(state)["completed"]!.AsArray().Count != 1) throw new IOException("Canonical interruption did not retain one verified role.");
+                await CompareProtectedAsync(image, disk, true, targetLayout);
+            }
+            var resumed = new List<string>();
+            await PartitionDeployment.ResumeOwnedAsync(canonical, InstallationTargetKind.InternalShared, state, resumed.Add, CancellationToken.None);
+            if (!resumed.Where(t => t.StartsWith("PARTITION_RECHECKED=")).SequenceEqual(["PARTITION_RECHECKED=esp"])
+                || resumed.Count(t => t.StartsWith("PARTITION_DEPLOYED=")) != 7) throw new IOException("Canonical resume did not recheck its completed prefix.");
+            var nextBefore = new byte[4096];
+            using (var disk = VirtualMediaDisk.ReopenOwned(vhd, canonical.Layout.Size, targetId))
+            {
+                var targetLayout = VirtualSharedTarget.Plan(canonical.Layout, InstallationTargetKind.InternalShared, targetId);
+                OwnedPartitionLayout.Require(disk, targetLayout.Id, targetLayout.For(InstallationTargetKind.InternalShared));
+                var probe = await ProbeAsync(disk);
+                foreach (var number in new[] { 1, 2 })
+                {
+                    var path = probe.Volumes.Single(v => v.Number == number).Path + "preserved.txt";
+                    if (File.ReadAllText(path) != $"OXP partition sentinel {number}\n")
+                        throw new IOException("Canonical recovery changed a protected sentinel.");
+                }
+                using var locks = PartitionVolumeLocks.Acquire(disk, targetLayout.System);
+                using var raw = disk.OpenDevice(); raw.Position = targetLayout.System[1].Offset; raw.ReadExactly(nextBefore);
+                raw.Position = targetLayout.System[0].Offset; raw.Write(new byte[512]); raw.Flush(true);
+            }
+            await ExpectRefusalAsync(() => PartitionDeployment.ResumeOwnedAsync(canonical, InstallationTargetKind.InternalShared, state, log, CancellationToken.None), "Previously completed partition differs");
+            using (var disk = VirtualMediaDisk.ReopenOwned(vhd, canonical.Layout.Size, targetId))
+            using (var raw = disk.OpenDevice())
+            {
+                var nextAfter = new byte[nextBefore.Length]; raw.Position = canonical.Layout.System[1].Offset; raw.ReadExactly(nextAfter);
+                if (!nextAfter.AsSpan().SequenceEqual(nextBefore)) throw new IOException("Canonical tamper allowed a subsequent write.");
+            }
+            events.Add("canonical-shared-existing-fat-ntfs-sentinels-prefix-resume-and-completed-role-tamper-refused");
+        }
         var proof = Path.Combine(Path.GetDirectoryName(source)!, "recovery-checks.json");
         await File.WriteAllTextAsync(proof, JsonSerializer.Serialize(new { passed = true, source, cases, events,
             scope = "Windows owned VHD process-exit and partition recovery; no actual power loss, host firmware or physical drive acceptance" }));
