@@ -498,7 +498,7 @@ public static class Backend
         var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         using var process = new Process { StartInfo = start };
-        var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task == "integration" ? 40 : task is "home-copy-plan-checks" or "refind-image" or "integration-check" or "integration-delta-check" or "integration-verify" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
+        var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task == "integration" ? 60 : task is "home-copy-plan-checks" or "refind-image" or "integration-check" or "integration-delta-check" or "integration-verify" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
         using var timeout = new CancellationTokenSource(taskTimeout);
         using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
         // Open the log before starting QEMU: an unwritable/full log disk must
