@@ -224,6 +224,9 @@ internal static class BoilerUiChecks
 
                         RaiseClick(currentButton);
                         await FlushLayoutAsync(window);
+                        Check(Find<TextBlock>(window, "NavTarget").Foreground is SolidColorBrush entryTarget
+                            && entryTarget.Color != Color.FromRgb(255, 139, 139),
+                            $"home-{mode}-unvisited-target-is-not-red-{language}-{FormatSize(size)}");
                         if (mode == "custom")
                         {
                             Check(Find<StackPanel>(window, "AdaptationPage").IsVisible && !sidebarSource.IsVisible,
@@ -233,6 +236,9 @@ internal static class BoilerUiChecks
                                 $"{mode}-generic-installation-action-is-ready-{language}-{FormatSize(size)}");
                             if (generic != null) RaiseClick(generic);
                             await FlushLayoutAsync(window);
+                            Check(Find<TextBlock>(window, "NavTarget").Foreground is SolidColorBrush genericTarget
+                                && genericTarget.Color != Color.FromRgb(255, 139, 139),
+                                $"{mode}-generic-entry-keeps-unvisited-target-neutral-{language}-{FormatSize(size)}");
                         }
                         var source = Find<StackPanel>(window, "SourcePage");
                         var returnedHome = GetHomeScreen(window);

@@ -46,6 +46,10 @@ public partial class MainWindow
         ComponentOptionsHost.IsEnabled = mode is not ("imported" or "local");
         if (mode == "vanilla") ChooseGenericInstallation();
         else ShowStep(mode is "imported" or "local" ? 1 : AdaptationStep);
+        // Entering from home has no previously visited wizard step. ShowStep
+        // must not leave the hidden constructor/stale page marked as departed.
+        Array.Clear(departedSteps);
+        UpdateNavigationState();
         if (physicalInstallation && !bootPrerequisitesAcknowledged) ShowBootPrerequisites(null, null);
     }
 
