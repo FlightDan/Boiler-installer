@@ -21,6 +21,15 @@ loader = load('repair_manifest_loader', ROOT/'adaptations/brands/onexplayer/oxp3
 
 
 class MaintenanceInventory(unittest.TestCase):
+    def test_final_xevma_loader_uses_fixed_multicall_arguments(self):
+        source=(ROOT/'adaptations/brands/onexplayer/oxp3/current/xevma-20261029/load.py').read_bytes()
+        self.assertEqual(hashlib.sha256(source).hexdigest(),'bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646')
+        result=builder.corrected_xevma_loader(source)
+        self.assertIn(b"subprocess.run(['modprobe', 'xe'], executable='/usr/bin/kmod', check=True)",result)
+        self.assertIn(b"subprocess.run(['insmod', str(module)], executable='/usr/bin/kmod', check=True)",result)
+        self.assertIn(b"'ONE-NETBOOK', 'ONEXPLAYER 3'",result)
+        with self.assertRaises(ValueError): builder.corrected_xevma_loader(result)
+
     def test_final_inventory_contains_current_bridge_shim(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -38,7 +47,7 @@ class MaintenanceInventory(unittest.TestCase):
             self.assertEqual(inventory['maintenance_adapter.py'],
                              {'path': 'maintenance_adapter.py', 'size': len(expected), 'sha256': hashlib.sha256(expected).hexdigest()})
             self.assertIn('payload/manifest.json', inventory)
-            self.assertEqual(builder.VERSION, '0.1.0-localtest.20261101.13')
+            self.assertEqual(builder.VERSION, '0.1.0-localtest.20261102.14')
 
     def fixture(self, directory):
         payload = directory/'payload/legacy'
