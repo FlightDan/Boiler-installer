@@ -254,6 +254,30 @@ def check_conflicts(components, selected):
             raise ValueError('Conflicting selected components: ' + component['id'] + ' / ' + ', '.join(sorted(conflicts)))
 
 
+def retained_model_preflight(engine, package_root, options):
+    """Authenticate the selected package and protect any retained generation."""
+    import os
+    from maintenance import models
+    from protocol import validate_package
+    package = validate_package(package_root, expected_manifest_sha256=options['device_manifest_sha256'])
+    if package.get('id') not in models.MODELS or package.get('maintenance_contract') != models.CONTRACT:
+        return None
+    if models.CONTRACT['entry'] not in {row['path'] for row in package['files']}:
+        raise ValueError('Model maintenance entry is outside the authenticated inventory')
+    item = dict(directory=str(package_root), manifest_sha256=options['device_manifest_sha256'], package=package)
+    pointer = engine.state_dir / 'models' / ('package-' + package['id'].removeprefix('device:') + '.json')
+    with engine._lock():
+        engine._recover()
+        if os.path.lexists(pointer):
+            saved = models._private_json(pointer)
+            expected = dict(kind='RetainedModelPackage', model_id=package['id'], manifest_sha256=item['manifest_sha256'])
+            if saved != expected:
+                raise ValueError('A different retained model package requires explicit recovery or replacement')
+            # An identical pointer is idempotent only when its payload remains valid.
+            models._package(package['id'], engine, Path('/'), trust_local_test=True)
+    return item
+
+
 def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     validate_options(options)
     if slot not in ('A', 'B'): raise ValueError('Unknown installation slot')
@@ -372,6 +396,9 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     if plans or device_components or 'core:maintenance' in choices or preset_component:
         Engine = maintenance_api(payload)
         engine = Engine(root, root / 'var/lib/boiler/maintenance')
+    retained_item = None
+    if package_root and device_components and 'core:maintenance' in choices:
+        retained_item = retained_model_preflight(engine, package_root, options)
     if 'core:maintenance' in choices:
         component = manifest['core:maintenance']['component']
         operation = engine.apply(component, payload / 'integration')
@@ -425,6 +452,23 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
             language=options.get('kde_language', 'system'), password_set=options.get('set_deck_password', False),
             ssh_enabled=options.get('enable_ssh', False), activation='next-boot')
         result['install_plan']['components'].append(preset_component)
+    if retained_item is not None:
+        # Recheck the pointer and reviewed source after component writes, then
+        # retain using the existing authenticated snapshot and Engine lock.
+        from maintenance import models
+        with engine._lock():
+            engine._recover()
+            from protocol import validate_package
+            checked_package = validate_package(package_root, expected_manifest_sha256=retained_item['manifest_sha256'])
+            if checked_package != retained_item['package']:
+                raise ValueError('Selected model package changed during installation')
+            import os
+            pointer = engine.state_dir / 'models' / ('package-' + checked_package['id'].removeprefix('device:') + '.json')
+            if os.path.lexists(pointer):
+                expected = dict(kind='RetainedModelPackage', model_id=checked_package['id'], manifest_sha256=retained_item['manifest_sha256'])
+                if models._private_json(pointer) != expected:
+                    raise ValueError('Retained model package changed during installation')
+            models._retain(engine, retained_item)
     result['status'] = 'files_installed'
     from file_transaction import atomic_write, directory_fd
     import os
