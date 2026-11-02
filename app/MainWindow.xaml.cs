@@ -473,7 +473,7 @@ public partial class MainWindow : Window
         var shortWindow = height < 480;
         PageSubtitle.Visibility = shortWindow ? Visibility.Collapsed : Visibility.Visible;
         SidebarColumn.Width = new GridLength(compact ? 152 : 216);
-        SidebarBody.Margin = shortSidebar ? new Thickness(12,8,12,8)
+        SidebarBody.Margin = shortSidebar ? new Thickness(12,0,12,0)
             : compact ? new Thickness(12,16,12,12) : new Thickness(24,32,24,24);
         var sidebarHeader = SidebarBody.Children.OfType<StackPanel>().FirstOrDefault(child => Grid.GetRow(child) == 0);
         if (sidebarHeader?.Children.Count >= 3)
@@ -486,6 +486,7 @@ public partial class MainWindow : Window
         SidebarLogo.Width = SidebarLogo.Height = compact ? 28 : 36;
         MainContent.Margin = shortWindow ? new Thickness(12,8,12,8) : compact ? new Thickness(16,16,16,16) : new Thickness(40,32,32,32);
         PageTitle.FontSize = shortWindow ? 20 : compact ? 22 : 28;
+        UpdateSourceFooterHintVisibility();
         // Keep one vertical gesture surface; do not nest a scrollable disk table inside it.
         PartitionSelector.FreeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         PartitionSelector.TypeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
