@@ -80,6 +80,12 @@ public partial class MainWindow
         ResultPage.Children.Add(button);
     }
 
+    private void UpdateSourceFooterHintVisibility()
+    {
+        var height = WindowRoot.ActualHeight > 0 ? WindowRoot.ActualHeight : Height;
+        SourceFooterHint.Visibility = step == 1 && height >= 420 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void RefreshBoilerNavigation()
     {
         Title = "Boiler Installer";
@@ -105,7 +111,7 @@ public partial class MainWindow
         BackButton.Content = step == 1 && !pairedOrPrepared
             ? PartitionInventory.L("返回适配方式", "Back to device support")
             : PartitionInventory.L("上一步", "Back");
-        SourceFooterHint.Visibility = step == 1 ? Visibility.Visible : Visibility.Collapsed;
+        UpdateSourceFooterHintVisibility();
         SourceFooterHint.Text = installMode == "local" ? PartitionInventory.L("两个镜像均选择并校验后继续。", "Select and verify both images to continue.") : PartitionInventory.L("选择并核对镜像后继续。", "Select and verify the image to continue.");
         NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : step == 1 ? pairedOrPrepared ? PartitionInventory.L("下一步：安装位置", "Next: destination") : PartitionInventory.L("下一步：安装选项", "Next: installation options") : PartitionInventory.L("下一步", "Next");
         SourceVersionOptions.Visibility = pairedOrPrepared ? Visibility.Collapsed : Visibility.Visible;

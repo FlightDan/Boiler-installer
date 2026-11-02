@@ -258,6 +258,13 @@ internal static class BoilerUiChecks
                         var sourceLanguagePanel = Find<UniformGrid>(window, "InstallerLanguage");
                         var sourceChinese = Find<RadioButton>(window, "ChineseLanguage");
                         var sourceEnglish = Find<RadioButton>(window, "EnglishLanguage");
+                        var sourceHint = Find<TextBlock>(window, "SourceFooterHint");
+                        if (root.ActualHeight < 420)
+                            Check(sourceHint.Visibility == Visibility.Collapsed,
+                                $"{mode}-short-source-footer-omits-supplementary-hint-{language}-{FormatSize(size)}");
+                        else
+                            Check(sourceHint.Visibility == Visibility.Visible,
+                                $"{mode}-source-footer-restores-supplementary-hint-{language}-{FormatSize(size)}");
                         Check(sourceFooter.IsVisible && sourceNext.IsVisible && sourceBack.IsVisible == (mode != "imported")
                             && sourceLanguagePanel.IsVisible && sourceChinese.IsVisible && sourceEnglish.IsVisible,
                             $"{mode}-source-has-fixed-footer-and-sidebar-back-home-{language}-{FormatSize(size)}");
@@ -265,7 +272,11 @@ internal static class BoilerUiChecks
                             $"{mode}-empty-source-keeps-next-disabled-{language}-{FormatSize(size)}");
                         Check(IsWithinRoot(sourceFooter, root) && IsWithinRoot(sourceNext, root),
                             $"{mode}-source-footer-stays-inside-client-area-{language}-{FormatSize(size)}",
-                            new { footer = BoundsDescription(sourceFooter, root), next = BoundsDescription(sourceNext, root) });
+                            new { footer = BoundsDescription(sourceFooter, root), next = BoundsDescription(sourceNext, root),
+                                hint = new { sourceHint.Visibility, actualWidth = sourceHint.ActualWidth,
+                                    actualHeight = sourceHint.ActualHeight, desiredWidth = sourceHint.DesiredSize.Width,
+                                    desiredHeight = sourceHint.DesiredSize.Height },
+                                nextDesired = new { width = sourceNext.DesiredSize.Width, height = sourceNext.DesiredSize.Height } });
                         var footerBoundsBeforeScroll = BoundsRelativeTo(sourceFooter, root);
                         sourcePageScroll.ScrollToEnd();
                         await FlushLayoutAsync(window);
