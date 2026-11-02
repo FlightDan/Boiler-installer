@@ -7,9 +7,13 @@ from unittest import mock
 import contextlib
 import io
 
-spec = importlib.util.spec_from_file_location('xevma_loader', Path(__file__).resolve().parents[1] / 'adaptations/brands/onexplayer/oxp3/current/xevma-20261029/load.py')
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location('xevma_loader', ROOT / 'adaptations/brands/onexplayer/oxp3/current/xevma-20261029/load.py')
+transform_spec = importlib.util.spec_from_file_location('xevma_kmod_transform', ROOT/'adaptations/common/xevma/kmod_transform.py')
+transformer = importlib.util.module_from_spec(transform_spec); transform_spec.loader.exec_module(transformer)
+raw = Path(spec.origin).read_bytes()
 loader = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(loader)
+exec(compile(transformer.transform(raw), spec.origin, 'exec'), loader.__dict__)
 
 class LoaderTests(unittest.TestCase):
     def setUp(self):
@@ -59,9 +63,41 @@ class LoaderTests(unittest.TestCase):
         with mock.patch.object(loader.os, 'geteuid', return_value=0, create=True), mock.patch.object(loader, 'validate', return_value=Path(loader.MODULE)), mock.patch.object(Path, 'is_dir', return_value=False), mock.patch.object(loader.subprocess, 'run') as run:
             loader.main()
         self.assertEqual(run.call_args_list, [
-            mock.call(['/usr/bin/kmod', 'modprobe', 'xe'], check=True),
-            mock.call(['/usr/bin/kmod', 'insmod', str(Path(loader.MODULE))], check=True),
+            mock.call(['modprobe', 'xe'], executable='/usr/bin/kmod', check=True),
+            mock.call(['insmod', str(Path(loader.MODULE))], executable='/usr/bin/kmod', check=True),
         ])
+
+    def test_checked_failures_propagate_and_stop_next_operation(self):
+        for failed in (0, 1):
+            with self.subTest(failed=failed), mock.patch.object(loader.os, 'geteuid', return_value=0, create=True), \
+                    mock.patch.object(loader, 'validate', return_value=Path(loader.MODULE)), \
+                    mock.patch.object(Path, 'is_dir', return_value=False), \
+                    mock.patch.object(loader.subprocess, 'run', side_effect=[None]*failed+[loader.subprocess.CalledProcessError(1,'fixture')]) as run:
+                with self.assertRaises(loader.subprocess.CalledProcessError): loader.main()
+                self.assertEqual(run.call_count, failed+1)
+
+    def test_raw_and_patch_anchors_remain_exact(self):
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), 'bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646')
+        with self.assertRaises(ValueError): transformer.transform(raw+b'\n')
+        with self.assertRaises(ValueError): transformer.transform(transformer.transform(raw))
+        with self.assertRaises(ValueError): transformer.transform(raw+transformer.REPLACEMENTS[0][0])
+
+    def test_x2_and_resource_advisories_survive_kmod_transform(self):
+        spec=importlib.util.spec_from_file_location('x2_bridge_fixed',ROOT/'adaptations/scripts/build-complete-bridge.py')
+        x2=importlib.util.module_from_spec(spec); spec.loader.exec_module(x2)
+        old=x2.transform('upstream-repairs/xevmafix/load.py',raw)
+        updated=transformer.transform(old)
+        for before,after in transformer.REPLACEMENTS: updated=updated.replace(after,before)
+        self.assertEqual(updated,old)
+        import sys
+        sys.path.insert(0,str(ROOT/'scripts/resources'))
+        import hardware_name_patches
+        resource=hardware_name_patches.xevma_model_advisory(raw)
+        self.assertIn(b"fields.get('DRIVER') == 'xe'",resource)
+        self.assertIn(b"executable='/usr/bin/kmod'",resource)
+        for before,after in transformer.REPLACEMENTS: resource=resource.replace(after,before)
+        self.assertEqual(hashlib.sha256(resource).hexdigest(),
+            '9c4202e2d868daa124c1d2857d8be1dd41ecf513d306dc6ddbb7529e23484504')
 
     def test_existing_module_reports_unverified_without_reload(self):
         output = io.StringIO()

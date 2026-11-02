@@ -16,6 +16,24 @@ builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder
 
 
 class ProjectResourceBuildTests(unittest.TestCase):
+    def test_kmod_transform_is_a_locked_resource_input(self):
+        _, lock, _ = builder.check_inputs(ROOT)
+        names = {'adaptations/common/xevma/kmod_transform.py', 'adaptations/xevma-kmod-source-lock.json'}
+        self.assertTrue(names <= {row['path'] for row in lock['files']})
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            for row in lock['files']:
+                target = project/row['path']; target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT/row['path'], target)
+            target = project/builder.LOCK; target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(lock))
+            for name in names:
+                original = (project/name).read_bytes()
+                (project/name).write_bytes(original+b'\n')
+                with self.assertRaisesRegex(ValueError, 'Locked project input differs'):
+                    builder.check_inputs(project)
+                (project/name).write_bytes(original)
+
     def test_xevma_recipe_binds_original_sources_and_complete_official_toolchain(self):
         helper = builder.xevma_proof
         raw, recipe = helper.verified_recipe(ROOT)
@@ -120,6 +138,15 @@ class ProjectResourceBuildTests(unittest.TestCase):
             _, lock, _ = builder.check_inputs(ROOT)
             builder.split_components.build(ROOT, output, xevma_module=ROOT/lock['xevma_module'])
             catalog = builder.validate_pool(output)
+            xevma=next(row for row in catalog['resources'] if row['id']=='resource:intel-xevmafix-724')
+            resource=xevma
+            entry=next(row for row in resource['install']['files'] if row['target'].endswith('/xevmafix/load.py'))
+            generated=(output/entry['source']).read_bytes()
+            self.assertIn(b"subprocess.run(['modprobe', 'xe'], executable='/usr/bin/kmod', check=True)",generated)
+            self.assertIn(b"subprocess.run(['insmod', str(module)], executable='/usr/bin/kmod', check=True)",generated)
+            self.assertIn(b"fields.get('DRIVER') == 'xe'",generated)
+            proof=resource['provenance']['transforms'][0]
+            self.assertEqual(proof['output_sha256'],hashlib.sha256(generated).hexdigest())
             license_path = 'licenses/project-AGPL-3.0'
             self.assertEqual((output/license_path).read_bytes(), (ROOT/'adaptations/LICENSE').read_bytes())
             self.assertIn(b'GNU AFFERO GENERAL PUBLIC LICENSE', (output/license_path).read_bytes())

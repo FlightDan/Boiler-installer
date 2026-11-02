@@ -26,8 +26,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/oxp3.toon",
-      "size": 15077,
-      "sha256": "25742e428bc77159fe4eb2fd0babd1e601cef42d1b11770777c48e1e090d8af0"
+      "size": 15193,
+      "sha256": "5ef3934eaccb0d779f231fcc0763f644764c4e74970898312eedd8ae15691021"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/compatibility.py",
@@ -71,8 +71,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/x2-mini.toon",
-      "size": 14680,
-      "sha256": "41303f02cb2710dc1b41d6d519bcc84bc83b230c2bbe24abe64ab969e54b42ee"
+      "size": 14796,
+      "sha256": "73d21c0cc3c3700371a159eea2468413d4aa13c390dbf4e69ecf89a301921c37"
     },
     {
       "path": "adaptations/common/resource-inputs/intel-be201/inputs/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
@@ -198,6 +198,16 @@
       "path": "adaptations/brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE",
       "size": 1070,
       "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "adaptations/common/xevma/kmod_transform.py",
+      "size": 1048,
+      "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7"
+    },
+    {
+      "path": "adaptations/xevma-kmod-source-lock.json",
+      "size": 388,
+      "sha256": "74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17"
     }
   ],
   "publication_blockers": [],

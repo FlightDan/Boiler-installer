@@ -16,7 +16,7 @@ import zipfile
 
 BASE_ANCHOR = 'cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684'
 BASE_VERSION = '0.1.0-localtest.20261030.8'
-VERSION = '0.1.0-localtest.20261031.x2-full.1'
+VERSION = '0.1.0-localtest.20261102.x2-full.1'
 MODEL = 'guide:x2-mini'
 IDENTITY = 'device:x2-mini'
 REUSE_RECORD = 'x2-full-reuse.json'
@@ -180,6 +180,17 @@ def refresh_component_inventory(metadata, rows):
             entry['size']=by_path[entry['source']]['size']
             entry['sha256']=by_path[entry['source']]['sha256']
 
+
+def finalize_xevma_loader(directory, root, changes):
+    """Apply the fixed correction after authenticating the historical X2 overlay."""
+    loader_name = 'upstream-repairs/xevmafix/load.py'
+    require(loader_name in changes, 'Reviewed X2 xevma overlay is required')
+    spec = importlib.util.spec_from_file_location('boiler_xevma_kmod_x2', regular(root, 'adaptations/common/xevma/kmod_transform.py'))
+    transformer = importlib.util.module_from_spec(spec); spec.loader.exec_module(transformer)
+    loader_path = regular(directory, loader_name)
+    loader_path.write_bytes(transformer.transform(loader_path.read_bytes()))
+    return loader_name
+
 def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, recipe=None):
     root = Path(root).resolve(); adaptations = Path(adaptations or root/'adaptations').resolve()
     sys.path.insert(0, str(root))
@@ -204,6 +215,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     for name, row in changes.items():
         copy_approved(row['input_path'],directory/name,row)
     generated = {GENERATED} if refresh_maintenance(directory) else set()
+    generated.add(finalize_xevma_loader(directory, root, changes))
     metadata = document(encoded(baseline)); metadata['id'] = IDENTITY; metadata['device_id'] = 'x2-mini'; metadata['version'] = VERSION
     metadata['minimum_engine_version'] = '0.1.2'
     metadata['name'] = {'zh':'ONEXPLAYER X2 Mini / Mini PRO 完整适配','en':'ONEXPLAYER X2 Mini / Mini PRO complete adaptation'}
@@ -212,6 +224,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
         if 'device_ids' in compatibility: compatibility['device_ids'] = ['x2-mini']
     for item in metadata['components']:
         item['minimum_engine_version'] = '0.1.2'
+        if item['id'] == 'oxp3:xevmafix': item['version'] = '2026.10.29+kernel7.2.4.2'
     metadata['components'][0]['version'] = VERSION
     metadata['components'][0]['name'] = {'zh':'X2 Mini 完整共用适配','en':'X2 Mini complete shared adaptations'}
     metadata['hardware_matching'] = {'mode':'manual','automatic_selection':False,

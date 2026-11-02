@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerXevmaKmodTransformSources",
+  "files": [
+    {
+      "path": "common/xevma/kmod_transform.py",
+      "size": 1048,
+      "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7"
+    }
+  ],
+  "scope": "Transform only fixed known loader inputs; original module and historical source inventories remain unchanged."
+}

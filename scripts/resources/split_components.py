@@ -374,7 +374,7 @@ def build(project, output, xevma_module=None):
                 fromfile='upstream/xevma-load.py',tofile='resource/xevma-load.py'))
             patch_path='provenance/patches/xevma-model-advisory.patch';write(patch_path,diff.encode())
             payload_path=next(r['source'] for r in install if r['target'].endswith('/xevmafix/load.py'))
-            value['version']='2026.10.29+kernel7.2.4.model-advisory.1'
+            value['version']='2026.10.29+kernel7.2.4.model-advisory.3'
             value['compatibility']['kernels']=[KERNEL]
             value['provenance'].update(source_lock='provenance/upstream-source-lock.json',public_commit='e72e814da1944da3792076689995b6fe961f5768',
                 repository='HHHHanasak1/onexplayer3-steamos-setup',module_input_lock='provenance/candidate-source-lock.json',

@@ -4,6 +4,7 @@ Source locks stay immutable. This tool does not load a module or touch audio.
 """
 import argparse
 import difflib
+import importlib.util
 import json
 from pathlib import Path
 import sys
@@ -38,7 +39,11 @@ def xevma_model_advisory(raw):
 """
     text=raw.decode()
     if text.count(old)!=1:raise ValueError('Changed xevma model gate anchor')
-    return text.replace(old,new).encode()
+    patched = text.replace(old,new).encode()
+    path=Path(__file__).resolve().parents[2]/'adaptations/common/xevma/kmod_transform.py'
+    spec=importlib.util.spec_from_file_location('boiler_xevma_kmod_resource',path)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module.transform(patched)
 
 
 def build(project,output):

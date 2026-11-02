@@ -278,10 +278,11 @@ build:
   adapter: x2-complete-v1
   complete: true
   missing: []
-  materials[3]{scope,lock,sha256}:
+  materials[4]{scope,lock,sha256}:
     common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
+    common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
   inputs[3]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."
     bridge_overlay,locked-directory,adaptations/inputs/x2-bridge-overlay,adaptations/inputs/x2-bridge-overlay/overlay-lock.json,a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d,Explicit reviewed X2 identity and recovery bridge overlay.

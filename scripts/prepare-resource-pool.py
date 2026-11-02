@@ -28,6 +28,7 @@ CODE += ['scripts/prepare-cpu-resource.py','scripts/resources/merge_cpu_resource
 CODE += ['scripts/resources/hdr_game.py','scripts/resources/merge_hdr_resource_pool.py','protocol/hdr_contract.py',
     'maintenance/hdr_resources.py','maintenance/resource_entrypoints.py','maintenance/resource_cli.py',
     'protocol/resource_selection.py','guest/resource_coordinator.py','guest/resource_results.py','scripts/resources/model_source.py']
+CODE += ['adaptations/common/xevma/kmod_transform.py']
 
 
 def sha(raw): return hashlib.sha256(raw).hexdigest()

@@ -18,7 +18,7 @@ from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 
 BASE_ANCHOR = 'a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
-VERSION = '0.1.0-localtest.20261101.13'
+VERSION = '0.1.0-localtest.20261102.14'
 REPAIRS = 'brands/onexplayer/oxp3/current/upstream-20261029'
 XEVMA = 'brands/onexplayer/oxp3/current/xevma-20261029'
 
@@ -99,6 +99,12 @@ def sources(root=ROOT):
     if actual != seen:
         raise ValueError('Repair sources differ from the explicit reviewed inventory')
     return lock
+
+
+def corrected_xevma_loader(raw, root=ROOT):
+    spec = importlib.util.spec_from_file_location('boiler_xevma_kmod', root/'adaptations/common/xevma/kmod_transform.py')
+    transformer = importlib.util.module_from_spec(spec); spec.loader.exec_module(transformer)
+    return transformer.transform(raw)
 
 
 def build(base, prepared_decky, output, xevma_input, root=ROOT):
@@ -224,7 +230,7 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
             or native_install['id'] != 'oxp3:xevmafix'):
         raise ValueError('Unexpected xevma exact-kernel source')
     component = dict(schema_version=1, kind='ComponentManifest', id=native_install['id'],
-        version=native_install['version'], name=native_install['name'], description=native_install['description'],
+        version='2026.10.29+kernel7.2.4.2', name=native_install['name'], description=native_install['description'],
         default=False, optional=True, requires=[], conflicts=[], files=[],
         compatibility=dict(architectures=['x86_64'], os_ids=['steamos'], os_versions=['3.10'], kernels=[pin['kernel']]))
     module = confined(Path(xevma_input), pin['module']['file']).read_bytes()
@@ -240,6 +246,8 @@ def build(base, prepared_decky, output, xevma_input, root=ROOT):
             if XEVMA+'/'+row['source'] not in {item['path'] for item in source_lock['files']}:
                 raise ValueError('Uninventoried xevma source')
             data = confined(native, row['source']).read_bytes()
+            if row['source'] == 'load.py':
+                data = corrected_xevma_loader(data, root)
         source = 'upstream-repairs/xevmafix/'+row['source']
         path = confined(directory, source); path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
         component['files'].append(dict(source=source, target=row['target'], size=len(data),

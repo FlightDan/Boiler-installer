@@ -6,7 +6,7 @@ models[2]:
     name: ONEXPLAYER 3
     source: brands/onexplayer/oxp3/oxp3.toon
     manifest: brands/onexplayer/oxp3/manifest.json
-    source_sha256: 25742e428bc77159fe4eb2fd0babd1e601cef42d1b11770777c48e1e090d8af0
+    source_sha256: 5ef3934eaccb0d779f231fcc0763f644764c4e74970898312eedd8ae15691021
     components: 28
     complete: true
     missing: []
@@ -14,7 +14,7 @@ models[2]:
     name: ONEXPLAYER X2 Mini / Mini PRO
     source: brands/onexplayer/x2-mini/x2-mini.toon
     manifest: brands/onexplayer/x2-mini/manifest.json
-    source_sha256: 41303f02cb2710dc1b41d6d519bcc84bc83b230c2bbe24abe64ab969e54b42ee
+    source_sha256: 73d21c0cc3c3700371a159eea2468413d4aa13c390dbf4e69ecf89a301921c37
     components: 33
     complete: true
     missing: []

@@ -122,6 +122,22 @@ class CompleteAssembly(unittest.TestCase):
         builder.refresh_component_inventory(metadata,rows)
         self.assertEqual(dict(source='speaker.py',target='usr/lib/speaker.py',mode=0o644,size=42,sha256='new'),metadata['components'][0]['files'][0])
 
+    def test_final_xevma_output_refreshes_component_inventory(self):
+        original=(ROOT/'adaptations/brands/onexplayer/oxp3/current/xevma-20261029/load.py').read_bytes()
+        spec=importlib.util.spec_from_file_location('historical_bridge',ROOT/'adaptations/scripts/build-complete-bridge.py')
+        bridge=importlib.util.module_from_spec(spec);spec.loader.exec_module(bridge)
+        name='upstream-repairs/xevmafix/load.py'
+        staged=self.root/'package'/name;staged.parent.mkdir(parents=True)
+        historical=bridge.transform(name,original);staged.write_bytes(historical)
+        self.assertEqual(builder.finalize_xevma_loader(self.root/'package',ROOT,{name: {}}),name)
+        final=staged.read_bytes()
+        self.assertIn(b"subprocess.run(['modprobe', 'xe'], executable='/usr/bin/kmod', check=True)",final)
+        self.assertIn(b'model differs from OXP3',final)
+        metadata={'components':[{'id':'oxp3:xevmafix','files':[{'source':name,'target':'usr/lib/load.py','sha256':'old','size':0}]}]}
+        builder.refresh_component_inventory(metadata,builder.inventory(self.root/'package'))
+        self.assertEqual(metadata['components'][0]['files'][0]['sha256'],sha(final))
+        with self.assertRaises(ValueError): builder.finalize_xevma_loader(self.root/'package',ROOT,{name: {}})
+
     def test_embedded_maintenance_manifest_regenerated_from_final_bytes(self):
         package=self.root/'package'
         app=package/'payload/legacy/maintenance/app/oxp3_maintenance';app.mkdir(parents=True)
