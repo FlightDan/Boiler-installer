@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "slot": "guest",
-  "repairs": ["oxp3:input", "oxp3:multifunction", "oxp3:gyro", "oxp3:xe-dsb", "oxp3:split-lock"],
+  "repairs": ["oxp3:input", "oxp3:multifunction", "oxp3:gyro", "oxp3:xe-dsb", "oxp3:split-lock", "oxp3:wifi"],
   "plugins": [],
   "installer_language": "en-US",
   "kde_language": "system",

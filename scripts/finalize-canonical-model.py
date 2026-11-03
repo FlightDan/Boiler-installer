@@ -28,7 +28,7 @@ MODEL_REFS = {
 RESOURCE_IDS = {'resource:intel-xevmafix-724', 'resource:intel-be201-firmware',
                 'resource:oxp3-speaker-route', 'resource:bmi260-gyro'}
 POLICY = 'common/ssd/acer/gm7/components.toon'
-VERSION = '0.1.0-localtest.20261103.canonical-common.2'
+VERSION = '0.1.0-localtest.20261103.canonical-common.3'
 COMPONENT_VERSIONS = {'oxp3:xevmafix':'2026.10.30', 'oxp3:speaker-route':'2026.10.30'}
 BASE_COMPONENTS = {'oxp3:legacy-adaptation','oxp3:microphone','oxp3:speaker-route','oxp3:xevmafix'}
 
@@ -222,6 +222,22 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     if len(wifi) != 1 or wifi[0].get('available') is not True:
         raise ValueError('Expected the available legacy BE201 firmware handler')
     wifi[0]['default'] = True
+    # Generate the frozen selection from the reviewed bridge input, preserving
+    # every existing choice except the explicitly added BE201 firmware repair.
+    choice = json.loads(confined(ROOT, 'adaptations/brands/onexplayer/oxp3/bridge/selection.example.json').read_bytes())
+    previous = json.loads(confined(directory, 'selection.json').read_bytes())
+    expected = copy.deepcopy(previous)
+    if 'oxp3:wifi' in expected['repairs']:
+        raise ValueError('Base selection unexpectedly includes BE201 firmware')
+    expected['repairs'].append('oxp3:wifi')
+    if choice != expected:
+        raise ValueError('Reviewed selection differs from the base plus BE201 firmware')
+    selected = set(choice['repairs'] + choice['plugins'])
+    defaults = {cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('default')}
+    available = {cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('available')}
+    if selected != defaults or not selected <= available:
+        raise ValueError('Reviewed selection differs from available manifest defaults')
+    confined(directory, 'selection.json').write_bytes(json_bytes(choice))
     # Neither the verified EFI code closure nor unrelated legacy payloads are
     # modified by this finalization. Verify again after all generated writes.
     manifest['files']=[dict(path=p.relative_to(directory).as_posix(),size=p.stat().st_size,sha256=sha(p.read_bytes()))
