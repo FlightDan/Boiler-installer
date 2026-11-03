@@ -12,15 +12,17 @@ public partial class MainWindow
     private string installMode = "custom";
     private Border? homeScreen;
     private string? selectedDevicePackage;
-    private readonly int[] boilerRoute = [AdaptationStep, 1, 2, 0, 4, 3, 5, 6];
+    private readonly int[] boilerRoute = [AdaptationStep, 1, 0, 2, 4, 3, 5, 6];
 
     private void ChooseBoilerMode(string mode)
     {
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
         if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
+        ResetSsdPreference();
         deviceActionError = null;
         ResetInputAssociationSession();
+        optionsPanel.SetSsdProvider(null);
         deviceComponentChoices.Clear();
         ClearLegacyDeviceOptions();
         deviceAdaptationsChoice = null;
@@ -92,14 +94,14 @@ public partial class MainWindow
         var pairedOrPrepared = installMode is "local" or "imported";
         NavAdaptation.Text = PartitionInventory.L("设备适配", "Device support");
         NavSource.Text = PartitionInventory.L("01   系统来源", "01   System source");
-        NavContent.Text = PartitionInventory.L("02   安装选项", "02   Installation options");
-        NavTarget.Text = pairedOrPrepared ? PartitionInventory.L("02   安装位置", "02   Destination") : PartitionInventory.L("03   安装位置", "03   Destination");
+        NavContent.Text = PartitionInventory.L("03   安装选项", "03   Installation options");
+        NavTarget.Text = PartitionInventory.L("02   安装位置", "02   Destination");
         NavBoot.Text = pairedOrPrepared ? PartitionInventory.L("03   启动设置", "03   Boot settings") : PartitionInventory.L("04   启动设置", "04   Boot settings");
         NavReview.Text = pairedOrPrepared ? PartitionInventory.L("04   确认方案", "04   Review") : PartitionInventory.L("05   确认方案", "05   Review");
         NavProgress.Text = pairedOrPrepared ? PartitionInventory.L("05   安装进度", "05   Progress") : PartitionInventory.L("06   安装进度", "06   Progress");
         NavResult.Text = pairedOrPrepared ? PartitionInventory.L("06   安装结果", "06   Result") : PartitionInventory.L("07   安装结果", "07   Result");
         var nav = (Panel)TargetTab.Parent;
-        var ordered = new UIElement[] { AdaptationTab, SourceTab, SourceSubitems, ContentTab, TargetTab, BootTab, ReviewTab, ProgressTab, ResultTab };
+        var ordered = new UIElement[] { AdaptationTab, SourceTab, SourceSubitems, TargetTab, ContentTab, BootTab, ReviewTab, ProgressTab, ResultTab };
         for (var index = 0; index < ordered.Length; index++)
             if (nav.Children.IndexOf(ordered[index]) != index) { nav.Children.Remove(ordered[index]); nav.Children.Insert(index, ordered[index]); }
         SourceSubitems.Visibility = Visibility.Collapsed;
@@ -113,7 +115,7 @@ public partial class MainWindow
             : PartitionInventory.L("上一步", "Back");
         UpdateSourceFooterHintVisibility();
         SourceFooterHint.Text = installMode == "local" ? PartitionInventory.L("两个镜像均选择并校验后继续。", "Select and verify both images to continue.") : PartitionInventory.L("选择并核对镜像后继续。", "Select and verify the image to continue.");
-        NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : step == 1 ? pairedOrPrepared ? PartitionInventory.L("下一步：安装位置", "Next: destination") : PartitionInventory.L("下一步：安装选项", "Next: installation options") : PartitionInventory.L("下一步", "Next");
+        NextButton.Content = step == 3 ? PartitionInventory.L("开始安装", "Install SteamOS") : step == 6 ? PartitionInventory.L("返回首页", "Home") : step == 1 ? PartitionInventory.L("下一步：安装位置", "Next: destination") : PartitionInventory.L("下一步", "Next");
         SourceVersionOptions.Visibility = pairedOrPrepared ? Visibility.Collapsed : Visibility.Visible;
         RecoveryDownloadDetails.Header = PartitionInventory.L("下载官方恢复镜像", "Download the official recovery image");
         RecoveryImageHeading.Text = installMode == "imported" ? PartitionInventory.L("本地 IMG 镜像", "Local IMG image") : installMode == "local" ? PartitionInventory.L("1  官方恢复镜像", "1  Official recovery image") : PartitionInventory.L("SteamOS 官方恢复镜像", "SteamOS official recovery image");

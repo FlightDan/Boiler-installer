@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / 'components'))
 sys.path.insert(0, str(ROOT / 'guest'))
-from integration import stage, validate_options, check_conflicts, verify_device_components, device_plan, device_legacy_selection, device_hook_environment
+from integration import stage, validate_options, check_conflicts, verify_device_components, device_plan, device_legacy_selection, device_hook_environment, authenticate_oxp3_efi, authenticate_x2_efi, authenticate_oxp3_full_efi
 from source_profile import inspect_source
 
 
@@ -132,6 +132,108 @@ class GenericIntegrationChecks(unittest.TestCase):
         with self.assertRaises(ValueError): device_legacy_selection(package, options, [])
         self.assertIsNone(device_legacy_selection({}, {}, []))
 
+    def test_oxp3_efi_authenticator_does_not_accept_x2_identity(self):
+        package, component, options = self.legacy_fixture()
+        package['legacy_capabilities'].append(dict(id='oxp3:split-lock', category='repairs', available=True, dependencies=[]))
+        options['device_legacy_options']['repairs'] = ['oxp3:split-lock']
+        choice = device_legacy_selection(package, options, [component])
+        descriptor = dict(id='device:x2-mini', legacy_selection=choice,
+                          oxp3_efi_contract=dict(kind='oxp3-split-lock-efi-v1', component=component['id']))
+        with mock.patch('integration.device_plan', return_value=(Path('/package'), [component], {}, descriptor)), \
+             mock.patch('integration.release', return_value={}), \
+             mock.patch('protocol.validate_package') as validate, \
+             mock.patch('oxp3_efi_provider.verify') as verify:
+            with self.assertRaisesRegex(ValueError, 'reviewed fixed OXP3'):
+                authenticate_oxp3_efi(self.root, '/payload', options)
+            validate.assert_not_called()
+            verify.assert_not_called()
+
+    def test_x2_authenticator_binds_reviewed_x2_package_and_choice(self):
+        package, component, options = self.legacy_fixture()
+        package['id'] = 'device:x2-mini'
+        package['legacy_capabilities'].append(dict(id='oxp3:split-lock', category='repairs', available=True, dependencies=[]))
+        options['device_legacy_options']['repairs'] = ['oxp3:split-lock']
+        choice = device_legacy_selection(package, options, [component])
+        descriptor = dict(id='device:x2-mini', legacy_selection=choice,
+                          x2_efi_contract=dict(kind='x2-split-lock-efi-v1', component=component['id']))
+        with mock.patch('integration.device_plan', return_value=(Path('/package'), [component], {}, descriptor)), \
+             mock.patch('integration.release', return_value={}), \
+             mock.patch('protocol.validate_package', return_value=package), \
+             mock.patch('x2_efi_provider.verify') as verify:
+            result = authenticate_x2_efi(self.root, '/payload', options)
+            self.assertEqual(result['source']['package_id'], 'device:x2-mini')
+            self.assertEqual(result['selection'], choice)
+            verify.assert_called_once()
+            descriptor['id'] = 'device:oxp3'
+            with self.assertRaisesRegex(ValueError, 'reviewed fixed X2'):
+                authenticate_x2_efi(self.root, '/payload', options)
+
+    def test_x2_fixed_efi_package_requires_new_engine(self):
+        from protocol import manifest
+        package = {'minimum_engine_version': '0.1.4', 'compatibility': {}}
+        with mock.patch.object(manifest, 'ENGINE_VERSION', '0.1.3'):
+            self.assertFalse(manifest.compatible(package, {}))
+        with mock.patch.object(manifest, 'ENGINE_VERSION', '0.1.4'):
+            self.assertTrue(manifest.compatible(package, {}))
+
+    def test_full_oxp3_authenticator_requires_its_own_contract(self):
+        package, component, options=self.legacy_fixture()
+        package['legacy_capabilities'].append(dict(id='oxp3:split-lock',category='repairs',available=True,dependencies=[]))
+        options['device_legacy_options']['repairs']=['oxp3:split-lock']
+        choice=device_legacy_selection(package,options,[component])
+        descriptor=dict(id='device:oxp3',legacy_selection=choice,
+                        oxp3_full_efi_contract=dict(kind='oxp3-full-split-lock-efi-v1',component=component['id']))
+        with mock.patch('integration.device_plan',return_value=(Path('/package'),[component],{},descriptor)), \
+             mock.patch('integration.release',return_value={}), \
+             mock.patch('protocol.validate_package',return_value=package), \
+             mock.patch('oxp3_full_efi_provider.verify') as verify:
+            result=authenticate_oxp3_full_efi(self.root,'/payload',options)
+            self.assertEqual(result['source']['package_id'],'device:oxp3');verify.assert_called_once()
+            with self.assertRaisesRegex(ValueError,'reviewed fixed OXP3'):
+                authenticate_oxp3_efi(self.root,'/payload',options)
+            descriptor['id']='device:x2-mini'
+            with self.assertRaisesRegex(ValueError,'reviewed full OXP3'):
+                authenticate_oxp3_full_efi(self.root,'/payload',options)
+
+    def test_dispatcher_uses_full_oxp3_authenticator_only_for_full_contract(self):
+        from integration import authenticate_model_efi
+        descriptor={'id':'device:oxp3','oxp3_full_efi_contract':{'kind':'oxp3-full-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}}
+        with mock.patch('integration.device_plan',return_value=(Path('/package'),[],{},descriptor)), \
+             mock.patch('integration.release',return_value={}), \
+             mock.patch('integration.authenticate_oxp3_full_efi',return_value={'full':True}) as full, \
+             mock.patch('integration.authenticate_oxp3_efi',return_value={'old':True}) as old:
+            self.assertEqual(authenticate_model_efi(self.root,'/payload',{}),{'full':True})
+            full.assert_called_once();old.assert_not_called()
+            descriptor.pop('oxp3_full_efi_contract')
+            self.assertEqual(authenticate_model_efi(self.root,'/payload',{}),{'old':True})
+            old.assert_called_once()
+
+    def test_stage_records_authenticated_full_oxp3_contract_kind(self):
+        _,component,options=self.legacy_fixture()
+        options['device_components']=[component['id']]
+        options['device_legacy_options']['repairs']=['oxp3:split-lock']
+        descriptor=dict(id='device:oxp3',device_warnings=[],
+            oxp3_full_efi_contract=dict(kind='oxp3-full-split-lock-efi-v1',component=component['id']))
+        plan={'components':[]}
+        class StopAfterPlan(Exception): pass
+        with mock.patch('integration.device_plan',return_value=(Path('/verified'),[component],{},descriptor)), \
+             mock.patch('integration.install_plan',return_value=plan), \
+             mock.patch('integration.authenticate_model_efi',return_value={'source':{'package_id':'device:oxp3'}}), \
+             mock.patch('integration.load_manifest',side_effect=StopAfterPlan):
+            with self.assertRaises(StopAfterPlan):
+                stage(self.root,Path('/payload'),options,'A',model_review_path='/run/boiler-oxp3-efi-A.json')
+        self.assertEqual(plan['model_efi'],{'kind':'oxp3-full-split-lock-efi-v1'})
+
+    def test_installer_rejects_explicitly_unavailable_component(self):
+        from protocol import resolve_plan
+        part=dict(schema_version=1,kind='ComponentManifest',id='x2-mini:fixture',version='1.0.0',files=[])
+        self.assertEqual(resolve_plan([part],[part['id']],{})['components'],[part])
+        part['available']=True
+        self.assertEqual(resolve_plan([part],[part['id']],{})['components'],[part])
+        part['available']=False
+        with self.assertRaisesRegex(ValueError,'Incompatible component'):
+            resolve_plan([part],[part['id']],{})
+
     def test_dynamic_legacy_selection_requires_explicit_policy_and_package(self):
         _, _, options = self.legacy_fixture()
         for patch in ({'schema_version':True}, {'acknowledge_legacy_update_hold':False}, {'repairs':['oxp3:input']*2}, {'extra':'command'}):
@@ -169,6 +271,30 @@ class GenericIntegrationChecks(unittest.TestCase):
             self.assertTrue(engine.apply.call_args.kwargs['allow_hooks'])
             self.assertEqual(before, self.inventory())
 
+    def test_x2_stage_dispatches_to_its_own_fixed_efi_authenticator(self):
+        package, component, options = self.legacy_fixture()
+        package['id'] = 'device:x2-mini'
+        package['legacy_capabilities'].append(dict(id='oxp3:split-lock', category='repairs', available=True, dependencies=[]))
+        options['device_legacy_options']['repairs'] = ['oxp3:split-lock']
+        options['device_components'] = [component['id']]
+        choice = device_legacy_selection(package, options, [component])
+        descriptor = dict(id='device:x2-mini', legacy_selection=choice, device_warnings=[],
+                          x2_efi_contract=dict(kind='x2-split-lock-efi-v1',component=component['id']))
+        reviewed = dict(source=dict(package_id='device:x2-mini'), selection=choice)
+        class ReachedHook(Exception): pass
+        engine = mock.Mock(); engine.apply.side_effect = ReachedHook
+        before = self.inventory()
+        with mock.patch('integration.device_plan', return_value=(Path('/verified'), [component], {}, descriptor)), \
+             mock.patch('integration.authenticate_x2_efi', return_value=reviewed) as x2, \
+             mock.patch('integration.authenticate_oxp3_efi', side_effect=AssertionError('wrong identity')) as oxp3, \
+             mock.patch('integration.load_manifest', return_value={}), \
+             mock.patch('integration.merged_firmware_plan', return_value=({}, {})), \
+             mock.patch('integration.maintenance_api', return_value=mock.Mock(return_value=engine)):
+            with self.assertRaises(ReachedHook):
+                stage(self.root, Path('/payload'), options, 'A', model_review_path='/run/boiler-oxp3-efi-A.json')
+        x2.assert_called_once(); oxp3.assert_not_called()
+        self.assertEqual(before, self.inventory())
+
     def test_cross_model_generic_conflicts_are_rejected_before_apply(self):
         with self.assertRaisesRegex(ValueError, 'Conflicting'):
             check_conflicts([dict(id='oxp3:decky', conflicts=['core:decky'])], ['oxp3:decky','core:decky'])
@@ -189,6 +315,25 @@ class GenericIntegrationChecks(unittest.TestCase):
         # payloads still require the explicit local-test preparation switch.
         self.assertFalse((output/'maintenance-runtime/cache/model-bundles').exists())
         self.assertTrue((output/'maintenance-runtime/components/model-catalog/lock.json').is_file())
+
+    def test_prepared_maintenance_runtime_loads_full_oxp3_provider_and_lock(self):
+        import hashlib
+        import subprocess
+        prepare = runpy.run_path(str(ROOT/'scripts/prepare-integration.py'))['prepare']
+        output=Path(self.tmp.name)/'prepared-full-efi'
+        prepare(output)
+        runtime=output/'maintenance-runtime'
+        provider=runtime/'components/oxp3_full_efi_provider.py'
+        lock=runtime/'components/oxp3_full_efi_provider.lock.json'
+        self.assertTrue(provider.is_file());self.assertTrue(lock.is_file())
+        self.assertEqual(hashlib.sha256(lock.read_bytes()).digest(),
+                         hashlib.sha256((ROOT/'components/oxp3_full_efi_provider.lock.json').read_bytes()).digest())
+        code=("import sys; from pathlib import Path; sys.path.insert(0,sys.argv[1]); "
+              "from components.oxp3_full_efi_provider import verify; "
+              "p=Path(sys.argv[1]); "
+              "exec(\"try:\\n verify(p/'missing-package',p/'components/oxp3_full_efi_provider.lock.json')\\n"
+              "except ValueError as e:\\n assert 'manifest' in str(e)\\nelse:\\n raise AssertionError('unverified package accepted')\")")
+        subprocess.run([sys.executable,'-I','-B','-c',code,str(runtime)],check=True)
 
     def test_maintenance_package_role_is_refused_before_install_plan(self):
         package = dict(id='device:oxp3', device_id='oxp3', purpose='maintenance',

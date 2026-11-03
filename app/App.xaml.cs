@@ -54,6 +54,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "steamos-partition-checks") { log.AppendLine(await SteamOsPartitionChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-device-checks") { log.AppendLine(await BoilerDeviceChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "model-catalog-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "model-catalog-checks-no-capture") { log.AppendLine(await BoilerModelCatalogChecks.RunAsync(captureScreenshots: false)); }
                 else if (e.Args.Length == 2 && e.Args[1] == "model-plugin-checks") { log.AppendLine(await BoilerModelCatalogChecks.RunPluginMatrixAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "device-choice-checks") { log.AppendLine(await BoilerAdaptationChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "source-card-checks") { log.AppendLine(await SystemSourceCardChecks.RunAsync()); }
@@ -117,6 +118,7 @@ public partial class App : Application
                 else if (e.Args.Length == 4 && e.Args[1] == "upgrade-source") log.AppendLine(await Backend.GuestAsync("upgrade-source",e.Args[2],true,text=>log.Append(text),CancellationToken.None,updateRoot:e.Args[3]));
                 else if (e.Args.Length == 3 && e.Args[1] == "inspect") log.AppendLine(await Backend.GuestAsync("inspect",e.Args[2],false,text=>log.Append(text),CancellationToken.None));
                 else if (e.Args.Length == 2 && e.Args[1] == "component-outcome-checks") log.AppendLine(ComponentOutcomeChecks.Run());
+                else if (e.Args.Length == 2 && e.Args[1] == "ssd-ui-checks") log.AppendLine(SsdUiChecks.Run());
                 else if (e.Args.Length == 2 && e.Args[1] == "shared-storage-checks") log.AppendLine(SharedStorageChecks.Run());
                 else if (e.Args.Length == 2 && e.Args[1] == "shared-storage-linux-checks") log.AppendLine(await Backend.GuestAsync("integration-check", null, false, text => log.Append(text), CancellationToken.None, selection: "{\"checks\":\"shared-storage\"}"));
                 else if (e.Args.Length == 2 && e.Args[1] == "desktop-language-checks") log.AppendLine(await Backend.GuestAsync("integration-check", null, false, text => log.Append(text), CancellationToken.None, selection: "{\"checks\":\"desktop-language\"}"));

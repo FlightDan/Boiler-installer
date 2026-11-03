@@ -44,7 +44,9 @@ class EfiMountChecks(unittest.TestCase):
         shutil.copytree(node, path)
 
     def scope(self, slot, **extra):
-        return dict(root=self.root, parts=self.parts, slot=slot, mount=self.mount, **extra)
+        return dict(root=self.root, parts=self.parts, slot=slot, mount=self.mount,
+                    ssd_plans=extra.pop('ssd_plans', {}), ssd_selected=extra.pop('ssd_selected', False),
+                    model_needed=extra.pop('model_needed', False), review_kwargs=extra.pop('review_kwargs', {}), **extra)
 
     def clear_mount(self):
         if (self.root / 'efi').exists():
@@ -99,6 +101,17 @@ class EfiMountChecks(unittest.TestCase):
             for options in ({}, {'plugins': ['core:decky']}, {'repairs': ['wifi:intel']}):
                 execute(branch, self.scope('A', options=options))
         self.assertEqual(self.calls, [])
+
+    def test_selected_ssd_mounts_each_slot_without_a_model_package(self):
+        for filename in ('integration-image.py', 'integration-verify.py'):
+            branch = efi_branch(filename)
+            for slot in ('A', 'B'):
+                markers = []
+                scope = self.scope(slot, options={}, ssd_plans={'A': {}, 'B': {}}, ssd_selected=True,
+                                   guest_marker=lambda *args: markers.append(args))
+                execute(branch, scope)
+                self.assertEqual((self.root / GRUB).read_text(), 'slot=' + slot)
+                self.clear_mount()
 
 
 if __name__ == '__main__':

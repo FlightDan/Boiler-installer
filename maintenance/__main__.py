@@ -58,6 +58,11 @@ def main(argv=None):
     plugins.add_parser("list")
     for action in ("verify","restore"):
         plugin=plugins.add_parser(action); plugin.add_argument("plugin",choices=("decky","steamgriddb","protondb"))
+    ssd=commands.add_parser('ssd-boot',help='Explicitly review the fixed GM7 SSD boot repair')
+    ssd_actions=ssd.add_subparsers(dest='ssd_command',required=True)
+    ssd_actions.add_parser('inspect')
+    command=ssd_actions.add_parser('plan'); command.add_argument('action',choices=('apply','verify','restore','recover'))
+    command=ssd_actions.add_parser('execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
     from . import resource_cli
     resource_cli.add_parser(commands)
     args=parser.parse_args(argv)
@@ -67,6 +72,15 @@ def main(argv=None):
             print(json.dumps({'ok':True,'result':result})); return 0
         from .live_root import check_state_directory,pending
         check_state_directory(args.root,args.state_dir)
+        if args.command=='ssd-boot':
+            if args.state_dir is not None:
+                raise RuntimeError('SSD boot repair uses its canonical shared-home state')
+            from .ssd_boot import SSD
+            handler=SSD(args.root)
+            if args.ssd_command=='inspect': result=handler.inspect()
+            elif args.ssd_command=='plan': result=handler.plan(args.action)
+            else: result=handler.execute(load_json(args.plan),reviewed_sha256=args.reviewed_sha256)
+            print(json.dumps({'ok':True,'result':result})); return 0
         if args.command=='models':
             from . import models
             if args.model_command.startswith('keyboard-'):

@@ -1,0 +1,207 @@
+{
+  "files": [
+    {
+      "path": "payload/legacy/components/boot_repairs.py",
+      "sha256": "3084c2cfceddd6e4545597a702290caeae063eaed1bdf345fdb291b3aa78ea8d",
+      "size": 1926
+    },
+    {
+      "path": "payload/legacy/components/decky_order.py",
+      "sha256": "8361e9e94946303cfe94fc9645a1d553de5bb378c5c71425748f50e697ff1b4e",
+      "size": 3021
+    },
+    {
+      "path": "payload/legacy/components/directory_transaction.py",
+      "sha256": "098ce024ae4a57698741b235a15503977b29c10730b195f00dc4f07c3f557adc",
+      "size": 6236
+    },
+    {
+      "path": "payload/legacy/components/file_transaction.py",
+      "sha256": "491dce0a0b753295d2466adb44780595055ba4cc96ad004ba25a04cf1df1c786",
+      "size": 10276
+    },
+    {
+      "path": "payload/legacy/components/firstboot_stage.py",
+      "sha256": "c8db6f7c377b7ab034504dac433dc7e71e5ae0443116abaf13d5aab0bb552564",
+      "size": 5326
+    },
+    {
+      "path": "payload/legacy/components/firstboot.py",
+      "sha256": "c324c084f4785862beb2d871c7cfbcc1ea7896e90480e387826d9ffe9443e9d5",
+      "size": 7965
+    },
+    {
+      "path": "payload/legacy/components/input_profile.py",
+      "sha256": "fd41a0d19bafdbca7e6450f1db292c187e2c8cac2743edb215c7d889244997fd",
+      "size": 7925
+    },
+    {
+      "path": "payload/legacy/components/integration_runtime.py",
+      "sha256": "fda76ccd5f1b9d9e0194b8469d01ac64dca3605d8b5b286a415776ebfe3c85d8",
+      "size": 7897
+    },
+    {
+      "path": "payload/legacy/components/integration.py",
+      "sha256": "93b99edc1c13652542a8afb740306a137fedd1919515164aaff2025ad1ad79fc",
+      "size": 57362
+    },
+    {
+      "path": "payload/legacy/components/maintenance_tool.py",
+      "sha256": "e624ec3bb39dcb60d87b601e63da1779e543114c76efffce7bc113153b47f232",
+      "size": 1809
+    },
+    {
+      "path": "payload/legacy/components/ntfs_steam.py",
+      "sha256": "fad68844c876b4c80097250d73be67c3714865cbe821c41a19bfa85a66ebaf4c",
+      "size": 25270
+    },
+    {
+      "path": "payload/legacy/components/partition_mount.py",
+      "sha256": "c48d500e11f41802aa9f2c283993dae96ac226f662ff88ed78a681a3aeb1fbf4",
+      "size": 4348
+    },
+    {
+      "path": "payload/legacy/components/plugin_installer.py",
+      "sha256": "b3f75faa83d68a867ea5923aa9eb6ee87fedff8300733c383112e822adbcb461",
+      "size": 11741
+    },
+    {
+      "path": "payload/legacy/components/release_notes.py",
+      "sha256": "44ec7247db226636155d474588eef71227454b0e7c4865da1abae27488f48bcf",
+      "size": 200
+    },
+    {
+      "path": "payload/legacy/components/runtime_access.py",
+      "sha256": "4e593d969e5290675c5c7a360a2c892b2b491bca5646751e1e30cc41cc4de43f",
+      "size": 3962
+    },
+    {
+      "path": "payload/legacy/components/serial_console.py",
+      "sha256": "52011057bfc61b172a4773415c2fe5939c86be87673033d3e1b883eb471b5c30",
+      "size": 651
+    },
+    {
+      "path": "payload/legacy/components/shared_state.py",
+      "sha256": "a79885a87e2fd923c3c3013092ee4c229efc1cdbffc88631396b0d1e874da938",
+      "size": 1512
+    },
+    {
+      "path": "payload/legacy/components/shared_storage.py",
+      "sha256": "66d3722db2175da6fae270013632d88b8d18d5ba3d77c76d310f150aae6802ac",
+      "size": 18228
+    },
+    {
+      "path": "payload/legacy/components/slot_switch.py",
+      "sha256": "f3d4c188a5c3e206e819b0f864052fb495d1b7d0fa2a16c0bce0fcf720312d4e",
+      "size": 3881
+    },
+    {
+      "path": "payload/legacy/components/split_lock.py",
+      "sha256": "ad1602db2d380734ac9d28a77a4c3764c2704197784bb0ddcec20ce5179ddbd9",
+      "size": 8828
+    },
+    {
+      "path": "payload/legacy/components/system_update_policy.py",
+      "sha256": "1fd7ca3315cca3258c9365797be214523fb2913d41721f150cab4530186dc6ec",
+      "size": 5024
+    },
+    {
+      "path": "payload/legacy/components/update_hold_verify.py",
+      "sha256": "aecadad126b8e9b416052f7999767be03c21f4c9944d925894d978355a3ed78f",
+      "size": 1367
+    },
+    {
+      "path": "payload/legacy/components/update_hold.py",
+      "sha256": "6084f00b5d82dbf78c8b3b6282aff1f532a8ec3e655d6bb9b56e2b16c56baf67",
+      "size": 13626
+    },
+    {
+      "path": "payload/legacy/components/waydroid_setup.py",
+      "sha256": "92f4c74294ff95a68749a805beccb0d24fac4330417054e79b75473c3e154619",
+      "size": 4212
+    },
+    {
+      "path": "payload/legacy/components/windows_reboot.py",
+      "sha256": "9d7a5ba9152cefd818b8f63f8a839502197f9939678dbab49a8c6a73df0e18a9",
+      "size": 2638
+    },
+    {
+      "path": "payload/legacy/components/x2mini_hdr_device.py",
+      "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42",
+      "size": 39391
+    },
+    {
+      "path": "payload/legacy/components/hdr/generate.py",
+      "sha256": "3f9d645a6a341ffe900dd06104dc351953b3bcb5ee9a3005d8b83c6694b9d828",
+      "size": 1173
+    },
+    {
+      "path": "payload/legacy/components/hdr/installer.py",
+      "sha256": "12061f567e42f0c445d4ffc4ec222797870348d11f1745b5bfdea8ef178bd780",
+      "size": 10942
+    },
+    {
+      "path": "payload/legacy/components/hdr/upstream.lua",
+      "sha256": "a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846",
+      "size": 5836
+    },
+    {
+      "path": "payload/legacy/components/hdr/UPSTREAM_LICENSE",
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "size": 1070
+    },
+    {
+      "path": "payload/legacy/components/split-lock/UPSTREAM_LICENSE",
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "size": 1070
+    },
+    {
+      "path": "payload/legacy/components/options.json",
+      "sha256": "3b6a8544ac91074d824797d20eb8e8f737dcf8d8da10edbbadf438f606a815ce",
+      "size": 6300
+    },
+    {
+      "path": "payload/legacy/components/release.json",
+      "sha256": "d84f548a635cf197d8d6540d7fe4eb66e36563747534510cd8b1f0304d2399f6",
+      "size": 154
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/adoption.py",
+      "provenance": {
+        "asset": "oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+        "asset_sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4",
+        "license": "AGPL-3.0-only",
+        "license_path": "adaptations/brands/onexplayer/oxp3/bridge/LICENSE",
+        "member": "cache/maintenance/app/oxp3_maintenance/adoption.py",
+        "release_tag": "v1.0.6+installer.20261022.220437",
+        "repository": "FlightDan/OneXPlayer3-SteamOS",
+        "source_commit": "e181a9055e1c94e8d758e2b9575f60fb5fc5109c"
+      },
+      "sha256": "f12a9a4b7185073dbfb03d8df2d1fe903ff66c6e093f05be5265adac810f90d7",
+      "size": 20687
+    },
+    {
+      "path": "adapter.py",
+      "sha256": "3a02c2e7f98023f3b35b08c9f8a9edd2a8528961fbbdb05e523da26c3879a3ee",
+      "size": 53178
+    },
+    {
+      "path": "scripts/apply.sh",
+      "sha256": "77fe7511173a401d137e015a05b0b09d5262f849855b203ec94d10117c79ea49",
+      "size": 130
+    },
+    {
+      "path": "scripts/verify.sh",
+      "sha256": "63c0e6cbc9ee60857c640ae1920d6577461b3273805a4eff9372eb7981866201",
+      "size": 131
+    },
+    {
+      "path": "scripts/restore.sh",
+      "sha256": "268237cadf57447dbdc4ed2f7f27b80fea0772de090a4d5ccfa27fa988e1151d",
+      "size": 132
+    }
+  ],
+  "kind": "FixedOxp3EfiProviderSourceLock",
+  "public_commit": "72f864e0498c10366493c74608c5ffed62cc99ca",
+  "schema": 1
+}

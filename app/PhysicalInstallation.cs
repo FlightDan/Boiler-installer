@@ -9,7 +9,8 @@ using Microsoft.Win32.SafeHandles;
 namespace OxpInstaller;
 
 public sealed record PhysicalPlan(PartitionSelection Selection, InstallationTargetKind Kind, Guid DiskId,
-    NativePartition[] Preserved, PreparedPartition[] Added, long Required, bool MakeDefaultBoot = false);
+    NativePartition[] Preserved, PreparedPartition[] Added, long Required, bool MakeDefaultBoot = false,
+    SsdRepairBinding? SsdRepair = null);
 
 public static partial class PhysicalInstallation
 {
@@ -67,6 +68,7 @@ public static partial class PhysicalInstallation
         if(device.Number!=target.Disk || device.Size!=target.DiskSize || device.SectorSize!=512
             || device.Bus is not (7 or 11 or 12 or 17 or 13) || baseline!=null && baseline!=device)
             throw new IOException("Target native identity/capacity/bus changed.");
+        if (plan.SsdRepair != null) SsdBootRepair.Require(plan.SsdRepair, plan.Selection, device);
     }
     internal static byte[] EncodeAppend(byte[] original, PhysicalPlan plan)
     {

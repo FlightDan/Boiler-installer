@@ -26,7 +26,7 @@ public static partial class PhysicalInstallation
         state.HomeCopy?.Validate();
         var expected = Plan(plan.Selection, plan.Kind, layout);
         bool Same(PhysicalPlan p) => p.Selection == plan.Selection && p.Kind == plan.Kind && p.DiskId == expected.DiskId
-            && p.MakeDefaultBoot == plan.MakeDefaultBoot && (!p.MakeDefaultBoot || p.Kind == InstallationTargetKind.InternalShared)
+            && p.MakeDefaultBoot == plan.MakeDefaultBoot && p.SsdRepair == plan.SsdRepair && (!p.MakeDefaultBoot || p.Kind == InstallationTargetKind.InternalShared)
             && p.Required == expected.Required && p.Preserved.SequenceEqual(expected.Preserved) && p.Added.SequenceEqual(expected.Added);
         if (state.Source != source || !Same(state.Plan) || !Same(plan)) throw new IOException("Recovery source or reviewed plan changed.");
         if (state.Completed == null || state.Completed.Length > PreparedDisk.Roles.Length

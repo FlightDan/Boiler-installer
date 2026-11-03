@@ -7,6 +7,7 @@ from pathlib import Path
 import hashlib
 import json
 import os
+import re
 
 from protocol import compatible, validate_package
 from protocol.manifest import load_json, confined
@@ -168,24 +169,38 @@ def prepare_component_dirs(engine, component):
                 pass
 
 
+def _retained_or_bundled(identity, engine, runtime_root):
+    retained=engine.state_dir/'models'/('package-' + identity.removeprefix('device:') + '.json')
+    if os.path.lexists(retained):
+        saved=models._private_json(retained)
+        anchor=saved.get('manifest_sha256','')
+        if saved.get('model_id') != identity or not re.fullmatch(r'[0-9a-f]{64}',anchor):
+            raise MaintenanceError('Invalid retained provider package identity')
+        directory=confined(engine.state_dir,'models/packages/'+anchor)
+        candidate=validate_package(directory,expected_manifest_sha256=anchor)
+        if any(part.get('ssd_boot_policy') == {'id':'ssd:gm7-boot-repair','version':1}
+               for part in candidate.get('components',[])):
+            return dict(directory=str(directory),manifest_sha256=anchor,package=candidate)
+    return bundled_model_package(identity,trust_local_test=True,root=runtime_root)
+
+
 def package(identity, engine, runtime_root, trust):
     if not trust:
         raise MaintenanceError('Explicit session trust is required for local test repairs')
-    if identity not in MODELS:
+    if not isinstance(identity,str) or not re.fullmatch(r'device:[a-z0-9][a-z0-9_.-]*',identity):
         raise MaintenanceError('Unknown shared repair model')
     pointer = engine.state_dir/'models'/('shared-' + identity.removeprefix('device:') + '.json')
     if pointer.exists():
         saved = models._private_json(pointer)
-        import re
         if not re.fullmatch('[0-9a-f]{64}', saved.get('manifest_sha256', '')):
             raise MaintenanceError('Invalid retained shared package anchor')
         directory = confined(engine.state_dir, 'models/packages/' + saved['manifest_sha256'])
         value = validate_package(directory, expected_manifest_sha256=saved['manifest_sha256'])
         item = dict(directory=str(directory), manifest_sha256=saved['manifest_sha256'], package=value)
         if not any(cid in engine._state()['components'] for cid in value.get('shared_adaptations', {}).get('components', [])):
-            item = bundled_model_package(identity, trust_local_test=True, root=runtime_root)
+            item = _retained_or_bundled(identity,engine,runtime_root)
     else:
-        item = bundled_model_package(identity, trust_local_test=True, root=runtime_root)
+        item = _retained_or_bundled(identity,engine,runtime_root)
     value = item['package']
     # Only the reviewed additive X2 migration is eligible. Old payload and
     # original component journals remain retained for verification/recovery.
@@ -237,11 +252,20 @@ def package(identity, engine, runtime_root, trust):
         except (MaintenanceError, ValueError, OSError, ImportError):
             pass
     metadata = value.get('shared_adaptations', {})
-    ids = metadata.get('components', [])
     known = {part['id']: part for part in value['components']}
-    if (value['id'] != identity or metadata.get('kind') not in ('boiler-shared-static-v1','boiler-shared-host-v1')
-            or not ids or len(set(ids)) != len(ids) or any(cid not in known for cid in ids)):
+    providers=[part['id'] for part in value['components'] if part.get('ssd_boot_policy') == {'id':'ssd:gm7-boot-repair','version':1}]
+    if not isinstance(metadata,dict):
+        raise MaintenanceError('Invalid shared repair metadata')
+    ids = metadata.get('components', [])
+    if not isinstance(ids,list) or len(set(ids)) != len(ids) or any(cid not in known for cid in ids):
+        raise MaintenanceError('Invalid shared repair component list')
+    if ids and metadata.get('kind') not in ('boiler-shared-static-v1','boiler-shared-host-v1'):
         raise MaintenanceError('Package does not declare reviewed shared repair components')
+    if value['id'] != identity or not (ids or providers) or (identity not in MODELS and not providers):
+        raise MaintenanceError('Package does not declare reviewed shared repair components')
+    if identity not in MODELS:
+        ids=[]
+    ids=list(dict.fromkeys([*ids,*providers]))
     if any(known[cid].get('hooks') for cid in ids):
         raise MaintenanceError('Shared repair components must use Engine static transactions')
     # Dynamic keyboard has a separate fixed review/recovery screen and ledger.
@@ -254,6 +278,20 @@ def package(identity, engine, runtime_root, trust):
     return item
 
 
+def _ssd_provider(item, identity):
+    candidates=[part for part in item['components'] if part.get('id') == identity
+                and part.get('ssd_boot_policy') == {'id':'ssd:gm7-boot-repair','version':1}]
+    if len(candidates) != 1:
+        raise MaintenanceError('Selected SSD provider is not in the authenticated package')
+    component=candidates[0]
+    if (component.get('files') or component.get('hooks') or component.get('requires')
+            or component.get('conflicts') or component.get('optional') is not True
+            or component.get('available',True) is not True):
+        raise MaintenanceError('SSD provider requires the isolated fixed host contract')
+    from .ssd_boot import _provider_owner
+    return _provider_owner(dict(component_id=identity,manifest_sha256=item['manifest_sha256']))
+
+
 def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_dir=None):
     models._privileged()
     engine = Engine(root, state_dir, read_only=True)
@@ -261,20 +299,44 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
     environment = target_environment(root, device_id=identity.removeprefix('device:'))
     state = engine._state()
     capabilities = []
+    ssd_status=None
+    provider_ids=[component['id'] for component in item['components'] if component.get('ssd_boot_policy')]
+    if provider_ids:
+        from .ssd_boot import SSD
+        try:
+            if state_dir is not None:
+                raise MaintenanceError('SSD provider uses canonical shared-home state')
+            ssd_status=SSD(root).inspect()
+        except (MaintenanceError,ValueError,OSError) as error:
+            ssd_status=dict(available=False,installed=False,pending=False,reason=str(error),provider_owner=None)
     for component in item['components']:
         available = compatible(component, environment)
         reason = ''
+        if component.get('ssd_boot_policy'):
+            try:
+                owner=_ssd_provider(item,component['id'])
+                if not ssd_status.get('available'):
+                    raise MaintenanceError(str(ssd_status.get('reason') or 'SSD repair is unavailable on this target'))
+                saved=ssd_status.get('provider_owner')
+                if (ssd_status.get('installed') or ssd_status.get('pending')) and saved != owner:
+                    raise MaintenanceError('Existing SSD ownership does not belong to this authenticated provider')
+            except (MaintenanceError,ValueError,OSError) as error:
+                available=False; reason=str(error)
         if available and component['id'] in X2_STATIC_ADDITIONS:
             try:
                 check_static_component(engine, component)
             except (MaintenanceError, ValueError, OSError) as error:
                 available = False
                 reason = str(error)
-        capabilities.append(dict(id=component['id'], name=component['name'], category='repairs',
-            available=available, default=component.get('default', False), dependencies=component.get('requires', []),
+        capabilities.append(dict(id=component['id'], name=component.get('name',component['id']), category='repairs',
+            available=available, default=False if component.get('ssd_boot_policy') else component.get('default', False), dependencies=component.get('requires', []),
             reason='' if available else reason or 'Actual system is incompatible with this component.',
             notes=component.get('description', '')))
     installed = [part['id'] for part in item['components'] if part['id'] in state['components']]
+    if ssd_status and ssd_status.get('installed'):
+        for cid in provider_ids:
+            if ssd_status.get('provider_owner') == _ssd_provider(item,cid):
+                installed.append(cid)
     from .live_root import pending as root_pending
     interrupted = root_pending(root, state_dir)
     if interrupted is None:
@@ -285,6 +347,12 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
             if value.get('status') not in ('committed', 'restored', 'rolled_back'):
                 interrupted = dict(source='engine-journal', transaction=value.get('id'))
                 break
+    if ssd_status and ssd_status.get('pending'):
+        matching=[cid for cid in provider_ids if ssd_status.get('provider_owner') == _ssd_provider(item,cid)]
+        if matching:
+            if interrupted is not None:
+                raise MaintenanceError('Multiple interrupted maintenance transactions require separate recovery')
+            interrupted=dict(source='ssd-provider',component=matching[0])
     install_available = compatible(item['package'], environment)
     return dict(shared_adaptations=True, model={'id': identity}, capabilities=capabilities,
         executable=install_available or bool(installed) or interrupted is not None,
@@ -292,7 +360,7 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
         current=dict(repairs=installed, plugins=[]) if installed else None,
         package=dict(id=identity, version=item['package']['version'], manifest_sha256=item['manifest_sha256'], trust='local-test'),
         target=dict(root=str(Path(root).resolve())), environment=environment, pending=interrupted,
-        scope=models.SCOPE, warnings=item['package']['shared_adaptations'].get('warnings', []))
+        scope=models.SCOPE, warnings=item['package'].get('shared_adaptations', {}).get('warnings', []))
 
 
 def plan(root, identity, repairs, plugins=(), *, action='apply', trust_local_test=False, runtime_root=ROOT,
@@ -313,12 +381,48 @@ def plan(root, identity, repairs, plugins=(), *, action='apply', trust_local_tes
             raise MaintenanceError('Unknown shared repair component')
         selected = [cid for cid in known if cid in repairs]
     else:
-        selected = [cid for cid in known if cid in state['components']]
+        installed=list((current.get('current') or {}).get('repairs',[]))
+        pending_provider=(current.get('pending') or {}).get('component') if (current.get('pending') or {}).get('source') == 'ssd-provider' else None
+        if pending_provider:
+            if action != 'restore' or repairs and list(repairs) != [pending_provider]:
+                raise MaintenanceError('Recover the interrupted SSD provider first')
+            selected=[pending_provider]
+        elif (action == 'restore' and not installed and current.get('pending') is not None
+              and current['pending'].get('source') != 'ssd-provider' and repairs):
+            if not isinstance(repairs,list) or len(set(repairs)) != len(repairs) or set(repairs)-set(known):
+                raise MaintenanceError('Select only known shared repair components for pending recovery')
+            selected=[]
+        elif repairs:
+            if not isinstance(repairs,list) or len(set(repairs)) != len(repairs) or set(repairs)-set(installed):
+                raise MaintenanceError('Select only installed shared repair components')
+            selected=[cid for cid in known if cid in repairs]
+        else:
+            selected=installed
         if not selected and not (action == 'restore' and current['pending'] is not None):
             raise MaintenanceError('No installed shared repair transaction')
     available = {row['id'] for row in current['capabilities'] if row['available']}
     if action == 'apply' and set(selected) - available:
         raise MaintenanceError('Shared repair is unavailable on this target')
+    provider_selected=[cid for cid in selected if known[cid].get('ssd_boot_policy')]
+    if provider_selected:
+        if len(selected) != 1 or len(provider_selected) != 1 or plugins:
+            raise MaintenanceError('Maintain the SSD provider separately from other components')
+        if state_dir is not None:
+            raise MaintenanceError('SSD provider uses canonical shared-home state')
+        from .ssd_boot import SSD
+        owner=_ssd_provider(item,provider_selected[0])
+        inner_action='recover' if action == 'restore' and (current.get('pending') or {}).get('source') == 'ssd-provider' else action
+        inner=SSD(root,provider_owner=owner).plan(inner_action)
+        info=Path(root).resolve().stat()
+        body=dict(schema_version=1,kind='ReviewedSharedModelPlan',model_id=identity,action=action,
+            shared_adaptations=True,package=current['package'],scope=models.SCOPE,
+            selection=dict(repairs=selected,plugins=[]),environment=current['environment'],target=current['target'],
+            root=dict(path=str(Path(root).resolve()),device=info.st_dev,inode=info.st_ino),
+            state_sha256=_digest(state),target_files={},pending=current['pending'],ssd_plan=inner,
+            summary=dict(file_count=2,added=selected if action=='apply' else [],removed=selected if action=='restore' else []),
+            warnings=current['warnings']+['SSD configuration and device behavior require separate verification.'])
+        body['review_sha256']=_digest(body)
+        return body
     paths = {}
     for cid in selected:
         component = known[cid]
@@ -354,6 +458,29 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
         raise MaintenanceError('Target or installed state changed; review shared repairs again')
     engine = Engine(root, state_dir)
     item = package(reviewed['model_id'], engine, runtime_root, trust_local_test)
+    if 'ssd_plan' in reviewed:
+        selected=reviewed['selection']['repairs']
+        if len(selected) != 1:
+            raise MaintenanceError('SSD provider must be maintained separately')
+        owner=_ssd_provider(item,selected[0])
+        if reviewed['action'] == 'apply':
+            with engine._lock():
+                engine._recover()
+                if _digest(engine._state()) != reviewed['state_sha256']:
+                    raise MaintenanceError('Installed state changed while waiting for provider retention')
+                checked=package(reviewed['model_id'],engine,runtime_root,trust_local_test)
+                if checked['manifest_sha256'] != owner['manifest_sha256']:
+                    raise MaintenanceError('SSD provider package changed before retention')
+                pointer=engine.state_dir/'models'/('package-'+reviewed['model_id'].removeprefix('device:')+'.json')
+                if os.path.lexists(pointer) and models._private_json(pointer).get('manifest_sha256') != owner['manifest_sha256']:
+                    raise MaintenanceError('Another retained model package requires explicit migration')
+                models._retain(engine,checked)
+        from .ssd_boot import SSD
+        inner=reviewed['ssd_plan']
+        operation=SSD(root,provider_owner=owner).execute(inner,reviewed_sha256=inner['review_sha256'])
+        return dict(status='verified' if operation.get('ok') is True else 'verification-failed',
+                    result=dict(verified=operation.get('ok') is True,components=[dict(id=selected[0],operation=operation)]),
+                    restart_required=operation.get('restart_required'))
     components = {part['id']: part for part in item['components']}
     selected = reviewed['selection']['repairs']
     results = []

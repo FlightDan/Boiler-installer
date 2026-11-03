@@ -93,13 +93,30 @@ class ModelUITests(unittest.TestCase):
         backend = backend or FakeBackend()
         return ModelUI(dialog, backend, offline=True), backend
 
+    def test_shared_mixed_actions_bind_the_selected_installed_provider(self):
+        class SharedBackend(FakeBackend):
+            def call(self,*args):
+                self.calls.append(args)
+                if args[0] == 'shared-plan': return copy.deepcopy(PLAN)
+                raise AssertionError(args)
+        for action in ('verify','restore'):
+            with self.subTest(action=action):
+                dialog=Dialog([action,'device:gm7'],review=False)
+                backend=SharedBackend()
+                options=dict(OPTIONS,shared_adaptations=True,current={'repairs':['base','device:gm7'],'plugins':[]},
+                    capabilities=[dict(OPTIONS['capabilities'][0]),dict(id='device:gm7',name='SSD',category='repairs',available=True)])
+                ui,_=self.ui(dialog,backend);ui.actions(MODEL,options)
+                plan=next(row for row in backend.calls if row[0]=='shared-plan')
+                self.assertEqual(plan[-2:],('--repair','device:gm7'))
+                self.assertIn(action,plan)
+
     def test_model_cancel_only_reads_catalog(self):
         dialog = Dialog()
         ui, backend = self.ui(dialog)
         self.assertEqual(ui.run(), 0)
         self.assertEqual(backend.calls, [('list', '--offline')])
-        self.assertEqual(len(dialog.menu_rows[0][1]), 3)
-        self.assertEqual(dialog.menu_rows[0][1][-1][0], 'feedback')
+        self.assertEqual([row[0] for row in dialog.menu_rows[0][1]],
+                         ['device:oxp3','device:x2-mini','ssd','feedback'])
         self.assertIn('Pinned commit', dialog.menu_rows[0][0])
 
     def test_trust_cancel_never_inspects_private_target(self):

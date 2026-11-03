@@ -10,7 +10,7 @@ sys.path.insert(0, '/mnt/payload')
 from offload_mounts import mount_etc, mount_opt
 from maintenance import Engine
 from payload_lock import checked
-from integration import verify_device_components, validate_options
+from integration import verify_device_components, validate_options, authenticate_model_efi, device_plan, release, selected_ssd_provider_owner, SSD_REPAIR
 import system_presets
 import graphics
 import graphics_boot
@@ -30,6 +30,16 @@ def guest_marker(name, content):
         os.fchmod(stream.fileno(), 0o600); stream.truncate(0); stream.write(content)
 options = json.loads(Path('/mnt/payload/selection.json').read_text())
 validate_options(options)
+ssd_context = options.pop('_ssd_binding', None)
+ssd_identity = options.pop('_ssd_component', None)
+ssd_selected = ssd_identity is not None
+model_needed = 'oxp3:split-lock' in (options.get('device_legacy_options') or {}).get('repairs', [])
+if ssd_selected and (not isinstance(ssd_identity, str) or ssd_identity not in options.get('repairs', []) + (options.get('device_components') or [])):
+    raise RuntimeError('SSD component is not explicitly selected')
+if ssd_selected and (not isinstance(ssd_context, dict) or ssd_context.get('kind') != 'physical'):
+    raise RuntimeError('SSD verification requires reviewed physical destination context')
+if not ssd_selected and ssd_context is not None:
+    raise RuntimeError('Unexpected SSD repair context')
 if options.get('install_mode') == 'imported':
     print('OXP_INTEGRATION_VERIFIED=preserved-image', flush=True)
     raise SystemExit(0)
@@ -50,7 +60,7 @@ for slot in ('A', 'B'):
         mount(parts['home'], root / 'home', '-t', 'ext4', '-o', 'ro,noload')
         if not empty:
             mount_etc(root, mounts, readonly=True); mount_opt(root, mounts, readonly=True)
-        if options.get('device_package'):
+        if options.get('device_package') or ssd_selected or model_needed:
             mount(parts['efi-' + slot], root / 'efi', '-t', 'vfat', '-o', 'ro')
             guest_marker('boiler-guest-context', 'managed-qemu-integration\n')
             guest_marker('boiler-install-slot', slot + '\n')
@@ -74,11 +84,33 @@ for slot in ('A', 'B'):
                 raise RuntimeError('Selected graphics profile is missing from installed results')
             graphics.verify_inventory(root, result['components'][graphics_profile])
             graphics_boot.verify(root, result['components'][graphics_profile]['early_boot_proof'])
-        device_ids = verify_device_components(root, '/mnt/payload', options, slot, result['components'])
+        review_kwargs = {}
+        if model_needed:
+            authenticated = authenticate_model_efi(root, '/mnt/payload', options)
+            review_path = '/run/boiler-oxp3-efi-' + slot + '.json'
+            context = dict(source=authenticated['source'], selection=authenticated['selection'],
+                           host_context=ssd_context if ssd_selected else {'kind':'nonphysical'}, plan={}, sibling_root=None)
+            descriptor = os.open(review_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(descriptor, 'w') as stream:
+                json.dump(context, stream); stream.flush(); os.fsync(stream.fileno())
+            review_kwargs['model_review_path'] = review_path
+        device_ids = verify_device_components(root, '/mnt/payload', options, slot, result['components'], **review_kwargs)
         system_presets.verify(root, options, Engine(root, root / 'var/lib/boiler/maintenance', read_only=True))
         for identity, component in result['components'].items():
             if component['status'] != 'files_installed': raise RuntimeError('Component was not installed: ' + identity)
-            if identity == 'core:decky':
+            if identity == ssd_identity:
+                if not ssd_selected: raise RuntimeError('Unexpected SSD repair result')
+                from maintenance.ssd_boot import SSD
+                owner=None
+                if ssd_identity in (options.get('device_components') or []):
+                    _,parts_selected,_,descriptor=device_plan(Path('/mnt/payload'),options,release(root))
+                    owner=selected_ssd_provider_owner(ssd_identity,parts_selected,descriptor)
+                proof = SSD(root, installer_context=ssd_context, provider_owner=owner).plan('verify')
+                if (proof['target'] != component.get('target') or proof.get('provider_owner') != owner
+                        or result['install_plan']['ssd_repair'].get('provider_owner') != owner):
+                    raise RuntimeError('SSD target or authenticated provider evidence changed after installation')
+                print('OXP_SSD_REPAIR_VERIFIED=' + slot, flush=True)
+            elif identity == 'core:decky':
                 manifest = json.loads(Path('/mnt/payload/integration/manifest.json').read_text())['components'][identity]
                 binary = checked('/mnt/payload/integration', manifest['files'][0])
                 if (root / 'var/lib/boiler/decky/runtime/services/PluginLoader').read_bytes() != binary:
@@ -93,6 +125,8 @@ for slot in ('A', 'B'):
                 # or acquire a write lock during this read-only verification.
                 proof = Engine(root, root / 'var/lib/boiler/maintenance', read_only=True).verify_readonly(identity)
                 if not proof['ok']: raise RuntimeError('Component files differ: ' + identity)
+        if ssd_selected and ssd_identity not in result['components']:
+            raise RuntimeError('Selected SSD repair result is missing')
         print('OXP_INTEGRATION_VERIFIED=' + slot, flush=True)
     finally:
         for path in reversed(mounts): subprocess.run(['umount', str(path)], check=True)

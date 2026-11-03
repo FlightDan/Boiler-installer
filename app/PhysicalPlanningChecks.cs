@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace OxpInstaller;
 
@@ -18,6 +19,24 @@ public static class PhysicalPlanningChecks
             Guid.Parse(i==0?"c12a7328-f81f-11d2-ba4b-00a0c93ec93b":"ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"),Guid.NewGuid(),mib+i*8*gib,8*gib,0)).ToArray();
         var image=new PreparedDisk(Guid.NewGuid(),80*gib,parts);
         var plan=PhysicalInstallation.Plan(selection,InstallationTargetKind.InternalShared,image);
+        var ssdSnapshot=JsonNode.Parse(json)!.AsArray();
+        var ssdDisk=ssdSnapshot.Single(n=>n!["number"]!.GetValue<int>()==selection.Disk)!;
+        ssdDisk["model"]="Predator SSD GM7 1TB"; ssdDisk["bus"]="NVMe"; ssdDisk["serial"]="synthetic-serial";
+        var ssdSelection=selection with { Snapshot=ssdSnapshot.ToJsonString() };
+        var ssd=SsdBootRepair.FromSelection(ssdSelection);
+        Require(ssd.Disposition=="match","ssd-policy-exact-reviewed-match");
+        var ssdNative=new NativeDiskInfo(selection.Disk,gap.DiskSize,512,17,"synthetic-serial","synthetic vendor","Predator SSD GM7 1TB",false);
+        SsdBootRepair.Require(ssd,ssdSelection,ssdNative); events.Add("ssd-native-identity-matches-review");
+        Refuse(()=>SsdBootRepair.Require(ssd,ssdSelection,ssdNative with {Product="Other SSD"}),"ssd-changed-native-model-refused");
+        Refuse(()=>SsdBootRepair.Require(ssd,ssdSelection,ssdNative with {Serial="other"}),"ssd-changed-native-serial-refused");
+        Refuse(()=>SsdBootRepair.Require(ssd,ssdSelection,ssdNative with {Bus=11}),"ssd-changed-native-bus-refused");
+        Refuse(()=>SsdBootRepair.Require(ssd with {Disposition="not_applicable"},ssdSelection,ssdNative),"ssd-declared-outcome-must-match-policy");
+        ssdDisk["model"]="Other SSD";
+        Require(SsdBootRepair.FromSelection(ssdSelection with {Snapshot=ssdSnapshot.ToJsonString()}).Disposition=="not_applicable","ssd-other-device-not-applicable");
+        ssdDisk["model"]="";
+        Refuse(()=>SsdBootRepair.FromSelection(ssdSelection with {Snapshot=ssdSnapshot.ToJsonString()}),"ssd-missing-model-refused");
+        var boundPlan=plan with {SsdRepair=ssd};
+        Require(JsonSerializer.Deserialize<PhysicalPlan>(JsonSerializer.Serialize(boundPlan))!.SsdRepair==ssd,"ssd-binding-survives-helper-and-recovery-serialization");
         Require(plan.Added[0].Offset==gap.Start && plan.Added[^1].Offset+plan.Added[^1].Size==gap.Start+64*gib,"only-selected-gap");
         Require(plan.Added.Select(p=>p.Id).SequenceEqual(parts.Select(p=>p.Id)),"boot-reference-GUIDs-preserved");
         Require(plan.Added.All(p=>plan.Preserved.All(q=>!PhysicalInstallation.Overlap(p.Offset,p.Size,q.Offset,q.Size))),"existing-partitions-protected");

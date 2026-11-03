@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import importlib.util
 import io
@@ -189,7 +190,7 @@ class ModelPackageTests(unittest.TestCase):
             capability = builder.legacy_option_fields(item, 'repairs', ['oxp3:gm7-resume'])
             self.assertFalse(capability['available']); self.assertFalse(capability['default'])
             self.assertIn('目标 SSD', capability['reason']['zh'])
-            self.assertIn('reviewed target SSD context', capability['reason']['en'])
+            self.assertIn('reviewed target SSD common component', capability['reason']['en'])
             self.assertNotIn('available', item)  # Do not change the pinned catalog.
             catalog = dict(languages=['en-US'], kde_languages=['system'], repairs=[item], plugins=[])
             choice = dict(schema_version=1, slot='guest', repairs=['oxp3:gm7-resume'], plugins=[],
@@ -203,6 +204,44 @@ class ModelPackageTests(unittest.TestCase):
                     self.assertEqual(choice, adapter.runtime_selection(catalog)[0])  # Frozen compatibility remains.
                     with mock.patch.dict(os.environ, BOILER_OXP3_SELECTION=json.dumps(choice)), self.assertRaisesRegex(ValueError, 'whitelist'):
                         adapter.runtime_selection(catalog)
+
+    def test_legacy_boot_change_respects_common_ssd_ownership(self):
+            with tempfile.TemporaryDirectory() as work:
+                root = Path(work)
+                state = root/'home/.boiler/ssd-boot-v1'
+                state.mkdir(parents=True)
+                record = state/'esp-test.json'
+                record.write_text('{}')
+                adapter.require_no_common_ssd_owner(root, ['input'], lambda _: {'status':'installed'})
+                with self.assertRaisesRegex(RuntimeError, 'owns'):
+                    adapter.require_no_common_ssd_owner(root, ['split-lock'], lambda _: {'status':'installed'})
+                adapter.require_no_common_ssd_owner(root, ['split-lock'], lambda _: {'status':'restored'})
+                (state/'pending.json').write_text('{}')
+                with self.assertRaisesRegex(RuntimeError, 'recovery'):
+                    adapter.require_no_common_ssd_owner(root, ['boot-repairs'], lambda _: {'status':'restored'})
+
+    def test_model_efi_interception_keeps_posix_journal_honest(self):
+            with tempfile.TemporaryDirectory() as work:
+                root = Path(work); slot = 'A'; calls = []
+                original = lambda r, s, name, files, owner: calls.append(('posix', set(files)))
+                integration = SimpleNamespace(apply_files=original)
+                license_data = b'license'; grub = 'efi/EFI/steamos/grub.cfg'
+                dropin = 'etc/default/grub.d/oxp3-splitlock.cfg'
+                license_path = 'usr/share/licenses/oxp3-split-lock/UPSTREAM_LICENSE'
+                model = SimpleNamespace(fixed_dropin=b'dropin', license_sha256=hashlib.sha256(license_data).hexdigest(),
+                    apply=lambda reviewed: calls.append(('efi', reviewed)), finalize=lambda: calls.append(('commit',)))
+                plan = {'expected_efi': base64.b64encode(b'model').decode()}
+                files = {grub: {'data': b'model'}, dropin: {'data': b'dropin'}, license_path: {'data': license_data}}
+                with adapter.model_efi_interception(integration, root, slot, plan, model):
+                    integration.apply_files(root, root/'home/.oxp3-installer/integration'/slot, 'split-lock', files, (0, 0))
+                self.assertIs(integration.apply_files, original)
+                self.assertEqual([entry[0] for entry in calls], ['efi', 'posix', 'commit'])
+                self.assertEqual(calls[1][1], {dropin, license_path})
+                self.assertIn(grub, files)
+                with self.assertRaisesRegex(RuntimeError, 'file set'):
+                    with adapter.model_efi_interception(integration, root, slot, plan, model):
+                        integration.apply_files(root, root/'home/.oxp3-installer/integration'/slot, 'split-lock', {grub: files[grub]}, (0, 0))
+                self.assertIs(integration.apply_files, original)
 
     def test_capability_defaults_match_complete_frozen_selection_not_upstream_defaults(self):
             choice = json.loads((ROOT/'selection.example.json').read_text())

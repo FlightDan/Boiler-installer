@@ -40,7 +40,7 @@ public partial class MainWindow
             || !package.TryGetProperty("legacy_capabilities", out var capabilities) || capabilities.ValueKind != JsonValueKind.Array) return;
         deviceLegacyBridge = "oxp3:legacy-adaptation";
         deviceAdaptationsChoice!.Visibility = Visibility.Collapsed;
-        foreach (var pair in deviceComponentChoices.Where(pair => pair.Key != deviceLegacyBridge)) deviceComponentsPanel!.Children.Add(pair.Value);
+        foreach (var pair in deviceComponentChoices.Where(pair => pair.Key != deviceLegacyBridge && (pair.Value.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item)))) deviceComponentsPanel!.Children.Add(pair.Value);
         deviceLegacyHeading = new TextBlock { FontSize = 17, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new(0, 12, 0, 6) };
         deviceComponentsPanel!.Children.Add(deviceLegacyHeading);
         deviceLegacyNotice = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#485B73"), Margin = new(0, 0, 0, 10) };

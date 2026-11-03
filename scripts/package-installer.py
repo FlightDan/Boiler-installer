@@ -156,6 +156,11 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     for name in whitelist['files']:
         if name.startswith(('guest/','components/','maintenance/','protocol/','schemas/','scripts/','licenses/','docs/')) or name in ('LICENSE','THIRD_PARTY_NOTICES.md','README.md'):
             add(name,committed[name])
+    # Shared SSD policy provenance and license are fixed runtime inputs, not model packages.
+    for name in ('adaptations/common/ssd/GM7_POLICY.md',
+                 'adaptations/common/scripts/licenses/upstream-fixes-MIT.txt'):
+        if name not in committed: raise ValueError('Missing shared SSD runtime source: '+name)
+        add(name, committed[name])
     for name,entry in catalog_files.items(): add(name,entry)
     lock=json.loads((root/'scripts/runtime-dependencies.lock.json').read_text(encoding='utf-8'))
     groups=set(lock['profiles']['runtime'])
@@ -184,7 +189,9 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     # The runtime component must reflect the exact final sources in this package.
     for entry in integration['components']['core:maintenance']['component']['files']:
         relative=entry['source'].removeprefix('maintenance-runtime/')
-        if relative.startswith(('maintenance/','protocol/')):verify_file(root/relative,entry)
+        if relative in committed: verify_file(root/relative,entry)
+        elif relative.startswith(('maintenance/','protocol/','components/','adaptations/')):
+            raise ValueError('Runtime source missing from public whitelist: '+relative)
     add('BoilerInstaller.exe')
     for suffix in ('.dll','.deps.json','.runtimeconfig.json'):
         add('app/bin/'+configuration+'/net10.0-windows/OxpInstaller'+suffix)

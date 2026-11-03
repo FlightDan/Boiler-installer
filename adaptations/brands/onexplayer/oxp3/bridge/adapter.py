@@ -200,21 +200,125 @@ def ensure_adapter_state(root, ensure_directory):
     return paths[-1]
 
 
+def require_no_common_ssd_owner(root, names, read):
+    """Do not let the supported legacy bridge write a common-owned boot file."""
+    if not set(names).intersection({'gm7-resume', 'split-lock', 'boot-repairs'}):
+        return
+    state = Path(root)/'home/.boiler/ssd-boot-v1'
+    if not os.path.lexists(state):
+        return
+    if state.is_symlink() or not state.is_dir():
+        raise RuntimeError('Invalid common SSD repair state; preserve it for review')
+    for entry in state.iterdir():
+        if entry.name == 'pending.json':
+            raise RuntimeError('Common SSD boot repair requires recovery before legacy boot changes')
+        if entry.name.startswith('esp-') and entry.name.endswith('.json'):
+            record = read(entry)
+            if not isinstance(record, dict) or record.get('status') not in ('installed', 'restored'):
+                raise RuntimeError('Invalid common SSD boot ownership record')
+            if record['status'] == 'installed':
+                raise RuntimeError('Common SSD boot repair owns these boot settings')
+
+
+def model_efi_context(slot):
+    """Read only the managed guest's protected fixed-bridge review context."""
+    supplied = os.environ.get('BOILER_OXP3_EFI_REVIEW')
+    if supplied is None:
+        return None
+    if supplied != '/run/boiler-oxp3-efi-' + slot + '.json':
+        raise RuntimeError('Invalid fixed model EFI review path')
+    descriptor = os.open(supplied, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_size > 4*1024*1024:
+            raise RuntimeError('Untrusted fixed model EFI review')
+        context = json.loads(stream.read(4*1024*1024+1), object_pairs_hook=_pairs)
+    if not isinstance(context, dict) or set(context) != {'source', 'selection', 'host_context', 'plan', 'sibling_root'}:
+        raise RuntimeError('Invalid fixed model EFI review context')
+    return context
+
+
+@contextmanager
+def model_efi_interception(integration, root, slot, reviewed, model):
+    """Delegate only the fixed split-lock EFI file to the common byte handler."""
+    grub = 'efi/EFI/steamos/grub.cfg'
+    dropin = 'etc/default/grub.d/oxp3-splitlock.cfg'
+    license_path = 'usr/share/licenses/oxp3-split-lock/UPSTREAM_LICENSE'
+    original = integration.apply_files
+    count = 0
+    def wrapped(target_root, state, name, files, owner):
+        nonlocal count
+        if Path(target_root) != Path(root) or Path(state) != Path(root)/'home/.oxp3-installer/integration'/slot:
+            raise RuntimeError('Legacy bridge target differs from the reviewed slot')
+        if name != 'split-lock':
+            def overlaps(path, target):
+                path, target = path.casefold(), target.casefold()
+                return path == target or path.startswith(target+'/') or target.startswith(path+'/')
+            if any(overlaps(path, target) for path in files for target in (grub, dropin)):
+                raise RuntimeError('Only the fixed split-lock handler may own this EFI file')
+            return original(target_root, state, name, files, owner)
+        if count or set(files) != {grub, dropin, license_path}:
+            raise RuntimeError('Unexpected or duplicate split-lock file set')
+        expected = base64.b64decode(reviewed['expected_efi'], validate=True)
+        if (any(not isinstance(files[key], dict) or set(files[key]) != {'data'} for key in files)
+                or files[grub].get('data') != expected or files[dropin].get('data') != model.fixed_dropin
+                or hashlib.sha256(files[license_path].get('data', b'')).hexdigest() != model.license_sha256):
+            raise RuntimeError('Split-lock output differs from the reviewed fixed renderer')
+        count += 1
+        model.apply(reviewed)
+        original(target_root, state, name, {key: value for key, value in files.items() if key != grub}, owner)
+        model.finalize()
+    integration.apply_files = wrapped
+    try:
+        yield
+        if count != 1: raise RuntimeError('Fixed split-lock EFI operation was not completed')
+    finally:
+        integration.apply_files = original
+
+
+def rollback_splitlock_companions(integration, root, slot, read):
+    """Use the pinned POSIX transaction only for its two honest targets."""
+    directory = Path(root)/'home/.oxp3-installer/integration'/slot/'split-lock'
+    journal = directory/'state.json'
+    if not os.path.lexists(journal):
+        return
+    value = read(journal)
+    allowed = ['etc/default/grub.d/oxp3-splitlock.cfg', 'usr/share/licenses/oxp3-split-lock/UPSTREAM_LICENSE']
+    if (value.get('allowed') != allowed or not isinstance(value.get('metadata'), dict)
+            or set(value['metadata']) != set(allowed)):
+        raise RuntimeError('Split-lock companion journal is not the fixed GRUB-excluded transaction')
+    transaction = integration.LogicalFiles(directory, root, {name: value['metadata'][name] for name in allowed}, (0, 0))
+    errors = transaction.rollback()
+    if errors:
+        raise RuntimeError('Split-lock companion recovery preserved conflicts: ' + json.dumps(errors))
+
+
 def run(action):
     root = target_root()
     payload = PACKAGE/'payload/legacy'
     catalog = json.loads((payload/'components/options.json').read_text())
-    # The model's public code is imported only after platform and target checks.
-    sys.path.insert(0, str(payload/'components'))
-    import integration
-    from file_transaction import atomic_write, snapshot
-    from hdr.installer import ensure_directory
     slot_file = Path('/run/boiler-install-slot')
     if slot_file.is_symlink() or not slot_file.is_file() or slot_file.stat().st_uid != 0 or slot_file.stat().st_mode & 0o022:
         raise RuntimeError('Trusted guest slot marker is required')
     slot = slot_file.read_text().strip()
     if slot not in ('A', 'B'):
         raise RuntimeError('Invalid guest slot marker')
+    efi_context = model_efi_context(slot)
+    if efi_context is not None:
+        # Check the installer-owned allowlist before importing any package code.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('_boiler_fixed_oxp3_provider', '/mnt/payload/components/oxp3_efi_provider.py')
+        provider = importlib.util.module_from_spec(spec); spec.loader.exec_module(provider)
+        provider.verify(PACKAGE, '/mnt/payload/components/oxp3_efi_provider.lock.json')
+        if (efi_context['source'].get('package_id') != 'device:oxp3'
+                or hashlib.sha256((PACKAGE/'manifest.json').read_bytes()).hexdigest() != efi_context['source'].get('manifest_sha256')):
+            raise RuntimeError('Authenticated model source differs from the EFI review')
+        sys.path.insert(0, '/mnt/payload')
+    # The model's public code is imported only after platform and target checks.
+    sys.path.insert(0, str(payload/'components'))
+    import integration
+    from file_transaction import atomic_write, snapshot
+    from hdr.installer import ensure_directory
     state = root/'home/.boiler/oxp3-adapter'
     result = root/'home/.oxp3-installer/integration'/slot/'result.json'
     record_path = state/(slot + '.json')
@@ -226,7 +330,16 @@ def run(action):
     # Reuse the model's root-owned, no-follow journal reader for saved state.
     record = trusted_json(record_path) if os.path.lexists(record_path) else None
     choice, options = runtime_selection(catalog, record)
+    if 'split-lock' in options['repairs']:
+        if efi_context is None or efi_context['selection'] != choice:
+            raise RuntimeError('Fixed reviewed model EFI context is required for split-lock')
+    def model_proof():
+        if efi_context is None or 'split-lock' not in options['repairs']:
+            return None
+        from maintenance import model_efi
+        return model_efi.model_efi_proof(root, efi_context['host_context'], efi_context['source'], choice)
     if action == 'apply':
+        require_no_common_ssd_owner(root, options['repairs'], trusted_json)
         if record and record.get('phase') == 'applied':
             return run('verify')
         if record and record.get('phase') != 'restored':
@@ -244,11 +357,26 @@ def run(action):
         record = {'schema_version': 1, 'phase': 'applying', 'selection': choice, 'previous_runtime_link': previous_link}
         atomic_write(record_path, (json.dumps(record)+'\n').encode(), 0o600, 0, 0)
         with legacy_events():
-            value = integration.stage(root, payload, options, slot)
+            if efi_context is None:
+                value = integration.stage(root, payload, options, slot)
+            else:
+                from maintenance import model_efi
+                class FixedModel:
+                    fixed_dropin = model_efi.canonical.DROPIN_DATA
+                    license_sha256 = model_efi.LICENSE_SHA256
+                    @staticmethod
+                    def apply(plan):
+                        return model_efi.model_efi_apply(root, efi_context['host_context'], efi_context['source'], choice,
+                            plan, reviewed_sha256=plan['review_sha256'], sibling_root=efi_context['sibling_root'])
+                    @staticmethod
+                    def finalize():
+                        return model_efi.model_efi_finalize(root, efi_context['host_context'], efi_context['source'], choice)
+                with model_efi_interception(integration, root, slot, efi_context['plan'], FixedModel):
+                    value = integration.stage(root, payload, options, slot)
         failed = [name for name, report in value['components'].items() if report.get('status') == 'not_installed']
         if failed:
             raise RuntimeError('Requested model components failed; restore before retrying: ' + ', '.join(failed))
-        record['verification'] = verify_staged(root, slot, options)
+        record['verification'] = verify_staged(root, slot, options, efi_proof=model_proof())
         record['phase'] = 'applied'
         atomic_write(record_path, (json.dumps(record)+'\n').encode(), 0o600, 0, 0)
         return value
@@ -257,7 +385,7 @@ def run(action):
     if action == 'verify':
         if record['phase'] != 'applied':
             raise RuntimeError('Model installation is incomplete')
-        proof = verify_staged(root, slot, options)
+        proof = verify_staged(root, slot, options, efi_proof=model_proof())
         if record.get('verification') != proof:
             raise RuntimeError('Model file or journal proof differs from completed staging')
         print('BOILER_DEVICE_VERIFY_JSON='+json.dumps({'schema': 1, 'id': 'oxp3:legacy-adaptation',
@@ -270,12 +398,36 @@ def run(action):
     if record['phase'] == 'restored':
         return {'status': 'restored', 'slot': slot}
     if not result.is_file():
+        if efi_context is not None and 'split-lock' in options['repairs']:
+            from maintenance import model_efi
+            pending = root/'home/.boiler/boot-ownership-v1/model-pending.json'
+            if os.path.lexists(pending):
+                review = model_efi.model_efi_plan(root, efi_context['host_context'], efi_context['source'], choice, 'recover')
+                rollback_splitlock_companions(integration, root, slot, trusted_json)
+                model_efi.model_efi_recover(root, efi_context['host_context'], efi_context['source'], choice,
+                    review, reviewed_sha256=review['review_sha256'])
+            else:
+                review = model_efi.model_efi_plan(root, efi_context['host_context'], efi_context['source'], choice, 'restore')
+                model_efi.model_efi_restore(root, efi_context['host_context'], efi_context['source'], choice,
+                    review, reviewed_sha256=review['review_sha256'])
+                rollback_splitlock_companions(integration, root, slot, trusted_json)
+                model_efi.model_efi_finalize(root, efi_context['host_context'], efi_context['source'], choice)
+            raise RuntimeError('Split-lock boot recovery completed; other interrupted model journals still require review')
         raise RuntimeError('Incomplete legacy result journal requires per-component recovery; automatic restoration is blocked')
     value = trusted_json(result)
     names = list(reversed(value['components']))
     if all(value['components'].get(name, {}).get('status') == 'files_installed' for name in ('gm7-resume', 'split-lock')):
         names = ['boot-repairs', *[name for name in names if name not in ('gm7-resume', 'split-lock')]]
+    require_no_common_ssd_owner(root, names, trusted_json)
     for name in [*names, 'runtime']:
+        if name == 'split-lock' and efi_context is not None:
+            from maintenance import model_efi
+            review = model_efi.model_efi_plan(root, efi_context['host_context'], efi_context['source'], choice, 'restore')
+            model_efi.model_efi_restore(root, efi_context['host_context'], efi_context['source'], choice,
+                review, reviewed_sha256=review['review_sha256'])
+            rollback_splitlock_companions(integration, root, slot, trusted_json)
+            model_efi.model_efi_finalize(root, efi_context['host_context'], efi_context['source'], choice)
+            continue
         with legacy_events():
             errors = integration.restore(root, slot, name)
         if errors:
@@ -290,7 +442,7 @@ def run(action):
     return {'status': 'restored', 'slot': slot}
 
 
-def verify_staged(root, slot, options, *, reader=None):
+def verify_staged(root, slot, options, *, reader=None, efi_proof=None):
     """Read-only comparison of actual bytes against protected legacy journals."""
     root = Path(root).absolute()
     if slot not in ('A', 'B'):
@@ -377,6 +529,29 @@ def verify_staged(root, slot, options, *, reader=None):
                 raise RuntimeError('Model journal lineage differs: '+target)
         _, _, applied, metadata = entries[-1]
         add(target, applied, metadata)
+    if efi_proof is not None:
+        disk_record = base+slot+'/target-disk.json'
+        saved = read(disk_record)
+        raw = base64.b64decode(saved['data'], validate=True)
+        if saved.get('uid') != 0 or saved.get('mode', 0) & 0o077 or raw != b'null\n':
+            raise RuntimeError('Unexpected legacy target-disk record')
+        evidence.append({'path': disk_record, 'sha256': hashlib.sha256(raw).hexdigest(), 'size': len(raw)})
+        grub = 'efi/EFI/steamos/grub.cfg'
+        target = efi_proof.get('target', {})
+        esp = target.get('esp_partuuid', '')
+        journal = 'home/.boiler/boot-ownership-v1/model-esp-'+str(esp)+'.json'
+        if ('split-lock' not in selected or grub in files or target.get('slot') != slot
+                or not re.fullmatch(r'[a-z0-9-]{8,64}', esp)
+                or efi_proof.get('record_path') != journal
+                or not re.fullmatch(r'[0-9a-f]{64}', efi_proof.get('applied_sha256', ''))
+                or not re.fullmatch(r'[0-9a-f]{64}', efi_proof.get('record_file_sha256', ''))
+                or type(efi_proof.get('applied_size')) is not int or efi_proof['applied_size'] <= 0
+                or type(efi_proof.get('record_file_size')) is not int or efi_proof['record_file_size'] <= 0):
+            raise RuntimeError('Invalid fixed model EFI proof or duplicate legacy ownership')
+        files[grub] = {'path': grub, 'exists': True, 'sha256': efi_proof['applied_sha256'],
+                       'size': efi_proof['applied_size'], 'topology': target}
+        evidence.append({'path': journal,
+                         'sha256': efi_proof['record_file_sha256'], 'size': efi_proof['record_file_size']})
     for name in ('runtime', 'release-note'):
         if not counts.get(name):
             raise RuntimeError('Missing required internal model journal: '+name)

@@ -73,6 +73,34 @@ class SharedLifecycle(unittest.TestCase):
         with self.assertRaisesRegex(MaintenanceError, 'Unknown shared'):
             shared.plan(self.root, 'device:x2-mini', ['x2-mini:fan-driver'], **self.kw)
 
+    def test_unavailable_component_is_not_selectable_for_maintenance(self):
+        view=shared.options(self.root,'device:x2-mini',**self.kw)
+        self.assertTrue(view['capabilities'][0]['available'])
+        package=self.runtime/'cache/model-bundles/packages/x2-mini/manifest.json'
+        value=json.loads(package.read_bytes());value['components'][0]['available']=False
+        raw=(json.dumps(value)+'\n').encode();package.write_bytes(raw)
+        descriptor=self.runtime/'cache/model-bundles/manifest.json'
+        index=json.loads(descriptor.read_bytes());index['packages'][0]['manifest_sha256']=hashlib.sha256(raw).hexdigest()
+        descriptor.write_text(json.dumps(index))
+        view=shared.options(self.root,'device:x2-mini',**self.kw)
+        self.assertFalse(view['capabilities'][0]['available'])
+        with self.assertRaisesRegex(MaintenanceError,'unavailable'):
+            self.make_plan()
+
+    def test_unavailable_installed_component_can_still_verify_and_restore(self):
+        self.execute(self.make_plan())
+        original=shared.package
+        def unavailable(*args,**kwargs):
+            item=original(*args,**kwargs)
+            for component in item['components']:
+                if component['id']=='x2-mini:battery': component['available']=False
+            return item
+        with patch.object(shared,'package',side_effect=unavailable):
+            view=shared.options(self.root,'device:x2-mini',**self.kw)
+            self.assertFalse(view['capabilities'][0]['available'])
+            self.assertTrue(self.execute(self.make_plan('verify'))['result']['verified'])
+            self.execute(self.make_plan('restore'))
+
     def test_fingerprint_action_is_not_exposed(self):
         self.assertFalse(hasattr(shared, 'fingerprint'))
 
@@ -83,6 +111,12 @@ class SharedLifecycle(unittest.TestCase):
             self.assertIsNotNone(view['pending'])
             with self.assertRaisesRegex(MaintenanceError, 'recovery first'):
                 self.make_plan()
+            with self.assertRaisesRegex(MaintenanceError, 'known shared'):
+                shared.plan(self.root,'device:x2-mini',['x2-mini:unknown'],action='restore',**self.kw)
+            with self.assertRaisesRegex(MaintenanceError, 'known shared'):
+                shared.plan(self.root,'device:x2-mini',['x2-mini:battery']*2,action='restore',**self.kw)
+            with self.assertRaisesRegex(MaintenanceError, 'installed'):
+                self.make_plan('verify')
             self.assertTrue(self.execute(self.make_plan('restore'))['result']['verified'])
 
     def test_changed_os_allows_verify_restore_but_blocks_install(self):

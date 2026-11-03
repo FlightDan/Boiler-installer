@@ -24,6 +24,17 @@
 
 ## Interfaces and safety review
 
+### 设备修复归属与 TOON 引用（用户明确约定）
+
+- 按实际硬件设备复用的通用修复统一放在 `FlightDan/Boiler-devices/common/`，机型包通过 TOON 引用同一份资源；不得把通用设备修复绑定到某一掌机型号或复制到各机型实现中。`devices/` 保留设备注册、兼容性及发现记录的职责，不作为通用修复实现的另一套根目录。
+- SSD 修复按设备类型、厂商和型号组织，GM7 的目标资源路径明确为 `common/ssd/acer/gm7/`；不再把 `device/`、`devices/` 与 `common/` 写成可选方案。品牌共用资源放 `brands/<vendor>/common/`，机型专属资源放对应品牌/机型目录。现有公开仓库尚无的资源路径应按此规则新增并建立 TOON 引用，不能声称已存在或已迁移完成。
+- GM7 修复按目标 SSD 的实际身份匹配，不以 OXP3/X2 等掌机 DMI 代替 SSD 身份。机型 TOON 引用资源表示提供该修复，实际安装仍必须核验 SSD 匹配。
+- 机型包已引用并提供兼容修复时优先使用该引用；否则匹配的设备修复进入“自定义构件”。匹配后默认勾选，不匹配或身份不明不安装；同一目标上用户明确取消的选择不得被刷新或提供方切换重新勾选。
+- 安装器只负责资源解析、可信匹配、选择和通用事务执行；OXP3 专属适配及其身份校验保留在对应机型层。不得为了让 X2 复用 GM7 修复而冒充 OXP3、扩展 OXP3 专属身份白名单或绕过校验。
+- 本轮额外拆分到 `common/` 的范围仅为 Intel xe VMA 修复、Intel BE201 固件、Realtek ALC245 扬声器路由和 BMI260 陀螺仪，另保留已经确定的 GM7 方案。灯效、按键、HDR、CPU 和电池不进入本轮迁移；设备公共实现与仍需机型配置的参数必须分开。
+- “部件识别”是 Windows 安装器“自定义构件”页面的本机只读功能，通过 Windows 设备枚举读取当前电脑的 PCI/USB/HDAUDIO/ACPI 等真实标识，不是在目标硬盘安装识别程序，也不依赖 SSH。结果应展示设备标识、来源和匹配状态；不能把当前电脑的硬件当成外接目标盘所属掌机的硬件，也不能用 Windows 标识冒充已验证的 Linux 驱动、内核兼容性或 BMI260 芯片读数。识别不执行驱动绑定、模块加载、EC/I2C 写操作或磁盘部署。
+- 若公开仓库目前仍只是 registry，或本地存在旧桥接实现，应明确记录资源层迁移并保留来源、锁、许可证和恢复语义；不得把旧结构限制当作继续把 SSD 修复塞进机型分支的理由。打包和更新 GitHub 前核对资源归属、两台机型的 TOON 引用及实际生成载荷。
+
 - Keep existing index/package, plan, helper request and receipt formats compatible unless an approved migration is required. Explicit developer/local-test trust never becomes production trust by a filename or a self-declared digest.
 - Validate the reviewed source, physical target identity and request binding through final use. Do not weaken protected-volume rules, leases, source-handle retention or recovery barriers to make a test pass.
 - Guest paths resolve inside the guest image namespace. Host paths, symlink/junction ancestors, package hooks and archive members are separate trust boundaries.

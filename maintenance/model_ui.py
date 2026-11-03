@@ -203,6 +203,12 @@ class Backend:
         command = [MAINTENANCE, '--root', '/', 'models', *args]
         if args[0] != 'list':
             command.insert(0, PKEXEC)
+        return self._run(command)
+
+    def ssd(self, *args):
+        return self._run([PKEXEC, MAINTENANCE, '--root', '/', 'ssd-boot', *args])
+
+    def _run(self, command):
         result = self.runner(command, capture_output=True, text=True, check=False)
         try:
             envelope = json.loads(result.stdout)
@@ -260,12 +266,16 @@ class ModelUI:
                 if catalog.get('offline'):
                     text += '\n' + self.tr('离线：使用已固定的本地指南。', 'Offline: using the pinned local guides.')
                 rows = [(key, self.label(model['name'])) for key, model in models.items()]
+                rows.append(('ssd', self.tr('可选 SSD 修复', 'Optional SSD repair')))
                 rows.append(('feedback', self.tr('手动反馈', 'Send feedback')))
                 identity = self.dialog.menu(text, rows)
                 if identity is None:
                     return 0
                 if identity == 'feedback':
                     self.manual_feedback()
+                    continue
+                if identity == 'ssd':
+                    self.ssd_actions()
                     continue
                 self.model(models[identity], catalog)
         except (BackendError, OSError, ValueError, KeyError, TypeError) as error:
@@ -277,6 +287,72 @@ class ModelUI:
             self.offer_failure('MAINTENANCE_OPERATION_FAILED')
             self.failure_feedback()
             return 1
+
+    def ssd_actions(self):
+        status = self.backend.ssd('inspect')
+        if not status.get('available'):
+            self.dialog.message(self.tr('当前 SSD 不适用此修复。', 'This repair is unavailable for the current SSD.'))
+            return
+        pending, installed = status.get('pending'), status.get('installed')
+        actions = []
+        if pending:
+            actions.append(('recover', self.tr('恢复中断的事务', 'Recover interrupted transaction')))
+        else:
+            actions.append(('apply', self.tr('选择并安装 SSD 修复', 'Select and install SSD repair')))
+            if installed:
+                actions.extend([('verify', self.tr('验证 SSD 修复', 'Verify SSD repair')),
+                                ('restore', self.tr('恢复原始配置', 'Restore original configuration'))])
+        actions.append(('back', self.tr('返回', 'Back')))
+        action = self.dialog.menu(self.tr(
+            '此可选修复仅针对 Predator SSD GM7 1TB。它会修改当前槽的 EFI 启动配置和系统持久化配置。',
+            'This optional repair is only for the Predator SSD GM7 1TB. It changes the current slot EFI boot configuration and its persistence drop-in.'), actions)
+        if action in (None, 'back'):
+            return
+        plan = self.backend.ssd('plan', action)
+        digest = plan.get('review_sha256')
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
+            raise ValueError('Maintenance returned an invalid SSD review hash')
+        target = plan.get('target', {})
+        lines = [self.tr('确认此次 SSD 操作', 'Review this SSD operation'), dict(actions)[action],
+                 self.tr('活动槽：', 'Slot: ') + str(target.get('slot', '')),
+                 self.tr('根分区 PARTUUID：', 'Root PARTUUID: ') + str(target.get('root_partuuid', '')),
+                 self.tr('EFI 分区 PARTUUID：', 'EFI PARTUUID: ') + str(target.get('esp_partuuid', '')),
+                 self.tr('涉及文件：', 'Files: ') + 'efi/EFI/steamos/grub.cfg, etc/default/grub.d/oxp3-nvme.cfg',
+                 self.tr('实机效果尚未验证。安装或恢复后需重启才能应用启动参数。',
+                         'Physical-device behavior has not been validated. Restart after installation or restoration to apply boot parameters.'),
+                 self.tr('审阅哈希：', 'Review hash: ') + digest]
+        if self.dialog.details('\n'.join(lines)) is False:
+            return
+        if not self.dialog.confirm(self.tr('执行刚刚审阅的 SSD 操作？', 'Execute the SSD operation just reviewed?')):
+            return
+        with tempfile.TemporaryDirectory(prefix='boiler-ssd-plan-') as directory:
+            os.chmod(directory, 0o700)
+            path = Path(directory)/'plan.json'
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'w', encoding='utf-8') as output:
+                json.dump(plan, output, ensure_ascii=False, indent=2)
+                output.flush()
+                os.fsync(output.fileno())
+            result = self.backend.ssd('execute', str(path), '--reviewed-sha256', digest)
+        if result.get('ok') is not True:
+            raise BackendError('SSD repair did not complete')
+        statuses = {
+            'configured': self.tr('已配置启动参数。', 'Boot configuration updated.'),
+            'already_configured': self.tr('启动参数已经配置；保留原始恢复记录。', 'Boot configuration was already set; the original recovery record is preserved.'),
+            'verified': self.tr('配置文件验证通过。', 'Configuration files verified.'),
+            'restored': self.tr('已恢复原始配置。', 'Original configuration restored.'),
+            'recovered': self.tr('已恢复中断事务。', 'Interrupted transaction recovered.'),
+        }
+        states = {
+            'active': self.tr('当前内核 NVMe 参数已启用。', 'The running kernel NVMe parameter is enabled.'),
+            'inactive': self.tr('当前内核 NVMe 参数未启用；可能需要重启。', 'The running kernel NVMe parameter is disabled; a restart may be required.'),
+            'unknown': self.tr('无法确定当前内核 NVMe 参数；可能需要重启。', 'The running kernel NVMe parameter is unknown; a restart may be required.'),
+            'first_boot_required': self.tr('需首次启动后才能观察内核参数。', 'The kernel parameter can be observed after the first boot.'),
+        }
+        status = statuses.get(result.get('status'), self.tr('SSD 操作完成。', 'SSD operation completed.'))
+        activation = states.get(result.get('activation'), states['unknown'])
+        self.dialog.message(status + '\n' + activation + '\n' + self.tr(
+            '此结果不能证明设备上的休眠或恢复效果。', 'This result does not establish suspend or resume behavior on the device.'))
 
     def failure_feedback(self):
         # Available even when the catalog could not be loaded. Reporting never
@@ -488,6 +564,20 @@ class ModelUI:
                                         'I agree to keep system updates on hold and have read the adaptation limits.'), False)])
             if consent != {'update-hold'}:
                 return
+        if shared and action in ('verify','restore'):
+            installed = list((current or {}).get('repairs', []))
+            interrupted = (pending or {}).get('component') if (pending or {}).get('source') == 'ssd-provider' else None
+            if interrupted:
+                selected_shared = [interrupted]
+            elif len(installed) > 1:
+                names = {item['id']: self.label(item['name']) for item in options['capabilities']}
+                chosen = self.dialog.menu(self.tr('选择要维护的已安装项目', 'Choose the installed item to maintain'),
+                                          [(identity, names.get(identity, identity)) for identity in installed])
+                if chosen is None: return
+                if chosen not in installed: raise ValueError('Unknown installed repair selection')
+                selected_shared = [chosen]
+            else:
+                selected_shared = installed
         dynamic = options.get('dynamic_adapter') == 'keyboard'
         args = ['keyboard-plan' if dynamic else 'shared-plan' if shared else 'plan', model['id'], '--action', action, '--trust-local-test']
         if not shared:
@@ -498,6 +588,8 @@ class ModelUI:
             for category, flag in (('repairs', '--repair'), ('plugins', '--plugin')):
                 for identity in sorted(selection[category]):
                     args.extend([flag, identity])
+        if shared and action in ('verify','restore'):
+            for identity in selected_shared: args.extend(['--repair', identity])
         plan = self.backend.call(*args)
         digest = plan.get('review_sha256')
         if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):

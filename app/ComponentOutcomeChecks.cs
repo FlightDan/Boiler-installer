@@ -37,6 +37,26 @@ internal static class ComponentOutcomeChecks
                 if (!refused) throw new IOException("Incomplete system preset reports accepted.");
             }
         }
+        var ssdOptions = new SelectedOptions(1, [SsdBootRepair.Option], ["core:maintenance"], "en-US", "system");
+        var binding = new SsdRepairBinding("NVMe", "Predator SSD GM7 1TB", "synthetic-serial", "match");
+        JsonElement SsdRow(string slot, string serial, bool changed) => JsonSerializer.SerializeToElement(new {
+            slot, id=SsdBootRepair.Option, status="files_installed", activation="first_boot_required",
+            outcome=changed?"applied":"already_configured", operation=new {ok=true,action="apply",changed},
+            target=new {slot,disposition="match",root_partuuid=Guid.NewGuid(),esp_partuuid=Guid.NewGuid(),
+                physical=new {kind="physical",bus=binding.Bus,model=binding.Model,serial,disposition="match"}} });
+        var ssdRows = new[] { SsdRow("A", binding.Serial, true), Row("A", "core:maintenance"),
+                              SsdRow("B", binding.Serial, false), Row("B", "core:maintenance") };
+        ComponentOutcome.Validate(ssdRows, ssdOptions, binding, SsdBootRepair.Option);
+        foreach (var invalid in new[] { new[] { SsdRow("A", "other-serial", true), ssdRows[1], ssdRows[2], ssdRows[3] },
+                                        new[] { ssdRows[0], ssdRows[1], ssdRows[0], ssdRows[3] } })
+        {
+            var refused = false;
+            try { ComponentOutcome.Validate(invalid, ssdOptions, binding, SsdBootRepair.Option); }
+            catch (IOException) { refused = true; }
+            if (!refused) throw new IOException("SSD result without matching two-slot target evidence was accepted.");
+        }
+        try { ComponentOutcome.Validate(ssdRows, ssdOptions); throw new IOException("SSD result without host binding was accepted."); }
+        catch (IOException error) when (!error.Message.Contains("was accepted", StringComparison.Ordinal)) { }
         return "Exact selected component coverage on both slots; empty Vanilla requires no implicit policy. Missing, duplicate, failed, skipped and unexpected results block deployment.";
     }
 }

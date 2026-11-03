@@ -133,6 +133,25 @@ public sealed partial class InstallerOptionsPanel : StackPanel
     private bool applyingLanguageDefault;
     private bool wirelessOptionsAllowed = true;
     internal Expander RepairsExpander { get; } = new() { IsExpanded = false, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private UIElement? ssdOptions;
+    // General custom content is always available; SSD controls retain their own
+    // reviewed-target visibility so unrelated current-PC advice never disappears.
+    private readonly StackPanel customComponents = new() { Name = "CustomComponents" };
+    private readonly StackPanel ssdCustomComponents = new() { Name = "SsdCustomComponents", Visibility = Visibility.Collapsed };
+    internal StackPanel CustomComponents => ssdCustomComponents;
+    internal StackPanel GeneralCustomComponents => customComponents;
+    internal UIElement? SsdOptions => ssdOptions;
+    internal void SsdOptionsVisibility(bool matches, CheckBox? provider)
+    {
+        ssdCustomComponents.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
+        if (ssdOptions != null) ssdOptions.Visibility = matches && provider == null ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var box in ssdCustomComponents.Children.OfType<CheckBox>()) box.Visibility = matches && ReferenceEquals(box, provider) ? Visibility.Visible : Visibility.Collapsed;
+    }
+    internal void SetSsdProvider(CheckBox? provider)
+    {
+        foreach (var box in ssdCustomComponents.Children.OfType<CheckBox>().ToArray()) ssdCustomComponents.Children.Remove(box);
+        if (provider != null) ssdCustomComponents.Children.Add(provider);
+    }
     internal IReadOnlyDictionary<string, CheckBox> OptionBoxes => boxes;
     internal ComboBox KdeChoice => kde;
     internal readonly HashSet<UIElement> GenericSections = new();
@@ -146,12 +165,17 @@ public sealed partial class InstallerOptionsPanel : StackPanel
     internal PasswordBox PasswordInput => deckPassword;
     internal PasswordBox PasswordConfirmation => deckPasswordConfirm;
     public event EventHandler? Changed;
-    private IEnumerable<OptionItem> DeviceRepairs => catalog.Repairs.Where(x => x.Id is not ("flathub-ustc" or "refind"));
+    private IEnumerable<OptionItem> DeviceRepairs => catalog.Repairs.Where(x => x.Id is not ("flathub-ustc" or "refind" or SsdBootRepair.Option));
     public InstallerOptionsPanel()
     {
         GenericSections.Add(Heading("通用组件", "Common components"));
         var common = OptionGrid(catalog.Plugins);
         Children.Add(common); GenericSections.Add(common);
+        var customHeading = new TextBlock { FontSize = 19, FontWeight = FontWeights.SemiBold, Margin = new(0, 12, 0, 6) };
+        labels.Add((customHeading, "自定义构件", "Custom components"));
+        customComponents.Children.Add(customHeading);
+        ssdOptions = OptionGrid(catalog.Repairs.Where(x => x.Id == SsdBootRepair.Option));
+        ssdCustomComponents.Children.Add(ssdOptions); customComponents.Children.Add(ssdCustomComponents); Children.Add(customComponents);
         Children.Add(SystemPresetsPanel);
         var driverNote = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray, Margin = new Thickness(0, 0, 0, 16) };
         labels.Add((driverNote, "基础驱动由 SteamOS 提供，额外适配由机型包提供。",

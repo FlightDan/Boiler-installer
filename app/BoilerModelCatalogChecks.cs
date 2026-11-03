@@ -16,15 +16,16 @@ internal static class BoilerModelCatalogChecks
     private static object? Call(MainWindow window, string name, params object?[] args) => typeof(MainWindow).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, args);
     private static JsonElement ChosenModelEntry(ComboBox list) => (JsonElement)((ComboBoxItem)list.SelectedItem).Tag;
     private static async Task Flush(MainWindow window) { window.UpdateLayout(); await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); }
-    private static async Task CaptureSourceView(MainWindow window, string directory, string language, string view, double width, List<string> captures)
+    private static async Task CaptureSourceView(MainWindow window, string directory, string language, string view, double width, List<string> captures, bool captureScreenshots)
     {
         window.Width = width; await Flush(window);
+        if (!captureScreenshots) return;
         var path = Path.Combine(directory, $"{language}-{view}-{(int)width}.png");
         await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path);
         captures.Add(path);
     }
     private static async Task Wait(MainWindow window) { for (var i = 0; Field<bool>(window, "deviceActionBusy"); i++) { if (i > 500) throw new IOException("Timed out waiting for model action."); await Task.Delay(20); await Flush(window); } }
-    internal static Task<string> RunAsync() => Application.Current.Dispatcher.CheckAccess() ? OnUiThread() : Application.Current.Dispatcher.InvokeAsync(OnUiThread).Task.Unwrap();
+    internal static Task<string> RunAsync(bool captureScreenshots = true) => Application.Current.Dispatcher.CheckAccess() ? OnUiThread(captureScreenshots) : Application.Current.Dispatcher.InvokeAsync(() => OnUiThread(captureScreenshots)).Task.Unwrap();
     internal static Task<string> RunPluginMatrixAsync() => Application.Current.Dispatcher.CheckAccess() ? PluginMatrixOnUiThread()
         : Application.Current.Dispatcher.InvokeAsync(PluginMatrixOnUiThread).Task.Unwrap();
 
@@ -233,7 +234,7 @@ internal static class BoilerModelCatalogChecks
         reason = new { zh = "待补，不可安装", en = "Pending; unavailable" }
     };
 
-    private static async Task<string> OnUiThread()
+    private static async Task<string> OnUiThread(bool captureScreenshots)
     {
         var directory = Path.Combine(Backend.Root, "logs", "model-catalog-" + DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff"));
         Directory.CreateDirectory(directory);
@@ -266,15 +267,15 @@ internal static class BoilerModelCatalogChecks
                     && importArea.Visibility == Visibility.Collapsed,
                     language + "-bundled-tab-shows-only-its-model-guide-and-hides-online-import");
                 Require(bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-loading-does-not-grant-trust");
-                await CaptureSourceView(window, directory, language, "bundled-default", 1060, captures);
-                await CaptureSourceView(window, directory, language, "bundled-default", 640, captures);
+                await CaptureSourceView(window, directory, language, "bundled-default", 1060, captures, captureScreenshots);
+                await CaptureSourceView(window, directory, language, "bundled-default", 640, captures, captureScreenshots);
                 window.Width = 1060; await Flush(window);
                 onlineTab.IsChecked = true; await Flush(window);
                 Require(list.SelectedIndex == 0 && list.Items.Count == 3 && importArea.IsVisible
                     && importArea.Children.OfType<Button>().Any(button => button.Name == "BrowseLocalDevice"),
                     language + "-online-tab-resets-list-and-shows-import-controls");
-                await CaptureSourceView(window, directory, language, "online", 1060, captures);
-                await CaptureSourceView(window, directory, language, "online", 640, captures);
+                await CaptureSourceView(window, directory, language, "online", 1060, captures, captureScreenshots);
+                await CaptureSourceView(window, directory, language, "online", 640, captures, captureScreenshots);
                 window.Width = 1060; await Flush(window);
                 Require(((JsonElement)((ComboBoxItem)list.Items[1]).Tag).GetProperty("id").GetString() == "device:x2-mini"
                     && ((JsonElement)((ComboBoxItem)list.Items[1]).Tag).TryGetProperty("guide_id", out _),
@@ -309,7 +310,7 @@ internal static class BoilerModelCatalogChecks
                     var actionPoint = use.TranslatePoint(new Point(0, 0), (UIElement)window.Content);
                     Require(actionPoint.Y >= 0 && actionPoint.Y + use.ActualHeight < ((FrameworkElement)window.Content).ActualHeight,
                         language + "-trust-action-visible-before-long-guides-" + width);
-                    await CaptureSourceView(window, directory, language, "bundled-guide", width, captures);
+                    await CaptureSourceView(window, directory, language, "bundled-guide", width, captures, captureScreenshots);
                 }
                 use.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Wait(window);
                 Require(bundleCalls == 1 && window.CurrentOptions.DevicePackage == null, language + "-explicit-click-enters-bundle-loader-without-pretrust");
@@ -318,8 +319,10 @@ internal static class BoilerModelCatalogChecks
                 var folder = Path.Combine(directory, language + "-bundle"); Directory.CreateDirectory(folder);
                 var package = JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "DevicePackage", id = "device:oxp3", version = "0.1.0",
                     name = new { zh = "本地测试", en = "Local test fixture" }, status = "experimental", source = new { kind = "local", path = "fixture/" + Path.GetFileName(directory) },
-                    compatibility = new { }, files = Array.Empty<object>(), components = new[] { new { schema_version = 1, kind = "ComponentManifest",
-                        id = "oxp3:legacy-adaptation", version = "0.1.0", files = Array.Empty<object>(), hooks = new { } } } });
+                    compatibility = new { }, files = Array.Empty<object>(), components = new object[] { new { schema_version = 1, kind = "ComponentManifest",
+                        id = "oxp3:legacy-adaptation", version = "0.1.0", files = Array.Empty<object>(), hooks = new { } },
+                        new { schema_version = 1, kind = "ComponentManifest", id = "oxp3:speaker-route", version = "0.1.0", files = Array.Empty<object>(),
+                            available = false, reason = new { zh = "板级路由未验证", en = "Board route is not validated" } } } });
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(package); await File.WriteAllBytesAsync(Path.Combine(folder, "manifest.json"), bytes);
                 var sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
                 window.BundledModelLoaderForChecks = (_, _) => { bundleCalls++; return Task.FromResult(JsonSerializer.SerializeToElement(new { directory = folder, manifest_sha256 = sha, package })); };
@@ -349,6 +352,14 @@ internal static class BoilerModelCatalogChecks
                 Require(Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices").Values.All(
                     check => Field<StackPanel>(window, "deviceComponentsPanel").Children.Contains(check)),
                     language + "-static-component-checkboxes-are-visible-and-individually-selectable");
+                var disabledSpeaker = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices")["oxp3:speaker-route"];
+                Require(!disabledSpeaker.IsEnabled && disabledSpeaker.IsChecked != true
+                    && ((TextBlock)disabledSpeaker.Content).Text.Contains(PartitionInventory.L("板级路由未验证", "Board route is not validated"))
+                    && !window.CurrentOptions.DeviceComponents!.Contains("oxp3:speaker-route"), language + "-unavailable-component-shown-and-not-selected");
+                var selectAll=Field<CheckBox>(window,"deviceAdaptationsChoice");
+                selectAll.IsChecked=false;selectAll.IsChecked=true;
+                Require(disabledSpeaker.IsChecked != true && !window.CurrentOptions.DeviceComponents!.Contains("oxp3:speaker-route"),
+                    language + "-bulk-selection-skips-unavailable-component");
                 var optionsHost = (StackPanel)window.FindName("ComponentOptionsHost");
                 Require(optionsHost.Children.IndexOf(Field<InstallerOptionsPanel>(window, "optionsPanel"))
                     < optionsHost.Children.IndexOf(Field<StackPanel>(window, "deviceComponentsPanel")),
@@ -363,6 +374,7 @@ internal static class BoilerModelCatalogChecks
                         Capability("oxp3:pl4", "repairs", [], available: false), Capability("oxp3:blocked", "plugins", ["oxp3:pl4"]),
                         Capability("oxp3:decky", "plugins", []), Capability("oxp3:opti2xmx", "repairs", ["oxp3:decky"]) }
                 });
+                Field<StackPanel>(window, "deviceComponentsPanel").Children.Remove(disabledSpeaker);
                 Call(window, "BuildLegacyDeviceOptions", dynamicPackage, null);
                 var capabilities = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
                 var consent = Field<CheckBox>(window, "deviceLegacyUpdateHold");
@@ -422,6 +434,7 @@ internal static class BoilerModelCatalogChecks
                     legacy_capabilities = new[] { Capability("oxp3:base", "repairs", []), Capability("oxp3:decky", "plugins", [], available: false) }
                 });
                 coreDecky.IsChecked = true;
+                Field<StackPanel>(window, "deviceComponentsPanel").Children.Remove(disabledSpeaker);
                 Call(window, "BuildLegacyDeviceOptions", noDeviceDecky, null);
                 capabilities = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
                 Require(coreDecky.IsChecked == true && capabilities["oxp3:decky"].IsChecked != true
@@ -432,7 +445,7 @@ internal static class BoilerModelCatalogChecks
                 delayed.SetResult(Catalog()); await Flush(window);
                 Require(((JsonElement)((ComboBoxItem)list.SelectedItem).Tag).GetProperty("id").GetString() == "device:fixture",
                     language + "-late-guides-preserve-manual-signed-choice");
-                await CheckActualMetadata(window, language, directory, checks, captures, Require);
+                await CheckActualMetadata(window, language, directory, checks, captures, Require, captureScreenshots);
                 window.Close(); window = null;
             }
         }
@@ -441,7 +454,7 @@ internal static class BoilerModelCatalogChecks
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), result); return result;
     }
 
-    private static async Task CheckActualMetadata(MainWindow window, string language, string directory, List<string> checks, List<string> captures, Action<bool, string> require)
+    private static async Task CheckActualMetadata(MainWindow window, string language, string directory, List<string> checks, List<string> captures, Action<bool, string> require, bool captureScreenshots)
     {
         var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
         var packagePath = Path.Combine(Backend.Root, "cache", "model-bundles", "packages", "oxp3", "manifest.json");
@@ -474,7 +487,7 @@ internal static class BoilerModelCatalogChecks
             var path = Path.Combine(directory, language + "-actual-" + name + ".png");
             using (var stream = File.Create(path)) encoder.Save(stream); captures.Add(path);
         }
-        await Capture(core, "core-decky"); await Capture(boxes["oxp3:opti2xmx"], "opti"); await Capture(boxes["oxp3:decky"], "device-decky");
+        if (captureScreenshots) { await Capture(core, "core-decky"); await Capture(boxes["oxp3:opti2xmx"], "opti"); await Capture(boxes["oxp3:decky"], "device-decky"); }
         boxes["oxp3:opti2xmx"].IsChecked = false; boxes["oxp3:opti2xmx"].IsChecked = true;
         require(core.IsChecked == true && boxes["oxp3:decky"].IsChecked == true, language + "-actual-opti-reselection-keeps-decky");
         boxes["oxp3:opti2xmx"].IsChecked = false; Commit(sha);

@@ -96,8 +96,9 @@ public partial class MainWindow
         updatingDeviceAdaptations = true;
         try
         {
-            var selected = deviceComponentChoices.Values.Count(box => box.IsChecked == true);
-            deviceAdaptationsChoice.IsChecked = selected == 0 ? false : selected == deviceComponentChoices.Count ? true : null;
+            var bulk = deviceComponentChoices.Values.Where(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item))).ToArray();
+            var selected = bulk.Count(box => box.IsChecked == true);
+            deviceAdaptationsChoice.IsChecked = selected == 0 ? false : selected == bulk.Length ? true : null;
         }
         finally { updatingDeviceAdaptations = false; }
     }
@@ -111,8 +112,11 @@ public partial class MainWindow
         reviewedDeviceMetadata = null;
         if (deviceNotesExpander != null) deviceNotesExpander.Visibility = Visibility.Collapsed;
         if (deviceSourceLink != null) deviceSourceLink.Visibility = Visibility.Collapsed;
+        optionsPanel.SetSsdProvider(null);
         deviceComponentChoices.Clear();
+        RefreshCurrentHardwareUi();
         ClearLegacyDeviceOptions();
+        SyncSsdSelection();
         deviceAdaptationsChoice = null;
         if (deviceComponentsPanel != null) { ComponentOptionsHost.Children.Remove(deviceComponentsPanel); deviceComponentsPanel = null; }
         if (adaptationBranch == "device")
@@ -216,7 +220,9 @@ public partial class MainWindow
         optionsPanel.SetWirelessContext(installMode, hasPackage: true);
         pendingDeviceDirectory = null;
         if (deviceComponentsPanel != null) ComponentOptionsHost.Children.Remove(deviceComponentsPanel);
+        optionsPanel.SetSsdProvider(null);
         deviceComponentChoices.Clear();
+        if (!samePackage) { currentHardwareDetection = null; currentHardwareDetectionError = null; RefreshCurrentHardwareUi(); }
         ClearLegacyDeviceOptions();
         deviceAdaptationsChoice = null;
         deviceComponentsPanel = new StackPanel { Margin = new Thickness(0, 20, 0, 0) };
@@ -226,26 +232,35 @@ public partial class MainWindow
             var id = component.GetProperty("id").GetString()!;
             var componentText = component.TryGetProperty("name", out var name) ? LocalizedValue(name) : id;
             if (component.TryGetProperty("description", out var description)) componentText += "\n" + LocalizedValue(description);
+            var available = !component.TryGetProperty("available", out var availability) || availability.ValueKind != JsonValueKind.False;
+            if (!available) componentText += "\n" + (component.TryGetProperty("reason", out var reason) ? LocalizedValue(reason)
+                : PartitionInventory.L("此组件暂不可安装。", "This component is currently unavailable."));
             var check = new CheckBox { Content = new TextBlock { Text = componentText, TextWrapping = TextWrapping.Wrap },
-                IsChecked = priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : true, MinHeight = 48, Tag = component.Clone() };
+                IsChecked = available && (priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !SsdBootRepair.IsProvider(component)),
+                IsEnabled = available, MinHeight = 48, Tag = component.Clone() };
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;
+                if (SsdBootRepair.IsProvider(component)) RecordSsdPreference(check);
+                if (check.IsChecked == true && SsdBootRepair.IsProvider(component) && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance)) maintenance.IsChecked = true;
                 EnsureStaticDeckyProvider();
                 RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             }
             check.Checked += Changed; check.Unchecked += Changed;
             deviceComponentChoices.Add(id, check);
         }
+        optionsPanel.SetSsdProvider(deviceComponentChoices.Values.SingleOrDefault(box => box.IsEnabled && box.Tag is JsonElement item && SsdBootRepair.IsProvider(item)));
+        SyncSsdSelection();
+        RefreshCurrentHardwareUi();
         deviceAdaptationsChoice = new CheckBox { Name = "InstallDeviceAdaptations", MinHeight = 48,
             Content = new TextBlock { Text = PartitionInventory.L("机型适配修复", "Device compatibility fixes"), TextWrapping = TextWrapping.Wrap },
-            IsEnabled = deviceComponentChoices.Count > 0 };
+            IsEnabled = deviceComponentChoices.Values.Any(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item))) };
         RefreshDeviceAdaptationsChoice();
         void SetAllDeviceAdaptations(object sender, RoutedEventArgs args)
         {
             if (updatingDeviceAdaptations) return;
             updatingDeviceAdaptations = true;
-            try { foreach (var box in deviceComponentChoices.Values) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
+            try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item)))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
             EnsureStaticDeckyProvider();
             ConfigurationChanged();
@@ -256,7 +271,7 @@ public partial class MainWindow
         BuildLegacyDeviceOptions(package, priorLegacy);
         EnsureStaticDeckyProvider();
         if (deviceLegacyBridge == null)
-            foreach (var check in deviceComponentChoices.Values) deviceComponentsPanel.Children.Add(check);
+            foreach (var check in deviceComponentChoices.Values.Where(box => box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item))) deviceComponentsPanel.Children.Add(check);
         ComponentOptionsHost.Children.Add(deviceComponentsPanel);
         ShowDeviceDetails(selection.Reviewed is JsonElement reviewed ? reviewed : package);
         deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");

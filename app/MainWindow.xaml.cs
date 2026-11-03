@@ -64,7 +64,12 @@ public partial class MainWindow : Window
         PartitionSelector.BootPrerequisitesReady = !physicalInstallation;
         PartitionSelector.DefaultCapacityGiB = 128;
         PartitionSelector.AllowPhysicalDeletion = physicalInstallation;
-        optionsPanel = new InstallerOptionsPanel(); ComponentOptionsHost.Children.Add(optionsPanel);
+        optionsPanel = new InstallerOptionsPanel(); optionsPanel.GeneralCustomComponents.Children.Add(CreateCurrentHardwarePanel()); ComponentOptionsHost.Children.Add(optionsPanel);
+        if (optionsPanel.OptionBoxes.TryGetValue(SsdBootRepair.Option, out var ssdChoice))
+        {
+            ssdChoice.Checked += (_, _) => RecordSsdPreference(ssdChoice);
+            ssdChoice.Unchecked += (_, _) => RecordSsdPreference(ssdChoice);
+        }
         if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
         {
             coreDecky.Checked += CoreDeckyProviderChecked;
@@ -86,7 +91,12 @@ public partial class MainWindow : Window
         ChineseLanguage.IsChecked = InstallerI18n.Language != "en-US";
         EnglishLanguage.IsChecked = InstallerI18n.Language == "en-US";
         InstallerI18n.Apply(this); PartitionSelector.RefreshLanguage(); ready = true; UpdateTargetMode();
-        PartitionSelector.Changed += () => { acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false; if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); } };
+        PartitionSelector.Changed += () =>
+        {
+            acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false;
+            ClearSsdSelection();
+            if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); }
+        };
         ImagePath.TextChanged += (_, _) => { ResetImageInspection(); ConfigurationChanged(); RefreshWorkspace(); };
         SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
         SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
@@ -252,6 +262,9 @@ public partial class MainWindow : Window
         if (installMode is not ("imported" or "local"))
         {
             ReviewLayout.Text += "\n\n" + optionsPanel.Describe();
+            if (CurrentOptions.Repairs.Contains(SsdBootRepair.Option)
+                || deviceComponentChoices.Values.Any(box => box.IsChecked == true && box.Tag is System.Text.Json.JsonElement item && SsdBootRepair.IsProvider(item)))
+                ReviewLayout.Text += "\n" + PartitionInventory.L("已选择目标 SSD 启动修复；写入后需首次启动，休眠恢复效果仍需实机验证。", "SSD boot repair selected for the reviewed target; first boot is required and suspend/resume still needs device validation.");
             if (CurrentOptions.DeviceLegacyOptions?.Plugins.Contains("oxp3:decky") == true)
                 ReviewLayout.Text += "\n" + PartitionInventory.L("Decky Loader 使用机型包提供的版本。", "Decky Loader uses the device-package version.");
         }
@@ -313,7 +326,7 @@ public partial class MainWindow : Window
     {
         if (!ready || sender is not RadioButton item || operation != null || DownloadsBusy) return;
         var previousAcknowledgement = acknowledgedSelection;
-        InstallerI18n.SetLanguage((string)item.Tag); InstallerI18n.Apply(this); optionsPanel.Refresh(); bootPanel.Refresh(); downloadPanel.RefreshLanguage(); officialDownloadPanel.RefreshLanguage(); PartitionSelector.RefreshLanguage(); UpdateTargetMode(); ShowStep(step);
+        InstallerI18n.SetLanguage((string)item.Tag); InstallerI18n.Apply(this); optionsPanel.Refresh(); RefreshCurrentHardwareUi(); bootPanel.Refresh(); downloadPanel.RefreshLanguage(); officialDownloadPanel.RefreshLanguage(); PartitionSelector.RefreshLanguage(); UpdateTargetMode(); ShowStep(step);
         BuildAdaptationCards();
         if (previewDeviceName != null) RenderPackageOptionPreview();
         RefreshDeviceOptionLabels();
@@ -371,27 +384,36 @@ public partial class MainWindow : Window
             }
             else if (step == 0)
             {
+                if (SourceIssue(requireInspection: true) is string sourceIssue) { ShowStep(1); ValidationMessage.Text = sourceIssue; return; }
                 if (Kind == InstallationTargetKind.InternalShared || physicalInstallation) _ = PartitionSelector.Selection;
                 if (TargetIssue() is string targetIssue) throw new IOException(targetIssue);
-                if (physicalInstallation) OpenSafetyConfirmation(); else ShowStep(4);
+                if (physicalInstallation) OpenSafetyConfirmation(); else ShowStep(installMode is "imported" or "local" ? 4 : 2);
             }
             else if (step == 1)
             {
                 if (DeviceSupportIssue() is string supportIssue) { ShowStep(AdaptationStep); ValidationMessage.Text = supportIssue; return; }
                 if (SourceIssue() is string issue) throw new IOException(issue);
                 await InspectSourceAsync(includeOfficial: UsePrepared.IsChecked != true && installMode != "imported" && Upgrade310.IsChecked == true);
-                if (installMode is "imported" or "local") ShowStep(0); else EnterInstallationOptionsAfterSource();
+                ShowStep(0);
             }
             else if (step == 2)
             {
                 if (ContentIssue() is string issue) throw new IOException(issue);
                 optionsPanel.ValidateDeckPassword();
                 if (SourceIssue(requireInspection: true) is string sourceIssue) { ShowStep(1); ValidationMessage.Text = sourceIssue; return; }
-                ShowStep(0);
+                if (TargetIssue() is string targetIssue) { ShowStep(0); ValidationMessage.Text = targetIssue; return; }
+                if (physicalInstallation && acknowledgedSelection != PartitionSelector.Selection) { ShowStep(0); ValidationMessage.Text = PartitionInventory.L("请重新确认安装位置。", "Review the destination again."); return; }
+                ShowStep(4);
             }
-            else if (step == 4) { ShowStep(3); }
+            else if (step == 4)
+            {
+                if (TargetIssue() is string targetIssue) { ShowStep(0); ValidationMessage.Text = targetIssue; return; }
+                if (physicalInstallation && acknowledgedSelection != PartitionSelector.Selection) { ShowStep(0); ValidationMessage.Text = PartitionInventory.L("请重新确认安装位置。", "Review the destination again."); return; }
+                ShowStep(3);
+            }
             else if (step == 3)
             {
+                if (TargetIssue() is string targetIssue) { ShowStep(0); ValidationMessage.Text = targetIssue; return; }
                 if (SourceIssue(requireInspection: true) is string problem) { ShowStep(1); ValidationMessage.Text = problem; return; }
                 RequirePhysicalConsent();
                 await PrepareSkippedBindingsAsync();
@@ -449,7 +471,7 @@ public partial class MainWindow : Window
         try
         {
             if (pendingSelection != PartitionSelector.Selection) throw new InvalidOperationException(PartitionInventory.L("安装范围已变化，请重新确认。", "The target range changed. Confirm it again."));
-            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); ShowStep(4);
+            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); SyncSsdSelection(); ShowStep(installMode is "imported" or "local" ? 4 : 2);
         }
         catch (Exception error) { CancelSafety(sender, e); ValidationMessage.Text = error.Message; }
     }
@@ -611,6 +633,15 @@ public partial class MainWindow : Window
                 : group.Key == "serial-console-policy" ? PartitionInventory.L("串口兼容性", "Serial console compatibility")
                 : group.Key == "system-update-hold" ? PartitionInventory.L("保留当前系统版本", "Preserve current system version")
                 : group.Key == "system-update-policy" ? PartitionInventory.L("历史系统更新策略", "Historical system update policy") : group.Key;
+                if (failed.Length == 0 && group.All(record => record.TryGetProperty("activation", out var activation) && activation.GetString() == "first_boot_required"
+                    && record.TryGetProperty("outcome", out _)))
+                {
+                    var already = group.All(record => record.GetProperty("outcome").GetString() == "already_configured");
+                    return label + ": " + (already
+                        ? PartitionInventory.L("启动设置已存在并已核对；", "Existing boot settings were verified; ")
+                        : PartitionInventory.L("启动修复已配置并核对；", "Boot repair configured and verified; "))
+                        + PartitionInventory.L("需首次启动，休眠恢复效果仍需实机验证。", "first boot is required and suspend/resume still needs device validation.");
+                }
                 var uncovered = group.SelectMany(record => new[] { "unavailable_requirements", "unavailable_companions" }
                     .Where(field => record.TryGetProperty(field, out var values) && values.ValueKind == System.Text.Json.JsonValueKind.Array)
                     .SelectMany(field => record.GetProperty(field).EnumerateArray().Select(value => value.GetString() ?? ""))).Distinct().ToArray();

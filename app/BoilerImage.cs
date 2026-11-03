@@ -154,6 +154,10 @@ internal static class BoilerImage
     internal static async Task<string> ExportAsync(string image, string destination, object plan, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
+        if (plan is JsonElement metadata && metadata.ValueKind == JsonValueKind.Object
+            && (metadata.TryGetProperty("ssd_repair", out _) || metadata.TryGetProperty("slot_b", out var second)
+                && second.ValueKind == JsonValueKind.Object && second.TryGetProperty("ssd_repair", out _)))
+            throw new IOException("This image contains destination-bound SSD records; prepare again from an unbound original system source.");
         if (File.Exists(destination) || File.Exists(destination + ".partial")) throw new IOException("Export destination already exists.");
         bool prepared;
         try { RecoveryImage.ValidateRaw(image, true); prepared = RecoveryImage.IsPrepared(image); }

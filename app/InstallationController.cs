@@ -125,6 +125,23 @@ public static partial class InstallationController
     {
         ValidateRequest(request); token.ThrowIfCancellationRequested();
         request = request with { Options = request.Options ?? new(1, [], [], InstallerI18n.Language, "system", InstallMode: request.Mode) };
+        var commonSsdSelected = request.Options.Repairs.Contains(SsdBootRepair.Option);
+        var offeredSsdProvider = SsdBootRepair.Provider(request.Options, selectedOnly: false);
+        var selectedSsdProvider = SsdBootRepair.Provider(request.Options, selectedOnly: true);
+        if (commonSsdSelected && offeredSsdProvider != null)
+            throw new IOException("The selected package provides SSD repair; select its component instead of the common fallback.");
+        var ssdIdentity = commonSsdSelected ? SsdBootRepair.Option : selectedSsdProvider;
+        var ssdSelected = ssdIdentity != null;
+        if (ssdSelected && !request.Options.Plugins.Contains("core:maintenance"))
+            throw new IOException("SSD boot repair requires retained core maintenance.");
+        var ssdBinding = ssdSelected && request.Physical ? SsdBootRepair.FromSelection(request.PlannedPartition!) : null;
+        if (ssdSelected && (request.Mode != "custom" || ssdBinding?.Disposition != "match"))
+            throw new IOException("SSD boot repair requires an explicitly selected custom plan and the reviewed supported physical SSD.");
+        if (ssdSelected && request.Options.DeviceLegacyOptions?.Repairs.Contains("oxp3:gm7-resume") == true)
+            throw new IOException("The legacy GM7 boot repair is unavailable.");
+        if (ssdSelected && request.Options.DeviceLegacyOptions?.Repairs.Contains("oxp3:split-lock") == true
+            && !SsdBootRepair.SupportsFixedOxp3(request.Options))
+            throw new IOException("The selected split-lock repair requires an updated fixed EFI bridge for SSD handoff.");
         if (request.Physical && request.Options?.StorageMounts is { Length: > 0 } mounts)
         {
             using var inventoryTimeout = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -165,6 +182,8 @@ public static partial class InstallationController
                     selection = request.PlannedPartition, after = PartitionInventory.After(request.PlannedPartition)
                 }, new JsonSerializerOptions { WriteIndented = true }), token);
             var image = request.Source;
+            JsonElement[]? ssdResults = null;
+            string? ssdSelection = null, ssdPayload = null;
             JsonElement? importedManifest = null;
             var importedPrepared = false;
             if (request.Mode == "imported")
@@ -203,6 +222,9 @@ public static partial class InstallationController
             }
             progress.Advance("preparing", 1);
             token.ThrowIfCancellationRequested();
+            // Existing SSD ledgers contain destination identity and cannot be rebound.
+            // Inspect the immutable input before any selected repair can write.
+            await Backend.GuestAsync("source-info", image, false, log, token);
             if (request.Options != null && request.Mode is not ("imported" or "local"))
             {
                 Phase("components", InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…"), "02.01");
@@ -225,6 +247,14 @@ public static partial class InstallationController
                     var repairDisk = PartitionInventory.Read(request.PlannedPartition.Snapshot).Single(d => d.Number == request.PlannedPartition.Disk);
                     optionPayload["_target_disk"] = JsonSerializer.SerializeToNode(new { model = repairDisk.Model, bus = repairDisk.Bus });
                 }
+                if (ssdSelected)
+                {
+                    optionPayload["_ssd_binding"] = ssdBinding == null
+                        ? JsonSerializer.SerializeToNode(new { kind = "nonphysical" })
+                        : JsonSerializer.SerializeToNode(new { kind = "physical", bus = ssdBinding.Bus, model = ssdBinding.Model,
+                            serial = ssdBinding.Serial, disposition = ssdBinding.Disposition });
+                    optionPayload["_ssd_component"] = ssdIdentity;
+                }
                 var repairSelection = optionPayload.ToJsonString();
                 // Never edit a selected prebuilt image in place.
                 var selectedImage = image;
@@ -240,7 +270,8 @@ public static partial class InstallationController
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.log"), resultFile, token);
                 var componentResults = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("OXP_COMPONENT_RESULT=", StringComparison.Ordinal)).Select(x => JsonDocument.Parse(x[21..]).RootElement.Clone()).ToArray();
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.json"), JsonSerializer.Serialize(componentResults, new JsonSerializerOptions { WriteIndented = true }), token);
-                ComponentOutcome.Validate(componentResults, request.Options);
+                ComponentOutcome.Validate(componentResults, request.Options, ssdBinding, ssdIdentity);
+                if (ssdSelected) { ssdResults = componentResults; ssdSelection = repairSelection; ssdPayload = firmwarePayload; }
                 var slotPlans = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("BOILER_INSTALL_PLAN_JSON=", StringComparison.Ordinal))
                     .Select(x => JsonDocument.Parse(x["BOILER_INSTALL_PLAN_JSON=".Length..]).RootElement.Clone()).ToArray();
                 if (slotPlans.Length != 2 || slotPlans.Select(p => p.GetProperty("slot").GetString()).Distinct().Count() != 2)
@@ -279,6 +310,14 @@ public static partial class InstallationController
                 Phase("preparing", PartitionInventory.L("正在按所选容量调整 SteamOS 数据空间…", "Preparing SteamOS data space for the selected capacity…"), "01.06");
                 image = await PreparedCapacity.ExpandAsync(image, directory, request.PlannedPartition!.Capacity, log, token);
             }
+            if (ssdSelected)
+            {
+                // Recheck the final image after all later boot/capacity edits.
+                await Backend.GuestAsync("integration-verify", image, false, log, token,
+                    selection: ssdSelection!, integrationPayload: ssdPayload!);
+            }
+            if (!ssdSelected)
+                await Backend.GuestAsync("source-info", image, false, log, token);
             JsonElement exportPlan;
             if (request.Mode == "local")
                 exportPlan = JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "InstallPlan", mode = "vanilla", source_mode = "local",
@@ -300,9 +339,10 @@ public static partial class InstallationController
             await File.WriteAllTextAsync(Path.Combine(directory, "boiler-image.json"), JsonSerializer.Serialize(new { schema_version = 1, image, install_plan = exportPlan }), token);
             Phase("preparing", PartitionInventory.L("正在检查准备镜像与写入计划…", "Checking the prepared image and write plan…"), "01.07");
             using var prepared = new PreparedDiskImage(image); // Keep the reviewed source immutable across the helper lifetime.
+            if (ssdSelected) ComponentOutcome.ValidateSsdLayout(ssdResults!, prepared.Layout, ssdIdentity!);
             progress.SetPartitions(prepared.Layout.System.Select(p => (p.Name, p.Size)));
             PhysicalPlan? physical=request.Physical?PhysicalInstallation.Plan(request.PlannedPartition!,request.Kind,prepared.Layout):null;
-            if (physical != null) physical = physical with { MakeDefaultBoot = request.MakeDefaultBoot };
+            if (physical != null) physical = physical with { MakeDefaultBoot = request.MakeDefaultBoot, SsdRepair = ssdBinding };
             HomeCopyProfile? homeCopy = null;
             if (physical != null)
             {

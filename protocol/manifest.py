@@ -29,7 +29,7 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _VERSION = re.compile(r"[0-9]+(?:\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?\Z")
 MAX_MANIFEST = 8 * 1024 * 1024
-ENGINE_VERSION = "0.1.2"
+ENGINE_VERSION = "0.1.4"
 
 
 def _fail(message):
@@ -151,6 +151,8 @@ def _compat(value):
 
 
 def compatible(manifest, environment):
+    if manifest.get('available', True) is not True:
+        return False
     minimum = manifest.get("minimum_engine_version")
     if minimum and tuple(map(int, minimum.split('.'))) > tuple(map(int, ENGINE_VERSION.split('.'))):
         return False
@@ -217,6 +219,17 @@ def validate_manifest(obj, kind=None):
     if "minimum_engine_version" in obj and not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", str(obj["minimum_engine_version"])):
         _fail("Minimum engine version must be a stable three-part version")
     if actual == "ComponentManifest":
+        if 'ssd_boot_policy' in obj:
+            policy = obj['ssd_boot_policy']
+            if (policy != {'id': 'ssd:gm7-boot-repair', 'version': 1}
+                    or type(policy.get('version')) is not int or obj.get('files') or obj.get('hooks')
+                    or obj.get('requires') or obj.get('conflicts')
+                    or 'dynamic_handler' in obj or obj.get('retain_owned_paths')
+                    or obj.get('compatibility', {}) != {}
+                    or obj.get('optional') is not True
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 3)):
+                _fail('Invalid fixed SSD boot provider contract')
         if 'cpu_mutable_config' in obj:
             from .cpu_contract import mutable_target
             try: mutable_target(obj)
@@ -245,6 +258,27 @@ def validate_manifest(obj, kind=None):
             if not path.startswith("scripts/") or not path.endswith(".sh"): _fail("Hooks must be guest Bash scripts")
     elif actual == "DevicePackage":
         _source(obj.get("source"))
+        if 'oxp3_efi_contract' in obj:
+            if (obj['oxp3_efi_contract'] != {'kind': 'oxp3-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or obj.get('id') != 'device:oxp3'
+                    or obj.get('selection_contract') != {'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 3)):
+                _fail('Invalid fixed OXP3 EFI bridge contract')
+        if 'x2_efi_contract' in obj:
+            if (obj['x2_efi_contract'] != {'kind': 'x2-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or obj.get('id') != 'device:x2-mini' or 'oxp3_efi_contract' in obj
+                    or obj.get('selection_contract') != {'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 4)):
+                _fail('Invalid fixed X2 EFI bridge contract')
+        if 'oxp3_full_efi_contract' in obj:
+            if (obj['oxp3_full_efi_contract'] != {'kind': 'oxp3-full-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or obj.get('id') != 'device:oxp3' or 'oxp3_efi_contract' in obj or 'x2_efi_contract' in obj
+                    or obj.get('selection_contract') != {'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 4)):
+                _fail('Invalid full OXP3 EFI bridge contract')
         if "maintenance_entry" in obj:
             entry = obj["maintenance_entry"]
             if isinstance(entry, dict):
@@ -260,6 +294,14 @@ def validate_manifest(obj, kind=None):
             validate_manifest(component, "ComponentManifest")
             if component["id"] in ids: _fail("Duplicate component")
             ids.add(component["id"])
+        if sum('ssd_boot_policy' in c for c in components) > 1:
+            _fail('Only one SSD boot provider is supported per package')
+        providers = {c['id'] for c in components if 'ssd_boot_policy' in c}
+        if any(providers.intersection(c.get('requires', [])) for c in components):
+            _fail('SSD boot provider cannot be an implicit model dependency')
+        if any('ssd_boot_policy' in c for c in components) and (
+                'minimum_engine_version' not in obj or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 3)):
+            _fail('SSD boot provider package requires engine 0.1.3 or newer')
         seen = set()
         for entry in _list(obj, "files"):
             if not isinstance(entry,dict): _fail("Invalid inventory file")

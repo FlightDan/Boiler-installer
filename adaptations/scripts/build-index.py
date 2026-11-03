@@ -9,11 +9,14 @@ from pathlib import Path
 import re
 import stat
 import subprocess
+import sys
 import tempfile
 from urllib.parse import unquote, urlsplit
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT.parent))
+from protocol.manifest import validate_manifest
 MAX_ARCHIVE = 8*1024**3
 IDENTITY = re.compile(r'[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9_.-]*\Z')
 VERSION = re.compile(r'[0-9]+(?:\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?\Z')
@@ -161,7 +164,7 @@ def validate_contract(manifest):
     return inventory
 
 
-def committed_records():
+def committed_records(device_names=('devices/oxp3.json',)):
     """Release metadata comes from exact committed public registry bytes."""
     repository_root = ROOT.parent.resolve()
     if ROOT.resolve() != repository_root/'adaptations':
@@ -176,7 +179,7 @@ def committed_records():
         raise ValueError('Unexpected public registry origin')
     commit = git('rev-parse', 'HEAD').decode().strip()
     records = []
-    for name in ('device-index.json', 'devices/oxp3.json'):
+    for name in ('device-index.json', *device_names):
         raw = git('show', commit+':adaptations/'+name)
         path = ROOT/name
         if path.is_symlink() or path.read_bytes() != raw:
@@ -252,10 +255,8 @@ def archive_record(path, raw_manifest, inventory):
         return {'size':size, 'sha256':sha.hexdigest()}
 
 
-def build(package, output, *, archive=None, asset_url=None, sequence=None, previous_index=None):
-    package, output = Path(package).resolve(), Path(output)
-    if output.exists():
-        raise ValueError('Index destination already exists')
+def _package_entry(package, output):
+    package = Path(package).resolve()
     manifest_path = package/'manifest.json'
     if manifest_path.is_symlink():
         raise ValueError('Manifest cannot be a symlink')
@@ -264,6 +265,7 @@ def build(package, output, *, archive=None, asset_url=None, sequence=None, previ
     if len(raw_manifest) > 8*1024**2:
         raise ValueError('Manifest exceeds size limit')
     manifest = document(raw_manifest)
+    validate_manifest(manifest, 'DevicePackage')
     inventory = validate_contract(manifest)
     actual = set()
     for path in package.rglob('*'):
@@ -275,55 +277,100 @@ def build(package, output, *, archive=None, asset_url=None, sequence=None, previ
         verify_record(package/name,entry)
     if actual != {'manifest.json', *inventory}:
         raise ValueError('Uninventoried package content')
-    release = archive is not None or asset_url is not None or sequence is not None or previous_index is not None
-    if release:
-        if archive is None or asset_url is None or type(sequence) is not int or sequence <= 0:
-            raise ValueError('Release candidate requires ZIP, fixed asset URL and positive explicit sequence')
-        index, device = committed_records()
-        baseline = index['sequence']
-        if previous_index is not None:
-            previous = document(Path(previous_index).read_bytes())
-            if (previous.get('kind') != 'DeviceIndex' or previous.get('id') != index['id']
-                    or type(previous.get('sequence')) is not int or previous['sequence'] < baseline):
-                raise ValueError('Invalid previous verified index baseline')
-            baseline = previous['sequence']
-            if not set(previous.get('revocations', [])).issubset(index.get('revocations', [])):
-                raise ValueError('Committed registry omits previous revocations')
-        if sequence <= baseline:
-            raise ValueError('Index sequence must increase monotonically')
-        if hashlib.sha256(raw_manifest).hexdigest() in index.get('revocations', []):
-            raise ValueError('Revoked package cannot enter a release candidate')
-        source = manifest.get('source', {})
-        if (source.get('kind') != 'github' or source.get('repository') != device['repository']
-                or not re.fullmatch(r'[0-9a-f]{40}', source.get('commit', ''))):
-            raise ValueError('Release package requires the actual pinned GitHub model source commit')
-        if manifest.get('id') != device['id'] or device.get('package_status') != 'experimental':
-            raise ValueError('Only the recorded experimental model package can enter this candidate')
-        transport = asset_source(asset_url, source['repository'])
-        transport.update(archive_record(Path(archive), raw_manifest, {item['path']:item for item in manifest['files']}))
-        index['sequence'] = sequence
-        index['trust'] = {'status':'index-signature-required', 'official_release':False}
-        index['note'] = 'Unsigned release candidate; authenticate these exact bytes only after asset publication and required acceptance gates.'
-    else:
-        index = document((ROOT/'device-index.json').read_bytes())
-    index['generated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    index['packages'] = [{
+    return manifest, raw_manifest, inventory, {
         'id': manifest['id'], 'version': manifest['version'],
         'source': {'kind': 'local', 'path': Path(os.path.relpath(package, output.parent.resolve())).as_posix(), 'repository': manifest['source'].get('repository', '')},
         'sha256': hashlib.sha256(raw_manifest).hexdigest(), 'size': len(raw_manifest),
         'compatibility': manifest['compatibility'], 'status': 'experimental',
         'notes': ['Unsigned local snapshot; requires an explicit development trust grant.']
-    }]
-    if release:
-        entry = index['packages'][0]
-        entry.update(source=transport, name=device['name'], status='experimental', known_issues=device.get('known_issues', []),
-                     notes=device.get('notes', []) + ['Artifact inventory verification only; this unsigned candidate does not certify first boot, hardware or live model maintenance.'],
-                     compatibility_records=device['compatibility_records'], verified_at=index['generated_at'],
-                     verification_scope='local-manifest-and-archive-inventory',
-                     source_url='https://github.com/'+source['repository']+'/tree/'+source['commit']+'/adaptations/brands/onexplayer/oxp3/bridge',
-                     declared_source=source)
-        if 'hardware_matching' in device:
-            entry['hardware_matching'] = hardware_advice(device['hardware_matching'])
+    }
+
+
+def build(package, output, *, archive=None, asset_url=None, sequence=None, previous_index=None, models=()):
+    """Build an unsigned candidate; the operator verifies previous_index separately.
+
+    Additional models are explicit (package, archive, URL, committed record path) tuples.
+    """
+    output = Path(output)
+    if output.exists():
+        raise ValueError('Index destination already exists')
+    release = archive is not None or asset_url is not None or sequence is not None or previous_index is not None or bool(models)
+    if not release:
+        index = document((ROOT/'device-index.json').read_bytes())
+        index['packages'] = [_package_entry(package, output)[3]]
+    else:
+        if archive is None or asset_url is None or type(sequence) is not int or sequence <= 0:
+            raise ValueError('Release candidate requires ZIP, fixed asset URL and positive explicit sequence')
+        supplied = [(package, archive, asset_url, 'devices/oxp3.json'), *models]
+        names = [item[3] for item in supplied]
+        if any(not isinstance(name, str) or not re.fullmatch(r'devices/[a-z0-9_-]+\.json', name) for name in names) or len(set(names)) != len(names):
+            raise ValueError('Model registry records must be distinct explicit devices/*.json paths')
+        index, *devices = committed_records(names)
+        validate_manifest(index, 'DeviceIndex')
+        if any(name not in index.get('devices', []) for name in names):
+            raise ValueError('Model registry record is not listed in the committed index')
+        baseline = index['sequence']
+        history = index['packages']
+        if previous_index is not None:
+            previous = validate_manifest(document(Path(previous_index).read_bytes()), 'DeviceIndex')
+            if previous.get('id') != index['id'] or previous['sequence'] < baseline:
+                raise ValueError('Invalid previous verified index baseline')
+            baseline = previous['sequence']
+            if not set(previous.get('revocations', [])).issubset(index.get('revocations', [])):
+                raise ValueError('Committed registry omits previous revocations')
+            history = [*history, *previous['packages']]
+        if sequence <= baseline:
+            raise ValueError('Index sequence must increase monotonically')
+        entries = {}
+        for entry in history:
+            key = (entry['id'], entry['version'])
+            if key in entries and entries[key] != entry:
+                raise ValueError('Conflicting historical package entry')
+            entries[key] = entry
+        generated_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        for (model_package, model_archive, model_url, _), device in zip(supplied, devices):
+            manifest, raw_manifest, inventory, entry = _package_entry(model_package, output)
+            if entry['sha256'] in index.get('revocations', []):
+                raise ValueError('Revoked package cannot enter a release candidate')
+            source = manifest.get('source', {})
+            if (source.get('kind') != 'github' or source.get('repository') != device['repository']
+                    or not re.fullmatch(r'[0-9a-f]{40}', source.get('commit', ''))):
+                raise ValueError('Release package requires the actual pinned GitHub model source commit')
+            if manifest.get('id') != device['id'] or device.get('package_status') != 'experimental':
+                raise ValueError('Only the recorded experimental model package can enter this candidate')
+            candidate_path = relative(device['local_candidate'])
+            transport = asset_source(model_url, source['repository'])
+            transport.update(archive_record(Path(model_archive), raw_manifest, inventory))
+            entry.update(source=transport, name=device['name'], status='experimental', known_issues=device.get('known_issues', []),
+                         notes=device.get('notes', []) + ['Artifact inventory verification only; this unsigned candidate does not certify first boot, hardware or live model maintenance.'],
+                         compatibility_records=device['compatibility_records'], verified_at=generated_at,
+                         verification_scope='local-manifest-and-archive-inventory',
+                         source_url='https://github.com/'+source['repository']+'/tree/'+source['commit']+'/adaptations/'+candidate_path,
+                         declared_source=source)
+            if 'hardware_matching' in device:
+                entry['hardware_matching'] = hardware_advice(device['hardware_matching'])
+            key = (entry['id'], entry['version'])
+            if key in entries:
+                old = entries[key]
+                if old['sha256'] != entry['sha256'] or old['size'] != entry['size'] or old['source'] != entry['source']:
+                    raise ValueError('Cannot replace a historical package version')
+            else:
+                entries[key] = entry
+        assets = {}
+        for entry in entries.values():
+            source = entry['source']
+            if source.get('kind') != 'https':
+                continue
+            identity = (source['sha256'], source['size'])
+            if source['url'] in assets and assets[source['url']] != identity:
+                raise ValueError('One asset URL cannot identify different archive contents')
+            assets[source['url']] = identity
+        index['packages'] = list(entries.values())
+        index['sequence'] = sequence
+        index['trust'] = {'status':'index-signature-required', 'official_release':False}
+        index['note'] = 'Unsigned release candidate; authenticate these exact bytes only after asset publication and required acceptance gates.'
+    index['generated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    validate_manifest(index, 'DeviceIndex')
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('x', encoding='utf-8', newline='\n') as stream:
         stream.write(json.dumps(index, ensure_ascii=False, indent=2)+'\n')
@@ -334,11 +381,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--package', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--model', nargs=4, action='append', default=[], metavar=('PACKAGE', 'ARCHIVE', 'ASSET_URL', 'DEVICE_RECORD'), help='Additional explicit model package, ZIP, fixed asset URL and committed devices/*.json record; repeatable')
     parser.add_argument('--archive', type=Path, help='Exact model release ZIP; enables unsigned release-candidate mode')
     parser.add_argument('--asset-url', help='Fixed credential-free GitHub model release asset URL')
     parser.add_argument('--sequence', type=int, help='Explicit positive sequence greater than the last verified index')
     parser.add_argument('--previous-index', type=Path, help='Optional previously verified public index; release operator verifies its signature separately')
     args = parser.parse_args()
-    value = build(args.package, args.output, archive=args.archive, asset_url=args.asset_url, sequence=args.sequence, previous_index=args.previous_index)
+    value = build(args.package, args.output, archive=args.archive, asset_url=args.asset_url, sequence=args.sequence, previous_index=args.previous_index, models=args.model)
     print(json.dumps({'status': value['trust']['status'], 'packages': len(value['packages']),
                       'sequence':value['sequence'], 'sha256':digest(args.output), 'size':args.output.stat().st_size}))

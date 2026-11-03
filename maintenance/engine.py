@@ -44,6 +44,10 @@ def _legacy_lock_required(journal):
 
 
 RUNTIME_FILES = (
+    'maintenance/ssd_boot.py', 'maintenance/model_efi.py', 'components/ssd_boot.py', 'components/oxp3_efi_provider.py', 'components/oxp3_efi_provider.lock.json',
+    'components/x2_efi_provider.py', 'components/x2_efi_provider.lock.json',
+    'components/oxp3_full_efi_provider.py', 'components/oxp3_full_efi_provider.lock.json',
+    'adaptations/common/ssd/GM7_POLICY.md', 'adaptations/common/scripts/licenses/upstream-fixes-MIT.txt',
     'maintenance/resource_staging.py',
     'maintenance/hdr_resources.py', 'protocol/hdr_contract.py',
     'maintenance/core_retention.py',
@@ -507,6 +511,8 @@ class Engine:
 
     def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None):
         validate_manifest(component,"ComponentManifest")
+        if component.get('ssd_boot_policy'):
+            raise MaintenanceError('SSD boot providers require the fixed reviewed SSD handler')
         from protocol.cpu_contract import IDENTITY as CPU_ID
         from .cpu_resources import permitted
         if component.get('id')==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),component,recovery=False):
@@ -525,6 +531,10 @@ class Engine:
             self._recover(); state=self._state(); identity=uuid.uuid4().hex
             from .core_retention import guard_apply
             guard_apply(self,component,state)
+            from .ssd_boot import reject_conflicting_component
+            reject_conflicting_component(self, component)
+            from .model_efi import reject_conflicting_component as reject_model_efi_conflict
+            reject_model_efi_conflict(self, component)
             if expected_state_sha256 is not None:
                 actual_state_sha256=hashlib.sha256(json.dumps(state,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode('utf-8')).hexdigest()
                 if actual_state_sha256 != expected_state_sha256: raise MaintenanceError("Installed state changed after update review")

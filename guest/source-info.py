@@ -1,5 +1,7 @@
 """Inspect only the immutable source image before installation confirmation."""
 import json
+import os
+import stat
 from pathlib import Path
 import subprocess
 from source_profile import inspect_source
@@ -7,6 +9,17 @@ from source_profile import inspect_source
 
 def run(*arguments):
     return subprocess.check_output(arguments, text=True).strip()
+
+
+def reject_bound_ssd_home(home):
+    """Known destination-specific ledger is not a reusable source image."""
+    home=Path(home)
+    for path in (home/'.boiler',home/'.boiler/ssd-boot-v1'):
+        try: info=path.lstat()
+        except FileNotFoundError: return
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+            raise ValueError('Source has an unsafe destination-bound SSD record path; use an unbound original system source')
+    raise ValueError('Source contains destination-bound SSD records; use an unbound original system source')
 
 
 def inspect_image():
@@ -20,6 +33,9 @@ def inspect_image():
         raise ValueError('Source is not a supported recovery or eight-partition SteamOS image')
     nodes = {part['name']: part['node'] for part in table['partitions']}
     root = Path('/mnt/boiler-source-info'); root.mkdir(exist_ok=True)
+    run('mount', '-t', 'ext4', '-o', 'ro,noload', nodes['home'], str(root))
+    try: reject_bound_ssd_home(root)
+    finally: run('umount', str(root))
     profiles = {}
     wireless = {vendor: False for vendor in ('intel', 'realtek', 'mediatek')}
     for slot in ('A', 'B') if names == prepared else ('A',):

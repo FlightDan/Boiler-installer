@@ -206,8 +206,8 @@ def legacy_option_fields(item, category, selected=()):
         # The install-once bridge does not carry a reviewed target SSD context.
         # Preserve the pinned legacy implementation, but do not offer this path.
         available = False
-        reason = {'zh': '本测试桥尚未传入已复核的目标 SSD 上下文，暂不提供 GM7 休眠恢复修复。',
-                  'en': 'GM7 suspend recovery is unavailable: this test bridge does not pass a reviewed target SSD context.'}
+        reason = {'zh': '旧机型桥不提供 GM7 修复；此修复由已复核目标 SSD 的通用构件负责。',
+                  'en': 'The legacy model bridge does not provide GM7 repair; the reviewed target SSD common component owns it.'}
     return dict(id='oxp3:'+item['id'], category=category, name={'zh': item['zh'], 'en': item['en']},
                 available=available, default=available and 'oxp3:'+item['id'] in selected,
                 reason=reason, dependencies=['oxp3:'+name for name in item['dependencies']])
@@ -430,6 +430,10 @@ def build(archive_path, output, choice, *, lock_path=ROOT/'upstream-lock.json', 
     adapter_source = contents['adapter.py'] if contents is not None else (ROOT/'adapter.py').read_bytes()
     if b'def runtime_selection(' in adapter_source:
         manifest['selection_contract'] = {'kind': 'oxp3-legacy-options-v1', 'component': 'oxp3:legacy-adaptation'}
+    if b'def model_efi_interception(' in adapter_source:
+        manifest['minimum_engine_version'] = '0.1.3'
+        manifest['components'][0]['minimum_engine_version'] = '0.1.3'
+        manifest['oxp3_efi_contract'] = {'kind': 'oxp3-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
     if (output/'maintenance_adapter.py').is_file() and (output/'scripts/maintenance.sh').is_file():
         manifest['maintenance_contract'] = {'kind': 'boiler-model-maintenance-v1', 'entry': 'scripts/maintenance.sh'}
     if payload_update is not None:

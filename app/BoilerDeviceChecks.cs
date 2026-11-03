@@ -45,6 +45,102 @@ internal static class BoilerDeviceChecks
         }
     }
 
+    private static async Task VerifyCurrentHardwarePanel(MainWindow window)
+    {
+        BoilerWirelessHardware.Device Device(Guid classGuid, string id) => new(classGuid, "fixture", "fixture", [id], []);
+        var rejected = BoilerCustomComponentHardware.Match([
+            new(BoilerWirelessHardware.NetworkClass, "Intel Wi-Fi 7 BE201", "Intel", ["PCI\\VEN_8086&DEV_FFFF"], []),
+            Device(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_1002&DEV_B081"),
+            Device(Guid.Empty, "HDAUDIO\\FUNC_01&VEN_10EC&DEV_0246"),
+            Device(Guid.Empty, "ACPI\\10EC5281\\0")]);
+        if (rejected.Results.Any(result => result.State != BoilerCustomComponentHardware.MatchState.NotFound))
+            throw new IOException("Current-PC matcher accepted a friendly name, vendor, or nearby ID.");
+        var otherIntel = BoilerCustomComponentHardware.Match([Device(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_8086&DEV_B081")]);
+        if (otherIntel.Results.Single(result => result.ComponentId == "intel-xevma").State != BoilerCustomComponentHardware.MatchState.Candidate)
+            throw new IOException("Other Intel displays must remain candidates until xe compatibility is established.");
+        var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
+        void RequireGeneralPanel(string context)
+        {
+            if (options.GeneralCustomComponents.Visibility != Visibility.Visible
+                || !options.GeneralCustomComponents.Children.OfType<Border>().Any(border => border.Visibility == Visibility.Visible))
+                throw new IOException("Current-PC detector was not visible in general Custom Components " + context + ".");
+        }
+        typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+        await Flush(window); RequireGeneralPanel("before selecting a model");
+        var expectedTitle = PartitionInventory.L("识别当前电脑硬件", "Detect this computer's hardware");
+        var expectedIntro = PartitionInventory.L("识别当前 Windows 电脑的部件，辅助选择对应构件。", "Identify components on this Windows computer to help choose matching components.");
+        if (Field<TextBlock>(window, "currentHardwareTitle").Text != expectedTitle
+            || Field<TextBlock>(window, "currentHardwareIntro").Text != expectedIntro
+            || Field<Button>(window, "currentHardwareDetectButton").Content as string != expectedTitle)
+            throw new IOException("Current-PC detector controls did not use the active language.");
+
+        using var package = JsonDocument.Parse("""
+            {"id":"device:fixture-current-pc","version":"0.0.0","name":{"en":"Fixture current PC","zh":"当前电脑测试构件"},"components":[
+              {"id":"resource:intel-xevmafix-724","name":{"en":"xeVMA","zh":"xeVMA"},"available":true},
+              {"id":"wifi:intel","name":{"en":"Intel wireless","zh":"Intel 无线"},"available":true},
+              {"id":"fixture:ssd-provider","name":{"en":"SSD fixture","zh":"SSD 测试构件"},"available":true,"ssd_boot_policy":"fixture"}
+            ]}
+            """);
+        var prepared = typeof(MainWindow).GetNestedType("PreparedDeviceSelection", BindingFlags.NonPublic)!;
+        var selection = Activator.CreateInstance(prepared, "fixture-current-pc", new string('c', 64), "signed-index", package.RootElement.Clone(), null)!;
+        typeof(MainWindow).GetMethod("CommitDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [selection]);
+        await Flush(window);
+
+        RequireGeneralPanel("with an unmatched SSD provider");
+        var choices = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+        choices["resource:intel-xevmafix-724"].IsChecked = false;
+        choices["wifi:intel"].IsChecked = false;
+        choices["fixture:ssd-provider"].IsChecked = true; // A user/provider change must not make host detection select anything.
+        // A hidden generic radio option cannot be advertised while a device package owns wireless selection.
+        var fixtureWirelessChoice = choices["wifi:intel"];
+        choices.Remove("wifi:intel");
+        try
+        {
+            var availability = (string)typeof(MainWindow).GetMethod("CurrentHardwareAvailability", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, ["intel-be201-firmware"])!;
+            if (options.RepairsExpander.Visibility != Visibility.Collapsed
+                || availability != PartitionInventory.L("对应构件：尚未提供。识别结果不代表 Linux 驱动或硬件支持。", "Related component: not currently provided. Detection does not establish Linux-driver or hardware support."))
+                throw new IOException("A hidden generic wireless option was advertised as available.");
+        }
+        finally { choices["wifi:intel"] = fixtureWirelessChoice; }
+        RequireGeneralPanel("after an SSD-provider selection change");
+        var expectedSelections = choices.ToDictionary(pair => pair.Key, pair => pair.Value.IsChecked);
+        void RequireUnchanged(string outcome)
+        {
+            if (choices.Any(pair => pair.Value.IsChecked != expectedSelections[pair.Key]))
+                throw new IOException("Current-PC detection changed component selections after " + outcome + ".");
+        }
+        window.CurrentHardwareReaderForChecks = () => [
+            Device(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_8086&DEV_B080&SUBSYS_00000000"),
+            Device(BoilerWirelessHardware.NetworkClass, "PCI\\VEN_8086&DEV_A840&SUBSYS_00000000"),
+            Device(Guid.Empty, "HDAUDIO\\FUNC_01&VEN_10EC&DEV_0245&SUBSYS_00000000"),
+            Device(Guid.Empty, "ACPI\\VEN_10EC&DEV_5280\\0")];
+        var button = Field<Button>(window, "currentHardwareDetectButton");
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Wait(window, () => !Field<bool>(window, "currentHardwareDetectionBusy"));
+        var found = Field<BoilerCustomComponentHardware.Detection>(window, "currentHardwareDetection");
+        if (!found.Results.Select(result => result.State).SequenceEqual([
+                BoilerCustomComponentHardware.MatchState.Matched,
+                BoilerCustomComponentHardware.MatchState.Candidate,
+                BoilerCustomComponentHardware.MatchState.Matched,
+                BoilerCustomComponentHardware.MatchState.Candidate]))
+            throw new IOException("Current-PC matcher did not preserve exact/candidate distinctions.");
+        RequireUnchanged("a matched/candidate result");
+        window.CurrentHardwareReaderForChecks = () => [];
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Wait(window, () => !Field<bool>(window, "currentHardwareDetectionBusy"));
+        if (Field<BoilerCustomComponentHardware.Detection>(window, "currentHardwareDetection").Results.Any(result => result.State != BoilerCustomComponentHardware.MatchState.NotFound))
+            throw new IOException("Empty current-PC inventory did not report all components absent.");
+        RequireUnchanged("an empty result");
+        window.CurrentHardwareReaderForChecks = () => throw new IOException("fixture SetupAPI failure");
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Wait(window, () => !Field<bool>(window, "currentHardwareDetectionBusy"));
+        if (Field<string>(window, "currentHardwareDetectionError") == null)
+            throw new IOException("Current-PC SetupAPI error did not reach the advisory state.");
+        RequireUnchanged("a reader error");
+        typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+        await Flush(window); RequireGeneralPanel("after clearing a model");
+    }
+
     private static async Task<string> RunOnUiThreadAsync()
     {
         var directory = Path.Combine(Backend.Root, "logs", "device-ui-" + DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff"));
@@ -55,6 +151,9 @@ internal static class BoilerDeviceChecks
         void Require(bool ok, string name) { if (!ok) throw new IOException("Device UI check failed: " + name); checks.Add(name); }
         try
         {
+            // Exercise the actual SetupAPI reader but retain no device IDs in the check result or log.
+            var present = BoilerWirelessHardware.ReadPresentDevices();
+            Require(present.Count <= 16384 && present.All(device => device.HardwareIds.Length is > 0 and <= 256), "current-pc-setupapi-readonly-aggregate");
             foreach (var language in new[] { "zh-CN", "en-US" })
             {
                 InstallerI18n.SetLanguage(language);
@@ -187,6 +286,8 @@ internal static class BoilerDeviceChecks
                 Require(Field<TextBlock>(window, "deviceSourceHelp").IsVisible
                     && Field<TextBlock>(window, "deviceSourceHelp").Text.Contains(PartitionInventory.L("无法检查新的撤销记录", "newer revocations cannot be checked")),
                     "offline-github-warning-visible-with-details-collapsed-" + language);
+                await VerifyCurrentHardwarePanel(window);
+                checks.Add("current-pc-hardware-panel-advisory-match-empty-error-and-provider-selection-" + language);
                 window.Close(); window = null;
             }
         }

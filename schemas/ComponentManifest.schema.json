@@ -21,6 +21,7 @@
     "version": {
       "$ref": "definitions.json#/$defs/version"
     },
+    "minimum_engine_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
     "compatibility": {
       "$ref": "definitions.json#/$defs/compatibility"
     },
@@ -62,6 +63,15 @@
         }
       }
     },
+    "ssd_boot_policy": {
+      "type": "object",
+      "required": ["id", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"const": "ssd:gm7-boot-repair"},
+        "version": {"type": "integer", "const": 1}
+      }
+    },
     "retain_owned_paths": {
       "type": "boolean",
       "default": false,
@@ -69,6 +79,10 @@
     }
   },
   "allOf": [
+    {
+      "if": {"required": ["ssd_boot_policy"]},
+      "then": {"required": ["minimum_engine_version", "optional"], "not": {"required": ["dynamic_handler"]}, "properties": {"optional": {"const": true}, "files": {"maxItems": 0}, "requires": {"maxItems": 0}, "conflicts": {"maxItems": 0}, "hooks": {"maxProperties": 0}, "compatibility": {"maxProperties": 0}, "retain_owned_paths": {"const": false}}}
+    },
     {
       "if": {
         "properties": {

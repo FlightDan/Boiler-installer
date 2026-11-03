@@ -13,6 +13,7 @@ import graphics
 import system_presets
 
 CORE = {'core:decky', 'core:maintenance'}
+SSD_REPAIR = 'ssd:gm7-boot-repair'
 WIRELESS = {transport + ':' + vendor for transport in ('wifi', 'bluetooth') for vendor in ('intel', 'realtek', 'mediatek')}
 
 
@@ -31,6 +32,12 @@ def validate_options(options):
             raise ValueError('Invalid or duplicate ' + key)
     if set(options.get('plugins', [])) - CORE:
         raise ValueError('No other generic plugin payloads have been approved')
+    if SSD_REPAIR in options.get('repairs', []):
+        if options.get('install_mode', 'custom') != 'custom' or 'core:maintenance' not in options.get('plugins', []):
+            raise ValueError('The selected SSD repair requires custom installation and retained maintenance')
+        legacy = options.get('device_legacy_options') or {}
+        if 'oxp3:gm7-resume' in legacy.get('repairs', []):
+            raise ValueError('The legacy GM7 repair remains unavailable')
     if options.get('install_mode', 'custom') not in ('custom', 'vanilla', 'imported'):
         raise ValueError('Unknown installation mode')
     package = options.get('device_package')
@@ -133,16 +140,39 @@ def device_plan(payload, options, source):
     environment = dict(architecture='x86_64', os_id=source['ID'], os_version=source['VERSION_ID'], device_id=hardware_id,
                        kernels=source['KERNELS'])
     if not compatible(package, environment): raise ValueError('Selected device package is incompatible with the actual image')
-    selected = (options.get('device_components') or []) + [identity for identity in options.get('repairs', []) if identity not in CORE | WIRELESS]
+    selected = (options.get('device_components') or []) + [identity for identity in options.get('repairs', []) if identity not in CORE | WIRELESS | {SSD_REPAIR}]
     plan = resolve_plan(package['components'], selected, environment)
     legacy_choice = device_legacy_selection(package, options, plan['components'])
     warning = device_advisory(package, environment)
     descriptor = dict(id=package['id'], version=package['version'],
                       manifest_sha256=options['device_manifest_sha256'], trust=options['device_trust'],
                       device_warnings=([warning] if warning else []) + plan['device_warnings'])
+    ssd_providers = [item['id'] for item in package['components']
+        if item.get('ssd_boot_policy') == {'id': SSD_REPAIR, 'version': 1}
+        and item.get('available', True) is True and compatible(item, environment)]
+    if ssd_providers: descriptor['ssd_providers'] = ssd_providers
+    if package.get('oxp3_efi_contract') is not None:
+        descriptor['oxp3_efi_contract'] = package['oxp3_efi_contract']
+    if package.get('x2_efi_contract') is not None:
+        descriptor['x2_efi_contract'] = package['x2_efi_contract']
+    if package.get('oxp3_full_efi_contract') is not None:
+        descriptor['oxp3_full_efi_contract'] = package['oxp3_full_efi_contract']
     if legacy_choice is not None:
         descriptor['legacy_selection'] = legacy_choice
     return folder, plan['components'], environment, descriptor
+
+
+def selected_ssd_provider_owner(identity, components, descriptor):
+    """Return only an explicitly selected authenticated package provider."""
+    if identity is None:
+        return None
+    providers=[item for item in components if item.get('id') == identity
+               and item.get('ssd_boot_policy') == {'id':SSD_REPAIR,'version':1}]
+    if (len(providers) != 1 or not isinstance(descriptor,dict)
+            or identity not in descriptor.get('ssd_providers',[])):
+        raise ValueError('Selected SSD provider is not in the authenticated package plan')
+    from maintenance.ssd_boot import _provider_owner
+    return _provider_owner(dict(component_id=identity,manifest_sha256=descriptor.get('manifest_sha256')))
 
 
 def device_legacy_selection(package, options, components):
@@ -171,11 +201,91 @@ def device_legacy_selection(package, options, components):
     return choice
 
 
-def device_hook_environment(descriptor, component):
+def device_hook_environment(descriptor, component, efi_review_path=None):
     choice = descriptor.get('legacy_selection')
     if choice is None or component['id'] != 'oxp3:legacy-adaptation':
         return None
-    return {'BOILER_OXP3_SELECTION': json.dumps(choice, sort_keys=True, separators=(',', ':'))}
+    environment = {'BOILER_OXP3_SELECTION': json.dumps(choice, sort_keys=True, separators=(',', ':'))}
+    if efi_review_path is not None:
+        environment['BOILER_OXP3_EFI_REVIEW'] = str(efi_review_path)
+    return environment
+
+
+def authenticate_oxp3_efi(root, payload, options):
+    """Authenticate the one fixed split-lock bridge before any guest write."""
+    from maintenance.ssd_boot import digest
+    from protocol import validate_package
+    from oxp3_efi_provider import verify
+    package_root, components, _, descriptor = device_plan(Path(payload), options, release(root))
+    choice = descriptor.get('legacy_selection')
+    if (descriptor.get('id') != 'device:oxp3'
+            or descriptor.get('oxp3_efi_contract') != {'kind': 'oxp3-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
+            or not isinstance(choice, dict) or 'oxp3:split-lock' not in choice.get('repairs', [])
+            or 'oxp3:gm7-resume' in choice.get('repairs', [])
+            or not any(item['id'] == 'oxp3:legacy-adaptation' for item in components)):
+        raise ValueError('A reviewed fixed OXP3 split-lock bridge is required')
+    package = validate_package(package_root, expected_manifest_sha256=options['device_manifest_sha256'])
+    gm7 = [item for item in package.get('legacy_capabilities', []) if item.get('id') == 'oxp3:gm7-resume']
+    if len(gm7) != 1 or gm7[0].get('available') is not False:
+        raise ValueError('Legacy GM7 ownership must remain unavailable')
+    verify(package_root, Path(payload)/'components/oxp3_efi_provider.lock.json')
+    source = dict(package_id='device:oxp3', manifest_sha256=options['device_manifest_sha256'],
+                  selection_sha256=digest(choice))
+    return dict(source=source, selection=choice)
+
+
+def authenticate_x2_efi(root, payload, options):
+    """Authenticate the X2-owned fixed bridge and its independently pinned closure."""
+    from maintenance.ssd_boot import digest
+    from protocol import validate_package
+    from x2_efi_provider import verify
+    package_root, components, _, descriptor = device_plan(Path(payload), options, release(root))
+    choice = descriptor.get('legacy_selection')
+    if (descriptor.get('id') != 'device:x2-mini'
+            or descriptor.get('x2_efi_contract') != {'kind': 'x2-split-lock-efi-v1', 'component': 'oxp3:legacy-adaptation'}
+            or not isinstance(choice, dict) or 'oxp3:split-lock' not in choice.get('repairs', [])
+            or 'oxp3:gm7-resume' in choice.get('repairs', [])
+            or not any(item['id'] == 'oxp3:legacy-adaptation' for item in components)):
+        raise ValueError('A reviewed fixed X2 split-lock bridge is required')
+    package = validate_package(package_root, expected_manifest_sha256=options['device_manifest_sha256'])
+    gm7 = [item for item in package.get('legacy_capabilities', []) if item.get('id') == 'oxp3:gm7-resume']
+    if len(gm7) != 1 or gm7[0].get('available') is not False:
+        raise ValueError('Legacy GM7 ownership must remain unavailable')
+    verify(package_root, Path(payload)/'components/x2_efi_provider.lock.json')
+    return dict(source=dict(package_id='device:x2-mini', manifest_sha256=options['device_manifest_sha256'],
+                            selection_sha256=digest(choice)), selection=choice)
+
+
+def authenticate_oxp3_full_efi(root, payload, options):
+    from maintenance.ssd_boot import digest
+    from protocol import validate_package
+    from oxp3_full_efi_provider import verify
+    package_root, components, _, descriptor = device_plan(Path(payload), options, release(root))
+    choice = descriptor.get('legacy_selection')
+    if (descriptor.get('id') != 'device:oxp3'
+            or descriptor.get('oxp3_full_efi_contract') != {'kind':'oxp3-full-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}
+            or not isinstance(choice,dict) or 'oxp3:split-lock' not in choice.get('repairs',[])
+            or 'oxp3:gm7-resume' in choice.get('repairs',[])
+            or not any(item['id']=='oxp3:legacy-adaptation' for item in components)):
+        raise ValueError('A reviewed full OXP3 split-lock bridge is required')
+    package=validate_package(package_root,expected_manifest_sha256=options['device_manifest_sha256'])
+    gm7=[item for item in package.get('legacy_capabilities',[]) if item.get('id')=='oxp3:gm7-resume']
+    if len(gm7)!=1 or gm7[0].get('available') is not False:
+        raise ValueError('Legacy GM7 ownership must remain unavailable')
+    verify(package_root,Path(payload)/'components/oxp3_full_efi_provider.lock.json')
+    return dict(source=dict(package_id='device:oxp3',manifest_sha256=options['device_manifest_sha256'],
+                            selection_sha256=digest(choice)),selection=choice)
+
+
+def authenticate_model_efi(root, payload, options):
+    _, _, _, descriptor = device_plan(Path(payload), options, release(root))
+    if descriptor['id'] == 'device:oxp3':
+        if descriptor.get('oxp3_full_efi_contract'):
+            return authenticate_oxp3_full_efi(root,payload,options)
+        return authenticate_oxp3_efi(root, payload, options)
+    if descriptor['id'] == 'device:x2-mini':
+        return authenticate_x2_efi(root, payload, options)
+    raise ValueError('No reviewed fixed EFI provider for selected model')
 
 
 def install_plan(options, source, slot):
@@ -187,7 +297,7 @@ def install_plan(options, source, slot):
                 maintenance=dict(id='core:maintenance', version='0.1.0', state_schema=1))
 
 
-def verify_device_components(root, payload, options, slot, installed):
+def verify_device_components(root, payload, options, slot, installed, model_review_path=None):
     """Only authenticated verify hooks may run against the caller's readonly image."""
     import subprocess
     root, payload = Path(root), Path(payload)
@@ -197,6 +307,8 @@ def verify_device_components(root, payload, options, slot, installed):
     if slot not in ('A', 'B'): raise ValueError('Unknown verification slot')
     selected_graphics = graphics.selected(options)
     recorded = set(installed) - CORE - WIRELESS - {system_presets.IDENTITY} - ({selected_graphics} if selected_graphics else set())
+    if SSD_REPAIR not in (options.get('device_components') or []):
+        recorded.discard(SSD_REPAIR)
     if not options.get('device_package'):
         if recorded: raise ValueError('Device verification requires an explicitly trusted package')
         return set()
@@ -206,6 +318,8 @@ def verify_device_components(root, payload, options, slot, installed):
     Engine = maintenance_api(payload)
     engine = Engine(root, Path(root) / 'var/lib/boiler/maintenance', read_only=True)
     for component in components:
+        if component.get('ssd_boot_policy'):
+            continue  # Independently verified by the fixed SSD handler.
         if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
             from maintenance.keyboard_models import installer_verify
             installer_verify(root, component, slot)
@@ -217,7 +331,7 @@ def verify_device_components(root, payload, options, slot, installed):
         if hooks:
             if 'verify' not in hooks: raise ValueError('Scripted device component has no readonly verification hook')
             subprocess.run(['/bin/bash', str(confined(folder, hooks['verify'])), str(root)], cwd=folder,
-                           env=build_hook_environment(root, 'readonly-' + slot, device_hook_environment(descriptor, component)), stdin=subprocess.DEVNULL,
+                           env=build_hook_environment(root, 'readonly-' + slot, device_hook_environment(descriptor, component, model_review_path)), stdin=subprocess.DEVNULL,
                            check=True, timeout=900)
         print('BOILER_DEVICE_VERIFIED=' + json.dumps(dict(slot=slot, id=component['id'], hook=bool(hooks), readonly=True)), flush=True)
     return identities
@@ -278,7 +392,7 @@ def retained_model_preflight(engine, package_root, options):
     return item
 
 
-def stage(root, payload, options, slot, password_hash=None, target_disk=None):
+def stage(root, payload, options, slot, password_hash=None, target_disk=None, ssd_context=None, ssd_plan=None, ssd_identity=None, defer_ssd=False, model_review_path=None):
     validate_options(options)
     if slot not in ('A', 'B'): raise ValueError('Unknown installation slot')
     result = {'schema': 1, 'slot': slot, 'options': options, 'components': {}}
@@ -292,7 +406,11 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     vendors = selected_wireless(options)
     graphics_profile = graphics.selected(options)
     firmware_ids = [wireless_identity(vendor) for vendor in vendors] + ([graphics_profile] if graphics_profile else [])
-    unknown = set(choices) - CORE - WIRELESS
+    unknown = set(choices) - CORE - WIRELESS - {SSD_REPAIR}
+    if SSD_REPAIR in choices and ssd_identity != SSD_REPAIR:
+        raise ValueError('The selected common SSD repair lacks bound destination evidence')
+    if (ssd_identity is not None) != (ssd_context is not None and ssd_plan is not None):
+        raise ValueError('The explicit SSD repair requires its reviewed two-slot installer plan')
     package = options.get('device_package')
     if (unknown or options.get('device_components')) and not package:
         raise ValueError('Device components require an explicitly trusted package')
@@ -300,10 +418,15 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     dynamic_plans = {}
     if package:
         package_root, device_components, environment, descriptor = device_plan(payload, options, result['source'])
+        providers = descriptor.get('ssd_providers', [])
+        if len(providers) > 1: raise ValueError('Multiple SSD boot providers require review')
+        if providers and SSD_REPAIR in choices: raise ValueError('Select the package SSD provider instead of the common fallback')
         from maintenance.engine import Engine as DeviceCheckEngine
         from maintenance.shared_models import check_static_component
         for component in device_components:
-            if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
+            if component.get('ssd_boot_policy'):
+                if component['id'] != ssd_identity: raise ValueError('Selected package SSD provider lacks bound target evidence')
+            elif component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
                 from maintenance.keyboard_models import installer_plan
                 dynamic_plans[component['id']] = installer_plan(root, component, slot)
                 if 'core:maintenance' not in choices: choices.append('core:maintenance')
@@ -317,6 +440,30 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
         result['install_plan']['device_warnings'] = descriptor['device_warnings']
         for warning in descriptor['device_warnings']:
             print('BOILER_DEVICE_WARNING=' + json.dumps(warning), flush=True)
+    fixed_model = None
+    if model_review_path is not None:
+        if str(model_review_path) != '/run/boiler-oxp3-efi-' + slot + '.json':
+            raise ValueError('Invalid fixed model EFI review path')
+        fixed_model = authenticate_model_efi(root, payload, options)
+        if fixed_model['source']['package_id'] == 'device:x2-mini':
+            kind = descriptor['x2_efi_contract']['kind']
+        elif descriptor.get('oxp3_full_efi_contract'):
+            kind = descriptor['oxp3_full_efi_contract']['kind']
+        else:
+            kind = descriptor['oxp3_efi_contract']['kind']
+        result['install_plan']['model_efi'] = {'kind': kind}
+    if 'oxp3:split-lock' in (options.get('device_legacy_options') or {}).get('repairs', []) and fixed_model is None:
+        raise ValueError('Split-lock requires the fixed reviewed EFI transaction')
+    if ssd_identity is not None:
+        if 'core:maintenance' not in choices or options.get('install_mode', 'custom') != 'custom':
+            raise ValueError('SSD repair requires custom selection and retained maintenance')
+        if ssd_identity == SSD_REPAIR and SSD_REPAIR in choices:
+            if ssd_plan.get('provider_owner') is not None:
+                raise ValueError('Common SSD repair cannot acquire a package provider owner')
+        else:
+            owner=selected_ssd_provider_owner(ssd_identity,device_components,descriptor)
+            if ssd_plan.get('provider_owner') != owner:
+                raise ValueError('Reviewed SSD provider identity changed after preflight')
     preset_component, preset_files = system_presets.prepare(root, options, password_hash)
     if not choices and not firmware_ids and not device_components and preset_component is None:
         result['status'] = 'no-components-selected'
@@ -329,8 +476,8 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
             raise ValueError('Selected firmware requires a verified on-demand download plan')
         downloaded = json.loads(plan_path.read_text())
         catalog_hash = hashlib.sha256((payload / 'integration/manifest.json').read_bytes()).hexdigest()
-        planned_options = {key: value for key, value in downloaded.get('selection', {}).items() if key != '_target_disk'}
-        current_options = {key: value for key, value in options.items() if key != '_target_disk'}
+        planned_options = {key: value for key, value in downloaded.get('selection', {}).items() if key not in ('_target_disk', '_ssd_binding', '_ssd_component')}
+        current_options = {key: value for key, value in options.items() if key not in ('_target_disk', '_ssd_binding', '_ssd_component')}
         if downloaded.get('schema') != 1 or downloaded.get('catalog_sha256') != catalog_hash or planned_options != current_options:
             raise ValueError('Firmware catalogue or selections changed after download planning')
         records, current_plan = merged_firmware_plan(root, manifest, options)
@@ -343,6 +490,21 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
     planned_components = [*generic_components, *device_components, *([preset_component] if preset_component else [])]
     check_conflicts(planned_components,
                     generic_selected | {item['id'] for item in device_components} | ({system_presets.IDENTITY} if preset_component else set()))
+    if ssd_identity is not None or fixed_model is not None:
+        from maintenance.ssd_boot import TARGET, DROPIN
+        boot_paths = [TARGET.casefold()]
+        if ssd_identity is not None: boot_paths.append(DROPIN.casefold())
+        if fixed_model is not None:
+            boot_paths.extend(('etc/default/grub.d/oxp3-splitlock.cfg',
+                               'usr/share/licenses/oxp3-split-lock/UPSTREAM_LICENSE'.casefold()))
+        for component in planned_components:
+            if component.get('ssd_boot_policy'): continue
+            for entry in component.get('files', []):
+                target = entry['target'].casefold()
+                if any(target == path or target.startswith(path + '/') or path.startswith(target + '/') for path in boot_paths):
+                    raise ValueError('Selected model component conflicts with SSD boot ownership')
+            if ssd_identity is not None and component.get('hooks') and not (fixed_model is not None and component['id'] == 'oxp3:legacy-adaptation'):
+                raise ValueError('Model hooks require reviewed boot ownership before SSD repair can be combined')
     if preset_component:
         # Refuse model/core file collisions before any selected component writes.
         targets = {entry['target'].casefold() for entry in preset_component['files']}
@@ -428,6 +590,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
                 result['components'][component_id] = dict(status='files_installed', operation=operation, **plan)
                 result['install_plan']['components'].append(component)
     for component in device_components:
+        if component.get('ssd_boot_policy'): continue
         if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
             from maintenance.keyboard_models import installer_execute
             operation = installer_execute(root, component, slot, dynamic_plans[component['id']])
@@ -438,9 +601,13 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
             from maintenance.shared_models import prepare_component_dirs
             prepare_component_dirs(engine, component)
         operation = engine.apply(component, package_root, allow_hooks=True, environment=environment,
-                                 hook_environment=device_hook_environment(descriptor, component))
+                                 hook_environment=device_hook_environment(descriptor, component, model_review_path if fixed_model is not None else None))
         result['components'][component['id']] = dict(status='files_installed', runtime='not_validated', operation=operation)
         result['install_plan']['components'].append(component)
+    if ssd_identity is not None and not defer_ssd:
+        # Model hooks run first. A change to either preflighted boot file makes
+        # installer_execute refuse instead of creating competing ownership.
+        complete_ssd(root, result, ssd_context, ssd_plan, ssd_identity)
     if 'core:decky' in choices:
         from plugin_installer import PluginInstaller
         operation = PluginInstaller(root, payload / 'integration', slot=slot).apply('decky')
@@ -469,7 +636,12 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
                 if models._private_json(pointer) != expected:
                     raise ValueError('Retained model package changed during installation')
             models._retain(engine, retained_item)
-    result['status'] = 'files_installed'
+    result['status'] = 'ssd-pending' if defer_ssd else 'files_installed'
+    save_result(root, slot, result)
+    return result
+
+
+def save_result(root, slot, result):
     from file_transaction import atomic_write, directory_fd
     import os
     state = root / 'home/.boiler/integration' / slot
@@ -479,4 +651,31 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None):
         descriptor = directory_fd(directory); os.close(descriptor)
     atomic_write(state / 'result.json', (json.dumps(result, indent=2) + '\n').encode(), 0o600)
     atomic_write(state / 'install-plan.json', (json.dumps(result['install_plan'], indent=2) + '\n').encode(), 0o600)
-    return result
+
+
+def complete_ssd(root, result, ssd_context, ssd_plan, ssd_identity, model_preview=None):
+    owner=None
+    if ssd_plan.get('provider_owner') is not None:
+        descriptor=result['install_plan'].get('device_package')
+        if not isinstance(descriptor,dict) or ssd_identity not in descriptor.get('ssd_providers',[]):
+            raise ValueError('SSD provider descriptor is not retained in the authenticated install plan')
+        from maintenance.ssd_boot import _provider_owner
+        owner=_provider_owner(dict(component_id=ssd_identity,manifest_sha256=descriptor.get('manifest_sha256')))
+    elif ssd_identity != SSD_REPAIR:
+        raise ValueError('A package SSD provider requires authenticated ownership')
+    if ssd_plan.get('provider_owner') != owner:
+        raise ValueError('SSD plan provider differs from the authenticated package')
+    if model_preview is None:
+        from maintenance.ssd_boot import installer_execute
+        operation = installer_execute(root, ssd_context, ssd_plan, provider_owner=owner)
+    else:
+        from maintenance.ssd_boot import installer_model_ssd_execute
+        operation = installer_model_ssd_execute(root, ssd_context, model_preview, ssd_plan, provider_owner=owner)
+    if operation.get('ok') is not True or type(operation.get('changed')) is not bool:
+        raise ValueError('SSD boot repair did not complete verification')
+    result['components'][ssd_identity] = dict(status='files_installed', runtime='not_validated',
+        activation='first_boot_required', outcome='applied' if operation['changed'] else 'already_configured',
+        operation=operation, target=ssd_plan['target'])
+    result['install_plan']['ssd_repair'] = dict(id=ssd_identity,
+        root_partuuid=ssd_plan['target']['root_partuuid'], esp_partuuid=ssd_plan['target']['esp_partuuid'],
+        review_sha256=ssd_plan['review_sha256'],provider_owner=owner)

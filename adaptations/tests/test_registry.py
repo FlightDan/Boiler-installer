@@ -39,7 +39,7 @@ class RegistryTests(unittest.TestCase):
         manifest.update(id='device:oxp3', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'a'*40})
         (package/'manifest.json').write_text(json.dumps(manifest))
         registry.mkdir(parents=True); (registry/'devices').mkdir()
-        for name in ('.gitattributes','device-index.json','devices/oxp3.json'):
+        for name in ('.gitattributes','device-index.json','devices/oxp3.json','devices/x2-mini.json'):
             shutil.copyfile(ROOT/name, registry/name)
         def git(*args):
             return subprocess.check_output(['git','-C',str(registry),*args],stderr=subprocess.PIPE)
@@ -80,6 +80,64 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(entry['size'], (source/'manifest.json').stat().st_size)
             self.assertEqual(entry['source']['kind'], 'local')
             self.assertFalse(result['trust']['official_release'])
+
+    def test_explicit_second_model_and_verified_history_are_preserved(self):
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            package, registry, archive = self.release_fixture(work)
+            first = self.candidate(package, registry, archive, work/'first.json')
+            second = work/'x2'
+            self.fixture(second)
+            manifest = json.loads((second/'manifest.json').read_text())
+            manifest.update(id='device:x2-mini', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'b'*40})
+            (second/'manifest.json').write_text(json.dumps(manifest))
+            second_archive = work/'x2.zip'
+            self.zip_package(second, second_archive)
+            url = 'https://github.com/FlightDan/Boiler-installer/releases/download/tag/x2.zip'
+            model = (second, second_archive, url, 'devices/x2-mini.json')
+            index = self.candidate(package, registry, archive, work/'second.json', sequence=2,
+                                   previous_index=work/'first.json', models=[model])
+            self.assertEqual(index['packages'][0], first['packages'][0])
+            self.assertEqual([entry['id'] for entry in index['packages']], ['device:oxp3', 'device:x2-mini'])
+            self.assertEqual(index['packages'][1]['source']['sha256'], builder.digest(second_archive))
+            self.assertIn('/tree/'+'b'*40+'/adaptations/brands/onexplayer/x2-mini', index['packages'][1]['source_url'])
+            with self.assertRaises(ValueError):
+                self.candidate(package, registry, archive, work/'duplicate.json', sequence=2, models=[model, model])
+            manifest['version'] = '0.1.1'
+            (second/'manifest.json').write_text(json.dumps(manifest))
+            with self.assertRaises(ValueError):
+                self.candidate(package, registry, archive, work/'mismatch.json', sequence=2, models=[model])
+
+    def test_historical_package_version_cannot_be_replaced(self):
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            package, registry, archive = self.release_fixture(work)
+            self.candidate(package, registry, archive, work/'first.json')
+            manifest = json.loads((package/'manifest.json').read_text())
+            manifest['source']['commit'] = 'b'*40
+            (package/'manifest.json').write_text(json.dumps(manifest))
+            self.zip_package(package, archive)
+            with self.assertRaisesRegex(ValueError, 'historical package version'):
+                self.candidate(package, registry, archive, work/'replacement.json', sequence=2, previous_index=work/'first.json')
+
+    def test_one_asset_url_cannot_name_two_different_archives(self):
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            package, registry, archive = self.release_fixture(work)
+            self.candidate(package, registry, archive, work/'first.json')
+            second = work/'x2'
+            self.fixture(second)
+            manifest = json.loads((second/'manifest.json').read_text())
+            manifest.update(id='device:x2-mini', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'b'*40})
+            (second/'manifest.json').write_text(json.dumps(manifest))
+            second_archive = work/'x2.zip'
+            self.zip_package(second, second_archive)
+            url = 'https://github.com/FlightDan/Boiler-installer/releases/download/boiler-device-v0.1.0/model.zip'
+            model = (second, second_archive, url, 'devices/x2-mini.json')
+            with self.assertRaisesRegex(ValueError, 'asset URL'):
+                self.candidate(package, registry, archive, work/'collision.json', sequence=2,
+                               previous_index=work/'first.json', models=[model])
+            self.assertFalse((work/'collision.json').exists())
 
     def test_tampered_inventory_is_not_indexed(self):
         with tempfile.TemporaryDirectory() as work:
