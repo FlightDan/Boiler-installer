@@ -5,14 +5,12 @@
   "files": [
     ".gitattributes",
     ".gitignore",
-    "AGENTS.md",
     "LICENSE",
     "README.md",
     "THIRD_PARTY_NOTICES.md",
     "adaptations/.gitattributes",
     "adaptations/.gitignore",
     "adaptations/ADAPTATIONS.md",
-    "adaptations/AGENTS.md",
     "adaptations/LICENSE",
     "adaptations/README.md",
     "adaptations/THIRD_PARTY_NOTICES.md",
@@ -922,10 +920,12 @@
     ".git/**",
     ".codex/**",
     ".agents/**",
+    "AGENTS.md",
+    "**/AGENTS.md",
     ".local/**",
     "adaptations/inputs/**",
     "**/*.pfx",
     "**/*.p12"
   ],
-  "policy": "Export only these reviewed project-relative files, including sanitized AGENTS and adaptation provenance, from a clean independent Boiler Installer checkout. Never export old workspace history, private research, .local, retained adaptation binary inputs or signing material. Immutable adaptation source inventories must verify before export. Only protocol/trusted-public-key.pem is an allowed PEM."
+  "policy": "Export only these reviewed project-relative files, including adaptation provenance, from a clean independent Boiler Installer checkout. Never export old workspace history, private research, .local, retained adaptation binary inputs or signing material. Immutable adaptation source inventories must verify before export. Only protocol/trusted-public-key.pem is an allowed PEM."
 }

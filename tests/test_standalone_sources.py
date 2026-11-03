@@ -22,10 +22,10 @@ inputs = module('standalone_current_inputs', ROOT/'adaptations/scripts/prepare-c
 
 
 class StandaloneSourceTests(unittest.TestCase):
-    def test_public_whitelist_preserves_sanitized_rules_and_excludes_private_state(self):
+    def test_public_whitelist_excludes_agent_rules_and_private_state(self):
         files = exporter.reviewed_files(ROOT)
-        self.assertIn('AGENTS.md', files)
-        self.assertIn('adaptations/AGENTS.md', files)
+        self.assertNotIn('AGENTS.md', files)
+        self.assertNotIn('adaptations/AGENTS.md', files)
         self.assertFalse(any('.local' in name.split('/') or name.startswith('adaptations/inputs/') for name in files))
         exporter.verify_adaptation_snapshots(ROOT, set(files))
 
