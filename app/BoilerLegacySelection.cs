@@ -87,6 +87,13 @@ public partial class MainWindow
                 updatingLegacyChoices = true;
                 try { SetLegacyClosure(pair.Key, pair.Value.IsChecked == true, new()); }
                 finally { updatingLegacyChoices = false; }
+                if (pair.Key == "oxp3:decky" && pair.Value.IsChecked != true)
+                {
+                    updatingDeviceAdaptations = true;
+                    try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
+                    finally { updatingDeviceAdaptations = false; }
+                    if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
+                }
                 SyncLegacyBridge(); ConfigurationChanged();
             }
             pair.Value.Checked += Changed; pair.Value.Unchecked += Changed;
@@ -119,6 +126,8 @@ public partial class MainWindow
 
     private static bool IsStaticDeckyConsumer(CheckBox box)
     {
+        if (box.Tag is JsonElement component && component.TryGetProperty("id", out var id)
+            && id.GetString() == "oxp3:fingerprint-unlock") return true;
         const string prefix = "home/deck/homebrew/plugins/";
         if (box.Tag is not JsonElement item || !item.TryGetProperty("files", out var files)
             || files.ValueKind != JsonValueKind.Array) return false;
@@ -136,8 +145,22 @@ public partial class MainWindow
 
     private void EnsureStaticDeckyProvider()
     {
-        if (deviceLegacyBridge == null && deviceComponentChoices.Values.Any(box => box.IsChecked == true && IsStaticDeckyConsumer(box))
-            && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.IsChecked = true;
+        if (!deviceComponentChoices.Values.Any(box => box.IsChecked == true && IsStaticDeckyConsumer(box))) return;
+        if (deviceLegacyBridge != null)
+        {
+            if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var provider) || !provider.IsEnabled)
+            {
+                updatingDeviceAdaptations = true;
+                try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
+                finally { updatingDeviceAdaptations = false; }
+                return;
+            }
+            updatingLegacyChoices = true;
+            try { SetLegacyClosure("oxp3:decky", true, new()); }
+            finally { updatingLegacyChoices = false; }
+            SyncLegacyBridge();
+        }
+        else if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.IsChecked = true;
     }
 
     private void CoreDeckyProviderChecked(object sender, RoutedEventArgs args)
@@ -149,6 +172,7 @@ public partial class MainWindow
             updatingDeviceAdaptations = true;
             try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
             finally { updatingDeviceAdaptations = false; }
+            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
             RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             return;
         }
@@ -156,6 +180,13 @@ public partial class MainWindow
         updatingLegacyChoices = true;
         try { SetLegacyClosure("oxp3:decky", ((CheckBox)sender).IsChecked == true, new()); }
         finally { updatingLegacyChoices = false; }
+        if (((CheckBox)sender).IsChecked != true)
+        {
+            updatingDeviceAdaptations = true;
+            try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
+            finally { updatingDeviceAdaptations = false; }
+            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
+        }
         SyncLegacyBridge(); ConfigurationChanged();
     }
 

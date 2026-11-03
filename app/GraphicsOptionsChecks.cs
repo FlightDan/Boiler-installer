@@ -100,7 +100,7 @@ internal static class GraphicsOptionsChecks
                 window.Show(); window.BoilerModeForChecks("custom");
                 typeof(MainWindow).GetMethod("ChooseGenericInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
                 window.PreviewStep(2);
-                var options = ((StackPanel)window.FindName("ComponentOptionsHost")).Children.OfType<InstallerOptionsPanel>().Single();
+                var options = BoilerCustomBuildChecks.Options(window, expandSettings: true);
                 Select(options, "graphics:amd-880m");
                 foreach (var size in new[] { new Size(1060, 720), new Size(640, 360) })
                 {

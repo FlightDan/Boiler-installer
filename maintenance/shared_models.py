@@ -23,6 +23,21 @@ GAMESCOPE_TARGET = 'home/deck/.config/systemd/user/gamescope-session.service.d/9
 GAMESCOPE_SHA256 = '9616729dac8be729b56bd201b8cfbbb1fcd0eb2fb7163944638306856e85a13b'
 GAMESCOPE_KERNEL = '7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9'
 SLOT_SWITCH_COMPONENT = 'x2-mini:slot-switch'
+FINGERPRINT_COMPONENT = 'oxp3:fingerprint-unlock'
+FINGERPRINT_NATIVE = 'var/lib/oxp3-installer/fingerprint/'
+FINGERPRINT_PLUGIN = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
+FINGERPRINT_RULES = {'device:oxp3': 'etc/udev/rules.d/69-boiler-oxp3-fingerprint.rules',
+    'device:x2-mini': 'etc/udev/rules.d/69-boiler-x2-fingerprint.rules'}
+FINGERPRINT_FIXED = frozenset((
+    'etc/modprobe.d/boiler-oxp3-fingerprint.conf', 'etc/systemd/system/boiler-fprintd.service',
+    'usr/share/dbus-1/system-services/net.reactivated.Fprint.service',
+    'etc/dbus-1/system.d/net.reactivated.Fprint.conf',
+    'usr/share/polkit-1/actions/net.reactivated.fprint.device.policy',
+    *(FINGERPRINT_PLUGIN + name for name in ('main.py', 'plugin.json', 'package.json', 'profile.json', 'dist/index.js'))))
+FINGERPRINT_CONFLICTS = ('usr/lib/systemd/system/fprintd.service', 'etc/systemd/system/fprintd.service',
+    'usr/share/dbus-1/system.d/net.reactivated.Fprint.conf',
+    'usr/share/dbus-1/system-services/net.reactivated.Fprint.service',
+    'etc/dbus-1/system.d/net.reactivated.Fprint.conf')
 SLOT_SWITCH_TOOLS = ('python3', 'pkexec', 'kdialog', 'steamos-bootconf', 'systemctl', 'busctl')
 SLOT_SWITCH_FILES = {'home/.oxp3-slot-switch/boot.py': (20555, '94d98f74d6025d79d2f6af07d59657117c6a80316e591e235d4e4e9ab75dcf85', 420), 'home/.oxp3-slot-switch/desktop.py': (9643, 'ebfc65ff86e4dcf33011d1884e487fee00b072c134fb1fc0815d7d841cf0294d', 420), 'home/.oxp3-slot-switch/oxp3-switch-slot': (75, '4d58916cc7d5d31405d0d189e2ea7963c8d8a29776242bf8dd967e38c421dd46', 493), 'etc/polkit-1/rules.d/49-oxp3-slot-switch.rules': (298, 'f95d37f73f87532e6827a2e50cd03f86703a2def50fe036f9e54a280f155c317', 420), 'home/deck/Desktop/oxp3-slot-switch.desktop': (236, '05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a', 493), 'home/deck/.local/share/applications/oxp3-slot-switch.desktop': (236, '05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a', 493), 'usr/share/licenses/boiler-x2-slot-switch/LICENSE-MIT': (1070, '1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a', 420)}
 X2_STATIC_ADDITIONS = frozenset((GAMESCOPE_COMPONENT, SLOT_SWITCH_COMPONENT))
@@ -113,6 +128,47 @@ def check_slot_switch_component(engine, component):
 def check_static_component(engine, component):
     check_gamescope_component(engine, component)
     check_slot_switch_component(engine, component)
+    check_fingerprint_component(engine, component)
+
+
+def check_fingerprint_model(component, identity):
+    if component.get('id') != FINGERPRINT_COMPONENT:
+        return
+    targets = {row.get('target') for row in component.get('files', [])}
+    rule = FINGERPRINT_RULES.get(identity)
+    ids = component.get('compatibility', {}).get('device_ids')
+    historical = identity == 'device:oxp3' and ids is None and component.get('default') is False and component.get('selection_policy') == 'explicit-opt-in'
+    if not rule or targets.intersection(FINGERPRINT_RULES.values()) != {rule} or (not historical and ids != [identity.removeprefix('device:')]):
+        raise MaintenanceError('Fingerprint component does not match model package')
+
+
+def check_fingerprint_component(engine, component):
+    if component['id'] != FINGERPRINT_COMPONENT:
+        return
+    if (component.get('hooks') or component.get('optional') is not True or component.get('requires')
+            or not ((component.get('default') is False and component.get('selection_policy') == 'explicit-opt-in')
+                    or (component.get('default') is True and component.get('selection_policy') is None))):
+        raise MaintenanceError('Unexpected fingerprint component options')
+    rows = component.get('files', [])
+    targets = [row.get('target') for row in rows]
+    if (len(targets) != len(set(targets)) or not FINGERPRINT_FIXED <= set(targets)
+            or len(set(targets).intersection(FINGERPRINT_RULES.values())) != 1):
+        raise MaintenanceError('Incomplete fingerprint component')
+    required = {FINGERPRINT_NATIVE+'libexec/fprintd', *(FINGERPRINT_NATIVE+'bin/fprintd-'+x for x in ('verify','enroll','list','delete'))}
+    if not required <= set(targets):
+        raise MaintenanceError('Fingerprint runtime missing')
+    for target in targets:
+        relative = target.removeprefix(FINGERPRINT_NATIVE)
+        native = target.startswith(FINGERPRINT_NATIVE) and (relative in {'libexec/fprintd', *(f'bin/fprintd-{x}' for x in ('verify','enroll','list','delete'))}
+            or relative.startswith('lib/') and '/' not in relative[4:])
+        if target not in FINGERPRINT_FIXED and target not in FINGERPRINT_RULES.values() and not native:
+            raise MaintenanceError('Unexpected fingerprint target')
+    state = engine._state()
+    for target in set(targets) | set(FINGERPRINT_CONFLICTS):
+        if observe(engine, engine._target(target))['exists']:
+            owner = state.get('owners', {}).get(target, {})
+            if owner.get('component') != FINGERPRINT_COMPONENT:
+                raise MaintenanceError('Existing fprintd or fingerprint file requires explicit review: '+target)
 
 
 def _fixed_user_dirs(engine, user, parts):
@@ -149,6 +205,11 @@ def _gamescope_user_dirs(engine, user):
 def prepare_component_dirs(engine, component):
     """Create only explicitly reviewed Battery, gamescope and slot-tool containers."""
     check_static_component(engine, component)
+    if component['id'] == FINGERPRINT_COMPONENT:
+        for entry in component['files']:
+            with _directory(engine._target(entry['target']).parent, create=True, create_mode=0o755):
+                pass
+        return
     for entry in component['files']:
         target = engine._target(entry['target'])
         user = _target_user(engine, target)
@@ -274,6 +335,8 @@ def package(identity, engine, runtime_root, trust):
         if known[cid].get('dynamic_handler') or cid == 'x2-mini:keyboard':
             from .keyboard_contract import check
             check(known[cid])
+    for cid in ids:
+        check_fingerprint_model(known[cid], identity)
     item['components'] = [known[cid] for cid in ids if cid != 'x2-mini:keyboard']
     return item
 
@@ -322,7 +385,13 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
                     raise MaintenanceError('Existing SSD ownership does not belong to this authenticated provider')
             except (MaintenanceError,ValueError,OSError) as error:
                 available=False; reason=str(error)
-        if available and component['id'] in X2_STATIC_ADDITIONS:
+        if available and component['id'] == FINGERPRINT_COMPONENT:
+            provider = engine._target('var/lib/oxp3-installer/decky/runtime/services/PluginLoader')
+            if ('oxp3:legacy-adaptation' not in state.get('components', {})
+                    or not observe(engine, provider).get('exists')):
+                available = False
+                reason = 'Fingerprint unlock requires the installed model Decky provider'
+        if available and component['id'] in X2_STATIC_ADDITIONS | {FINGERPRINT_COMPONENT}:
             try:
                 check_static_component(engine, component)
             except (MaintenanceError, ValueError, OSError) as error:
@@ -505,6 +574,12 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
         if reviewed['action'] == 'apply':
             import uuid
             for cid in selected:
+                if cid == FINGERPRINT_COMPONENT:
+                    state = engine._state()
+                    provider = engine._target('var/lib/oxp3-installer/decky/runtime/services/PluginLoader')
+                    if ('oxp3:legacy-adaptation' not in state.get('components', {})
+                            or not observe(engine, provider).get('exists')):
+                        raise MaintenanceError('Fingerprint unlock requires the installed model Decky provider')
                 prepare_component_dirs(engine, components[cid])
                 results.append(engine._apply_locked(components[cid], payload, {}, engine._state(), uuid.uuid4().hex, None, False))
         elif reviewed['action'] == 'restore':

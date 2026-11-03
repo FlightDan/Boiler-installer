@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "product": "Boiler Installer",
-  "version": "0.2.0-preview.20261103.2",
-  "display_version": "0.2.0-preview.20261103.2",
+  "version": "0.2.0-preview.20261104.2",
+  "display_version": "0.2.0-preview.20261104.2",
   "channel": "preview",
-  "release_date": "2026-11-03"
+  "release_date": "2026-11-04"
 }

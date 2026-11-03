@@ -144,13 +144,14 @@ public sealed partial class InstallerOptionsPanel : StackPanel
     internal void SsdOptionsVisibility(bool matches, CheckBox? provider)
     {
         ssdCustomComponents.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
-        if (ssdOptions != null) ssdOptions.Visibility = matches && provider == null ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var box in ssdCustomComponents.Children.OfType<CheckBox>()) box.Visibility = matches && ReferenceEquals(box, provider) ? Visibility.Visible : Visibility.Collapsed;
+        // The searchable list is the single visible control; these remain its bound state sources.
+        if (ssdOptions != null) ssdOptions.Visibility = Visibility.Collapsed;
+        foreach (var box in ssdCustomComponents.Children.OfType<CheckBox>()) box.Visibility = Visibility.Collapsed;
     }
     internal void SetSsdProvider(CheckBox? provider)
     {
         foreach (var box in ssdCustomComponents.Children.OfType<CheckBox>().ToArray()) ssdCustomComponents.Children.Remove(box);
-        if (provider != null) ssdCustomComponents.Children.Add(provider);
+        if (provider != null) { provider.Visibility = Visibility.Collapsed; ssdCustomComponents.Children.Add(provider); }
     }
     internal IReadOnlyDictionary<string, CheckBox> OptionBoxes => boxes;
     internal ComboBox KdeChoice => kde;

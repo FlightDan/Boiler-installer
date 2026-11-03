@@ -30,6 +30,7 @@ public partial class MainWindow
         PhysicalConsent.IsChecked = false;
         reviewSeen = false;
         UpdateNavigationState();
+        QueueCustomBuildRefresh();
     }
 
     // Navigation checks are read-only. Execution still performs the controller's full validation.
@@ -202,5 +203,6 @@ public partial class MainWindow
         ExportLogButton.Content = PartitionInventory.L("导出详细日志…", "Export logs…");
         ExportLogButton.IsEnabled = !exportingLog && (session != null || LogText.Text.Length > 0);
         RefreshBoilerNavigation();
+        QueueCustomBuildRefresh();
     }
 }

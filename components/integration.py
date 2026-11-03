@@ -140,9 +140,13 @@ def device_plan(payload, options, source):
     environment = dict(architecture='x86_64', os_id=source['ID'], os_version=source['VERSION_ID'], device_id=hardware_id,
                        kernels=source['KERNELS'])
     if not compatible(package, environment): raise ValueError('Selected device package is incompatible with the actual image')
+    from maintenance.shared_models import check_fingerprint_model
+    for component in package['components']:
+        check_fingerprint_model(component, package['id'])
     selected = (options.get('device_components') or []) + [identity for identity in options.get('repairs', []) if identity not in CORE | WIRELESS | {SSD_REPAIR}]
     plan = resolve_plan(package['components'], selected, environment)
     legacy_choice = device_legacy_selection(package, options, plan['components'])
+    validate_fingerprint_provider(plan['components'], options)
     warning = device_advisory(package, environment)
     descriptor = dict(id=package['id'], version=package['version'],
                       manifest_sha256=options['device_manifest_sha256'], trust=options['device_trust'],
@@ -173,6 +177,16 @@ def selected_ssd_provider_owner(identity, components, descriptor):
         raise ValueError('Selected SSD provider is not in the authenticated package plan')
     from maintenance.ssd_boot import _provider_owner
     return _provider_owner(dict(component_id=identity,manifest_sha256=descriptor.get('manifest_sha256')))
+
+
+def validate_fingerprint_provider(components, options):
+    """The managed model plugin store requires its legacy Decky provider."""
+    if not any(item['id'] == 'oxp3:fingerprint-unlock' for item in components):
+        return
+    legacy = options.get('device_legacy_options')
+    if (not isinstance(legacy, dict) or 'oxp3:decky' not in legacy.get('plugins', [])
+            or not any(item['id'] == 'oxp3:legacy-adaptation' for item in components)):
+        raise ValueError('Fingerprint unlock requires the selected device Decky provider')
 
 
 def device_legacy_selection(package, options, components):
@@ -597,7 +611,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
             result['components'][component['id']] = dict(status='files_installed',runtime='not_validated',operation=operation)
             result['install_plan']['components'].append(component)
             continue
-        if component['id'] in ('x2-mini:battery', 'x2-mini:gamescope-env', 'x2-mini:slot-switch'):
+        if component['id'] in ('x2-mini:battery', 'x2-mini:gamescope-env', 'x2-mini:slot-switch', 'oxp3:fingerprint-unlock'):
             from maintenance.shared_models import prepare_component_dirs
             prepare_component_dirs(engine, component)
         operation = engine.apply(component, package_root, allow_hooks=True, environment=environment,

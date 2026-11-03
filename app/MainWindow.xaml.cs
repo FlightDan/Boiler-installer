@@ -94,16 +94,16 @@ public partial class MainWindow : Window
         PartitionSelector.Changed += () =>
         {
             acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false;
-            ClearSsdSelection();
+            ClearSsdSelection(); SyncFingerprintCandidateSelection();
             if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); }
         };
         ImagePath.TextChanged += (_, _) => { ResetImageInspection(); ConfigurationChanged(); RefreshWorkspace(); };
         SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
         SourcePage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
         SourcePage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, e) => { if (!IsInputPreviewElement(e.OriginalSource) && !IsSourceCardMirror(e.OriginalSource)) ConfigurationChanged(); }));
-        ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
-        ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, _) => ConfigurationChanged()));
-        ContentPage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, _) => ConfigurationChanged()));
+        ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.CheckedEvent, new RoutedEventHandler((_, e) => { if (!IsCustomBuildPresentationElement(e.OriginalSource)) ConfigurationChanged(); }));
+        ContentPage.AddHandler(System.Windows.Controls.Primitives.ToggleButton.UncheckedEvent, new RoutedEventHandler((_, e) => { if (!IsCustomBuildPresentationElement(e.OriginalSource)) ConfigurationChanged(); }));
+        ContentPage.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler((_, e) => { if (!IsCustomBuildPresentationElement(e.OriginalSource)) ConfigurationChanged(); }));
         PhysicalConsent.Checked += (_, _) => { ResetConsentHighlight(); ValidationMessage.Text = ""; UpdateNavigationState(); };
         PhysicalConsent.Unchecked += (_, _) => UpdateNavigationState();
         var local = Path.Combine(InstallerWorkspace.DirectoryPath, "source/steamdeck-oobe-repair-20260707.10-3.8.14.img");
@@ -119,7 +119,7 @@ public partial class MainWindow : Window
                 "cancelled" => InstallerI18n.T("上次任务已停止。可以查看记录，再开始一次新的演练。"),
                 _ => InstallerI18n.T("上次任务未完成。可以查看记录，排查问题后重新演练。") };
         }
-        CreateInputAssociationPanel(); CreateSystemSourceCards(); CreateAdaptationFlow(); AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
+        CreateInputAssociationPanel(); CreateSystemSourceCards(); CreateAdaptationFlow(); CreateCustomBuild(); AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
         Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/boiler-app-icon.png"));
         RefreshBootPrerequisites();
         BootPrerequisitesCard.Visibility = physicalInstallation ? Visibility.Visible : Visibility.Collapsed;
@@ -175,7 +175,7 @@ public partial class MainWindow : Window
         ValidationMessage.Text = ""; ValidationMessage.Foreground = new SolidColorBrush(Color.FromRgb(163, 71, 39)); PageScroll.ScrollToTop();
         if(physicalInstallation) { NextButton.Content=step == 4?PartitionInventory.L("开始安装","Install SteamOS"):NextButton.Content; if(step == 5)PageTitle.Text=PartitionInventory.L("正在安装 SteamOS","Installing SteamOS"); if(step == 6)PageTitle.Text=PartitionInventory.L("本次安装结果","Installation result"); }
         InstallerLanguage.IsEnabled = operation == null && !DownloadsBusy;
-        if (step == 2) contentSeen = true;
+        if (step == 2) { contentSeen = true; RefreshCustomBuild(); }
         if (step == 3) { UpdateReview(); reviewSeen = true; }
         UpdateSourceSection();
         bootPanel.SetFirmwareContext(physicalInstallation && Kind == InstallationTargetKind.InternalShared);
@@ -332,6 +332,7 @@ public partial class MainWindow : Window
         RefreshDeviceOptionLabels();
         RefreshBootPrerequisites();
         RefreshDeviceLanguage();
+        RefreshCustomBuild();
         RefreshInputAssociationLanguage();
         RefreshSystemSourceCards();
         if (previousAcknowledgement != null && previousAcknowledgement == PartitionSelector.Selection) acknowledgedSelection = previousAcknowledgement;
@@ -471,7 +472,7 @@ public partial class MainWindow : Window
         try
         {
             if (pendingSelection != PartitionSelector.Selection) throw new InvalidOperationException(PartitionInventory.L("安装范围已变化，请重新确认。", "The target range changed. Confirm it again."));
-            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); SyncSsdSelection(); ShowStep(installMode is "imported" or "local" ? 4 : 2);
+            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); SyncSsdSelection(); SyncFingerprintSelection(); ShowStep(installMode is "imported" or "local" ? 4 : 2);
         }
         catch (Exception error) { CancelSafety(sender, e); ValidationMessage.Text = error.Message; }
     }

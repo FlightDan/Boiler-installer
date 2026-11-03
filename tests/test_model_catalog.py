@@ -1,4 +1,5 @@
 import hashlib
+import copy
 import importlib.util
 import json
 from pathlib import Path
@@ -11,7 +12,7 @@ from urllib.error import URLError
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from protocol.model_catalog import load_models,bundled_model_package,bundled_packages,REPOSITORY
+from protocol.model_catalog import load_models,bundled_model_package,bundled_packages,REPOSITORY,catalog_records,guide_model
 from protocol.manifest import ProtocolError
 
 spec=importlib.util.spec_from_file_location('model_package_builder',ROOT/'scripts/package-installer.py')
@@ -21,6 +22,45 @@ preparer=importlib.util.module_from_spec(spec);spec.loader.exec_module(preparer)
 
 
 class ModelCatalogTests(unittest.TestCase):
+    def test_preparer_accepts_current_two_model_guides(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary); checkout=root/'public'; checkout.mkdir()
+            def git(*args):
+                return subprocess.check_output(['git','-C',str(checkout),*args],stderr=subprocess.PIPE).decode().strip()
+            git('init'); git('remote','add','origin','https://github.com/'+REPOSITORY+'.git')
+            for member in ('adaptations.json','brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'):
+                target=checkout/member; target.parent.mkdir(parents=True,exist_ok=True)
+                target.write_bytes((ROOT/'adaptations'/member).read_bytes())
+            git('add','adaptations.json','brands'); git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','Current guide fixture')
+            result=preparer.prepare(checkout,git('rev-parse','HEAD'),root/'prepared')
+            self.assertEqual(len(result['files']),3)
+            for identity in ('oxp3','x2-mini'):
+                guide=json.loads((root/'prepared/snapshot/brands/onexplayer'/identity/'manifest.json').read_bytes())
+                self.assertTrue(next(item for item in guide['components'] if item['id']=='fingerprint-unlock')['default'])
+
+    def test_current_guides_allow_only_canonical_fingerprint_defaults(self):
+        catalog=json.loads((ROOT/'adaptations/adaptations.json').read_bytes())
+        rows={row['guide_id']:row for row in catalog_records(catalog)}
+        source={'repository':REPOSITORY,'commit':'a'*40,'subtree':''}
+        for identity in ('guide:oxp3','guide:x2-mini'):
+            row=rows[identity]; path=row['manifest']
+            guide=json.loads((ROOT/'adaptations'/path).read_bytes())
+            rendered=guide_model(guide,path,source,row)
+            self.assertFalse(rendered['installable'])
+            self.assertEqual([item['id'] for item in rendered['components'] if item['default']],['fingerprint-unlock'])
+            historical=copy.deepcopy(guide)
+            next(item for item in historical['components'] if item['id']=='fingerprint-unlock')['default']=False
+            self.assertFalse(guide_model(historical,path,source,row)['installable'])
+            invalid=copy.deepcopy(guide)
+            next(item for item in invalid['components'] if item['id']!='fingerprint-unlock')['default']=True
+            with self.assertRaisesRegex(ProtocolError,'Invalid model option metadata'):
+                guide_model(invalid,path,source,row)
+            wrong_path=path.replace('brands/onexplayer/','brands/other/')
+            wrong_guide=copy.deepcopy(guide); wrong_guide['guide']=wrong_path.removesuffix('manifest.json')+'model.md'
+            wrong_row=copy.deepcopy(row); wrong_row['manifest']=wrong_path
+            with self.assertRaisesRegex(ProtocolError,'Invalid model option metadata'):
+                guide_model(wrong_guide,wrong_path,source,wrong_row)
+
     def fixture(self,root):
         shutil.copytree(ROOT/'components/model-catalog',root/'components/model-catalog')
         # The migration's final production lock is regenerated only after the
@@ -141,6 +181,10 @@ class ModelCatalogTests(unittest.TestCase):
         self.assertIn(base+'index.json',source)
         self.assertIn(base+'index.sig',source)
         self.assertNotIn('Boiler-devices/releases/latest',source)
+        self.assertNotIn('Boiler-installer/releases/latest/download/boiler-device-index',source)
+        maintenance=(ROOT/'scripts/maintenance_bootstrap.py').read_text(encoding='utf-8')
+        self.assertIn('REGISTRY_ID = "registry:boiler-maintenance"',maintenance)
+        self.assertIn('REPOSITORY = "FlightDan/Boiler-installer"',maintenance)
 
     def test_network_failure_uses_bundled_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

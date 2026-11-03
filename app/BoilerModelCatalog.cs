@@ -17,7 +17,22 @@ public partial class MainWindow
     internal Func<string, CancellationToken, Task<JsonElement>>? BundledModelLoaderForChecks { get; set; }
     private static bool IsModelGuide(JsonElement entry) => entry.TryGetProperty("guide_id", out _);
     private static string DeviceEntryKey(JsonElement entry) => IsModelGuide(entry) ? entry.GetProperty("guide_id").GetString()!
-        : entry.GetProperty("id").GetString() + ":" + entry.GetProperty("sha256").GetString();
+        : entry.GetProperty("id").GetString() + ":" + entry.GetProperty("sha256").GetString() + ":" + DeviceSourceIdentity(entry);
+    private static string DeviceSourceIdentity(JsonElement entry)
+    {
+        if (!entry.TryGetProperty("source", out var source) || source.ValueKind != JsonValueKind.Object) return "";
+        if (source.TryGetProperty("kind", out var kind) && kind.GetString() == "github"
+            && source.TryGetProperty("repository", out var repository)) return "github:" + repository.GetString()!.ToLowerInvariant();
+        if (source.TryGetProperty("url", out var url) && Uri.TryCreate(url.GetString(), UriKind.Absolute, out var uri))
+        {
+            var parts = uri.AbsolutePath.Trim('/').Split('/');
+            if (uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) && parts.Length >= 2)
+                return "github:" + parts[0].ToLowerInvariant() + "/" + parts[1].ToLowerInvariant();
+            var path = uri.AbsolutePath; var cut = path.LastIndexOf('/');
+            return "https:" + uri.Authority.ToLowerInvariant() + (cut < 0 ? "" : path[..cut]);
+        }
+        return source.GetRawText();
+    }
     private JsonElement? ChosenModelGuide => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry } && IsModelGuide(entry) ? entry : null;
     private bool HasBundledModel(string id) => modelCatalog is JsonElement catalog && catalog.TryGetProperty("bundled_packages", out var packages)
         && packages.EnumerateArray().Any(package => package.GetProperty("id").GetString() == id

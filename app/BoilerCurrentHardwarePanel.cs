@@ -8,6 +8,7 @@ namespace OxpInstaller;
 
 public partial class MainWindow
 {
+    private Border? currentHardwarePanel;
     private Button? currentHardwareDetectButton;
     private TextBlock? currentHardwareTitle, currentHardwareIntro;
     private TextBlock? currentHardwareStatus;
@@ -22,7 +23,7 @@ public partial class MainWindow
 
     private Border CreateCurrentHardwarePanel()
     {
-        var panel = new Border { Background = BoilerBrush("#F7F9FC"), BorderBrush = BoilerBrush("#DFE6F0"), BorderThickness = new(1), CornerRadius = new(8), Padding = new(10), Margin = new(0, 10, 0, 8) };
+        var panel = currentHardwarePanel = new Border { Background = BoilerBrush("#F7F9FC"), BorderBrush = BoilerBrush("#DFE6F0"), BorderThickness = new(1), CornerRadius = new(8), Padding = new(10), Margin = new(0, 10, 0, 8) };
         var body = new StackPanel(); panel.Child = body;
         currentHardwareTitle = new TextBlock { FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
         currentHardwareIntro = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A"), Margin = new(0, 4, 0, 8) };
@@ -68,16 +69,16 @@ public partial class MainWindow
         {
             var state = result.State switch { BoilerCustomComponentHardware.MatchState.Matched => PartitionInventory.L("已匹配", "Matched"), BoilerCustomComponentHardware.MatchState.Candidate => PartitionInventory.L("候选", "Candidate"), _ => PartitionInventory.L("未找到", "Not found") };
             var color = result.State switch { BoilerCustomComponentHardware.MatchState.Matched => BoilerBrush("#176B3A"), BoilerCustomComponentHardware.MatchState.Candidate => BoilerBrush("#8A5A00"), _ => BoilerBrush("#61728A") };
-            var row = new StackPanel { Margin = new(0, 4, 0, 2) };
+            var row = new StackPanel { Margin = new(0, 4, 0, 2), Tag = result.ComponentId };
             row.Children.Add(new TextBlock { Text = CurrentHardwareName(result.ComponentId) + " · " + state, FontWeight = FontWeights.SemiBold, Foreground = color, TextWrapping = TextWrapping.Wrap });
             row.Children.Add(new TextBlock { Text = PartitionInventory.L("原始 ID：", "Raw ID: ") + (result.RawId.Length == 0 ? PartitionInventory.L("未发现", "not present") : result.RawId), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A") });
             row.Children.Add(new TextBlock { Text = CurrentHardwareReason(result.Reason), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A") });
-            row.Children.Add(new TextBlock { Text = CurrentHardwareAvailability(result.ComponentId), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A") });
+            row.Children.Add(new TextBlock { Tag = "availability", Text = CurrentHardwareAvailability(result.ComponentId), TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A") });
             currentHardwareResults.Children.Add(row);
         }
     }
 
-    private static string CurrentHardwareName(string id) => id switch { "intel-xevma" => "Intel xeVMA", "intel-be201-firmware" => "Intel BE201", "realtek-alc245-speaker" => "Realtek ALC245 speaker", "bmi260-gyro" => "BMI260 gyro", _ => id };
+    private static string CurrentHardwareName(string id) => id switch { "intel-xevma" => "Intel xeVMA", "intel-be201-firmware" => "Intel BE201", "realtek-alc245-speaker" => PartitionInventory.L("Realtek ALC245 扬声器", "Realtek ALC245 speaker"), "bmi260-gyro" => PartitionInventory.L("BMI260 陀螺仪", "BMI260 gyro"), _ => id };
     private string CurrentHardwareAvailability(string id)
     {
         var aliases = id switch

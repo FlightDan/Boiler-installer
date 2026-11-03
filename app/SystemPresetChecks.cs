@@ -48,7 +48,7 @@ internal static class SystemPresetChecks
                     window.BoilerModeForChecks(mode);
                     typeof(MainWindow).GetMethod("ChooseGenericInstallation", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null);
                     window.PreviewStep(2); await Flush();
-                    var panel = ((StackPanel)window.FindName("ComponentOptionsHost")).Children.OfType<InstallerOptionsPanel>().Single();
+                    var panel = BoilerCustomBuildChecks.Options(window, expandSettings: true);
                     var prefix = language + "-" + mode;
                     Require(panel.SystemPresetsPanel.IsVisible && panel.KdeChoice.IsVisible && panel.SshChoice.IsVisible && panel.PasswordChoice.IsVisible, prefix + "-presets-visible");
                     Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage && !panel.Selection.EnableSsh && !panel.Selection.SetDeckPassword, prefix + "-defaults-follow-windows-language");

@@ -445,7 +445,7 @@ internal static class BoilerUiChecks
                         var english = Find<RadioButton>(window, "EnglishLanguage");
                         var sidebarBackHome = Find<Button>(window, "BackHomeButton");
                         var activePage = Find<StackPanel>(window, mode == "imported" ? "SourcePage" : "ContentPage");
-                        var wirelessPanel = Find<StackPanel>(window, "ComponentOptionsHost").Children.OfType<InstallerOptionsPanel>().Single();
+                        var wirelessPanel = BoilerCustomBuildChecks.Options(window);
                         Check(wirelessPanel.RepairsExpander.Visibility == (mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed),
                             $"{mode}-wireless-group-matches-generic-route-{language}-{FormatSize(size)}");
                         var pageName = mode == "imported" ? "source" : "content";

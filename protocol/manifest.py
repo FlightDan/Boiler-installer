@@ -29,7 +29,7 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _VERSION = re.compile(r"[0-9]+(?:\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?\Z")
 MAX_MANIFEST = 8 * 1024 * 1024
-ENGINE_VERSION = "0.1.4"
+ENGINE_VERSION = "0.1.5"
 
 
 def _fail(message):

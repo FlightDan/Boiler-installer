@@ -57,7 +57,8 @@ internal static class WirelessOptionsChecks
         await panel.ActiveWirelessDetection;
         Require(readerThread != uiThread && detect.IsEnabled, "hardware-read-runs-off-ui-thread-and-restores-button");
         Require(reads == 1 && changes > 0 && panel.Selection.Repairs.ToHashSet().SetEquals(["wifi:intel", "bluetooth:realtek"]), "detect-button-applies-distinct-mixed-brand-radios-and-notifies-plan");
-        Require(panel.GenericSections.Count == 5 && panel.Children.IndexOf(panel.GenericSections.OfType<Grid>().Single()) < panel.Children.IndexOf(panel.RepairsExpander), "common-components-appear-before-firmware");
+        Require(panel.GenericSections.Contains(panel.RepairsExpander) && panel.GenericSections.Contains(panel.GraphicsExpander)
+            && panel.Children.IndexOf(panel.GenericSections.OfType<Grid>().Single()) < panel.Children.IndexOf(panel.RepairsExpander), "common-components-appear-before-firmware");
         Require(((StackPanel)panel.RepairsExpander.Content).Children.OfType<CheckBox>().Count() == 0, "firmware-group-has-no-select-all-control");
         panel.OptionBoxes["wifi:intel"].IsChecked = false; panel.OptionBoxes["wifi:mediatek"].IsChecked = true;
         var manual = panel.Selection.Repairs;

@@ -23,10 +23,11 @@ public static class OptionsChecks
         Color ContentColor() => ((SolidColorBrush)((TextBlock)window.FindName("NavContent")).Foreground).Color;
         Require(ContentColor() == Color.FromRgb(148, 169, 195), "unvisited-content-starts-neutral");
         ((Button)window.FindName("ContentTab")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Require(ContentColor() == Color.FromRgb(134, 239, 172), "valid-content-turns-green-after-entry");
+        Require(ContentColor() == Colors.White
+            && ((SolidColorBrush)((Button)window.FindName("ContentTab")).Background).Color == Color.FromRgb(41, 104, 217), "active-content-keeps-original-blue-and-white-style");
         ((Button)window.FindName("TargetTab")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Require(ContentColor() == Color.FromRgb(134, 239, 172), "visited-content-keeps-completed-state");
-        var panel = (InstallerOptionsPanel)((StackPanel)window.FindName("ComponentOptionsHost")).Children[0];
+        var panel = BoilerCustomBuildChecks.Options(window);
         var catalog = InstallerOptions.Catalog;
         Require(window.FindName("PhysicalMode") == null,"physical-mode-checkbox-removed");
         Require(((CheckBox)window.FindName("Upgrade310")).IsChecked==true,"official-3.10-source-selected-by-default");
@@ -168,7 +169,7 @@ public static class OptionsChecks
         T Find<T>(string name) => (T)window.FindName(name);
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         void Require(bool condition, string name) { if (!condition) throw new IOException(name); events.Add(name); }
-        var panel = (InstallerOptionsPanel)Find<StackPanel>("ComponentOptionsHost").Children[0];
+        var panel = BoilerCustomBuildChecks.Options(window);
         const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
         T Field<T>(string name) => (T)typeof(InstallerOptionsPanel).GetField(name, flags)!.GetValue(panel)!;
         var source = Path.Combine(Backend.Root, "logs", "consent-check-" + Guid.NewGuid().ToString("N") + ".img");
@@ -197,7 +198,13 @@ public static class OptionsChecks
             password.Password = confirmation.Password = "fixture-password";
             Click("TargetTab"); Click("NextButton"); Click("SafetyContinue"); Click("ReviewTab");
             var consent = Find<CheckBox>("PhysicalConsent"); consent.IsChecked = true;
-            bool ReviewGreen() => ((SolidColorBrush)Find<TextBlock>("NavReview").Foreground).Color == Color.FromRgb(134, 239, 172);
+            bool ReviewGreen()
+            {
+                var label = Find<TextBlock>("NavReview");
+                var color = ((SolidColorBrush)label.Foreground).Color;
+                return label.ToolTip?.ToString() == PartitionInventory.L("已完成配置。", "Setup complete.")
+                    && (color == Color.FromRgb(134, 239, 172) || color == Colors.White);
+            }
             Require(ReviewGreen(), "valid-physical-plan-is-confirmed-before-start");
             var request = (InstallationRequest)typeof(MainWindow).GetProperty("Request", flags)!.GetValue(window)!;
             var changes = 0;

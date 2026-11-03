@@ -17,6 +17,8 @@ internal static class SsdUiChecks
         object? Call(string name, params object?[] args) => type.GetMethod(name, flags)!.Invoke(window, args);
         T Field<T>(string name) => (T)type.GetField(name, flags)!.GetValue(window)!;
         void Require(bool value, string name) { if (!value) throw new IOException(name); }
+        bool HasSource(CheckBox box) => ((System.Collections.IEnumerable)Call("CustomBuildRows")!).Cast<object>()
+            .Any(row => ReferenceEquals(row.GetType().GetProperty("Source")!.GetValue(row), box));
         try
         {
             var route = Field<int[]>("boilerRoute");
@@ -49,8 +51,19 @@ internal static class SsdUiChecks
             type.GetField("acknowledgedSelection", flags)!.SetValue(window, picker.Selection);
             Call("SyncSsdSelection");
             Require(fallback.IsChecked == true && section.Visibility == Visibility.Visible, "matching-target-defaults-on");
-            Require(options.SsdOptions!.Visibility == Visibility.Visible, "fallback-visible-in-custom-section");
-            fallback.IsChecked = false; Call("SyncSsdSelection");
+            Require(options.SsdOptions!.Visibility == Visibility.Collapsed, "fallback-source-hidden-in-settings");
+            Require(HasSource(fallback), "searchable-list-reuses-matching-fallback-source");
+            window.Show(); window.PreviewStep(2); window.UpdateLayout();
+            var settings = Field<Expander>("customSettings");
+            settings.IsExpanded = false; window.UpdateLayout();
+            Require(Field<Button>("currentHardwareDetectButton").IsVisible, "hardware-detection-visible-with-settings-collapsed");
+            settings.IsExpanded = true; window.UpdateLayout();
+            Require(BoilerCustomBuildChecks.HasVisibleChoice(window, SsdBootRepair.Option)
+                && !fallback.IsVisible && !options.SsdOptions!.IsVisible,
+                "expanded-settings-have-one-visible-ssd-choice");
+            var fallbackRow = ((System.Collections.IEnumerable)Call("CustomBuildRows")!).Cast<object>()
+                .Single(row => ReferenceEquals(row.GetType().GetProperty("Source")!.GetValue(row), fallback));
+            Call("SetBuildRow", fallbackRow, false, new HashSet<string>()); Call("SyncSsdSelection");
             Require(fallback.IsChecked == false, "explicit-uncheck-survives-refresh");
             disk["unrelated_inventory_change"] = "changed";
             picker.LoadSnapshot(snapshot.ToJsonString(), false); // Includes the real Clear/Changed event.
@@ -82,7 +95,11 @@ internal static class SsdUiChecks
             Call("SyncSsdSelection");
             Require(provider.IsChecked == false && fallback.IsChecked == false, "unchecked-preference-survives-provider-switch");
             provider.IsChecked = true; Call("RecordSsdPreference", provider); Call("SyncSsdSelection");
-            Require(provider.IsChecked == true && fallback.IsChecked == false && provider.Parent == section && provider.Visibility == Visibility.Visible && options.SsdOptions!.Visibility == Visibility.Collapsed, "provider-takes-priority-in-custom-section");
+            Require(provider.IsChecked == true && fallback.IsChecked == false && provider.Parent == section && provider.Visibility == Visibility.Collapsed && options.SsdOptions!.Visibility == Visibility.Collapsed, "provider-takes-priority-in-custom-section");
+            Require(HasSource(provider) && !HasSource(fallback), "searchable-list-reuses-provider-without-fallback");
+            window.UpdateLayout();
+            Require(BoilerCustomBuildChecks.HasVisibleChoice(window, "device:gm7") && !provider.IsVisible
+                && !fallback.IsVisible, "expanded-settings-have-one-visible-provider-choice");
             Field<Dictionary<string, CheckBox>>("deviceComponentChoices").Remove("device:gm7"); options.SetSsdProvider(null); Call("SyncSsdSelection");
             Require(fallback.IsChecked == true, "provider-choice-transfers-to-fallback");
             Call("ResetSsdPreference");
@@ -96,6 +113,7 @@ internal static class SsdUiChecks
             type.GetField("acknowledgedSelection", flags)!.SetValue(window, picker.Selection);
             Call("SyncSsdSelection");
             Require(!(bool)Call("SsdTargetMatches")! && fallback.IsChecked != true && section.Visibility == Visibility.Collapsed, "other-ssd-has-no-selection");
+            Require(!HasSource(fallback), "searchable-list-excludes-unmatched-ssd");
             return "SSD route and target-scoped default, opt-out, provider priority, and target-change checks passed; synthetic inventory only.";
         }
         finally { window.Close(); }

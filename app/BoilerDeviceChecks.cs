@@ -61,9 +61,9 @@ internal static class BoilerDeviceChecks
         var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
         void RequireGeneralPanel(string context)
         {
-            if (options.GeneralCustomComponents.Visibility != Visibility.Visible
-                || !options.GeneralCustomComponents.Children.OfType<Border>().Any(border => border.Visibility == Visibility.Visible))
-                throw new IOException("Current-PC detector was not visible in general Custom Components " + context + ".");
+            var detector = Field<Border>(window, "currentHardwarePanel");
+            if (detector.Visibility != Visibility.Visible || !Field<StackPanel>(window, "customBuild").Children.Contains(detector))
+                throw new IOException("Current-PC detector was not available in Custom Components " + context + ".");
         }
         typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
         await Flush(window); RequireGeneralPanel("before selecting a model");

@@ -96,7 +96,7 @@ public partial class MainWindow
         updatingDeviceAdaptations = true;
         try
         {
-            var bulk = deviceComponentChoices.Values.Where(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item))).ToArray();
+            var bulk = deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box)).ToArray();
             var selected = bulk.Count(box => box.IsChecked == true);
             deviceAdaptationsChoice.IsChecked = selected == 0 ? false : selected == bulk.Length ? true : null;
         }
@@ -186,6 +186,86 @@ public partial class MainWindow
         }
         finally { deviceActionBusy = false; devicePanel.IsEnabled = true; UpdateNavigationState(); }
     }
+    private const string FingerprintId = "oxp3:fingerprint-unlock";
+    private sealed record FingerprintTarget(Guid DiskId, string Bus, string DiskModel, string Serial, int? UnidentifiedDiskNumber, long DiskSize, long Start, long Capacity, bool AlignRight, string ModelId);
+    private readonly Dictionary<FingerprintTarget, bool> fingerprintPreferences = new();
+    private readonly Dictionary<FingerprintTarget, bool> candidateFingerprintPreferences = new();
+    private string? fingerprintModel;
+    private readonly Dictionary<string, bool> pendingFingerprintPreferences = new(StringComparer.Ordinal);
+    private bool fingerprintTargetReviewed;
+    private FingerprintTarget? FingerprintTargetForSelection(PartitionSelection? selection)
+    {
+        if (!physicalInstallation || selection == null || selection.Example || fingerprintModel is not ("device:oxp3" or "device:x2-mini")) return null;
+        try
+        {
+            var target = selection.Target();
+            using var snapshot = JsonDocument.Parse(selection.Snapshot);
+            var disk = snapshot.RootElement.EnumerateArray().Single(d => d.GetProperty("number").GetInt32() == selection.Disk);
+            if (!disk.TryGetProperty("guid", out var value) || value.ValueKind != JsonValueKind.String
+                || !Guid.TryParse(value.GetString(), out var guid) || guid == Guid.Empty) return null;
+            string Field(string name) => disk.TryGetProperty(name, out var item) && item.ValueKind == JsonValueKind.String
+                ? (item.GetString() ?? "").Trim().ToUpperInvariant() : "";
+            var serial = Field("serial");
+            return new(guid, Field("bus"), Field("model"), serial, serial.Length == 0 ? selection.Disk : null,
+                target.DiskSize, target.Start, selection.Capacity, selection.AlignRight, fingerprintModel);
+        }
+        catch (Exception error) when (error is InvalidOperationException or IOException or JsonException) { return null; }
+    }
+    private FingerprintTarget? CandidateFingerprintTarget()
+    {
+        try { return FingerprintTargetForSelection(PartitionSelector.Selection); }
+        catch (Exception error) when (error is InvalidOperationException or IOException or JsonException) { return null; }
+    }
+    private FingerprintTarget? CurrentFingerprintTarget()
+    {
+        try { return acknowledgedSelection == PartitionSelector.Selection ? FingerprintTargetForSelection(acknowledgedSelection) : null; }
+        catch (Exception error) when (error is InvalidOperationException or IOException or JsonException) { return null; }
+    }
+    private bool FingerprintChoice(FingerprintTarget target, JsonElement component)
+    {
+        if (candidateFingerprintPreferences.TryGetValue(target, out var candidate)) return candidate;
+        if (fingerprintPreferences.TryGetValue(target, out var saved)) return saved;
+        if (!fingerprintTargetReviewed && fingerprintModel != null && pendingFingerprintPreferences.TryGetValue(fingerprintModel, out var pending)) return pending;
+        return !IsExplicitDeviceOption(component);
+    }
+    private void SyncFingerprintCandidateSelection()
+    {
+        if (CandidateFingerprintTarget() is not FingerprintTarget target || !deviceComponentChoices.TryGetValue(FingerprintId, out var box)
+            || box.Tag is not JsonElement component) return;
+        updatingDeviceAdaptations = true;
+        try { box.IsChecked = box.IsEnabled && FingerprintChoice(target, component); }
+        finally { updatingDeviceAdaptations = false; }
+        EnsureStaticDeckyProvider(); RefreshDeviceAdaptationsChoice();
+    }
+    private void RecordFingerprintPreference(CheckBox box)
+    {
+        if (CurrentFingerprintTarget() is FingerprintTarget target) fingerprintPreferences[target] = box.IsChecked == true;
+        else if (CandidateFingerprintTarget() is FingerprintTarget candidate) candidateFingerprintPreferences[candidate] = box.IsChecked == true;
+        else if (!fingerprintTargetReviewed && fingerprintModel is "device:oxp3" or "device:x2-mini")
+            pendingFingerprintPreferences[fingerprintModel] = box.IsChecked == true;
+    }
+    private void SyncFingerprintSelection()
+    {
+        var target = CurrentFingerprintTarget();
+        if (target != null && candidateFingerprintPreferences.Remove(target, out var candidate))
+            fingerprintPreferences[target] = candidate;
+        if (physicalInstallation && acknowledgedSelection != null && !acknowledgedSelection.Example
+            && acknowledgedSelection == PartitionSelector.Selection && !fingerprintTargetReviewed)
+        {
+            if (target != null && fingerprintModel != null && pendingFingerprintPreferences.TryGetValue(fingerprintModel, out var pending)
+                && !fingerprintPreferences.ContainsKey(target)) fingerprintPreferences[target] = pending;
+            pendingFingerprintPreferences.Clear();
+            fingerprintTargetReviewed = true;
+        }
+        if (!deviceComponentChoices.TryGetValue(FingerprintId, out var box) || box.Tag is not JsonElement component) return;
+        var selected = target != null && fingerprintPreferences.TryGetValue(target, out var preference)
+            ? preference : !IsExplicitDeviceOption(component);
+        updatingDeviceAdaptations = true;
+        try { box.IsChecked = box.IsEnabled && selected; }
+        finally { updatingDeviceAdaptations = false; }
+        EnsureStaticDeckyProvider(); RefreshDeviceAdaptationsChoice();
+    }
+
     private sealed record PreparedDeviceSelection(string Key, string Digest, string Trust, JsonElement Package, JsonElement? Reviewed);
     private async Task<PreparedDeviceSelection> PrepareDeviceSelectionAsync(string folder, string trust, string? expected, CancellationToken token, bool sessionTrusted = false)
     {
@@ -214,6 +294,7 @@ public partial class MainWindow
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
             ?? new DeviceLegacySelection(1, [], [], deviceLegacyUpdateHold?.IsChecked == true) : null;
         var package = selection.Package;
+        fingerprintModel = package.GetProperty("id").GetString();
         adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
         ClearPackageOptionPreview();
         selectedDevicePackage = selection.Key; selectedDeviceDigest = selection.Digest; selectedDeviceTrust = selection.Trust;
@@ -235,12 +316,21 @@ public partial class MainWindow
             var available = !component.TryGetProperty("available", out var availability) || availability.ValueKind != JsonValueKind.False;
             if (!available) componentText += "\n" + (component.TryGetProperty("reason", out var reason) ? LocalizedValue(reason)
                 : PartitionInventory.L("此组件暂不可安装。", "This component is currently unavailable."));
+            var initial = priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !IsExplicitDeviceOption(component);
+            if (id == FingerprintId)
+            {
+                if (CandidateFingerprintTarget() is FingerprintTarget fingerprintTarget)
+                    initial = FingerprintChoice(fingerprintTarget, component);
+                else if (!fingerprintTargetReviewed && fingerprintModel != null && pendingFingerprintPreferences.TryGetValue(fingerprintModel, out var pending))
+                    initial = pending;
+            }
             var check = new CheckBox { Content = new TextBlock { Text = componentText, TextWrapping = TextWrapping.Wrap },
-                IsChecked = available && (priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !SsdBootRepair.IsProvider(component)),
+                IsChecked = available && initial,
                 IsEnabled = available, MinHeight = 48, Tag = component.Clone() };
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;
+                if (id == FingerprintId) RecordFingerprintPreference(check);
                 if (SsdBootRepair.IsProvider(component)) RecordSsdPreference(check);
                 if (check.IsChecked == true && SsdBootRepair.IsProvider(component) && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance)) maintenance.IsChecked = true;
                 EnsureStaticDeckyProvider();
@@ -254,14 +344,15 @@ public partial class MainWindow
         RefreshCurrentHardwareUi();
         deviceAdaptationsChoice = new CheckBox { Name = "InstallDeviceAdaptations", MinHeight = 48,
             Content = new TextBlock { Text = PartitionInventory.L("机型适配修复", "Device compatibility fixes"), TextWrapping = TextWrapping.Wrap },
-            IsEnabled = deviceComponentChoices.Values.Any(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item))) };
+            IsEnabled = deviceComponentChoices.Values.Any(box => box.IsEnabled && !IsExplicitDeviceOption(box)) };
         RefreshDeviceAdaptationsChoice();
         void SetAllDeviceAdaptations(object sender, RoutedEventArgs args)
         {
             if (updatingDeviceAdaptations) return;
             updatingDeviceAdaptations = true;
-            try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && (box.Tag is not JsonElement item || !SsdBootRepair.IsProvider(item)))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
+            try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
+            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint) && fingerprint.IsEnabled && !IsExplicitDeviceOption(fingerprint)) RecordFingerprintPreference(fingerprint);
             EnsureStaticDeckyProvider();
             ConfigurationChanged();
         }
@@ -276,8 +367,12 @@ public partial class MainWindow
         ShowDeviceDetails(selection.Reviewed is JsonElement reviewed ? reviewed : package);
         deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         ConfigurationChanged();
-        if (homeScreen == null && !inputAssociationBusy) ContinueAfterDeviceSelection();
+        if (homeScreen == null && !inputAssociationBusy && !customBuildSwitchingDevice) ContinueAfterDeviceSelection();
     }
+
+    private static bool IsExplicitDeviceOption(JsonElement item) => item.TryGetProperty("ssd_boot_policy", out _) || item.TryGetProperty("selection_policy", out var policy)
+        && policy.ValueKind == JsonValueKind.String && policy.GetString() == "explicit-opt-in";
+    private static bool IsExplicitDeviceOption(CheckBox box) => box.Tag is JsonElement item && IsExplicitDeviceOption(item);
 }
 
 internal static class BoilerJsonExtensions

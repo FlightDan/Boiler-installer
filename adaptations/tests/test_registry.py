@@ -45,7 +45,7 @@ class RegistryTests(unittest.TestCase):
             return subprocess.check_output(['git','-C',str(registry),*args],stderr=subprocess.PIPE)
         git('init','-q'); git('config','core.autocrlf','false')
         git('config','user.name','Registry fixture'); git('config','user.email','registry-fixture@example.invalid')
-        git('remote','add','origin','https://github.com/FlightDan/Boiler-devices.git')
+        git('remote','add','origin','https://github.com/FlightDan/Boiler-adaptations.git')
         git('add','.'); git('commit','-qm','Disposable committed registry metadata')
         archive = work/'model.zip'
         self.zip_package(package, archive)
@@ -147,13 +147,22 @@ class RegistryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'committed bytes'):
                 self.candidate(package,registry,archive,work/'candidate.json')
 
+    def test_release_candidate_rejects_old_registry_origin(self):
+        with tempfile.TemporaryDirectory() as work:
+            work=Path(work)
+            package,registry,archive=self.release_fixture(work)
+            subprocess.check_output(['git','-C',str(registry),'remote','set-url','origin','https://github.com/FlightDan/Boiler-devices.git'])
+            with self.assertRaisesRegex(ValueError,'Unexpected public registry origin'):
+                self.candidate(package,registry,archive,work/'candidate.json')
+            self.assertFalse((work/'candidate.json').exists())
+
     def test_fresh_public_checkout_with_autocrlf_keeps_release_metadata_exact(self):
         with tempfile.TemporaryDirectory() as work:
             work = Path(work)
             package, registry, archive = self.release_fixture(work)
             checkout = work/'fresh-public-clone'
             subprocess.check_output(['git','-c','core.autocrlf=true','clone','-q',str(registry),str(checkout)],stderr=subprocess.PIPE)
-            subprocess.check_output(['git','-C',str(checkout),'remote','set-url','origin','https://github.com/FlightDan/Boiler-devices.git'])
+            subprocess.check_output(['git','-C',str(checkout),'remote','set-url','origin','https://github.com/FlightDan/Boiler-adaptations.git'])
             index = self.candidate(package,checkout,archive,work/'candidate.json')
             self.assertEqual(index['packages'][0]['status'],'experimental')
 

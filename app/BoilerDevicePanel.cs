@@ -1,4 +1,6 @@
 using System.IO;
+using System.Numerics;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
@@ -293,7 +295,11 @@ public partial class MainWindow
     }
 
     private bool IsAvailableDeviceEntry(JsonElement entry) => lastDeviceIndex is JsonElement index
-        && !index.GetProperty("revocations").EnumerateArray().Any(value => value.GetString() == entry.GetProperty("sha256").GetString());
+        && !index.GetProperty("revocations").EnumerateArray().Any(value => value.GetString() == entry.GetProperty("sha256").GetString())
+        && DevicePackageVersion.TryParse(entry.GetProperty("version").GetString(), out _)
+        && (!entry.TryGetProperty("available", out var available) || available.ValueKind == JsonValueKind.True)
+        && (!entry.TryGetProperty("minimum_engine_version", out var minimum)
+            || minimum.ValueKind == JsonValueKind.String && DevicePackageVersion.EngineSupports(minimum.GetString()));
 
     internal static string DeviceLabel(JsonElement entry)
     {
@@ -346,11 +352,18 @@ public partial class MainWindow
             yield break;
         }
         var packages = lastDeviceIndex is JsonElement index ? index.GetProperty("packages").EnumerateArray().Where(IsAvailableDeviceEntry).ToArray() : [];
-        foreach (var model in guides.Where(entry => !HasBundledModel(entry.GetProperty("id").GetString()!)).Concat(packages).GroupBy(entry => entry.GetProperty("id").GetString(), StringComparer.Ordinal))
+        foreach (var model in guides.Where(entry => !HasBundledModel(entry.GetProperty("id").GetString()!)).Concat(packages)
+                     .Concat(guides.Where(entry => HasBundledModel(entry.GetProperty("id").GetString()!)))
+                     .GroupBy(entry => entry.GetProperty("id").GetString(), StringComparer.Ordinal))
         {
-            // The online path prefers an installable signed package over a guide.
-            yield return model.OrderBy(entry => DeviceEntryKey(entry) == preferredKey ? 0
-                : !IsModelGuide(entry) ? 1 : 2).First();
+            // Keep a reviewed source only while it is still available; otherwise
+            // choose the newest signed package before falling back to the guide.
+            var retained = model.FirstOrDefault(entry => !IsModelGuide(entry) && preferredKey != null && DeviceEntryKey(entry) == preferredKey);
+            if (retained.ValueKind != JsonValueKind.Undefined) { yield return retained; continue; }
+            var candidates = model.Where(entry => !IsModelGuide(entry)).OrderByDescending(
+                entry => entry.GetProperty("version").GetString(), DevicePackageVersion.Comparer)
+                .ThenBy(entry => DeviceEntryKey(entry), StringComparer.Ordinal).ToArray();
+            yield return candidates.Length > 0 ? candidates[0] : model.First();
         }
     }
 
@@ -381,9 +394,11 @@ public partial class MainWindow
             DeviceListSelectionChanged();
         ((ModelSearchComboBox)deviceList).RefreshSearch();
         RefreshInlineDeviceChoice();
+        QueueCustomBuildRefresh();
         // A refresh may revoke a package that was selected before the request.
         if (selectedDeviceTrust == "signed-index" && lastDeviceIndex is JsonElement latest
-            && !latest.GetProperty("packages").EnumerateArray().Any(entry => entry.GetProperty("sha256").GetString() == selectedDeviceDigest && IsAvailableDeviceEntry(entry)))
+            && !latest.GetProperty("packages").EnumerateArray().Any(entry => old != null && DeviceEntryKey(entry) == old
+                && entry.GetProperty("sha256").GetString() == selectedDeviceDigest && IsAvailableDeviceEntry(entry)))
         {
             ClearDeviceSelection();
             signedDeviceUse!.Visibility = Visibility.Collapsed;
@@ -499,5 +514,62 @@ public partial class MainWindow
             if (selectedDeviceTrust != null) deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         }
         else deviceStatus!.Text = PartitionInventory.L("请选择机型，或拖入外部机型脚本与包。", "Choose a device, or drop an external device script or package.");
+    }
+}
+
+
+internal static class DevicePackageVersion
+{
+    private sealed record Part(bool Numeric, BigInteger Number, string Text);
+    private sealed record Key(BigInteger[] Numbers, bool Stable, Part[] Pre, BigInteger? Maintenance);
+    private static readonly Regex Pattern = new(@"^([0-9]+(?:\.[0-9]+){1,3})(?:-([A-Za-z0-9.-]+))?(?:\+([A-Za-z0-9.-]+))?$", RegexOptions.CultureInvariant);
+    private static readonly Regex EnginePattern = new(@"^ENGINE_VERSION = ""([0-9]+\.[0-9]+\.[0-9]+)""$", RegexOptions.Multiline | RegexOptions.CultureInvariant);
+    private static readonly string Engine = LoadEngine();
+    internal static readonly IComparer<string?> Comparer = System.Collections.Generic.Comparer<string?>.Create(Compare);
+    private static string LoadEngine()
+    {
+        using var stream = typeof(DevicePackageVersion).Assembly.GetManifestResourceStream("OxpInstaller.ProtocolManifest")
+            ?? throw new InvalidOperationException("Embedded protocol version is missing.");
+        using var reader = new StreamReader(stream);
+        var match = EnginePattern.Match(reader.ReadToEnd().Replace("\r\n", "\n"));
+        if (!match.Success) throw new InvalidOperationException("Embedded protocol version is invalid.");
+        return match.Groups[1].Value;
+    }
+    internal static bool EngineSupports(string? minimum)
+    {
+        if (minimum == null || !Regex.IsMatch(minimum, @"^[0-9]+\.[0-9]+\.[0-9]+$", RegexOptions.CultureInvariant)) return false;
+        var requested = minimum.Split('.').Select(BigInteger.Parse).ToArray();
+        var current = Engine.Split('.').Select(BigInteger.Parse).ToArray();
+        for (var i = 0; i < 3; i++) { var c = requested[i].CompareTo(current[i]); if (c != 0) return c < 0; }
+        return true;
+    }
+    private static Key? Parse(string? value)
+    {
+        if (value == null) return null;
+        var match = Pattern.Match(value); if (!match.Success) return null;
+        var nums = match.Groups[1].Value.Split('.').Select(BigInteger.Parse).Concat(Enumerable.Repeat(BigInteger.Zero, 4)).Take(4).ToArray();
+        var pre = match.Groups[2].Success ? match.Groups[2].Value.Split('.').Select(part =>
+            Regex.IsMatch(part, @"^[0-9]+$", RegexOptions.CultureInvariant)
+                ? new Part(true, BigInteger.Parse(part), "") : new Part(false, BigInteger.Zero, part)).ToArray() : [];
+        var revision = Regex.Match(match.Groups[3].Value, @"^maintenance\.([0-9]+)$", RegexOptions.CultureInvariant);
+        return new Key(nums, !match.Groups[2].Success, pre, revision.Success ? BigInteger.Parse(revision.Groups[1].Value) : null);
+    }
+    internal static bool TryParse(string? value, out bool valid) { valid = Parse(value) != null; return valid; }
+    private static int Compare(string? left, string? right)
+    {
+        var a = Parse(left) ?? throw new InvalidOperationException("Unsupported package version.");
+        var b = Parse(right) ?? throw new InvalidOperationException("Unsupported package version.");
+        for (var i = 0; i < 4; i++) { var c = a.Numbers[i].CompareTo(b.Numbers[i]); if (c != 0) return c; }
+        if (a.Stable != b.Stable) return a.Stable ? 1 : -1;
+        for (var i = 0; i < Math.Min(a.Pre.Length, b.Pre.Length); i++)
+        {
+            var x = a.Pre[i]; var y = b.Pre[i];
+            if (x.Numeric != y.Numeric) return x.Numeric ? -1 : 1;
+            var c = x.Numeric ? x.Number.CompareTo(y.Number) : StringComparer.Ordinal.Compare(x.Text, y.Text);
+            if (c != 0) return c;
+        }
+        if (a.Pre.Length != b.Pre.Length) return a.Pre.Length.CompareTo(b.Pre.Length);
+        if (a.Maintenance.HasValue != b.Maintenance.HasValue) return a.Maintenance.HasValue ? 1 : -1;
+        return a.Maintenance.HasValue ? a.Maintenance.Value.CompareTo(b.Maintenance!.Value) : 0;
     }
 }

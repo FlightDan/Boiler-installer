@@ -168,8 +168,8 @@ def committed_records():
     if Path(git('rev-parse', '--show-toplevel').decode().strip()).resolve() != ROOT.resolve():
         raise ValueError('Release candidates require an independent public registry checkout')
     origin = git('remote', 'get-url', 'origin').decode().strip()
-    if origin not in ('https://github.com/FlightDan/Boiler-devices', 'https://github.com/FlightDan/Boiler-devices.git',
-                      'git@github.com:FlightDan/Boiler-devices.git'):
+    if origin not in ('https://github.com/FlightDan/Boiler-adaptations', 'https://github.com/FlightDan/Boiler-adaptations.git',
+                      'git@github.com:FlightDan/Boiler-adaptations.git'):
         raise ValueError('Unexpected public registry origin')
     commit = git('rev-parse', 'HEAD').decode().strip()
     records = []
@@ -327,15 +327,159 @@ def build(package, output, *, archive=None, asset_url=None, sequence=None, previ
     return index
 
 
+
+def validate_fingerprint_release(manifest):
+    if manifest.get('purpose')=='maintenance' or manifest.get('trust')!={'status':'index-signature-required','official_release':False}:
+        raise ValueError('Expected index-authenticated model installation package')
+    components=manifest['components']; fingerprints=[c for c in components if c.get('id')=='oxp3:fingerprint-unlock']
+    if len(fingerprints)!=1: raise ValueError('Exactly one fingerprint component required')
+    fingerprint=fingerprints[0]
+    if (fingerprint.get('default') is not True or fingerprint.get('optional') is not True or 'selection_policy' in fingerprint or fingerprint.get('hooks') or fingerprint.get('requires') or fingerprint.get('minimum_engine_version')!='0.1.5' or manifest.get('minimum_engine_version')!='0.1.5'):
+        raise ValueError('Fingerprint default and engine contract required')
+    identity=manifest['id']; model='oxp3' if identity=='device:oxp3' else 'x2'
+    target='etc/udev/rules.d/69-boiler-'+model+'-fingerprint.rules'
+    expected='fingerprint/profile/brands/onexplayer/'+('oxp3' if model=='oxp3' else 'x2-mini')+'/current/fingerprint/69-boiler-'+model+'-fingerprint.rules'
+    if sum(1 for f in fingerprint.get('files',[]) if f.get('source')==expected and f.get('target')==target)!=1: raise ValueError('Correct model fingerprint rule required')
+    rows=fingerprint.get('files',[]); targets=[f.get('target') for f in rows]
+    plugin='var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
+    native='var/lib/oxp3-installer/fingerprint/'
+    fixed={'etc/modprobe.d/boiler-oxp3-fingerprint.conf','etc/systemd/system/boiler-fprintd.service',
+           'usr/share/dbus-1/system-services/net.reactivated.Fprint.service',
+           'etc/dbus-1/system.d/net.reactivated.Fprint.conf','usr/share/polkit-1/actions/net.reactivated.fprint.device.policy',
+           *(plugin+x for x in ('profile.json','main.py','dist/index.js','plugin.json','package.json'))}
+    required={native+'libexec/fprintd',*(native+'bin/fprintd-'+x for x in ('verify','enroll','list','delete'))}
+    if len(targets)!=len(set(targets)) or not (fixed|required|{target}).issubset(targets): raise ValueError('Incomplete or duplicate fingerprint target')
+    for item in targets:
+        relative=item.removeprefix(native)
+        allowed_native=item.startswith(native) and (item in required or relative.startswith('lib/') and '/' not in relative[4:])
+        if item not in fixed and item!=target and not allowed_native: raise ValueError('Unexpected fingerprint target')
+    if fingerprint.get('compatibility',{}).get('device_ids') != [identity.removeprefix('device:')]: raise ValueError('Fingerprint model compatibility required')
+    legacy=manifest.get('legacy_capabilities',[]); decky=[x for x in legacy if x.get('id')=='oxp3:decky']; wifi=[x for x in legacy if x.get('id')=='oxp3:wifi']
+    if (len(decky)!=1 or decky[0].get('available') is not True or len(wifi)!=1 or wifi[0].get('available') is not False or wifi[0].get('default') is not False
+        or manifest.get('selection_contract')!={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'}
+        or sum(c.get('id')=='oxp3:legacy-adaptation' for c in components)!=1
+        or 'oxp3:fingerprint-unlock' not in manifest.get('shared_adaptations',{}).get('components',[])):
+        raise ValueError('Decky, legacy and maintenance contracts required')
+
+
+def build_models(models, output, *, previous_index, previous_sha256, sequence, source_commit, version, installer_root, installer_commit):
+    """Append to an independently signature-verified index. A SHA-256 is not signature verification; the caller must verify the exact historical bytes and supply their digest. Output is never signed."""
+    import sys
+    output = Path(output)
+    if output.exists(): raise ValueError('Index destination already exists')
+    if not re.fullmatch(r'[0-9a-f]{40}', source_commit or ''): raise ValueError('Exact authority commit required')
+    if not isinstance(version, str) or not VERSION.fullmatch(version) or 'localtest' in version.lower(): raise ValueError('Explicit release version required')
+    def git(*args): return subprocess.check_output(['git','-C',str(ROOT),*args],stderr=subprocess.PIPE).decode().strip()
+    if Path(git('rev-parse','--show-toplevel')).resolve()!=ROOT.resolve(): raise ValueError('Independent authority checkout required')
+    if git('remote','get-url','origin') not in ('https://github.com/FlightDan/Boiler-adaptations.git','https://github.com/FlightDan/Boiler-adaptations','git@github.com:FlightDan/Boiler-adaptations.git'): raise ValueError('Unexpected authority origin')
+    if git('rev-parse','HEAD')!=source_commit: raise ValueError('Authority commit must equal HEAD')
+    records={}
+    for name in ('device-index.json','devices/oxp3.json','devices/x2-mini.json'):
+        raw=subprocess.check_output(['git','-C',str(ROOT),'show',source_commit+':'+name],stderr=subprocess.PIPE)
+        path=ROOT/name
+        if path.is_symlink() or path.read_bytes()!=raw: raise ValueError('Registry metadata differs from committed bytes')
+        records[name]=document(raw)
+    raw_previous=Path(previous_index).read_bytes()
+    if not isinstance(previous_sha256,str) or not re.fullmatch(r'[0-9a-f]{64}',previous_sha256) or hashlib.sha256(raw_previous).hexdigest()!=previous_sha256: raise ValueError('Previous index differs from verified SHA-256')
+    previous=document(raw_previous); baseline=records['device-index.json']
+    if (previous.get('kind')!='DeviceIndex' or previous.get('id')!=baseline['id'] or type(previous.get('sequence')) is not int
+            or previous['sequence']<max(1,baseline['sequence']) or type(sequence) is not int or sequence<=previous['sequence']): raise ValueError('Invalid previous index or nonmonotonic sequence')
+    if not set(baseline.get('revocations',[])).issubset(previous.get('revocations',[])): raise ValueError('Previous index omits committed revocations')
+    if len(models)!=2: raise ValueError('Exactly two model packages required')
+    installer_root=Path(installer_root).resolve(strict=True)
+    if not re.fullmatch(r'[0-9a-f]{40}', installer_commit or ''): raise ValueError('Exact installer commit required')
+    def installer_git(*args): return subprocess.check_output(['git','-C',str(installer_root),*args],stderr=subprocess.PIPE)
+    if Path(installer_git('rev-parse','--show-toplevel').decode().strip()).resolve()!=installer_root: raise ValueError('Independent installer checkout required')
+    if installer_git('remote','get-url','origin').decode().strip() not in ('https://github.com/FlightDan/Boiler-installer.git','https://github.com/FlightDan/Boiler-installer','git@github.com:FlightDan/Boiler-installer.git'): raise ValueError('Unexpected installer origin')
+    if installer_git('rev-parse','HEAD').decode().strip()!=installer_commit: raise ValueError('Installer commit must equal HEAD')
+    whitelist_raw=installer_git('show',installer_commit+':scripts/source-files.json')
+    whitelist_path=installer_root/'scripts/source-files.json'
+    if whitelist_path.is_symlink() or whitelist_path.read_bytes()!=whitelist_raw: raise ValueError('Installer whitelist differs from committed bytes')
+    whitelist=document(whitelist_raw)
+    if whitelist.get('kind')!='BoilerSourceWhitelist' or not isinstance(whitelist.get('files'),list): raise ValueError('Invalid installer whitelist')
+    tracked=installer_git('ls-tree','-r','--name-only',installer_commit,'--','protocol').decode().splitlines()
+    if not {'protocol/__init__.py','protocol/manifest.py'}.issubset(tracked) or not set(tracked).issubset(set(whitelist['files'])): raise ValueError('Installer whitelist omits protocol files')
+    actual=[]
+    for path in (installer_root/'protocol').rglob('*'):
+        if path.is_symlink() or getattr(path,'is_junction',lambda:False)(): raise ValueError('Linked installer protocol')
+        if path.is_file(): actual.append(path.relative_to(installer_root).as_posix())
+    if set(actual)!=set(tracked): raise ValueError('Installer protocol contains untracked or missing files')
+    for name in tracked:
+        if (installer_root/name).read_bytes()!=installer_git('show',installer_commit+':'+name): raise ValueError('Installer protocol differs from committed bytes')
+    if any(n=='protocol' or n.startswith('protocol.') for n in sys.modules): raise ValueError('Protocol already loaded; use an isolated process')
+    sys.path.insert(0,str(installer_root))
+    old_bytecode=sys.dont_write_bytecode; sys.dont_write_bytecode=True
+    try:
+        from protocol.manifest import validate_manifest, validate_package
+        validate_manifest(previous,'DeviceIndex')
+        result=document(json.dumps(previous)); existing={(e['id'],e['version']) for e in result['packages']}; seen=set(); asset_bindings={}
+        devices=result.get('devices')
+        if not isinstance(devices,list): raise ValueError('Invalid devices registry list')
+        for name in devices:
+            if not isinstance(name,str) or not name.startswith('devices/') or not name.endswith('.json'): raise ValueError('Invalid device registry path')
+            relative(name)
+        result['devices']=list(dict.fromkeys(devices))
+        for name in ('devices/oxp3.json','devices/x2-mini.json'):
+            if name not in result['devices']: result['devices'].append(name)
+        for old in result['packages']:
+            src=old.get('source',{})
+            if src.get('kind')=='https':
+                binding=(src.get('sha256'),src.get('size')); url=src.get('url')
+                if url in asset_bindings and asset_bindings[url]!=binding: raise ValueError('Fixed URL has conflicting archive bytes')
+                asset_bindings[url]=binding
+        for package, archive, url in models:
+            package=Path(package).resolve(strict=True); raw=(package/'manifest.json').read_bytes()
+            if len(raw)>8*1024**2: raise ValueError('Manifest exceeds size limit')
+            manifest=document(raw); inventory=validate_contract(manifest); sha=hashlib.sha256(raw).hexdigest()
+            validate_package(package,expected_manifest_sha256=sha)
+            identity=manifest['id']
+            if identity not in ('device:oxp3','device:x2-mini') or identity in seen: raise ValueError('Expected one OXP3 and one X2 mini package')
+            seen.add(identity); record=records['devices/oxp3.json' if identity=='device:oxp3' else 'devices/x2-mini.json']
+            if record.get('id')!=identity or record.get('package_status')!='experimental': raise ValueError('Invalid model record')
+            if manifest['version']!=version or manifest.get('source')!={'kind':'github','repository':'FlightDan/Boiler-adaptations','commit':source_commit}: raise ValueError('Package version or authority source differs')
+            minimum=manifest.get('minimum_engine_version')
+            if minimum is None or tuple(map(int,minimum.split('.')))<(0,1,5): raise ValueError('Minimum engine version must be at least 0.1.5')
+            if (identity,version) in existing or sha in result['revocations']: raise ValueError('Duplicate or revoked package')
+            validate_fingerprint_release(manifest)
+            transport=asset_source(url,'FlightDan/Boiler-adaptations'); transport.update(archive_record(Path(archive),raw,inventory))
+            binding=(transport['sha256'],transport['size'])
+            if url in asset_bindings and asset_bindings[url]!=binding: raise ValueError('Fixed URL has conflicting archive bytes')
+            asset_bindings[url]=binding
+            entry={'id':identity,'version':version,'source':transport,'sha256':sha,'size':len(raw),'compatibility':manifest['compatibility'], 'minimum_engine_version':minimum,'status':'experimental','name':record['name'],'known_issues':record.get('known_issues',[]),'compatibility_records':record.get('compatibility_records',[]),'notes':record.get('notes',[])+['Unsigned candidate; physical hardware and live maintenance acceptance remain pending.'],'verification_scope':'local-manifest-and-archive-inventory','source_url':'https://github.com/FlightDan/Boiler-adaptations/tree/'+source_commit+'/brands/onexplayer/'+('oxp3' if identity=='device:oxp3' else 'x2-mini'),'declared_source':manifest['source']}
+            if 'hardware_matching' in record: entry['hardware_matching']=hardware_advice(record['hardware_matching'])
+            result['packages'].append(entry)
+        result['sequence']=sequence; result['generated_at']=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        result['trust']={'status':'index-signature-required','official_release':False}; result['note']='Unsigned candidate; signature and publication require separate acceptance.'
+        validate_manifest(result,'DeviceIndex')
+    finally:
+        sys.path.remove(str(installer_root)); sys.dont_write_bytecode=old_bytecode
+        for name in list(sys.modules):
+            if name=='protocol' or name.startswith('protocol.'): del sys.modules[name]
+    output.parent.mkdir(parents=True,exist_ok=True)
+    with output.open('x',encoding='utf-8',newline='\n') as stream: stream.write(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+    return result
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--package', type=Path, required=True)
+    parser.add_argument('--package', type=Path)
+    parser.add_argument('--model', nargs=3, action='append', metavar=('PACKAGE','ZIP','URL'))
+    parser.add_argument('--previous-sha256', help='SHA-256 of independently signature-verified previous index bytes; a digest alone is not signature verification')
+    parser.add_argument('--source-commit')
+    parser.add_argument('--version')
+    parser.add_argument('--installer-root', type=Path)
+    parser.add_argument('--installer-commit')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--archive', type=Path, help='Exact model release ZIP; enables unsigned release-candidate mode')
     parser.add_argument('--asset-url', help='Fixed credential-free GitHub model release asset URL')
     parser.add_argument('--sequence', type=int, help='Explicit positive sequence greater than the last verified index')
     parser.add_argument('--previous-index', type=Path, help='Optional previously verified public index; release operator verifies its signature separately')
     args = parser.parse_args()
-    value = build(args.package, args.output, archive=args.archive, asset_url=args.asset_url, sequence=args.sequence, previous_index=args.previous_index)
+    if args.model:
+        if args.package or args.archive or args.asset_url or not all((args.previous_index,args.previous_sha256,args.source_commit,args.version,args.installer_root,args.installer_commit)):
+            parser.error('Two-model mode requires previous index and independently verified SHA-256, source commit, version, installer root and installer commit')
+        value=build_models(args.model,args.output,previous_index=args.previous_index,previous_sha256=args.previous_sha256,sequence=args.sequence,source_commit=args.source_commit,version=args.version,installer_root=args.installer_root,installer_commit=args.installer_commit)
+    else:
+        if not args.package: parser.error('--package required')
+        value=build(args.package,args.output,archive=args.archive,asset_url=args.asset_url,sequence=args.sequence,previous_index=args.previous_index)
     print(json.dumps({'status': value['trust']['status'], 'packages': len(value['packages']),
                       'sequence':value['sequence'], 'sha256':digest(args.output), 'size':args.output.stat().st_size}))

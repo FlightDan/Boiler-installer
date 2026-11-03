@@ -11,10 +11,13 @@ import os
 from pathlib import Path
 import shutil
 import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import fingerprint_provenance
+# Bind the provenance checker to this exact authority source tree, even if
+# another copy was previously imported by the host process.
+provenance_spec = importlib.util.spec_from_file_location('fingerprint_provenance_local', Path(__file__).with_name('fingerprint_provenance.py'))
+fingerprint_provenance = importlib.util.module_from_spec(provenance_spec)
+provenance_spec.loader.exec_module(fingerprint_provenance)
 
-ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('fingerprint_native', Path(__file__).with_name('validate-fingerprint-native.py'))
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
@@ -24,14 +27,14 @@ def prepare(runtime, native_sha256, source_sha256, output):
     output = Path(output).absolute()
     if output.exists():
         raise ValueError('Fresh output directory required')
-    lock_path = ROOT / 'adaptations/fingerprint-source-lock.json'
+    lock_path = SOURCE_ROOT / 'fingerprint-source-lock.json'
     raw = lock_path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != source_sha256:
         raise ValueError('Fingerprint sources differ from explicit anchor')
     lock = json.loads(raw)
     if lock.get('kind') != 'BoilerFingerprintBridgeSources' or lock.get('schema_version') != 1:
         raise ValueError('Invalid fingerprint source lock')
-    source_root = ROOT / 'adaptations'
+    source_root = SOURCE_ROOT
     fingerprint_provenance.validate(source_root, lock, native.member)
     upstream_raw = native.member(source_root, lock['upstream_lock']).read_bytes()
     if native.sha(upstream_raw) != lock.get('upstream_lock_sha256'):

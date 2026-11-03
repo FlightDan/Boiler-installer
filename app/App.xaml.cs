@@ -50,6 +50,8 @@ public partial class App : Application
             try
             {
                 if (e.Args.Length == 2 && e.Args[1] == "normal-elevation-probe") { log.AppendLine(System.Text.Json.JsonSerializer.Serialize(new { elevated = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator), identity = System.Security.Principal.WindowsIdentity.GetCurrent().Name, scope = "Read-only token identity probe; no disk, firmware or system modifications." })); }
+                else if (e.Args.Length == 2 && e.Args[1] == "custom-build-checks") { log.AppendLine(await BoilerCustomBuildChecks.RunAsync()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "custom-build-checks-no-capture") { log.AppendLine(await BoilerCustomBuildChecks.RunAsync(captureScreenshots: false)); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-ui-checks") { log.AppendLine(await BoilerUiChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "steamos-partition-checks") { log.AppendLine(await SteamOsPartitionChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "boiler-device-checks") { log.AppendLine(await BoilerDeviceChecks.RunAsync()); }

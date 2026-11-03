@@ -19,7 +19,7 @@ public partial class MainWindow
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
         if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
-        ResetSsdPreference();
+        ResetSsdPreference(); fingerprintPreferences.Clear(); candidateFingerprintPreferences.Clear(); pendingFingerprintPreferences.Clear(); fingerprintTargetReviewed = false; fingerprintModel = null;
         deviceActionError = null;
         ResetInputAssociationSession();
         optionsPanel.SetSsdProvider(null);

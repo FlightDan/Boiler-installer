@@ -255,6 +255,9 @@ internal static class BoilerModelCatalogChecks
             {
                 InstallerI18n.SetLanguage(language);
                 await CheckMergedModels(language, Require);
+                await CheckVersionedModels(language, Require);
+                await CheckFingerprintSelection(language, "device:oxp3", Require);
+                await CheckFingerprintSelection(language, "device:x2-mini", Require);
                 var bundleCalls = 0;
                 window = new MainWindow(rehearsal: true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false,
                     DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()), ModelCatalogLoaderForChecks = _ => Task.FromResult(Catalog()),
@@ -279,7 +282,7 @@ internal static class BoilerModelCatalogChecks
                 await CaptureSourceView(window, directory, language, "bundled-default", 640, captures, captureScreenshots);
                 window.Width = 1060; await Flush(window);
                 onlineTab.IsChecked = true; await Flush(window);
-                Require(list.SelectedIndex == 0 && list.Items.Count == 3 && importArea.IsVisible
+                Require(list.SelectedIndex == 0 && list.Items.Count == 4 && importArea.IsVisible
                     && importArea.Children.OfType<Button>().Any(button => button.Name == "BrowseLocalDevice"),
                     language + "-online-tab-resets-list-and-shows-import-controls");
                 await CaptureSourceView(window, directory, language, "online", 1060, captures, captureScreenshots);
@@ -369,9 +372,12 @@ internal static class BoilerModelCatalogChecks
                 Require(disabledSpeaker.IsChecked != true && !window.CurrentOptions.DeviceComponents!.Contains("oxp3:speaker-route"),
                     language + "-bulk-selection-skips-unavailable-component");
                 var optionsHost = (StackPanel)window.FindName("ComponentOptionsHost");
-                Require(optionsHost.Children.IndexOf(Field<InstallerOptionsPanel>(window, "optionsPanel"))
-                    < optionsHost.Children.IndexOf(Field<StackPanel>(window, "deviceComponentsPanel")),
-                    language + "-common-options-and-system-presets-before-device-repairs");
+                var customBuild = Field<StackPanel>(window, "customBuild");
+                var settings = Field<Expander>(window, "customSettings");
+                Require(optionsHost.Children.Contains(customBuild) && optionsHost.Children.Contains(settings)
+                    && ReferenceEquals(settings.Content, Field<InstallerOptionsPanel>(window, "optionsPanel"))
+                    && optionsHost.Children.IndexOf(customBuild) < optionsHost.Children.IndexOf(Field<StackPanel>(window, "deviceComponentsPanel")),
+                    language + "-custom-catalog-precedes-retained-device-controls-and-settings-remain-accessible");
                 Call(window, "BuildLegacyDeviceOptions", JsonSerializer.SerializeToElement(new { legacy_capabilities = new[] { Capability("oxp3:descriptive", "repairs", []) } }), null);
                 Require(Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices").Count == 0,
                     language + "-legacy-capabilities-alone-do-not-authorize-edits");
@@ -462,6 +468,132 @@ internal static class BoilerModelCatalogChecks
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), result); return result;
     }
 
+    private static async Task CheckFingerprintSelection(string language, string modelId, Action<bool, string> require)
+    {
+        var package = JsonSerializer.SerializeToElement(new {
+            schema_version = 1, kind = "DevicePackage", id = modelId, version = "0.1.0-test.1",
+            name = new { zh = "测试", en = "Fixture" }, status = "experimental", source = new { kind = "local", path = "fixture" },
+            compatibility = new { }, files = Array.Empty<object>(),
+            components = new object[] {
+                new { id = "oxp3:legacy-adaptation", name = new { zh = "基础", en = "Base" } },
+                new { id = "oxp3:fingerprint-unlock", name = new { zh = "指纹", en = "Fingerprint" }, @default = true }
+            },
+            selection_contract = new { kind = "oxp3-legacy-options-v1", component = "oxp3:legacy-adaptation" },
+            legacy_capabilities = new[] { Capability("oxp3:decky", "plugins", []) }
+        });
+        var window = new MainWindow(rehearsal: true) { ShowActivated = false, WindowState = WindowState.Normal,
+            Width = 1060, Height = 720 };
+        try
+        {
+            var picker = (PartitionPicker)window.FindName("PartitionSelector");
+            picker.AutomaticReadEnabled = false;
+            window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
+            var snapshot = System.Text.Json.Nodes.JsonNode.Parse(PartitionInventory.ExampleJson)!.AsArray();
+            var disk = snapshot[0]!; disk["serial"] = "fingerprint-fixture";
+            void Candidate(string guid)
+            {
+                disk["guid"] = guid; picker.LoadSnapshot(snapshot.ToJsonString(), false);
+                picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(row => row.Space != null);
+                picker.CapacityInput.Text = "128";
+                typeof(MainWindow).GetField("physicalInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, true);
+                Call(window, "SyncFingerprintCandidateSelection");
+            }
+            void Confirm()
+            {
+                typeof(MainWindow).GetField("acknowledgedSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, picker.Selection);
+                Call(window, "SyncFingerprintSelection");
+            }
+            void Target(string guid) { Candidate(guid); Confirm(); }
+            var preparedType = typeof(MainWindow).GetNestedType("PreparedDeviceSelection", BindingFlags.NonPublic)!;
+            var digest = new string('d', 64);
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            var components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            var legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+            var fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked == true && legacy["oxp3:decky"].IsChecked == true, language + "-fingerprint-default-and-decky");
+            var all = Field<CheckBox>(window, "deviceAdaptationsChoice");
+            all.IsChecked = false; all.IsChecked = true;
+            require(fingerprint.IsChecked == true, language + "-bulk-selection-enables-fingerprint");
+            fingerprint.IsChecked = false;
+            var pendingOther = System.Text.Json.Nodes.JsonNode.Parse(package.GetRawText())!;
+            pendingOther["id"] = modelId == "device:oxp3" ? "device:x2-mini" : "device:oxp3";
+            using (var otherPendingDoc = JsonDocument.Parse(pendingOther.ToJsonString()))
+                Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, new string('c', 24), new string('c', 64), "developer-session", otherPendingDoc.RootElement.Clone(), null)!);
+            var otherPendingFingerprint = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices")["oxp3:fingerprint-unlock"];
+            require(otherPendingFingerprint.IsChecked == true, language + "-pending-cancellation-does-not-leak-to-other-model");
+            otherPendingFingerprint.IsChecked = false;
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            fingerprint = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices")["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked != true, language + "-pending-cancellation-survives-model-return");
+            Target("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            require(fingerprint.IsChecked != true, language + "-pre-target-cancellation-binds-on-confirmation");
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+            fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked != true, language + "-fingerprint-cancellation-survives-refresh");
+            var changedDigest = new string('e', 64);
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, changedDigest[..24], changedDigest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked != true, language + "-fingerprint-cancellation-survives-new-provider");
+            fingerprint.IsChecked = true;
+            Candidate("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            require(fingerprint.IsChecked == true, language + "-different-target-default-on");
+            fingerprint.IsChecked = false; Confirm();
+            require(fingerprint.IsChecked != true, language + "-candidate-cancellation-binds-on-confirmation");
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked != true, language + "-candidate-cancellation-survives-new-provider");
+            Target("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            require(fingerprint.IsChecked == true, language + "-candidate-cancellation-does-not-affect-first-target");
+            Candidate("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            require(fingerprint.IsChecked != true, language + "-candidate-previously-disabled");
+            fingerprint.IsChecked = true;
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, changedDigest[..24], changedDigest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked == true, language + "-candidate-enable-survives-provider-refresh-before-confirmation");
+            Confirm(); require(fingerprint.IsChecked == true, language + "-candidate-enable-overrides-previous-disable");
+            Target("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            Candidate("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            require(fingerprint.IsChecked == true, language + "-candidate-previously-enabled");
+            fingerprint.IsChecked = false; Confirm();
+            require(fingerprint.IsChecked != true, language + "-candidate-disable-overrides-previous-enable");
+            Target("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            require(fingerprint.IsChecked == true, language + "-candidate-overrides-do-not-affect-first-target");
+            fingerprint.IsChecked = false;
+            Target("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            require(fingerprint.IsChecked != true, language + "-return-target-keeps-cancellation");
+            Target("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            fingerprint.IsChecked = true;
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked == true, language + "-fingerprint-reenabled-survives-new-provider");
+            fingerprint.IsChecked = false;
+            var otherPackage = System.Text.Json.Nodes.JsonNode.Parse(package.GetRawText())!;
+            otherPackage["id"] = modelId == "device:oxp3" ? "device:x2-mini" : "device:oxp3";
+            using var otherDocument = JsonDocument.Parse(otherPackage.ToJsonString());
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, changedDigest[..24], changedDigest, "developer-session", otherDocument.RootElement.Clone(), null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked == true, language + "-different-model-default-on");
+            Call(window, "CommitDeviceSelection", Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices"); legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices"); fingerprint = components["oxp3:fingerprint-unlock"];
+            require(fingerprint.IsChecked != true, language + "-return-model-keeps-cancellation");
+            legacy["oxp3:decky"].IsChecked = false;
+            fingerprint.IsChecked = true;
+            require(legacy["oxp3:decky"].IsChecked == true, language + "-fingerprint-selects-device-decky");
+            legacy["oxp3:decky"].IsChecked = false;
+            require(fingerprint.IsChecked != true, language + "-device-decky-off-clears-fingerprint");
+            fingerprint.IsChecked = true;
+            Field<InstallerOptionsPanel>(window, "optionsPanel").OptionBoxes["core:decky"].IsChecked = false;
+            require(fingerprint.IsChecked != true, language + "-common-decky-off-clears-fingerprint");
+        }
+        finally { window.Close(); }
+    }
+
     private static async Task CheckActualMetadata(MainWindow window, string language, string directory, List<string> checks, List<string> captures, Action<bool, string> require, bool captureScreenshots)
     {
         var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
@@ -508,6 +640,74 @@ internal static class BoilerModelCatalogChecks
         require(boxes.Values.Where(box => box.IsEnabled).All(box => box.IsChecked == true) && core.IsChecked == true, language + "-new-package-defaults-all-available");
     }
 
+    private static async Task CheckVersionedModels(string language, Action<bool, string> require)
+    {
+        object Package(string version, char digest, string minimum = "0.1.5") => new {
+            id="device:oxp3", version, sha256=new string(digest,64), name="Fixture", status="experimental",
+            minimum_engine_version=minimum, source=new { kind="https", url="https://github.com/FlightDan/Boiler-installer/releases/download/v/package.zip" } };
+        JsonElement Index(object[] packages, string[]? revoked=null) => JsonSerializer.SerializeToElement(new {
+            offline=false, index=new { generated_at="2026-11-04T00:00:00Z", sequence=3, packages, revocations=revoked ?? [] } });
+        var old=Package("0.1.0-preview.1",'a'); var newest=Package("0.2.0-preview.20261104.1",'b');
+        var future=Package("0.3.0-preview.1",'c',"0.1.6");
+        var index=Index([old,newest,future]);
+        var window=new MainWindow(rehearsal:true) { Width=1060, Height=720, WindowState=WindowState.Normal, ShowActivated=false,
+            DeviceIndexLoaderForChecks=_ => Task.FromResult(index), ModelCatalogLoaderForChecks=_ => Task.FromResult(Catalog(bundled:false)),
+            DeviceHardwareReaderForChecks=() => null };
+        ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled=false;
+        try
+        {
+            window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
+            var list=Field<ComboBox>(window,"deviceList");
+            JsonElement OXP() => list.Items.OfType<ComboBoxItem>().Where(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3")
+                .Select(i => (JsonElement)i.Tag).Single();
+            async Task Refresh(JsonElement next) { index=next; await (Task)Call(window,"LoadDeviceIndexAsync",Field<int>(window,"devicePanelGeneration"),CancellationToken.None)!; await Flush(window); }
+            require(OXP().GetProperty("sha256").GetString()==new string('b',64),language+"-highest-compatible-version");
+            await Refresh(Index([future,newest,old]));
+            require(OXP().GetProperty("sha256").GetString()==new string('b',64),language+"-highest-version-independent-of-order");
+            await Refresh(Index([old,newest], [new string('b',64)]));
+            require(OXP().GetProperty("sha256").GetString()==new string('a',64),language+"-revoked-highest-uses-previous");
+            await Refresh(Index([future]));
+            require(OXP().TryGetProperty("guide_id",out _),language+"-incompatible-only-falls-back-to-guide");
+            await Refresh(Index([]));
+            require(OXP().TryGetProperty("guide_id",out _),language+"-empty-falls-back-to-guide");
+            await Refresh(Index([old]));
+            list.SelectedItem=list.Items.OfType<ComboBoxItem>().Single(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3");
+            await Flush(window);
+            var package=JsonSerializer.SerializeToElement(new { id="device:oxp3",version="0.1.0-preview.1",components=Array.Empty<object>() });
+            var prepared=typeof(MainWindow).GetNestedType("PreparedDeviceSelection",BindingFlags.NonPublic)!;
+            Call(window,"CommitDeviceSelection",Activator.CreateInstance(prepared,new string('a',24),new string('a',64),"signed-index",package,null)!);
+            var before=window.CurrentOptions.DevicePackage; var beforeDigest=window.CurrentOptions.DeviceManifestSha256;
+            await Refresh(Index([newest,old]));
+            require(OXP().GetProperty("sha256").GetString()==new string('a',64) && window.CurrentOptions.DevicePackage==before
+                && window.CurrentOptions.DeviceManifestSha256==beforeDigest,language+"-selected-version-and-source-survive-refresh");
+            var sameSource= new { id="device:oxp3",version="0.1.0-preview.1",sha256=new string('a',64),name="Fixture",status="experimental",
+                minimum_engine_version="0.1.5",source=new { kind="https",url="https://github.com/FlightDan/Boiler-installer/releases/download/other-tag/package.zip" } };
+            await Refresh(Index([newest,sameSource]));
+            require(window.CurrentOptions.DevicePackage==before && window.CurrentOptions.DeviceManifestSha256==beforeDigest,
+                language+"-same-source-identity-with-new-transport-preserves-selection");
+            var changedSource= new { id="device:oxp3",version="0.1.0-preview.1",sha256=new string('a',64),name="Fixture",status="experimental",
+                minimum_engine_version="0.1.5",source=new { kind="https",url="https://github.com/Other/Repository/releases/download/v/package.zip" } };
+            await Refresh(Index([changedSource,newest]));
+            require(window.CurrentOptions.DevicePackage==null,language+"-changed-source-clears-selected-package");
+            await Refresh(Index([old]));
+            list.SelectedItem=list.Items.OfType<ComboBoxItem>().Single(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3");
+            await Flush(window);
+            Call(window,"CommitDeviceSelection",Activator.CreateInstance(prepared,new string('a',24),new string('a',64),"signed-index",package,null)!);
+            await Refresh(Index([Package("0.1.0-preview.1",'a',"0.1.6"),newest]));
+            require(window.CurrentOptions.DevicePackage==null,language+"-incompatible-selected-package-cleared");
+            await Refresh(Index([old]));
+            list.SelectedItem=list.Items.OfType<ComboBoxItem>().Single(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3");
+            await Flush(window);
+            Call(window,"CommitDeviceSelection",Activator.CreateInstance(prepared,new string('a',24),new string('a',64),"signed-index",package,null)!);
+            await Refresh(Index([old,newest],[new string('a',64)]));
+            require(window.CurrentOptions.DevicePackage==null,language+"-revoked-selected-package-cleared");
+            foreach (var (low,high) in new[] { ("0.1.0-preview.9","0.1.0-preview.10"), ("0.1.0-preview.10","0.1.0"),
+                ("0.1.0+maintenance.2","0.1.0+maintenance.10"), ("0.1.0-9","0.1.0-alpha"), ("0.1.0","0.2.0-preview.1") })
+                require(DevicePackageVersion.Comparer.Compare(low,high)<0,language+"-protocol-version-order-"+low+"-"+high);
+        }
+        finally { window.Close(); }
+    }
+
     private static async Task CheckMergedModels(string language, Action<bool, string> require)
     {
         MainWindow? window = null;
@@ -538,7 +738,7 @@ internal static class BoilerModelCatalogChecks
             var onlineSigned = (JsonElement)((ComboBoxItem)list.Items[2]).Tag;
             require(onlineGuide.GetProperty("id").GetString() == "device:x2-mini" && onlineGuide.TryGetProperty("guide_id", out _)
                 && onlineSigned.GetProperty("id").GetString() == "device:oxp3" && !onlineSigned.TryGetProperty("guide_id", out _)
-                && onlineSigned.GetProperty("sha256").GetString() == new string('a', 64),
+                && onlineSigned.GetProperty("sha256").GetString() == new string('b', 64),
                 language + "-same-model-online-signed-package-is-separate-and-preferred-over-bundled-guide");
             list.SelectedIndex = 2; await Flush(window);
             require(ChosenModelEntry(list).GetProperty("id").GetString() == "device:oxp3"
@@ -546,6 +746,10 @@ internal static class BoilerModelCatalogChecks
                 && Field<Button>(window, "inlineDeviceContinue").IsEnabled
                 && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed,
                 language + "-online-signed-choice-keeps-package-validation-explicit");
+            window.DeviceIndexLoaderForChecks = _ => Task.FromResult(MatchingIndex(revoked: true));
+            await (Task)Call(window, "LoadDeviceIndexAsync", Field<int>(window, "devicePanelGeneration"), CancellationToken.None)!;
+            require(ChosenModelEntry(list).GetProperty("id").GetString() == "device:oxp3"
+                && ChosenModelEntry(list).TryGetProperty("guide_id", out _), language + "-bundled-guide-fallback-on-online-tab");
             window.Close(); window = null;
 
             var delayedCatalog = new TaskCompletionSource<JsonElement>();
@@ -593,7 +797,7 @@ internal static class BoilerModelCatalogChecks
             require(!Field<Button>(window, "inlineDeviceContinue").IsEnabled, language + "-guide-only-model-stays-read-only");
             delayedIndex.SetResult(MatchingIndex()); await Flush(window);
             require(sourceTabs.Visibility == Visibility.Collapsed && onlineTab.IsChecked == true
-                && list.Items.Count == 3 && ChosenModelEntry(list).GetProperty("sha256").GetString() == new string('a', 64)
+                && list.Items.Count == 3 && ChosenModelEntry(list).GetProperty("sha256").GetString() == new string('b', 64)
                 && Field<Button>(window, "inlineDeviceContinue").IsEnabled && window.CurrentOptions.DevicePackage == null
                 && Field<StackPanel>(window, "modelCatalogDetails").Visibility == Visibility.Collapsed
                 && !Field<JsonElement>(window, "displayedDeviceMetadata").TryGetProperty("guide_id", out _),

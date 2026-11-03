@@ -1,11 +1,28 @@
 {
   "schema_version": 1,
   "id": "device:x2-mini",
-  "name": {"en": "ONEXPLAYER X2 Mini / Mini PRO", "zh": "ONEXPLAYER X2 Mini / Mini PRO"},
-  "repository": "FlightDan/Boiler-installer",
-  "local_candidate": "brands/onexplayer/x2-mini",
+  "name": {
+    "en": "ONEXPLAYER X2 Mini / Mini PRO",
+    "zh": "ONEXPLAYER X2 Mini / Mini PRO"
+  },
+  "repository": "FlightDan/Boiler-adaptations",
   "package_status": "experimental",
-  "notes": ["Source-only registry record. No signed package, published asset, hardware acceptance or model maintenance acceptance is asserted."],
+  "notes": [
+    "Model and fingerprint integration are experimental; first boot, physical hardware and live maintenance acceptance remain pending."
+  ],
   "compatibility_records": [],
-  "known_issues": []
+  "known_issues": [],
+  "hardware_matching": {
+    "mode": "advisory-exact-dmi-v1",
+    "pairs": [
+      {
+        "manufacturer": "ONE-NETBOOK",
+        "model": "ONEXPLAYER X2 Mini"
+      },
+      {
+        "manufacturer": "ONE-NETBOOK",
+        "model": "ONEXPLAYER X2 Mini PRO"
+      }
+    ]
+  }
 }

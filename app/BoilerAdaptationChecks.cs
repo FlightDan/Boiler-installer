@@ -189,9 +189,10 @@ internal static class BoilerAdaptationChecks
                 await File.WriteAllBytesAsync(source, RecoveryImageChecks.Fixture());
                 BindSourceFixture(window, source);
                 ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                BoilerCustomBuildChecks.Options(window, expandSettings: true); await Flush(window);
                 Require(options.IsVisible && options.RepairsExpander.IsVisible, language + "-generic-card-opens-wireless-and-common-options");
                 Require(!((Border)window.FindName("WorkspaceCard")).IsVisible, language + "-workspace-not-repeated-on-options");
-                Require(options.OptionBoxes["core:decky"].IsVisible && options.OptionBoxes["core:maintenance"].IsVisible,
+                Require(BoilerCustomBuildChecks.HasVisibleChoice(window, "core:decky") && BoilerCustomBuildChecks.HasVisibleChoice(window, "core:maintenance"),
                     language + "-generic-common-components-are-visible");
                 var optionScroll = (ScrollViewer)window.FindName("PageScroll"); optionScroll.ScrollToTop(); await Flush(window);
                 await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-generic-options.png"), captures, captureErrors);
@@ -250,7 +251,7 @@ internal static class BoilerAdaptationChecks
                     language + "-import-selects-device-without-preview-or-trust-confirmation");
                 Require(!Field<Button>(window, "inputApplyButton").IsEnabled, language + "-completed-import-needs-no-associate-click");
                 await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-imported.png"), captures, captureErrors);
-                Require(window.CurrentOptions.DevicePackage != null && window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-feature", "device:fixture-optional"]), language + "-trusted-package-defaults-to-all-adaptations", Field<TextBlock>(window, "inputAssociationStatus").Text + " / " + JsonSerializer.Serialize(window.CurrentOptions.DeviceComponents));
+                Require(window.CurrentOptions.DevicePackage != null && window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-feature"]), language + "-trusted-package-defaults-preserve-explicit-opt-in", Field<TextBlock>(window, "inputAssociationStatus").Text + " / " + JsonSerializer.Serialize(window.CurrentOptions.DeviceComponents));
                 Require(Field<int>(window, "step") == 1 && !options.IsVisible, language + "-trusted-device-without-source-opens-source-first");
                 ((Button)window.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
                 Require(choices.IsVisible && !Field<StackPanel>(window, "adaptationDeviceHost").IsVisible, language + "-source-back-skips-redundant-device-page");
@@ -259,15 +260,16 @@ internal static class BoilerAdaptationChecks
                     && Field<Button>(window, "inlineDeviceContinue").IsVisible && Field<Button>(window, "inlineDeviceContinue").IsEnabled,
                     language + "-source-back-shows-active-local-package-and-can-continue");
                 Field<Button>(window, "inlineDeviceContinue").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
-                Require(Field<int>(window, "step") == 1 && window.CurrentOptions.DeviceComponents!.Length == 2,
+                Require(Field<int>(window, "step") == 1 && window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-feature"]),
                     language + "-first-layer-package-continue-preserves-selection-and-opens-second-layer");
                 Call(window, "ContinueAfterDeviceSelection"); await Flush(window);
                 BindSourceFixture(window, source);
                 ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Flush(window);
+                BoilerCustomBuildChecks.Options(window, expandSettings: true); await Flush(window);
                 Require(options.IsVisible && !options.RepairsExpander.IsVisible && !preview.IsVisible, language + "-package-options-replace-generic-wireless");
                 var packageOptions = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
                 var allAdaptations = Field<CheckBox>(window, "deviceAdaptationsChoice");
-                Require(allAdaptations.IsVisible && allAdaptations.IsEnabled && allAdaptations.IsChecked == true
+                Require(Field<StackPanel>(window, "customBuild").IsVisible && allAdaptations.IsEnabled && allAdaptations.IsChecked == true
                     && Field<StackPanel>(window, "deviceComponentsPanel").Children.OfType<CheckBox>().Count() == 3,
                     language + "-default-checked-package-adaptation-options");
                 Require(((TextBlock)allAdaptations.Content).Text == PartitionInventory.L("机型适配修复", "Device compatibility fixes"),
@@ -276,8 +278,14 @@ internal static class BoilerAdaptationChecks
                 allAdaptations.IsChecked = false;
                 Require(window.CurrentOptions.DeviceComponents!.Length == 0 && packageOptions.Values.All(box => box.IsChecked == false), language + "-package-opt-out-clears-all-component-ids");
                 allAdaptations.IsChecked = true;
-                Require(window.CurrentOptions.DeviceComponents!.Length == 2, language + "-package-opt-in-restores-all-component-ids");
+                Require(window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-feature"])
+                    && packageOptions["device:fixture-optional"].IsChecked != true, language + "-bulk-opt-in-preserves-explicit-component-opt-out");
+                BoilerCustomBuildChecks.FindChoice(window, "device:fixture-optional")!.IsChecked = true; await Flush(window);
+                Require(window.CurrentOptions.DeviceComponents!.Length == 2, language + "-explicit-component-can-be-selected-in-new-catalog");
                 allAdaptations.IsChecked = false;
+                Require(window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-optional"]), language + "-bulk-opt-out-preserves-explicit-choice");
+                BoilerCustomBuildChecks.FindChoice(window, "device:fixture-optional")!.IsChecked = false; await Flush(window);
+                Field<TextBox>(window, "customSearch").Clear(); await Flush(window);
                 ((RadioButton)window.FindName(language == "zh-CN" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true; await Flush(window);
                 Require(window.CurrentOptions.DeviceComponents!.Length == 0 && !options.RepairsExpander.IsVisible, language + "-language-switch-keeps-package-choice-and-no-wireless");
                 Require(((TextBlock)window.FindName("PageSubtitle")).Text == MainWindow.DeviceOptionsDescription(), language + "-language-switch-updates-options-description");

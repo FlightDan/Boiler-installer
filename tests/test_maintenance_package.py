@@ -102,6 +102,10 @@ class MaintenancePackageTests(unittest.TestCase):
         self.assertEqual(manifest['source']['commit'], self.commit)
         self.assertEqual(first['index_entry']['source']['size'], (self.work/'first/artifact.zip').stat().st_size)
         self.assertTrue(compatible(manifest, dict(os_id='steamos', architecture='x86_64', os_version='3.8.14')))
+        import protocol.manifest as protocol_manifest
+        with mock.patch.object(protocol_manifest, 'ENGINE_VERSION', '0.1.4'):
+            self.assertTrue(compatible(manifest, dict(os_id='steamos', architecture='x86_64', os_version='3.8.14')))
+            self.assertTrue(compatible(manifest['components'][0], dict(os_id='steamos', architecture='x86_64', os_version='3.8.14')))
         self.assertFalse(compatible(manifest, dict(os_id='steamos', architecture='x86_64', os_version='3.9')))
 
     def test_generic_updater_can_plan_and_apply_to_owned_runtime(self):
@@ -126,7 +130,8 @@ class MaintenancePackageTests(unittest.TestCase):
                       sha256='a'*64, trusted_public_key_sha256=builder.PUBLIC_KEY_SHA256)
         # Signature cryptography is independently tested by protocol/update tests;
         # this fixture replaces only signed discovery, preserving updater checks.
-        with mock.patch.object(updates, '_signed_snapshot', return_value=(index, anchor)):
+        with mock.patch.object(updates, '_signed_snapshot', return_value=(index, anchor)), \
+             mock.patch('protocol.manifest.ENGINE_VERSION', '0.1.4'):
             plan = updates.plan_update(root, self.work/'cache', payload, 'bundle:maintenance', component['version'])
             self.assertEqual(plan['selected'], ['core:maintenance'])
             self.assertTrue(plan['executable'])

@@ -19,6 +19,7 @@
   <ItemGroup>
     <Resource Include="Assets/*.png" />
     <EmbeddedResource Include="../components/release.json" LogicalName="OxpInstaller.release.json" />
+    <EmbeddedResource Include="../protocol/manifest.py" LogicalName="OxpInstaller.ProtocolManifest" />
     <EmbeddedResource Include="RestartToSteamOS.bat" LogicalName="OxpInstaller.RestartToSteamOS.bat" />
   </ItemGroup>
   <Target Name="CreatePortableLauncher" AfterTargets="Build" DependsOnTargets="_GetAppHostPaths">

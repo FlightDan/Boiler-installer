@@ -290,7 +290,9 @@ class CandidateLifecycle(CandidateFixture):
         self.execute(self.plan())
         self.assertEqual(oldtransaction,Engine(self.root)._state()['components']['x2-mini:microphone']['transaction'])
         self.assertTrue((self.root/'var/lib/boiler/maintenance/models/packages'/BASE_ANCHOR).is_dir())
-        self.execute(self.plan('restore'))
+        self.execute(self.plan('restore', repairs=[IDENTITY]))
+        self.assertEqual(oldtransaction,Engine(self.root)._state()['components']['x2-mini:microphone']['transaction'])
+        self.execute(self.plan('restore', repairs=['x2-mini:microphone']))
         self.assertEqual({},Engine(self.root)._state()['components'])
         self.assertFalse(self.target.exists())
 
@@ -609,7 +611,10 @@ class SlotSwitchLifecycle(CandidateFixture):
         self.assertIn(shared.SLOT_SWITCH_COMPONENT,[row['id'] for row in view['capabilities']])
         self.execute(self.plan())
         self.assertEqual(transaction,Engine(self.root)._state()['components'][IDENTITY]['transaction'])
-        self.execute(self.plan('restore'));self.assertEqual({},Engine(self.root)._state()['components'])
+        self.execute(self.plan('restore', repairs=[shared.SLOT_SWITCH_COMPONENT]))
+        self.assertEqual(transaction,Engine(self.root)._state()['components'][IDENTITY]['transaction'])
+        self.assertNotIn(shared.SLOT_SWITCH_COMPONENT,Engine(self.root)._state()['components'])
+        self.execute(self.plan('restore', repairs=[IDENTITY]));self.assertEqual({},Engine(self.root)._state()['components'])
 
     @unittest.skipIf(os.name == 'nt', 'Requires genuine Linux executable and permission checks')
     def test_nonexecutable_tool_and_unsafe_existing_privileged_mode_refuse(self):
