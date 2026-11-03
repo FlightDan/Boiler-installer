@@ -1,0 +1,11 @@
+[Unit]
+Description=Restart the OXP3 speaker check after resume
+DefaultDependencies=no
+Before=sleep.target
+StopWhenUnneeded=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/true
+ExecStop=-/usr/bin/systemctl --user -M deck@ start --no-block oxp3-speaker-route.service

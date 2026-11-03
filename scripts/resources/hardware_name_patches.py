@@ -4,6 +4,7 @@ Source locks stay immutable. This tool does not load a module or touch audio.
 """
 import argparse
 import difflib
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -40,7 +41,9 @@ def xevma_model_advisory(raw):
     text=raw.decode()
     if text.count(old)!=1:raise ValueError('Changed xevma model gate anchor')
     patched = text.replace(old,new).encode()
-    path=Path(__file__).resolve().parents[2]/'adaptations/common/xevma/kmod_transform.py'
+    path=Path(__file__).resolve().parents[2]/'adaptations/common/gpu/intel/xe/xevmafix-724/sources/kmod_transform.py'
+    if hashlib.sha256(path.read_bytes()).hexdigest()!='9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7':
+        raise ValueError('Canonical xevma transform differs from locked source')
     spec=importlib.util.spec_from_file_location('boiler_xevma_kmod_resource',path)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     return module.transform(patched)

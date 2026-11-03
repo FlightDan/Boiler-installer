@@ -44,15 +44,21 @@ def cpu_builder(project):
 
 def check_inputs(project):
     project = _safe_path(project); raw = local(project, LOCK).read_bytes(); lock = json_document(raw)
+    guide_sources=set(model_source.sources(project))  # Bind every canonical source before compiling payloads.
     if lock.get('schema_version') != 1 or lock.get('kind') != 'BoilerProjectResourceBuildInputs': raise ValueError('Unsupported project resource input lock')
     if lock.get('public_baseline') != '72f864e0498c10366493c74608c5ffed62cc99ca': raise ValueError('Public research exclusion baseline changed')
     names = set()
     for row in lock['files']:
         name = row['path']
         if name in names: raise ValueError('Duplicate resource build input')
-        names.add(name); path = _safe_path(local(project, name)); data = path.read_bytes()
-        if len(data) != row['size'] or sha(data) != row['sha256']: raise ValueError('Locked project input differs: '+name)
-    for required in (build_wifi_pool.SOURCE, lock['xevma_module'], assemble_source_pool.CURRENT_PROOF,
+        names.add(name)
+        if name.startswith('adaptations/common/resource-inputs/intel-be201/'):
+            data = build_wifi_pool.resolve(project,name)
+        else:
+            path = _safe_path(local(project, name)); data = path.read_bytes()
+        if name not in guide_sources and (len(data) != row['size'] or sha(data) != row['sha256']):
+            raise ValueError('Locked project input differs: '+name)
+    for required in (build_wifi_pool.LEGACY_SOURCE, lock['xevma_module'], assemble_source_pool.CURRENT_PROOF,
             xevma_proof.PROOF, xevma_proof.RECIPE, xevma_proof.LOG, xevma_proof.ROOT+'REBUILD.md'):
         if required not in names: raise ValueError('Required single-source input is not locked')
     xevma_proof.verified_rebuild(project)
@@ -76,7 +82,7 @@ def finalize(pool, project, lock, lock_raw):
         code=[dict(path=name, size=len(raw), sha256=sha(raw)) for name in CODE for raw in [local(project, name).read_bytes()]],
         source_provenance_complete=not lock['publication_blockers'], independent_xevma_source_rebuild_verified=True,
         xevma_source_rebuild_proof='provenance/xevma-source-rebuild/xevma-rebuild-proof.json', release_ready=False,
-        cpu_production_activation_allowed=False,
+        cpu_production_activation_allowed=False, canonical_model_snapshot=model_source.SNAPSHOT,
         hdr_scope='shared-game-files-only',hdr_runtime_accepted=False,desktop_hdr_installable=False,
         publication_blockers=lock['publication_blockers'], unresolved=lock['unresolved'])
     path = local(pool, 'provenance/project-resource-build.json'); path.write_bytes(json_bytes(proof))
@@ -112,8 +118,10 @@ def build(project, output, *, local_candidate=False):
         final=work/'combined';merge_hdr_resource_pool.build(thirteen,hdr,final,
             base_sha256=sha((thirteen/'catalog.toon').read_bytes()),hdr_sha256=sha((hdr/'catalog.toon').read_bytes()))
         catalog = finalize(final, project, lock, raw_lock)
-        if ({r['id'] for r in catalog['resources']} != set(lock['static_resources']) | {lock['wifi_resource'],lock['cpu_resource'],lock['hdr_resource']}
-): raise ValueError('Final resource identity set differs from lock')
+        available=set(lock['static_resources']) | {lock['wifi_resource'],lock['cpu_resource'],lock['hdr_resource']}
+        selected={row['resource'] for model in catalog['models'] for row in model['resources']}
+        if {r['id'] for r in catalog['resources']} != selected or not selected <= available:
+            raise ValueError('Final resource identities differ from model selection')
         # Verify source identities again before publishing the new directory.
         check_inputs(project)
         if os.path.lexists(output): raise FileExistsError('Resource destination appeared during build')

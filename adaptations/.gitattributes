@@ -1,4 +1,3 @@
-# Preserve the exact reviewed source and payload-lock bytes on every host.
-* -text whitespace=cr-at-eol
-**/*.patch -whitespace
-licenses/** whitespace=cr-at-eol,-blank-at-eof
+# Canonical source inventories bind exact Git and worktree bytes.
+# Generators write LF explicitly; Git must not normalize locked or archived bytes.
+* -text

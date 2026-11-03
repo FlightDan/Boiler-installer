@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from protocol.manifest import confined, validate_package
 from protocol.local import import_local
 from protocol.resource_pool import decoder
-from scripts.resources import bmi260
+from scripts.resources import bmi260, canonical_stage
 
 MODEL_REFS = {
     'device:oxp3': 'brands/onexplayer/oxp3/common-device-sources.toon',
@@ -42,6 +42,8 @@ def stage_snapshot(stage):
     stage=Path(stage)
     proof_raw=confined(stage,'preparation.json').read_bytes()
     proof=json.loads(proof_raw)
+    if proof.get('kind')=='CanonicalCommonSnapshotPreparation':
+        return canonical_stage.verify(stage,ROOT)
     semantic=dict(proof)
     lock_sha=semantic.pop('project_input_lock_sha256',None)
     if (not isinstance(lock_sha,str) or not re.fullmatch(r'[0-9a-f]{64}',lock_sha)
@@ -68,6 +70,11 @@ def stage_snapshot(stage):
 def stage_reference(content, identity):
     toon = decoder(ROOT/'adaptations')
     reference = toon.loads(content['source/'+MODEL_REFS[identity]].decode('utf-8'), strict=True)
+    guide_name='source/brands/onexplayer/'+identity.split(':',1)[1]+'/'+identity.split(':',1)[1]+'.toon'
+    if guide_name in content:
+        guide=toon.loads(content[guide_name].decode('utf-8'),strict=True)
+        if guide.get('resource_model',{}).get('common_references')!=reference:
+            raise ValueError('Generated common reference differs from canonical model TOON')
     if (reference.get('kind') != 'BoilerModelCommonReferences' or reference.get('model_id') != identity
             or reference.get('source_only') is not True or {r['id'] for r in reference.get('resources',[])} != RESOURCE_IDS
             or len(reference['resources']) != 4):
@@ -143,6 +150,30 @@ def update_gyro(directory, identity, files, profiles):
     return sorted(by_target)
 
 
+def configure_wifi_selection(manifest, previous, reviewed, *, canonical):
+    """Do not offer legacy BE201 writes before trusted target matching exists."""
+    wifi=[cap for cap in manifest.get('legacy_capabilities',[]) if cap.get('id')=='oxp3:wifi']
+    if len(wifi)!=1 or wifi[0].get('available') is not True:
+        raise ValueError('Expected the available legacy BE201 firmware handler')
+    if 'oxp3:wifi' in previous['repairs']:
+        raise ValueError('Base selection unexpectedly includes BE201 firmware')
+    expected=copy.deepcopy(previous);expected['repairs'].append('oxp3:wifi')
+    if reviewed!=expected:raise ValueError('Reviewed selection differs from the base plus BE201 firmware')
+    if canonical:
+        wifi[0]['default']=False;wifi[0]['available']=False
+        wifi[0]['reason']={'en':'Unavailable until trusted target BE201 identity is established.',
+                           'zh':'在可信确认目标设备为 BE201 之前不可用。'}
+        choice=copy.deepcopy(previous)
+    else:
+        wifi[0]['default']=True;choice=copy.deepcopy(reviewed)
+    selected=set(choice['repairs']+choice['plugins'])
+    defaults={cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('default')}
+    available={cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('available')}
+    if selected!=defaults or not selected<=available:
+        raise ValueError('Reviewed selection differs from available manifest defaults')
+    return choice
+
+
 def update_capabilities(manifest, identity, gyro_targets):
     for cap in manifest.get('legacy_capabilities',[]):
         if cap['id']=='oxp3:gm7-resume' and cap.get('available') is not False:
@@ -211,32 +242,16 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     manifest['minimum_engine_version']='0.1.4'
     version_legacy_bridge(manifest,version)
     manifest['common_device_sources']=dict(kind='canonical-common-device-references-v1',
-        source_commit=bmi260.COMMIT, model_reference='canonical-common/source/'+MODEL_REFS[identity],
+        source_commit=proof.get('source_commit',bmi260.COMMIT), model_reference='canonical-common/source/'+MODEL_REFS[identity],
         stage_source_proof_sha256=proof['source_proof_sha256'], resources=reference['resources'],
         boot_policies=reference['boot_policies'], gyro_targets=gyro_targets,
         bmi260=bmi_proof, x2_orientation='inherited profile; independent X2 measurement pending',
         be201='source and firmware preparation only; fixed matching handler integration pending',
         physical_hardware_accepted=False)
     update_capabilities(manifest,identity,gyro_targets)
-    wifi = [cap for cap in manifest.get('legacy_capabilities', []) if cap.get('id') == 'oxp3:wifi']
-    if len(wifi) != 1 or wifi[0].get('available') is not True:
-        raise ValueError('Expected the available legacy BE201 firmware handler')
-    wifi[0]['default'] = True
-    # Generate the frozen selection from the reviewed bridge input, preserving
-    # every existing choice except the explicitly added BE201 firmware repair.
-    choice = json.loads(confined(ROOT, 'adaptations/brands/onexplayer/oxp3/bridge/selection.example.json').read_bytes())
     previous = json.loads(confined(directory, 'selection.json').read_bytes())
-    expected = copy.deepcopy(previous)
-    if 'oxp3:wifi' in expected['repairs']:
-        raise ValueError('Base selection unexpectedly includes BE201 firmware')
-    expected['repairs'].append('oxp3:wifi')
-    if choice != expected:
-        raise ValueError('Reviewed selection differs from the base plus BE201 firmware')
-    selected = set(choice['repairs'] + choice['plugins'])
-    defaults = {cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('default')}
-    available = {cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('available')}
-    if selected != defaults or not selected <= available:
-        raise ValueError('Reviewed selection differs from available manifest defaults')
+    reviewed = json.loads(confined(ROOT, 'adaptations/brands/onexplayer/oxp3/bridge/selection.example.json').read_bytes())
+    choice = configure_wifi_selection(manifest, previous, reviewed, canonical=('source_commit' in proof))
     confined(directory, 'selection.json').write_bytes(json_bytes(choice))
     # Neither the verified EFI code closure nor unrelated legacy payloads are
     # modified by this finalization. Verify again after all generated writes.
@@ -256,7 +271,7 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     if imported['manifest_sha256']!=digest: raise ValueError('Final package import differs')
     report=dict(kind='CanonicalCommonModelCandidate',id=identity,version=version,manifest_sha256=digest,
         archive=archive.name,size=archive.stat().st_size,sha256=sha(archive.read_bytes()),
-        source_commit=bmi260.COMMIT,hardware_acceptance=False,official_release=False,
+        source_commit=proof.get('source_commit',bmi260.COMMIT),hardware_acceptance=False,official_release=False,
         pending=['BE201 fixed handler binding','physical audio acceptance',
                  'BMI260 physical calibration and X2 orientation','full Linux install, maintenance and recovery'])
     (output/'verification.json').write_bytes(json_bytes(report))

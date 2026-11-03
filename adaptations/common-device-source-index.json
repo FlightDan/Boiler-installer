@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerCommonDeviceSourceIndex",
+  "source_only": true,
+  "resources": [
+    {
+      "id": "resource:intel-xevmafix-724",
+      "source": "common/gpu/intel/xe/xevmafix-724/source.toon",
+      "source_sha256": "536d6507e6663bd66de6c94890a3e0b016c1ebc6a2b13f04ad51cc9f60ee4f14",
+      "files": 14,
+      "external_inputs": 0
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "source": "common/network/intel/be201/source.toon",
+      "source_sha256": "8b983054aae25c0b0455883b04f8d726953ad385425a6456d9fb59e3b0ebb5ae",
+      "files": 9,
+      "external_inputs": 9
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "source": "common/audio/realtek/alc245/speaker-route/source.toon",
+      "source_sha256": "6f24a2757994e981269ebf8e85c742f897e8919af8fa2f610f502aa230ef5646",
+      "files": 9,
+      "external_inputs": 0
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "source": "common/sensors/bosch/bmi260/gyro/source.toon",
+      "source_sha256": "b014f3a238e1a7b74fbf4b0332e520e9aff7877b4132cca228833bfe61c63d17",
+      "files": 11,
+      "external_inputs": 0
+    }
+  ],
+  "boot_policy": {
+    "id": "ssd:gm7-boot-repair",
+    "component_id": "common:ssd-gm7-boot-repair",
+    "version": 1,
+    "source": "common/ssd/acer/gm7/components.toon",
+    "source_sha256": "ee042a516163e06650ec45d4d1457ac774b5bf362962e415762c0fbad7489eac"
+  },
+  "models": [
+    {
+      "model_id": "device:oxp3",
+      "source": "brands/onexplayer/oxp3/common-device-sources.toon",
+      "source_sha256": "45232d4d278abbe529979f8a6d29c678b2941bf1d2e0cfc4c6d7676b3c5d2b43",
+      "resources": [
+        "resource:intel-xevmafix-724",
+        "resource:intel-be201-firmware",
+        "resource:oxp3-speaker-route",
+        "resource:bmi260-gyro"
+      ],
+      "boot_policy": "common:ssd-gm7-boot-repair"
+    },
+    {
+      "model_id": "device:x2-mini",
+      "source": "brands/onexplayer/x2-mini/common-device-sources.toon",
+      "source_sha256": "f7b30feaf31882bde8dc6465bc7322342306ee4762c94e796a6d89458a247686",
+      "resources": [
+        "resource:intel-xevmafix-724",
+        "resource:intel-be201-firmware",
+        "resource:oxp3-speaker-route",
+        "resource:bmi260-gyro"
+      ],
+      "boot_policy": "common:ssd-gm7-boot-repair"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerFingerprintPublicBridgeSource",
+  "repository": "FlightDan/FingerprintUnlock-SteamOS",
+  "commit": "fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e",
+  "licenses": [
+    {
+      "spdx": "AGPL-3.0",
+      "reference": "COPYING",
+      "local_path": "common/fingerprint/public-COPYING"
+    },
+    {
+      "spdx": "MIT",
+      "reference": "upstream/LICENSE",
+      "local_path": "common/fingerprint/upstream/LICENSE"
+    }
+  ],
+  "files": [
+    {
+      "path": "bridge/index.js",
+      "local_path": "common/fingerprint/bridge/index.js",
+      "size": 14560,
+      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb",
+      "git_blob_sha1": "56cb55ffec087391c215877d3b8bc11bccbd5f58"
+    },
+    {
+      "path": "bridge/main.py",
+      "local_path": "common/fingerprint/bridge/main.py",
+      "size": 3730,
+      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1",
+      "git_blob_sha1": "864824ea2566492b4e6f7987cbe6879d1b98d19b"
+    },
+    {
+      "path": "bridge/package.json",
+      "local_path": "common/fingerprint/bridge/package.json",
+      "size": 84,
+      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d",
+      "git_blob_sha1": "859a7f25bec30c9b8f6d3591f9430e70a59ab7b4"
+    },
+    {
+      "path": "bridge/plugin.json",
+      "local_path": "common/fingerprint/bridge/plugin.json",
+      "size": 111,
+      "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7",
+      "git_blob_sha1": "9e966b07fd4a16f8fec42e1cc95220b64b5f8326"
+    }
+  ],
+  "license_files": [
+    {
+      "path": "COPYING",
+      "local_path": "common/fingerprint/public-COPYING",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "git_blob_sha1": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e"
+    },
+    {
+      "path": "upstream/LICENSE",
+      "local_path": "common/fingerprint/upstream/LICENSE",
+      "size": 1067,
+      "sha256": "52a65e9c001fbd9a4d411363103a5ad9b2aa5a0e8a2c6b672159788f2d7b3d69",
+      "git_blob_sha1": "b347ce0bea8e9d492ce0dd355b953ab6bb3dd376"
+    }
+  ]
+}

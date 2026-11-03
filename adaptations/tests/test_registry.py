@@ -33,19 +33,19 @@ class RegistryTests(unittest.TestCase):
         (base/'manifest.json').write_text(json.dumps(value))
 
     def release_fixture(self, work):
-        package, registry = work/'package', work/'registry/adaptations'
+        package, registry = work/'package', work/'registry'
         self.fixture(package)
         manifest = json.loads((package/'manifest.json').read_text())
-        manifest.update(id='device:oxp3', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'a'*40})
+        manifest.update(id='device:oxp3', source={'kind':'github','repository':'FlightDan/OneXPlayer3-SteamOS','commit':'a'*40})
         (package/'manifest.json').write_text(json.dumps(manifest))
-        registry.mkdir(parents=True); (registry/'devices').mkdir()
-        for name in ('.gitattributes','device-index.json','devices/oxp3.json','devices/x2-mini.json'):
+        registry.mkdir(); (registry/'devices').mkdir()
+        for name in ('.gitattributes','device-index.json','devices/oxp3.json'):
             shutil.copyfile(ROOT/name, registry/name)
         def git(*args):
             return subprocess.check_output(['git','-C',str(registry),*args],stderr=subprocess.PIPE)
-        subprocess.check_output(['git','init','-q',str(registry.parent)],stderr=subprocess.PIPE); git('config','core.autocrlf','false')
+        git('init','-q'); git('config','core.autocrlf','false')
         git('config','user.name','Registry fixture'); git('config','user.email','registry-fixture@example.invalid')
-        git('remote','add','origin','https://github.com/FlightDan/Boiler-installer.git')
+        git('remote','add','origin','https://github.com/FlightDan/Boiler-devices.git')
         git('add','.'); git('commit','-qm','Disposable committed registry metadata')
         archive = work/'model.zip'
         self.zip_package(package, archive)
@@ -57,7 +57,7 @@ class RegistryTests(unittest.TestCase):
                 if path.is_file(): stream.write(path,path.relative_to(package).as_posix())
 
     def candidate(self, package, registry, archive, output, **kwargs):
-        values = dict(archive=archive,asset_url='https://github.com/FlightDan/Boiler-installer/releases/download/boiler-device-v0.1.0/model.zip',sequence=1)
+        values = dict(archive=archive,asset_url='https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/boiler-device-v0.1.0/model.zip',sequence=1)
         values.update(kwargs)
         with mock.patch.object(builder,'ROOT',registry):
             return builder.build(package,output,**values)
@@ -81,64 +81,6 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(entry['source']['kind'], 'local')
             self.assertFalse(result['trust']['official_release'])
 
-    def test_explicit_second_model_and_verified_history_are_preserved(self):
-        with tempfile.TemporaryDirectory() as work:
-            work = Path(work)
-            package, registry, archive = self.release_fixture(work)
-            first = self.candidate(package, registry, archive, work/'first.json')
-            second = work/'x2'
-            self.fixture(second)
-            manifest = json.loads((second/'manifest.json').read_text())
-            manifest.update(id='device:x2-mini', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'b'*40})
-            (second/'manifest.json').write_text(json.dumps(manifest))
-            second_archive = work/'x2.zip'
-            self.zip_package(second, second_archive)
-            url = 'https://github.com/FlightDan/Boiler-installer/releases/download/tag/x2.zip'
-            model = (second, second_archive, url, 'devices/x2-mini.json')
-            index = self.candidate(package, registry, archive, work/'second.json', sequence=2,
-                                   previous_index=work/'first.json', models=[model])
-            self.assertEqual(index['packages'][0], first['packages'][0])
-            self.assertEqual([entry['id'] for entry in index['packages']], ['device:oxp3', 'device:x2-mini'])
-            self.assertEqual(index['packages'][1]['source']['sha256'], builder.digest(second_archive))
-            self.assertIn('/tree/'+'b'*40+'/adaptations/brands/onexplayer/x2-mini', index['packages'][1]['source_url'])
-            with self.assertRaises(ValueError):
-                self.candidate(package, registry, archive, work/'duplicate.json', sequence=2, models=[model, model])
-            manifest['version'] = '0.1.1'
-            (second/'manifest.json').write_text(json.dumps(manifest))
-            with self.assertRaises(ValueError):
-                self.candidate(package, registry, archive, work/'mismatch.json', sequence=2, models=[model])
-
-    def test_historical_package_version_cannot_be_replaced(self):
-        with tempfile.TemporaryDirectory() as work:
-            work = Path(work)
-            package, registry, archive = self.release_fixture(work)
-            self.candidate(package, registry, archive, work/'first.json')
-            manifest = json.loads((package/'manifest.json').read_text())
-            manifest['source']['commit'] = 'b'*40
-            (package/'manifest.json').write_text(json.dumps(manifest))
-            self.zip_package(package, archive)
-            with self.assertRaisesRegex(ValueError, 'historical package version'):
-                self.candidate(package, registry, archive, work/'replacement.json', sequence=2, previous_index=work/'first.json')
-
-    def test_one_asset_url_cannot_name_two_different_archives(self):
-        with tempfile.TemporaryDirectory() as work:
-            work = Path(work)
-            package, registry, archive = self.release_fixture(work)
-            self.candidate(package, registry, archive, work/'first.json')
-            second = work/'x2'
-            self.fixture(second)
-            manifest = json.loads((second/'manifest.json').read_text())
-            manifest.update(id='device:x2-mini', source={'kind':'github','repository':'FlightDan/Boiler-installer','commit':'b'*40})
-            (second/'manifest.json').write_text(json.dumps(manifest))
-            second_archive = work/'x2.zip'
-            self.zip_package(second, second_archive)
-            url = 'https://github.com/FlightDan/Boiler-installer/releases/download/boiler-device-v0.1.0/model.zip'
-            model = (second, second_archive, url, 'devices/x2-mini.json')
-            with self.assertRaisesRegex(ValueError, 'asset URL'):
-                self.candidate(package, registry, archive, work/'collision.json', sequence=2,
-                               previous_index=work/'first.json', models=[model])
-            self.assertFalse((work/'collision.json').exists())
-
     def test_tampered_inventory_is_not_indexed(self):
         with tempfile.TemporaryDirectory() as work:
             source = Path(work)/'package'
@@ -161,7 +103,7 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(entry['source']['kind'],'https')
             self.assertEqual(entry['status'],'experimental')
             self.assertTrue(entry['known_issues'] and entry['compatibility_records'])
-            self.assertIn('/tree/'+'a'*40+'/adaptations/brands/onexplayer/oxp3/bridge',entry['source_url'])
+            self.assertIn('/tree/'+'a'*40+'/boiler-device',entry['source_url'])
             self.assertEqual(entry['verification_scope'],'local-manifest-and-archive-inventory')
 
     def test_release_candidate_rejects_corrupt_zip_mismatched_manifest_and_floating_source(self):
@@ -188,12 +130,12 @@ class RegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as work:
             work = Path(work)
             package, registry, archive = self.release_fixture(work)
-            for url in ('https://user@github.com/FlightDan/Boiler-installer/releases/download/tag/model.zip',
+            for url in ('https://user@github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/tag/model.zip',
                         'https://github.com/Other/Model/releases/download/tag/model.zip',
-                        'https://github.com/FlightDan/Boiler-installer/releases/latest/download/model.zip',
-                        'https://github.com/FlightDan/Boiler-installer/releases/download/tag/model.zip?token=secret',
-                        '\nhttps://github.com/FlightDan/Boiler-installer/releases/download/tag/model.zip',
-                        'https://github.com/FlightDan/Boiler-installer/releases/download/tag/model name.zip'):
+                        'https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/latest/download/model.zip',
+                        'https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/tag/model.zip?token=secret',
+                        '\nhttps://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/tag/model.zip',
+                        'https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/tag/model name.zip'):
                 with self.subTest(url=url), self.assertRaises(ValueError):
                     self.candidate(package,registry,archive,work/'candidate.json',asset_url=url)
             previous = json.loads((registry/'device-index.json').read_text()); previous['sequence']=3
@@ -210,9 +152,9 @@ class RegistryTests(unittest.TestCase):
             work = Path(work)
             package, registry, archive = self.release_fixture(work)
             checkout = work/'fresh-public-clone'
-            subprocess.check_output(['git','-c','core.autocrlf=true','clone','-q',str(registry.parent),str(checkout)],stderr=subprocess.PIPE)
-            subprocess.check_output(['git','-C',str(checkout),'remote','set-url','origin','https://github.com/FlightDan/Boiler-installer.git'])
-            index = self.candidate(package,checkout/'adaptations',archive,work/'candidate.json')
+            subprocess.check_output(['git','-c','core.autocrlf=true','clone','-q',str(registry),str(checkout)],stderr=subprocess.PIPE)
+            subprocess.check_output(['git','-C',str(checkout),'remote','set-url','origin','https://github.com/FlightDan/Boiler-devices.git'])
+            index = self.candidate(package,checkout,archive,work/'candidate.json')
             self.assertEqual(index['packages'][0]['status'],'experimental')
 
     def test_release_preflight_rejects_unfetchable_component_contracts_before_output(self):

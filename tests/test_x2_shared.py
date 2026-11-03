@@ -139,7 +139,8 @@ class CandidateFixture(unittest.TestCase):
                            manifest_sha256=sha((destination/'manifest.json').read_bytes()))]))
 
     def plan(self, action='apply', repairs=None):
-        return shared.plan(self.root, 'device:x2-mini', repairs or [IDENTITY], action=action, **self.kw)
+        if repairs is None: repairs=[IDENTITY] if action=='apply' else []
+        return shared.plan(self.root, 'device:x2-mini', repairs, action=action, **self.kw)
 
     def execute(self, plan):
         return shared.execute(self.root, plan, reviewed_sha256=plan['review_sha256'], **self.kw)
@@ -509,7 +510,8 @@ class SlotSwitchLifecycle(CandidateFixture):
         self.boot_config.parent.mkdir(parents=True);self.boot_config.write_bytes(b'unchanged A boot configuration')
 
     def plan(self, action='apply', repairs=None):
-        return super().plan(action,repairs or [shared.SLOT_SWITCH_COMPONENT])
+        if repairs is None and action=='apply': repairs=[shared.SLOT_SWITCH_COMPONENT]
+        return super().plan(action,repairs)
 
     def originals(self):
         result={}

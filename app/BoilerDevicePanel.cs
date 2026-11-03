@@ -246,7 +246,7 @@ public partial class MainWindow
         try
         {
             var response = DeviceIndexLoaderForChecks != null ? await DeviceIndexLoaderForChecks(token)
-                : await BoilerProtocol.RunAsync(["load-index", "https://github.com/FlightDan/Boiler-installer/releases/latest/download/boiler-device-index.json", "https://github.com/FlightDan/Boiler-installer/releases/latest/download/boiler-device-index.sig", BoilerProtocol.RegistryCache], token);
+                : await BoilerProtocol.RunAsync(["load-index", "https://github.com/FlightDan/Boiler-adaptations/releases/latest/download/index.json", "https://github.com/FlightDan/Boiler-adaptations/releases/latest/download/index.sig", BoilerProtocol.RegistryCache], token);
             if (generation != devicePanelGeneration || token.IsCancellationRequested) return;
             lastDeviceIndex = response.GetProperty("index").Clone();
             deviceIndexOffline = response.TryGetProperty("offline", out var offline) && offline.GetBoolean();

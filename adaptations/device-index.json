@@ -8,6 +8,6 @@
   "trust": {"status": "unsigned-development", "official_release": false},
   "revocations": [],
   "packages": [],
-  "devices": ["devices/oxp3.json", "devices/x2-mini.json"],
+  "devices": ["devices/oxp3.json"],
   "note": "No production package is advertised before formal signing, publication and new-stack acceptance."
 }

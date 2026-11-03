@@ -9,8 +9,8 @@ from .model_context import models as model_context
 from . import xevma_proof
 
 PLACEMENT = {'resource:onexplayer-microphone': 'devices/Audio/microphone-mute',
-    'resource:oxp3-speaker-route': 'devices/Audio/Realtek-ALC245/speaker-route',
-    'resource:intel-xevmafix-724': 'devices/GPU/Intel/xe/xevmafix'}
+    'resource:oxp3-speaker-route': 'common/audio/realtek/alc245/speaker-route',
+    'resource:intel-xevmafix-724': 'common/gpu/intel/xe/xevmafix-724'}
 PREFERENCE = list(PLACEMENT)
 CURRENT_PROOF = 'adaptations/resource-public-source-proof.json'
 

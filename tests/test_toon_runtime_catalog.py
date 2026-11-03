@@ -39,6 +39,8 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
         original=adaptations/'brands/onexplayer/oxp3/oxp3.toon'
         model=parser.loads(original.read_bytes())
         model.update(id='guide:future',name='未来机型',guide='brands/example/future/model.md')
+        model['resource_model']['id']='device:future'
+        model['resource_model']['common_references']['model_id']='device:future'
         model['runtime']=dict(id='device:future',name={'en':'Future Demo','zh':'未来机型'},
             hardware_matching=dict(mode='advisory-exact-dmi-v1',pairs=[dict(manufacturer='EXAMPLE INC',model='FUTURE 1')]))
         model['components']=[dict(id='base-system',name='未来机型说明',recommendation='pending',default=False,
@@ -65,11 +67,11 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
         git('config','user.name','Model snapshot fixture'); git('config','user.email','fixture@example.invalid')
         git('config','core.autocrlf','false'); git('remote','add','origin','https://github.com/'+runtime.REPOSITORY+'.git')
         for name,raw in catalog.views(adaptations).items():
-            destination=checkout/'adaptations'/name; destination.parent.mkdir(parents=True,exist_ok=True); destination.write_bytes(raw)
+            destination=checkout/name; destination.parent.mkdir(parents=True,exist_ok=True); destination.write_bytes(raw)
         git('add','.'); git('commit','-qm','Synthetic three-model display metadata')
         commit=git('rev-parse','HEAD').decode().strip()
         # The preparer must read exact committed Git objects, not mutable files.
-        (checkout/'adaptations/adaptations.json').write_text('{}')
+        (checkout/'adaptations.json').write_text('{}')
         consumer=root/'consumer'
         lock=preparer.prepare(checkout,commit,consumer/'components/model-catalog')
         self.assertEqual(len(lock['files']),4)
@@ -86,9 +88,9 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             from maintenance.models import catalog as maintenance_catalog
             self.assertEqual(maintenance_catalog(runtime_root=consumer,online=False)['models'],offline['models'])
             self.assertNotIn('device:future',runtime.MODELS)  # legacy executable facade is deliberately unchanged
-            self.assertIn('/'+lock['source']['commit']+'/adaptations/brands/example/future/model.md',future['guide_url'])
+            self.assertIn('/'+lock['source']['commit']+'/brands/example/future/model.md',future['guide_url'])
             def reader(url,maximum):
-                member=url.split('/'+lock['source']['commit']+'/adaptations/',1)[1]
+                member=url.split('/'+lock['source']['commit']+'/',1)[1]
                 data=(consumer/'components/model-catalog/snapshot'/member).read_bytes()
                 self.assertLessEqual(len(data),maximum); return data
             online=runtime.load_models(root=consumer,reader=reader)
@@ -149,7 +151,7 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             consumer=Path(temporary); destination=consumer/'components/model-catalog'
             shutil.copytree(ROOT/'components/model-catalog',destination)
             path=destination/'lock.json'; lock=json.loads(path.read_bytes())
-            lock['source']=dict(repository=runtime.REPOSITORY,commit='a'*40,subtree='adaptations')
+            lock['source']=dict(repository='FlightDan/Boiler-installer',commit='a'*40,subtree='adaptations')
             path.write_text(json.dumps(lock))
             self.assertEqual(len(lock['files']),3)
             result=runtime.load_models(root=consumer,online=False)

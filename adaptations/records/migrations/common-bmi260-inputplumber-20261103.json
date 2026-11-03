@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerSourceOwnershipMigrationSupplement",
+  "version": "20261103.1",
+  "parent": "records/migrations/common-device-resource-ownership-20261103.json",
+  "upstream": {
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "e181a9055e1c94e8d758e2b9575f60fb5fc5109c",
+    "release_tag": "v1.0.6+installer.20261022.220437",
+    "asset": "oxp3-steamos-installer-1.0.6-20261022-220437.zip",
+    "size": 555684389,
+    "sha256": "d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4"
+  },
+  "file_maps": [
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "cache/integration/sources/gyro/inputplumber-0.78.0-oxp3-gyro.patch",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/inputplumber-0.78.0-oxp3-gyro.patch",
+      "size": 31057,
+      "sha256": "e1fd31a17aaacb4bb35b1158dae4471f0ea74f21861ef581ac9985bba9d1bc2d",
+      "source_repository": "FlightDan/OneXPlayer3-SteamOS",
+      "source_commit": "e181a9055e1c94e8d758e2b9575f60fb5fc5109c",
+      "license": "InputPlumber GPL version 3 notice retained; patch grant not independently determined",
+      "transform": "none; exact public release member"
+    }
+  ],
+  "license_source": {
+    "old_path": "cache/integration/sources/gyro/InputPlumber-LICENSE",
+    "new_path": "common/sensors/bosch/bmi260/gyro/licenses/InputPlumber-LICENSE",
+    "size": 35151,
+    "sha256": "7fe14716ed31cc71fc3bf9af293c368d464a853a70ea86e9995388f6b9e929e5"
+  },
+  "runtime_binaries_included": false
+}

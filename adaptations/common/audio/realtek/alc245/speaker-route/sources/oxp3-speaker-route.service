@@ -1,0 +1,8 @@
+[Unit]
+Description=OXP3 speaker route and UCM initialization recovery
+After=wireplumber.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/oxp3-speaker-route/speaker_route.py
+TimeoutStartSec=120

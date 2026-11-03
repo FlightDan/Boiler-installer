@@ -1,0 +1,27 @@
+schema_version: 1
+kind: BoilerCommonDeviceSource
+id: "resource:oxp3-speaker-route"
+source_only: true
+hardware_matching:
+  codec: Realtek ALC245
+  jack_guard: empty-only
+  board_routes: model-owned parameters required
+compatibility:
+  architectures[1]: x86_64
+  os_ids[1]: steamos
+  os_versions[1]: "3.10"
+files[9]{path,size,sha256,origin,license,availability}:
+  sources/speaker_route.py,5510,b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739,HHHHanasak1/onexplayer3-steamos-setup@e72e814da1944da3792076689995b6fe961f5768,MIT,checked-in
+  sources/oxp3-speaker-route.service,221,327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324,verified-current-source-lock,MIT,checked-in
+  sources/90-oxp3-speaker-route.conf,40,7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1,verified-current-source-lock,MIT,checked-in
+  sources/oxp3-speaker-resume.service,284,efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9,verified-current-source-lock,MIT,checked-in
+  sources/20-oxp3-speaker-resume.conf,41,bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601,verified-current-source-lock,MIT,checked-in
+  sources/install.json,1580,e99f5e6240d8271ef41b7055026d8915d697ac2992a8524ca50fd1b6fe8c6490,verified-current-source-lock,MIT,checked-in
+  sources/PROVENANCE.json,1347,198409b82781c0d7885de76c667cceee81411dacb9191d1c95caffc1b61782d2,verified-current-source-lock,MIT,checked-in
+  transforms/speaker_model_advisory.py,517,da90f9f67f6f845ecb13e12e26613df7f170b9065a78274941e2e32d9b0d77c4,reviewed-function-extract-abaeb472,AGPL-3.0-or-later,checked-in
+  final/speaker_route.py,5602,bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a,speaker_model_advisory,AGPL-3.0-or-later,checked-in
+lifecycle:
+  install: requires codec jack UCM and model board-route guards downstream
+  restore: profile restoration remains required on failed re-enable
+  limitation: source-only; audio jack resume and route acceptance remain pending
+licenses[2]: licenses/MIT.txt,licenses/AGPL-3.0.txt

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerFingerprintBridgeSources",
+  "upstream_lock": "common/fingerprint/source-lock.json",
+  "profile_reference": {
+    "repository": "pythontyphon/oxp3-fingerprint-linux",
+    "commit": "62f85fc6b36a5bc078967c3b3a3877b5d967d4bc",
+    "license": "LGPL-2.1-or-later"
+  },
+  "files": [
+    {
+      "path": "brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules",
+      "size": 545,
+      "sha256": "68d4eca256cfe27f13494089cb7957fca429e4739aaa0ad0953717c6e866b1a5"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
+      "size": 297,
+      "sha256": "7c34339bc2c51b37bc3e397a5ef57e2a7936300f6820ea55a3f49c5a87fb49fa"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/COPYING",
+      "size": 26436,
+      "sha256": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
+      "size": 150,
+      "sha256": "7189936528b25d066fa7c504c8d3a510a68534cd499b9e764726908ec6ea9e54"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/profile.json",
+      "size": 243,
+      "sha256": "33975adb8a98a7dfe79c3a55a9a239fab8d413a11b3c1b225f0f5d3f154aa449"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/spidev.conf",
+      "size": 29,
+      "sha256": "4fa71ac24903901425aa99ffb1d669569e7858044dbabbe22303183a845269dc"
+    },
+    {
+      "path": "common/fingerprint/bridge/index.js",
+      "size": 14560,
+      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb"
+    },
+    {
+      "path": "common/fingerprint/bridge/main.py",
+      "size": 3730,
+      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1"
+    },
+    {
+      "path": "common/fingerprint/bridge/package.json",
+      "size": 84,
+      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d"
+    },
+    {
+      "path": "common/fingerprint/bridge/plugin.json",
+      "size": 111,
+      "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
+      "size": 356,
+      "sha256": "808e72d3f63ed9453374f70510a8641f55a367dfa805adb3f89d895244e3668d"
+    }
+  ],
+  "upstream_lock_sha256": "bfbb3d6f5c541936b61fea648be230f0f8760e7020625d5b48eab0b13ffd8b73",
+  "public_bridge_lock": "common/fingerprint/public-bridge-lock.json",
+  "public_bridge_lock_sha256": "bf19b68d45acc6d2733c4c60e30a021c32104c11a642eaa86434e5991bd46d7a"
+}

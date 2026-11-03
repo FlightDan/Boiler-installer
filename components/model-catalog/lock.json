@@ -2,25 +2,25 @@
   "schema_version": 1,
   "kind": "ModelCatalogLock",
   "source": {
-    "repository": "FlightDan/Boiler-installer",
-    "commit": "5d2052eff35321462e92af9ac840251be1ee2cd3",
-    "subtree": "adaptations"
+    "repository": "FlightDan/Boiler-adaptations",
+    "commit": "3edd6a340b56628785f05365d62349f7d03c63eb",
+    "subtree": ""
   },
   "files": [
     {
       "path": "adaptations.json",
-      "size": 264,
-      "sha256": "2386b05df7bf15083d1d5b6ff195b47a1344afe6c16d8995eab9800c548877e0"
+      "size": 1301,
+      "sha256": "4dd8a98e707fe947d29e70e879f5dfd1dea3742736ff6c657150f7113040c9a1"
     },
     {
       "path": "brands/onexplayer/oxp3/manifest.json",
-      "size": 12883,
-      "sha256": "20b754dcb806091f6b316e08b61573cbec8698250efd093fcb7148f62af1d585"
+      "size": 13507,
+      "sha256": "d11df2dff1794dd191982f8b15aedb46a4087baf84c275b880139579cc147be5"
     },
     {
       "path": "brands/onexplayer/x2-mini/manifest.json",
-      "size": 12916,
-      "sha256": "91b2c8ea86cd69a5e3f768d85588b329d05a81df3ddcde785c16dd929f96342a"
+      "size": 16174,
+      "sha256": "95adc68b5df57a5e56e14aaebd924379dd301bef040f6e3f0b4598e5dadae2ba"
     }
   ]
 }

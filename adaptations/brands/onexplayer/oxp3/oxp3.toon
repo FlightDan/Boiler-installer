@@ -9,7 +9,15 @@ source_revision:
   kind: github
   repository: FlightDan/OneXPlayer3-SteamOS
   commit: 72f864e0498c10366493c74608c5ffed62cc99ca
-components[28]:
+components[29]:
+  - id: fingerprint-unlock
+    name: 指纹解锁（实验功能）
+    recommendation: optional
+    default: true
+    dependencies[1]: decky
+    sources[3]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules
+    status: external_runtime_required
+    notes: "Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional
@@ -103,9 +111,9 @@ components[28]:
     recommendation: recommended
     default: false
     dependencies[1]: input
-    sources[4]: brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c,brands/onexplayer/common/scripts/gyro/launch.sh,brands/onexplayer/common/scripts/gyro/oxp3-gyro.service,brands/onexplayer/common/scripts/gyro/gyro_binding.py
+    sources[1]: brands/onexplayer/oxp3/common-device-sources.toon
     status: source_reference_only
-    notes: 需精确内核、BMI260 芯片识别、bmi270_core/固件及配套 InputPlumber；新装重新校准。
+    notes: "Source reference only; verify BMI260 identity, kernel and InputPlumber compatibility before installation or calibration."
   - id: xe-dsb
     name: OXP3 显示兼容修复 · 暂停 DSB
     recommendation: conditional
@@ -119,9 +127,9 @@ components[28]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/oxp3/common-device-sources.toon
     status: source_reference_only
-    notes: 只有实际 SSD 命中适用条件时安装；验证休眠与恢复。
+    notes: Apply only after matching the target SSD identity; verify installation and recovery.
   - id: split-lock
     name: Split-lock 报告洪泛修复 · 需要重启
     recommendation: conditional
@@ -135,9 +143,9 @@ components[28]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources: []
+    sources[1]: brands/onexplayer/oxp3/common-device-sources.toon
     status: source_reference_only
-    notes: 按实际无线芯片选择 Boiler 通用固件；不固定为所有机器均需 BE201。
+    notes: Source reference only; verify the actual wireless device and firmware compatibility.
   - id: manager
     name: SteamOS Manager 状态与错误修复
     recommendation: recommended
@@ -238,11 +246,12 @@ build:
   adapter: oxp3-current-v1
   complete: true
   missing: []
-  materials[5]{scope,lock,sha256}:
+  materials[6]{scope,lock,sha256}:
     common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
     model,adaptations/records/oxp3-shared-base/opti031-inputs.json,f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bacc36bcd222abfa6
+    model,adaptations/fingerprint-source-lock.json,9f42a57dc5bd823e02d85b390a82780be8b937ad853215988ca39ea0b2e42232
     common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
   inputs[9]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-shared-base-2,adaptations/inputs/oxp3-shared-base-2/manifest.json,510342dec0bfe6ce39389f5e13cae0d504755aa4072d90b73641b4dd2d5aead9,Explicit complete reviewed .20261030.2 package. Fixed public builders reproduce and verify .3 then .4 before final .8; no prebuilt .3/.4 fallback.
@@ -276,3 +285,44 @@ runtime:
     mode: advisory-exact-dmi-v1
     pairs[1]{manufacturer,model}:
       ONE-NETBOOK,ONEXPLAYER 3
+resource_model:
+  schema_version: 1
+  kind: BoilerModelResourceSource
+  id: "device:oxp3"
+  name: ONEXPLAYER 3
+  hardware_matching:
+    mode: advisory-exact-dmi-v1
+    pairs[1]{manufacturer,model}:
+      ONE-NETBOOK,ONEXPLAYER 3
+  parameters:
+  resources[14]{id}:
+    "resource:onexplayer-microphone"
+    "resource:oxp3-speaker-route"
+    "resource:intel-xevmafix-724"
+    "resource:common-slot-switch"
+    "resource:common-partition-mount"
+    "resource:common-windows-reboot"
+    "resource:onexplayer-light"
+    "resource:common-serial-console-policy"
+    "resource:onexplayer-battery-common"
+    "resource:onexplayer-battery-charge-backend"
+    "resource:common-charge-compatibility-guard"
+    "resource:intel-be201-firmware"
+    "resource:intel-g3e-public-cpu-controls"
+    "resource:gamma22-hdr-game"
+  hdr:
+    profile: oxp3
+    full_frame: 472
+    peak: 1100
+  common_references:
+    schema_version: 1
+    kind: BoilerModelCommonReferences
+    model_id: "device:oxp3"
+    source_only: true
+    resources[4]{id,source}:
+      "resource:intel-xevmafix-724",common/gpu/intel/xe/xevmafix-724/source.toon
+      "resource:intel-be201-firmware",common/network/intel/be201/source.toon
+      "resource:oxp3-speaker-route",common/audio/realtek/alc245/speaker-route/source.toon
+      "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon
+    boot_policies[1]{id,version,source,component_ref}:
+      "ssd:gm7-boot-repair",1,common/ssd/acer/gm7/components.toon,ssd-gm7-boot-repair

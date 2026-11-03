@@ -19,13 +19,13 @@ def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE):
     output = Path(output)
     if output.exists():
         raise ValueError('Use a fresh catalog snapshot directory')
-    relative_path(source_subtree)
+    if source_subtree != SOURCE_SUBTREE: raise ValueError('Canonical catalog must use repository root')
     def git(*args):
         return subprocess.check_output(['git', '-C', str(checkout), *args], stderr=subprocess.PIPE)
     if git('remote', 'get-url', 'origin').decode().strip() not in (
             'https://github.com/'+REPOSITORY, 'https://github.com/'+REPOSITORY+'.git',
             'git@github.com:'+REPOSITORY+'.git'):
-        raise ValueError('Catalog must come from the public Boiler-installer repository')
+        raise ValueError('Catalog must come from the canonical public Boiler-adaptations repository')
     source = {'repository': REPOSITORY, 'commit': commit, 'subtree': source_subtree}
     catalog_data = git('show', commit+':'+source_member(source, 'adaptations.json'))
     catalog = document(catalog_data)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--source-checkout', type=Path, required=True)
     parser.add_argument('--source-commit', required=True)
     parser.add_argument('--source-subtree', default=SOURCE_SUBTREE,
-                        help='Explicit project-relative catalog subtree (default: adaptations)')
+                        help='Explicit catalog subtree (default: repository root)')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     result = prepare(args.source_checkout, args.source_commit, args.output, source_subtree=args.source_subtree)

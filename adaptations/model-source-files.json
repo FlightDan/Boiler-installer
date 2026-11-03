@@ -1,0 +1,1862 @@
+{
+  "schema_version": 1,
+  "kind": "CanonicalAdaptationSourceFiles",
+  "scope": "explicit source snapshot; not an installable package",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "size": 157,
+      "sha256": "f6ebd09e21fccee9a712284f3519b55cf35c10ba75dde94cbd0ad310d4f3f018"
+    },
+    {
+      "path": ".gitignore",
+      "size": 445,
+      "sha256": "5429b2e87ac84c0d59b74944fd75ae7b6c564b5cc6e2c606b57f7930e0133c94"
+    },
+    {
+      "path": "ADAPTATIONS.md",
+      "size": 2838,
+      "sha256": "ecc0c9fb0cf9fa45a7329340a156b89101bdb75bb7fef29ebec06aef27f1c052"
+    },
+    {
+      "path": "LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "README.md",
+      "size": 3250,
+      "sha256": "6d91a14b8d9783001d0e9e8a7fd5126630e6efebc8a7ef0c163c6468c7af9251"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "size": 2200,
+      "sha256": "9f21d3d2c706e31b8a4810c94dba6fa1370b044eb40b9108b9b1508bb386774c"
+    },
+    {
+      "path": "adaptations.json",
+      "size": 1301,
+      "sha256": "4dd8a98e707fe947d29e70e879f5dfd1dea3742736ff6c657150f7113040c9a1"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/battery-plugin-index.js",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/battery-plugin-main.py",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/battery_control.py",
+      "size": 2616,
+      "sha256": "1ea349b1a679a9859a918459dd55d39716934746c5c52783e314daa4505decb3"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/battery_provider.py",
+      "size": 4432,
+      "sha256": "33dbd7a324656c28abcfad841c3ba324ed03aeee18321a02f4c7d275f829ff57"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/check-battery-sleep-ui.mjs",
+      "size": 20457,
+      "sha256": "97f4b13b09b787d5947ff3635c540c723ed2ff174a55efe8c377912fc195ffb2"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/check-battery-ui.mjs",
+      "size": 2406,
+      "sha256": "b89944b3d765b50b95116dcf14a87211beba860482a08b106d136b75b6b5a70e"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/deploy-battery.py",
+      "size": 3963,
+      "sha256": "7cec3544d12715b955205c7311f66504d4a66e77f327b35d0b2260bdcabdafdf"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/sleep-router.conf",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/sleep_control.py",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/templates/battery-dbus.conf",
+      "size": 418,
+      "sha256": "df9acac75b4b2906c6c0d953460de16f6e7de30789ec74fdea00f2faffabef43"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/templates/oxp3-battery.service",
+      "size": 618,
+      "sha256": "d5771cac38919a517f3ff228de56add0700fdac9e3e7f4d92c461f8ee2fe4767"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/templates/oxp3-battery.toml",
+      "size": 128,
+      "sha256": "98367b4ecf45d8a48c1349b9931cd192d55b462aed49b71f14d21f92d5ef1f48"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/templates/package.json",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/templates/plugin.json",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/test_sleep_control.py",
+      "size": 12682,
+      "sha256": "e2c8b08642e3a2ecc95109c87a93359eb9ce00bad4ca55956b5def687459a8bc"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/uninstall-battery.sh",
+      "size": 1273,
+      "sha256": "1f8aeb65d3be996429c4f0d7ee0136ccecbab44069aa9d00e3f49a82ee48f399"
+    },
+    {
+      "path": "brands/onexplayer/common/battery/update-battery-ui.py",
+      "size": 2161,
+      "sha256": "5101f89d0113abf666d29e98efaf5e45341aff119028446e1240aab0acc3dc82"
+    },
+    {
+      "path": "brands/onexplayer/common/components.md",
+      "size": 1360,
+      "sha256": "13d72208b9e6c387498959cbe0400e5891beb69704074b325d5822a3e5fdd929"
+    },
+    {
+      "path": "brands/onexplayer/common/components.toon",
+      "size": 7490,
+      "sha256": "b76da276c5bef0ea737fbdfcaea84d2b37836b90d9373a0b2311caa69482478f"
+    },
+    {
+      "path": "brands/onexplayer/common/microphone/90-oxp-microphone.conf",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888"
+    },
+    {
+      "path": "brands/onexplayer/common/microphone/install.json",
+      "size": 455,
+      "sha256": "43c21e89edee043c784ac3c72b5debba17b116abd0cb9d452c14a4211e4d393e"
+    },
+    {
+      "path": "brands/onexplayer/common/microphone/microphone.py",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269"
+    },
+    {
+      "path": "brands/onexplayer/common/microphone/oxp-microphone.service",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.conf",
+      "size": 150,
+      "sha256": "6b3ecd1d286426cc2af8e1f876de7984fb9763875b817148fda16fcd327947af"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input-profile.yaml",
+      "size": 702,
+      "sha256": "c9a5c593c26465a3513a02a0a656ed78a3c4869a4ad534350294a82f8835a60f"
+    },
+    {
+      "path": "brands/onexplayer/common/scripts/input_profile.py",
+      "size": 7925,
+      "sha256": "fd41a0d19bafdbca7e6450f1db292c187e2c8cac2743edb215c7d889244997fd"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/.gitignore",
+      "size": 33,
+      "sha256": "adc0c7acfe8ea99a093fb8a7348a1bf44ece8ce8f405d9e3dcf0b04f08756d36"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/README.md",
+      "size": 6076,
+      "sha256": "6a2e3098c88ad227362721538024f580e0a31fd03102430008c1c3f9de3efadb"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/THIRD_PARTY_NOTICES.md",
+      "size": 11690,
+      "sha256": "99f0bce28d6b10958e4ad7dcc075366ba9463ae475940db39a38d4bb499b2eb6"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/adapter.py",
+      "size": 53178,
+      "sha256": "3a02c2e7f98023f3b35b08c9f8a9edd2a8528961fbbdb05e523da26c3879a3ee"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/docs/MAINTENANCE_PACKAGE.md",
+      "size": 3976,
+      "sha256": "dd7aae623f2196c93824179b012cc65cb66603c1dc02fde799fbcd58d02ef052"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/full_efi_sources.py",
+      "size": 1088,
+      "sha256": "64fc948c584ba497ba9df419996c93feaf5120d3d64a17287a502729c3e50d0f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/maintenance-static-lock.json",
+      "size": 544,
+      "sha256": "94122c302702adc732bb3edb16cec7eb5f78357b70f15001c9bb9c9074d8d0a0"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/maintenance_adapter.py",
+      "size": 34911,
+      "sha256": "f11aad955b288a7107c5eec88b8df47ad4d147537b854d02e37a5e712b3b988d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/opti-offline-lock.json",
+      "size": 6462,
+      "sha256": "a09a8b18ddaf4c7c93d0be9fa33165a5a59b9dc66529703cb483354d8b1cabf3"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/public-adoption.py",
+      "size": 20687,
+      "sha256": "f12a9a4b7185073dbfb03d8df2d1fe903ff66c6e093f05be5265adac810f90d7"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/apply.sh",
+      "size": 130,
+      "sha256": "77fe7511173a401d137e015a05b0b09d5262f849855b203ec94d10117c79ea49"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/build-maintenance.py",
+      "size": 8378,
+      "sha256": "bd7d49774dc84ef2565105f74296ab7d40ffd9d8574e4a126b20a8bc58b52071"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/build-shared-adaptations.py",
+      "size": 11840,
+      "sha256": "efa577d4d255db6f12f035ede121f59b9088cc612902c209134aaf2679d2d03d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/build.py",
+      "size": 29697,
+      "sha256": "58a7de21f771a3ec2a7b24fff595dc530bc758cd30fcb7c0321d23fd6e645a9f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/fetch-input.py",
+      "size": 1260,
+      "sha256": "f68abcceb5db2775e7289e073a58d8dbbf0dd9241f86ff188c7754ccaab964bc"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/maintenance.sh",
+      "size": 141,
+      "sha256": "81244b088f00276d600ebcbd29f6f5526116f816956eff20aeda8f2302703105"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/prepare-shared-inputs.py",
+      "size": 5312,
+      "sha256": "47e10ef21b08665d3dc8925262f15170e844b5c34aaf14fa4536f2822a0e5d92"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/restore.sh",
+      "size": 132,
+      "sha256": "268237cadf57447dbdc4ed2f7f27b80fea0772de090a4d5ccfa27fa988e1151d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/scripts/verify.sh",
+      "size": 131,
+      "sha256": "63c0e6cbc9ee60857c640ae1920d6577461b3273805a4eff9372eb7981866201"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/selection.example.json",
+      "size": 276,
+      "sha256": "1fe0f491f4bfbdeba6591467c987ecf4649bcdd5fc7ff98d3b2e874284ec449f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/source-files.txt",
+      "size": 590,
+      "sha256": "dc4b0d22cbf415cc372870e2a44e0538f360dfd5bda1df3f553740be54638d27"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/tests/test_adapter.py",
+      "size": 28545,
+      "sha256": "74ed86df2c6e4c79993701b95d66c99544af8ff081f4a7da0d48112ed66f6997"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/tests/test_maintenance_adapter.py",
+      "size": 28478,
+      "sha256": "8f37c13029f76a4cc0c9c2e031d937351764114aebd8e30c92a725b5b51c035d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/tests/test_maintenance_package.py",
+      "size": 6440,
+      "sha256": "6059e065cbb69e23f105d95c63c0a7149ccb80aea92ad99bc167782306e8964b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/tests/test_opti_updates.py",
+      "size": 8130,
+      "sha256": "6f8ad29edf7a58064a31108462bfdcbb743db90641fb0de35a241ed45117878e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/tests/test_shared_adaptations.py",
+      "size": 3586,
+      "sha256": "b48bddcd6baee2d20626299b3cb1bba260d5264cbf398238a5f16e379c8f7401"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/bridge/upstream-lock.json",
+      "size": 996,
+      "sha256": "8475c3363bae582198ec71ccce85357b4541fc75dda1c0fa256aa0e7f4ee3ced"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/common-device-sources.toon",
+      "size": 558,
+      "sha256": "45232d4d278abbe529979f8a6d29c678b2941bf1d2e0cfc4c6d7676b3c5d2b43"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules",
+      "size": 545,
+      "sha256": "68d4eca256cfe27f13494089cb7957fca429e4739aaa0ad0953717c6e866b1a5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/20-oxp3-speaker-resume.conf",
+      "size": 41,
+      "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/90-oxp3-speaker-route.conf",
+      "size": 40,
+      "sha256": "7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/PROVENANCE.json",
+      "size": 1347,
+      "sha256": "198409b82781c0d7885de76c667cceee81411dacb9191d1c95caffc1b61782d2"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/dock_input.py",
+      "size": 1782,
+      "sha256": "6c98018c8106924cfb5036c32b162a4155a3a06bd420246b8767cfa3cddbfeb1"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/install.json",
+      "size": 1580,
+      "sha256": "e99f5e6240d8271ef41b7055026d8915d697ac2992a8524ca50fd1b6fe8c6490"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-resume.service",
+      "size": 284,
+      "sha256": "efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-route.service",
+      "size": 221,
+      "sha256": "327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/upstream-20261029/speaker_route.py",
+      "size": 5510,
+      "sha256": "b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/90-boiler-oxp3-xevmafix.conf",
+      "size": 42,
+      "sha256": "ba2a8b4edebc640910521643e7962d09546a043cd8f539fcb1b504047e503132"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/README.md",
+      "size": 2300,
+      "sha256": "3382fb696e004bc00ddabb8729ca16ba2b32f6e5be0b6ca244ced88f4cc74b00"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_README.md",
+      "size": 3528,
+      "sha256": "bc478f9e972bc5ace5d594d337e5e16c83e7fd9b6729321ebb084471877638c7"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/boiler-oxp3-xevmafix.service",
+      "size": 218,
+      "sha256": "4e05053564db612fab03dd7c838aa85b7472c4dc3791a5bee5f1162acc6641e8"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/install.json",
+      "size": 2187,
+      "sha256": "bb427afb8db3152dec0b2cb79ff47631a06dc183582c2156c6f69736936fe76e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/load.py",
+      "size": 2330,
+      "sha256": "bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/module-lock.json",
+      "size": 26919,
+      "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/current/xevma-20261029/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/manifest.json",
+      "size": 13507,
+      "sha256": "d11df2dff1794dd191982f8b15aedb46a4087baf84c275b880139579cc147be5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/model.md",
+      "size": 7096,
+      "sha256": "4ab0f35ba69697e2255c01261a604875d0910cc0f9970872b2309e68a80c4bf2"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/oxp3.toon",
+      "size": 17325,
+      "sha256": "b62626ab658627bc293180640b1f16ae77961402a6960e153046a5ab1024adc5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
+      "size": 1235,
+      "sha256": "5232445a5ddbda2d4e860f0a256a0cc0fb2388b609348472906c971881d2d730"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/poll-battery-state.js",
+      "size": 453,
+      "sha256": "d691feb61253ce11e72bdd3e3649c7c23cdb6ef4c106ae26cf61d41ba9aacb33"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/boot_repairs.py",
+      "size": 1926,
+      "sha256": "3084c2cfceddd6e4545597a702290caeae063eaed1bdf345fdb291b3aa78ea8d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/catalog.json",
+      "size": 11279,
+      "sha256": "b3c03e44a74b76de87bdab235a9b606e7fc9f34e4eb8c9ed75cfc86dd0f27c13"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/README.md",
+      "size": 2598,
+      "sha256": "3343250b4557d0ea47538185704caba83702b2f7d8b719f4788c48c56e5ced39"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/compatibility.py",
+      "size": 1789,
+      "sha256": "c8225f4facc43fff072bd6f47847722f8e96d9c5162bac30d9bc7e8754ddae8e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-index.js",
+      "size": 12203,
+      "sha256": "a1cd67a64fc69b4f279b17ffe8fc5948b37fb7f4a233a10745fa01698492fa44"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu-plugin-main.py",
+      "size": 1911,
+      "sha256": "36e6ceacda689a4856486c5fe2fd541094b4f603b8282b79886ad7519f30736b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
+      "size": 6473,
+      "sha256": "7dabf1846c473fbd3a17f4453e835fd5116d74abe6d0e3aee528bc74dcaa4872"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/deploy-cpu.py",
+      "size": 3236,
+      "sha256": "3120cfd39c794d5475ee400acb90cb000842269fef71388c31783221913e9352"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+      "size": 4266,
+      "sha256": "d5c5efd2f847d443bbff04dd30a3af847576d867eebcfb9b25c94d8e2b31654f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/allow-read.py",
+      "size": 1542,
+      "sha256": "2ef406da7c88d6706e5ab307b0c2a717df1e294dc89b554f91bde39ddb16aeec"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/overlay/telemetry.py",
+      "size": 6440,
+      "sha256": "d127b107a02168e3095a34b3ebed8b7a2e5d11193c2b71206adc961d1fb201cb"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/profile.json",
+      "size": 3753,
+      "sha256": "0adb8851e4a880a6aeb03d267ae48925c69c631d4c415503d0e3f54fe8f8359e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+      "size": 22758,
+      "sha256": "11af7da8d69a59b3e6413380a6516468da2d50248043cf6a93cf813381f2116b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/decky_order.py",
+      "size": 3021,
+      "sha256": "8361e9e94946303cfe94fc9645a1d553de5bb378c5c71425748f50e697ff1b4e"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/download-sources.json",
+      "size": 1089,
+      "sha256": "fd978e899d7e1791f09029a70939e0f81b941b4e4412afbb1901a04516cb4e66"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot.py",
+      "size": 7965,
+      "sha256": "c324c084f4785862beb2d871c7cfbcc1ea7896e90480e387826d9ffe9443e9d5"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/firstboot_stage.py",
+      "size": 5326,
+      "sha256": "c8db6f7c377b7ab034504dac433dc7e71e5ae0443116abaf13d5aab0bb552564"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/flathub.flatpakrepo",
+      "size": 4040,
+      "sha256": "3371dd250e61d9e1633630073fefda153cd4426f72f4afa0c3373ae2e8fea03a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/generate.py",
+      "size": 1173,
+      "sha256": "3f9d645a6a341ffe900dd06104dc351953b3bcb5ee9a3005d8b83c6694b9d828"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/installer.py",
+      "size": 10942,
+      "sha256": "12061f567e42f0c445d4ffc4ec222797870348d11f1745b5bfdea8ef178bd780"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/profile.json",
+      "size": 1232,
+      "sha256": "417f244c5819b50f24acdf125c0bbd6d849279243629476d9b24be6a259f25ed"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+      "size": 5836,
+      "sha256": "a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/i18n/en-US.json",
+      "size": 21192,
+      "sha256": "f24059910e16d09132b6d3eb2a4f5e5b0dd103e92bf2faad6972aeca653831f3"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration.py",
+      "size": 57362,
+      "sha256": "93b99edc1c13652542a8afb740306a137fedd1919515164aaff2025ad1ad79fc"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/integration_runtime.py",
+      "size": 7897,
+      "sha256": "fda76ccd5f1b9d9e0194b8469d01ac64dca3605d8b5b286a415776ebfe3c85d8"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE",
+      "size": 1569,
+      "sha256": "64652b7b9cf04a6db179fe2d28f044d83eca118fbcdc6d8ce57680f9c78ef583"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HHD",
+      "size": 26518,
+      "sha256": "6d9bb3b7fc818a8facc4cc296060a0883fef8710d6498f86165335846e82ee9d"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/LICENSE-HueSync",
+      "size": 1569,
+      "sha256": "64652b7b9cf04a6db179fe2d28f044d83eca118fbcdc6d8ce57680f9c78ef583"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/README.md",
+      "size": 5555,
+      "sha256": "d854ce3906f001e766b736b96814666e7454d41653262e38f0dd6a435e0d28df"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/THIRD_PARTY_NOTICES.md",
+      "size": 4967,
+      "sha256": "1f2562cfab971bbb7a3ee6efafbb8e02b4da79e1cdc1bf4709bd8d9e32816cfd"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/dist/index.js",
+      "size": 7523,
+      "sha256": "de696025fc07b7d1b0b0e975122d86574ac23d40f758a8720e0bb4aee4894b45"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/light_control.py",
+      "size": 12676,
+      "sha256": "03f47da99bad10a1760f94a99e84a92cee2a5e2effade0089e4564097152ee09"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/main.py",
+      "size": 803,
+      "sha256": "5198ab5cb8a7a64b61e96540f6e105f9f9ef4e43408a6fc47453af1ab93c719a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/package.json",
+      "size": 296,
+      "sha256": "154c63735f8e57ae0d137a22c6c67a04778c8bebb6de966c4e39623241da60c4"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/light/plugin.json",
+      "size": 289,
+      "sha256": "7a10bab8e93e67cd22dd74558feaabd9b688665c4ed08bc25ac319a2690d467c"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/maintenance_tool.py",
+      "size": 1809,
+      "sha256": "e624ec3bb39dcb60d87b601e63da1779e543114c76efffce7bc113153b47f232"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/options.json",
+      "size": 6300,
+      "sha256": "3b6a8544ac91074d824797d20eb8e8f737dcf8d8da10edbbadf438f606a815ce"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/plugin_installer.py",
+      "size": 11741,
+      "sha256": "b3f75faa83d68a867ea5923aa9eb6ee87fedff8300733c383112e822adbcb461"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release.json",
+      "size": 154,
+      "sha256": "d84f548a635cf197d8d6540d7fe4eb66e36563747534510cd8b1f0304d2399f6"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/release_notes.py",
+      "size": 200,
+      "sha256": "44ec7247db226636155d474588eef71227454b0e7c4865da1abae27488f48bcf"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/runtime_access.py",
+      "size": 3962,
+      "sha256": "4e593d969e5290675c5c7a360a2c892b2b491bca5646751e1e30cc41cc4de43f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/serial_console.py",
+      "size": 651,
+      "sha256": "52011057bfc61b172a4773415c2fe5939c86be87673033d3e1b883eb471b5c30"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/system_update_policy.py",
+      "size": 5024,
+      "sha256": "1fd7ca3315cca3258c9365797be214523fb2913d41721f150cab4530186dc6ec"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold.py",
+      "size": 13626,
+      "sha256": "6084f00b5d82dbf78c8b3b6282aff1f532a8ec3e655d6bb9b56e2b16c56baf67"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/update_hold_verify.py",
+      "size": 1367,
+      "sha256": "aecadad126b8e9b416052f7999767be03c21f4c9944d925894d978355a3ed78f"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/compatibility.py",
+      "size": 1875,
+      "sha256": "8369c483bc6462e51b5ade5f8f61d4681c8c7c0ff5e6c36da471ea702f29d76b"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid/profile.json",
+      "size": 1363,
+      "sha256": "c21ffe582ce8e880f0e77fcfeacb8475f369614d19634884c321bdc75670372a"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/waydroid_setup.py",
+      "size": 4212,
+      "sha256": "92f4c74294ff95a68749a805beccb0d24fac4330417054e79b75473c3e154619"
+    },
+    {
+      "path": "brands/onexplayer/oxp3/scripts/x2mini_hdr_device.py",
+      "size": 39391,
+      "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/bridge/README.md",
+      "size": 9921,
+      "sha256": "5ae8888815dde0bfc60e202e01ccb81942f7405e8dafcc832d9d504972e507cf"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/bridge/assets/90-oxp3-desktop-env-isolation.conf",
+      "size": 222,
+      "sha256": "9616729dac8be729b56bd201b8cfbbb1fcd0eb2fb7163944638306856e85a13b"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py",
+      "size": 1667,
+      "sha256": "44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/bridge/scripts/build.py",
+      "size": 6236,
+      "sha256": "cb94e3e0dc68d2a202b41a23053e7007d5cc4cfdd8bb8ec1a7c8325fe96037d5"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/bridge/source-lock.json",
+      "size": 6547,
+      "sha256": "d14b0cc281f9f29ce2faf587d02aab384d7beb98dc7c0f071114a05e2a887c6b"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/common-device-sources.toon",
+      "size": 561,
+      "sha256": "f7b30feaf31882bde8dc6465bc7322342306ee4762c94e796a6d89458a247686"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/battery_control.py",
+      "size": 837,
+      "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
+      "size": 356,
+      "sha256": "808e72d3f63ed9453374f70510a8641f55a367dfa805adb3f89d895244e3668d"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/manifest.json",
+      "size": 16174,
+      "sha256": "95adc68b5df57a5e56e14aaebd924379dd301bef040f6e3f0b4598e5dadae2ba"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/model.md",
+      "size": 9081,
+      "sha256": "797a0a46ec6d672c7f450093fb1923700dc75df3780b98367ffb6a186967c741"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
+      "size": 23848,
+      "sha256": "b93a4d3bf9ef2036b991ea563fb78599a3f5be18c6327f36dcf18636c18347d9"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh",
+      "size": 372,
+      "sha256": "7ae7075ac726a0a969f55373feebd179dc89ce5a22309a10c4f792d4f08a1cf1"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh",
+      "size": 1651,
+      "sha256": "4f30461153d65c07d2bd4b9ec66f522e3593390a2c1a4ea77bbc5f74781e2c50"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
+      "size": 39391,
+      "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/x2-mini.toon",
+      "size": 17072,
+      "sha256": "15ae384768a13ff119cb0626665d73145dfe9bed707ce6cda29a10eed30d0fa7"
+    },
+    {
+      "path": "common-device-source-index.json",
+      "size": 2299,
+      "sha256": "88ef28b51a1131a4e4a1059a280f90a6ff867ab02f15a32e2d33051dab4bfaef"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/final/speaker_route.py",
+      "size": 5602,
+      "sha256": "bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/licenses/AGPL-3.0.txt",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/licenses/MIT.txt",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/provenance/transform-provenance.json",
+      "size": 357,
+      "sha256": "eb180bbedbc73254937994d6665321b40b95838523a8f9e45f24d946ca312ad3"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/provenance/verified-current-source.json",
+      "size": 1761,
+      "sha256": "3012f0e83095262becc134986ab7dd47df5e0fbdcda563a6abca4904904ffe3e"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/source.toon",
+      "size": 2035,
+      "sha256": "6f24a2757994e981269ebf8e85c742f897e8919af8fa2f610f502aa230ef5646"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/20-oxp3-speaker-resume.conf",
+      "size": 41,
+      "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/90-oxp3-speaker-route.conf",
+      "size": 40,
+      "sha256": "7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/PROVENANCE.json",
+      "size": 1347,
+      "sha256": "198409b82781c0d7885de76c667cceee81411dacb9191d1c95caffc1b61782d2"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/install.json",
+      "size": 1580,
+      "sha256": "e99f5e6240d8271ef41b7055026d8915d697ac2992a8524ca50fd1b6fe8c6490"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/oxp3-speaker-resume.service",
+      "size": 284,
+      "sha256": "efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/oxp3-speaker-route.service",
+      "size": 221,
+      "sha256": "327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/sources/speaker_route.py",
+      "size": 5510,
+      "sha256": "b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739"
+    },
+    {
+      "path": "common/audio/realtek/alc245/speaker-route/transforms/speaker_model_advisory.py",
+      "size": 517,
+      "sha256": "da90f9f67f6f845ecb13e12e26613df7f170b9065a78274941e2e32d9b0d77c4"
+    },
+    {
+      "path": "common/components.md",
+      "size": 969,
+      "sha256": "76629e5eb7660584b0d18457816cfc215c188560cf44f8359bcf623535f65016"
+    },
+    {
+      "path": "common/fingerprint/bridge/index.js",
+      "size": 14560,
+      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb"
+    },
+    {
+      "path": "common/fingerprint/bridge/main.py",
+      "size": 3730,
+      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1"
+    },
+    {
+      "path": "common/fingerprint/bridge/package.json",
+      "size": 84,
+      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d"
+    },
+    {
+      "path": "common/fingerprint/bridge/plugin.json",
+      "size": 111,
+      "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7"
+    },
+    {
+      "path": "common/fingerprint/public-COPYING",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "common/fingerprint/public-bridge-lock.json",
+      "size": 2152,
+      "sha256": "bf19b68d45acc6d2733c4c60e30a021c32104c11a642eaa86434e5991bd46d7a"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/COPYING",
+      "size": 26436,
+      "sha256": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
+      "size": 297,
+      "sha256": "7c34339bc2c51b37bc3e397a5ef57e2a7936300f6820ea55a3f49c5a87fb49fa"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
+      "size": 150,
+      "sha256": "7189936528b25d066fa7c504c8d3a510a68534cd499b9e764726908ec6ea9e54"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/profile.json",
+      "size": 243,
+      "sha256": "33975adb8a98a7dfe79c3a55a9a239fab8d413a11b3c1b225f0f5d3f154aa449"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/spidev.conf",
+      "size": 29,
+      "sha256": "4fa71ac24903901425aa99ffb1d669569e7858044dbabbe22303183a845269dc"
+    },
+    {
+      "path": "common/fingerprint/source-lock.json",
+      "size": 2193,
+      "sha256": "bfbb3d6f5c541936b61fea648be230f0f8760e7020625d5b48eab0b13ffd8b73"
+    },
+    {
+      "path": "common/fingerprint/upstream/LICENSE",
+      "size": 1067,
+      "sha256": "52a65e9c001fbd9a4d411363103a5ad9b2aa5a0e8a2c6b672159788f2d7b3d69"
+    },
+    {
+      "path": "common/fingerprint/upstream/dist/index.js",
+      "size": 35815,
+      "sha256": "5f9d9d1d94b94fb4cf21d07632b6c2f35ab4497c525058a44d0959ba4b2e6295"
+    },
+    {
+      "path": "common/fingerprint/upstream/main.py",
+      "size": 17528,
+      "sha256": "7298a16670e373800c92bbf6172d1813ea24aba40ddb9adb2001d9c1e5e1202b"
+    },
+    {
+      "path": "common/fingerprint/upstream/package.json",
+      "size": 677,
+      "sha256": "f8a0990777fc27883787da4dd71ddea5fcd084c211aceaa101d7fc94fd0c3391"
+    },
+    {
+      "path": "common/fingerprint/upstream/plugin.json",
+      "size": 523,
+      "sha256": "731ddb300e4bb46b30a5d93d0461947998d291d9d8e999366aa9a5e6e1c8253c"
+    },
+    {
+      "path": "common/fingerprint/upstream/pnpm-lock.yaml",
+      "size": 39947,
+      "sha256": "cbf4accdee69270cbb10c9a4dbf0fb12344d1f6c0ad8d3858cb5e3487248784a"
+    },
+    {
+      "path": "common/fingerprint/upstream/rollup.config.js",
+      "size": 311,
+      "sha256": "62b83d8699a8607fd1d5678dba85df37ba7ee7eb4ab7551e4a3fdbde57be600c"
+    },
+    {
+      "path": "common/fingerprint/upstream/src/index.tsx",
+      "size": 32506,
+      "sha256": "32934d9f6e36ea16114b5e0d22c1bc969c36ab66f69149f74be646da3603ce81"
+    },
+    {
+      "path": "common/fingerprint/upstream/tsconfig.json",
+      "size": 837,
+      "sha256": "0c25a159538ae436532d3226f24937d6b351d5135130c72020e339447a8c3025"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/SOURCE_NOTICES.md",
+      "size": 481,
+      "sha256": "c449aa6aab15a1c6ad9bf0efdf3bfe66f6435731677809da80644473f40f7719"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/final/load.py",
+      "size": 3033,
+      "sha256": "d39cda04906560f5d3e0a01d94c1d649e97920bb685573b96a43a827a06cda63"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/licenses/AGPL-3.0.txt",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/licenses/GPL-2.0.txt",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/licenses/UPSTREAM-MIT.txt",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/provenance.json",
+      "size": 26919,
+      "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/provenance/transform-provenance.json",
+      "size": 440,
+      "sha256": "c43693595272375be1416206e425a6dcd6844446798a3fe82ab52609f3ef3ddf"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/source.toon",
+      "size": 3111,
+      "sha256": "536d6507e6663bd66de6c94890a3e0b016c1ebc6a2b13f04ad51cc9f60ee4f14"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/90-boiler-oxp3-xevmafix.conf",
+      "size": 42,
+      "sha256": "ba2a8b4edebc640910521643e7962d09546a043cd8f539fcb1b504047e503132"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/README.md",
+      "size": 2300,
+      "sha256": "3382fb696e004bc00ddabb8729ca16ba2b32f6e5be0b6ca244ced88f4cc74b00"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/UPSTREAM_README.md",
+      "size": 3528,
+      "sha256": "bc478f9e972bc5ace5d594d337e5e16c83e7fd9b6729321ebb084471877638c7"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/boiler-oxp3-xevmafix.service",
+      "size": 218,
+      "sha256": "4e05053564db612fab03dd7c838aa85b7472c4dc3791a5bee5f1162acc6641e8"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/install.json",
+      "size": 2187,
+      "sha256": "bb427afb8db3152dec0b2cb79ff47631a06dc183582c2156c6f69736936fe76e"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/kmod_transform.py",
+      "size": 1048,
+      "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/load.py",
+      "size": 2330,
+      "sha256": "bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/module-lock.json",
+      "size": 26919,
+      "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/sources/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5"
+    },
+    {
+      "path": "common/gpu/intel/xe/xevmafix-724/transforms/xevma_model_advisory.py",
+      "size": 1756,
+      "sha256": "a7b3b3b2b53763558f0835ce002677a508d8a8612baba1b0d6c835d001b3f9ad"
+    },
+    {
+      "path": "common/network/intel/be201/build-recipe.json",
+      "size": 17916,
+      "sha256": "d23fafbae52da609cb1ba84fc4032640b8e127ebf9ad6c6f94cc043530ba1c6a"
+    },
+    {
+      "path": "common/network/intel/be201/input-map.json",
+      "size": 4168,
+      "sha256": "c28c35fdc21d25607e16866bab84f4cc44141b18596bc15e20c050c84d1dc3f9"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/ibt-00a0-0291-iml.sfi",
+      "size": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/ibt-00a0-0291-pci.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/ibt-00a0-0291-pci.sfi",
+      "size": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/ibt-00a0-0291-usb.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/ibt-00a0-0291-usb.sfi",
+      "size": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "size": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "size": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "size": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c"
+    },
+    {
+      "path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "size": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd"
+    },
+    {
+      "path": "common/network/intel/be201/licenses/LICENCE.ibt_firmware",
+      "size": 2040,
+      "sha256": "5181b0b51efc79d5acb2c9bb92042878fdbad97a92114d4ab5e32e2b5b52fce4"
+    },
+    {
+      "path": "common/network/intel/be201/licenses/LICENCE.iwlwifi_firmware",
+      "size": 2046,
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5"
+    },
+    {
+      "path": "common/network/intel/be201/provenance/external-input-lock.json",
+      "size": 4512,
+      "sha256": "e820cc0d41fdb7ddbd73a8c8432ecc5f70b44e4a0148b26bc5a1e486f68b47d8"
+    },
+    {
+      "path": "common/network/intel/be201/provenance/firmware-source.json",
+      "size": 4512,
+      "sha256": "e820cc0d41fdb7ddbd73a8c8432ecc5f70b44e4a0148b26bc5a1e486f68b47d8"
+    },
+    {
+      "path": "common/network/intel/be201/source.toon",
+      "size": 2488,
+      "sha256": "8b983054aae25c0b0455883b04f8d726953ad385425a6456d9fb59e3b0ebb5ae"
+    },
+    {
+      "path": "common/resource-inputs/intel-xevma-724/REBUILD.md",
+      "size": 3773,
+      "sha256": "d4902fe75d1665f5c9e90c36ee611ebd45cc23e726bb3127e4a5a156e5120de5"
+    },
+    {
+      "path": "common/resource-inputs/intel-xevma-724/xevma-build.log",
+      "size": 726,
+      "sha256": "22c2efe22083460e472330831ec703eecb44c2b63d83fedf2dae24da0ac342d0"
+    },
+    {
+      "path": "common/resource-inputs/intel-xevma-724/xevma-rebuild-inputs.json",
+      "size": 25585,
+      "sha256": "4a96af51b82259a07bc8a26d64984868aff018fdab174afc7b75a4addd100974"
+    },
+    {
+      "path": "common/resource-inputs/intel-xevma-724/xevma-rebuild-proof.json",
+      "size": 5346,
+      "sha256": "4206fd49587e5706959eb8cca4ba847825b0041b4fd02f7079d9468062327045"
+    },
+    {
+      "path": "common/resource-inputs/intel-xevma-724/xevmafix.ko",
+      "size": 397512,
+      "sha256": "10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b"
+    },
+    {
+      "path": "common/scripts/directory_transaction.py",
+      "size": 6236,
+      "sha256": "098ce024ae4a57698741b235a15503977b29c10730b195f00dc4f07c3f557adc"
+    },
+    {
+      "path": "common/scripts/file_transaction.py",
+      "size": 10276,
+      "sha256": "491dce0a0b753295d2466adb44780595055ba4cc96ad004ba25a04cf1df1c786"
+    },
+    {
+      "path": "common/scripts/licenses/upstream-fixes-MIT.txt",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/scripts/ntfs_steam.py",
+      "size": 25270,
+      "sha256": "fad68844c876b4c80097250d73be67c3714865cbe821c41a19bfa85a66ebaf4c"
+    },
+    {
+      "path": "common/scripts/partition-mount/desktop.py",
+      "size": 10783,
+      "sha256": "c08bfe84313399dfd196c98b99937e0a58b391c9498ffbfd875ca6a7d3ebf326"
+    },
+    {
+      "path": "common/scripts/partition-mount/mounts.py",
+      "size": 18225,
+      "sha256": "e297f1159f490b3928a7e1043392382a5aaf409cdf4d334dfdb974836befc94a"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount",
+      "size": 81,
+      "sha256": "08cfc11c3caab4ca1e938b797610933e2ee6738c317646491dc562bff015148f"
+    },
+    {
+      "path": "common/scripts/partition-mount/oxp3-partition-mount.desktop",
+      "size": 421,
+      "sha256": "455b9cb677cf76cdfc60e67ca03ca74dfa84dded6f6c4d2e0b7bcf4f53cd9ed5"
+    },
+    {
+      "path": "common/scripts/partition_mount.py",
+      "size": 4348,
+      "sha256": "c48d500e11f41802aa9f2c283993dae96ac226f662ff88ed78a681a3aeb1fbf4"
+    },
+    {
+      "path": "common/scripts/shared_state.py",
+      "size": 1512,
+      "sha256": "a79885a87e2fd923c3c3013092ee4c229efc1cdbffc88631396b0d1e874da938"
+    },
+    {
+      "path": "common/scripts/shared_storage.py",
+      "size": 18228,
+      "sha256": "66d3722db2175da6fae270013632d88b8d18d5ba3d77c76d310f150aae6802ac"
+    },
+    {
+      "path": "common/scripts/slot-switch/49-oxp3-slot-switch.rules",
+      "size": 298,
+      "sha256": "f95d37f73f87532e6827a2e50cd03f86703a2def50fe036f9e54a280f155c317"
+    },
+    {
+      "path": "common/scripts/slot-switch/boot.py",
+      "size": 20555,
+      "sha256": "94d98f74d6025d79d2f6af07d59657117c6a80316e591e235d4e4e9ab75dcf85"
+    },
+    {
+      "path": "common/scripts/slot-switch/desktop.py",
+      "size": 9643,
+      "sha256": "ebfc65ff86e4dcf33011d1884e487fee00b072c134fb1fc0815d7d841cf0294d"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-slot-switch.desktop",
+      "size": 236,
+      "sha256": "05c6039b3d12cf633c846da62c9a28f5cae98b179ca2e0985960451520822b4a"
+    },
+    {
+      "path": "common/scripts/slot-switch/oxp3-switch-slot",
+      "size": 75,
+      "sha256": "4d58916cc7d5d31405d0d189e2ea7963c8d8a29776242bf8dd967e38c421dd46"
+    },
+    {
+      "path": "common/scripts/slot_switch.py",
+      "size": 3881,
+      "sha256": "f3d4c188a5c3e206e819b0f864052fb495d1b7d0fa2a16c0bce0fcf720312d4e"
+    },
+    {
+      "path": "common/scripts/split-lock/README.md",
+      "size": 3156,
+      "sha256": "5f22a2d53aa485a4cd5da7c34f6c31444898457b0c9db3fbe1ba6157760f4a32"
+    },
+    {
+      "path": "common/scripts/split-lock/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/scripts/split_lock.py",
+      "size": 8828,
+      "sha256": "ad1602db2d380734ac9d28a77a4c3764c2704197784bb0ddcec20ce5179ddbd9"
+    },
+    {
+      "path": "common/scripts/windows-reboot/49-oxp3-restart-windows.rules",
+      "size": 209,
+      "sha256": "9eee2dfdb85d94026d22f9c89ed98d591f2356869062c230742de38a96a1cd83"
+    },
+    {
+      "path": "common/scripts/windows-reboot/boot.py",
+      "size": 7866,
+      "sha256": "d530864f1ecb9de59005a9fd0b66a8821bf5b9c8f72d772d2f31224a90256ff5"
+    },
+    {
+      "path": "common/scripts/windows-reboot/desktop.py",
+      "size": 2184,
+      "sha256": "8443df12f2784d05a72bd85c4041f20b9113e51a652095d4b9655a8beac3f104"
+    },
+    {
+      "path": "common/scripts/windows-reboot/dist/index.js",
+      "size": 7412,
+      "sha256": "0e7ae2fd1b0cd2193248b8128fd2f4b2fa2acb1e22bbbf814c0cf1396c7c2747"
+    },
+    {
+      "path": "common/scripts/windows-reboot/main.py",
+      "size": 1961,
+      "sha256": "3a014ce4e4b8055d2ca2af3362cb6e471fb6f48a10a43fc928239228e47ef5a1"
+    },
+    {
+      "path": "common/scripts/windows-reboot/org.oxp3.restart-windows.policy",
+      "size": 705,
+      "sha256": "58a5dfb5c560e892cf3b4687aafa434e57ab90c9ecb85ce186a32de5f8ada54a"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows",
+      "size": 86,
+      "sha256": "2c12b51f165f75a08907a351dda24283432383145fee2c77d4683d56435d6fdf"
+    },
+    {
+      "path": "common/scripts/windows-reboot/oxp3-reboot-windows.desktop",
+      "size": 378,
+      "sha256": "fc4752c0fe804e1cdb9de9064188890dc1f564c08b8cbeafdc9f70ebd4510d26"
+    },
+    {
+      "path": "common/scripts/windows-reboot/package.json",
+      "size": 382,
+      "sha256": "1329ea0286ff93f649f35050eda05327e6b43998e985a45c8f0cc3dbd24888a1"
+    },
+    {
+      "path": "common/scripts/windows-reboot/plugin.json",
+      "size": 249,
+      "sha256": "3590186cca290a7f4b4d4819d22139c2838549d2a9ce1694b3ea3616b9bca448"
+    },
+    {
+      "path": "common/scripts/windows-reboot/pnpm-lock.yaml",
+      "size": 38526,
+      "sha256": "9811ac6fb24c854abcd12c7b5e945a5599c76998697f1045a9d9a121f02232c0"
+    },
+    {
+      "path": "common/scripts/windows-reboot/rollup.config.js",
+      "size": 73,
+      "sha256": "1323141cd5f9afc3cafdd174301aaec69840dd354c157b2f77d2e1307c34f0e0"
+    },
+    {
+      "path": "common/scripts/windows-reboot/src/index.tsx",
+      "size": 6276,
+      "sha256": "7298da0e04c1b11525139e8573a2a64da92b9caa6b1bd84b09532c55236be29d"
+    },
+    {
+      "path": "common/scripts/windows-reboot/tsconfig.json",
+      "size": 267,
+      "sha256": "6d39571803cb2799a2859e1fbbc1add243b2ab9d27504a2a1aba7087d3fdb214"
+    },
+    {
+      "path": "common/scripts/windows_reboot.py",
+      "size": 2638,
+      "sha256": "9d7a5ba9152cefd818b8f63f8a839502197f9939678dbab49a8c6a73df0e18a9"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/licenses/GPL-2.0.txt",
+      "size": 19125,
+      "sha256": "454649ddc02b5cc098513cea28db6592b45ac0a906386287c4d48cf8dbde651c"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/licenses/InputPlumber-LICENSE",
+      "size": 35151,
+      "sha256": "7fe14716ed31cc71fc3bf9af293c368d464a853a70ea86e9995388f6b9e929e5"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/licenses/MIT.txt",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/source.toon",
+      "size": 2785,
+      "sha256": "b014f3a238e1a7b74fbf4b0332e520e9aff7877b4132cca228833bfe61c63d17"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/Makefile",
+      "size": 23,
+      "sha256": "6fed206b92d43604d3ef666034373e76dbdae380c2858c58ff1566955838747d"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/bmi270.h",
+      "size": 614,
+      "sha256": "14d9457dd5aae818db61bf9247c6f395520aeb0bcdbf6ab2abbb8f0d8aed9cb8"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/gyro_binding.py",
+      "size": 11894,
+      "sha256": "967701d1cbb3ba274acb459a87df9de81309f33530f582b995bdb9f1fa298926"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/inputplumber-0.78.0-oxp3-gyro.patch",
+      "size": 31057,
+      "sha256": "e1fd31a17aaacb4bb35b1158dae4471f0ea74f21861ef581ac9985bba9d1bc2d"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/inputplumber.conf",
+      "size": 119,
+      "sha256": "7f63d87e14553a7c274d99eb58d4ae292e56bc8a873f7b29a56d5ed3e0b1506e"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/launch.sh",
+      "size": 287,
+      "sha256": "57d5822fd1bc56c6dbba01d9775a30cffeb3ab3f47bfbfc778478edcba5bce95"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/load.sh",
+      "size": 369,
+      "sha256": "6457a8d68a16e6f68481b7e9173cb64878e9579ae86affbb002de4f81c512314"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/onexplayer3-bmi260.patch",
+      "size": 2400,
+      "sha256": "d869d7c3e67815c4c44ea508c8ae32a30de4af021f1a59475172638c817c4fa5"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/oxp3-gyro.service",
+      "size": 384,
+      "sha256": "5aeea94e5e7c999cd90058c88101c174e23f6317b14d1eca3af201ac5badf66b"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/oxp3_bmi260.c",
+      "size": 1906,
+      "sha256": "6d5db91566ac5d6fbf0838d87d6a3e611be4ebd7cc7f373f6dad557bcd831939"
+    },
+    {
+      "path": "common/sensors/bosch/bmi260/gyro/sources/unload.sh",
+      "size": 83,
+      "sha256": "370f22b1be7b537169238f809ba66ef9f83d19e551a073df20f6a3e68b7d62e9"
+    },
+    {
+      "path": "common/ssd/acer/gm7/GM7_POLICY.md",
+      "size": 1875,
+      "sha256": "9231b634fa671912c6c844d9ea0ab85bc28b5bbb82137fcccb741d4b64c48a6d"
+    },
+    {
+      "path": "common/ssd/acer/gm7/components.toon",
+      "size": 774,
+      "sha256": "ee042a516163e06650ec45d4d1457ac774b5bf362962e415762c0fbad7489eac"
+    },
+    {
+      "path": "common/xevma/kmod_transform.py",
+      "size": 1048,
+      "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7"
+    },
+    {
+      "path": "current-source-lock.json",
+      "size": 11891,
+      "sha256": "d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827"
+    },
+    {
+      "path": "device-index.json",
+      "size": 436,
+      "sha256": "afe9e79614fcea37447fe7279b316b658596bf5e702abd496c8792d60ee45921"
+    },
+    {
+      "path": "devices/oxp3.json",
+      "size": 3996,
+      "sha256": "c14b43b80069c50846418287a61cf7d88f4d74d48e7c2f8b3c5aa2f476f4d651"
+    },
+    {
+      "path": "docs/ADAPTATIONS.md",
+      "size": 3017,
+      "sha256": "6bb7ff5bb57f2f757a34c8547ddc0e800b348e73052515622752519280f46349"
+    },
+    {
+      "path": "docs/RELEASE_0.1.0-layout.1.md",
+      "size": 4247,
+      "sha256": "162562c25df38c24c1930e5f0eab9aa47460fd5aafe546f4edc2dafe6d3a033c"
+    },
+    {
+      "path": "fingerprint-source-lock.json",
+      "size": 2604,
+      "sha256": "9f42a57dc5bd823e02d85b390a82780be8b937ad853215988ca39ea0b2e42232"
+    },
+    {
+      "path": "licenses/GPL-2.0.txt",
+      "size": 19125,
+      "sha256": "454649ddc02b5cc098513cea28db6592b45ac0a906386287c4d48cf8dbde651c"
+    },
+    {
+      "path": "licenses/license-inventory.json",
+      "size": 701,
+      "sha256": "01cfe8010a526d2ce899bca35e0b85f87dfb69ab828e8ccca784dada38ed4f0c"
+    },
+    {
+      "path": "model-index.json",
+      "size": 806,
+      "sha256": "b8f54f5035ec033cd67425de8a9ff7bd76a79b28d9c346fc018302869f87d849"
+    },
+    {
+      "path": "models.toon",
+      "size": 658,
+      "sha256": "eecef70f69ada5f8ca2433c21883ad3cd36ea31862df0caff8bebec22c5cf45b"
+    },
+    {
+      "path": "records/migrations/bmi260-source-relocation-20261103.json",
+      "size": 5237,
+      "sha256": "460226bb632cac6dbd8849ac715bc6483da64de509fd72b606a6499c9c2b7b79"
+    },
+    {
+      "path": "records/migrations/common-bmi260-inputplumber-20261103.json",
+      "size": 1508,
+      "sha256": "78789ad72c4736c40ea0fc621432ac4a24c48ce3045e35dbf72789290d9e7675"
+    },
+    {
+      "path": "records/migrations/common-device-resource-ownership-20261103.json",
+      "size": 26319,
+      "sha256": "7b56b449ea011d8c0677bc72e8a41ed3c9c0216e3da2803eaa36fc83314946b8"
+    },
+    {
+      "path": "records/oxp3-shared-base/opti031-inputs.json",
+      "size": 6364,
+      "sha256": "f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bacc36bcd222abfa6"
+    },
+    {
+      "path": "records/reviewed-transforms-v2/source-transform-lock.json",
+      "size": 1667,
+      "sha256": "786b5156718b9bb33ec4e3a0d904aeefd8977a3ae976c44609a5fa68edf82e07"
+    },
+    {
+      "path": "records/reviewed-transforms-v2/speaker_route.py",
+      "size": 5602,
+      "sha256": "bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a"
+    },
+    {
+      "path": "records/reviewed-transforms-v2/speaker_route.py.patch",
+      "size": 333,
+      "sha256": "636967265f109fd5a376ec892e091ca191178ed9c24bd55039b885baefa241e2"
+    },
+    {
+      "path": "records/reviewed-transforms-v2/xevma-load.py",
+      "size": 3033,
+      "sha256": "d39cda04906560f5d3e0a01d94c1d649e97920bb685573b96a43a827a06cda63"
+    },
+    {
+      "path": "records/reviewed-transforms-v2/xevma-load.py.patch",
+      "size": 2095,
+      "sha256": "d9892245f3803a27ab9257898978fc73a390786bda15e7829f4686476716de9d"
+    },
+    {
+      "path": "records/shared-20261030/battery-payload-report.json",
+      "size": 3023,
+      "sha256": "f411f6653fcf9b7e05a44d0c280365618978740cb918f749306d8c6f30ffda6f"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/000.bin",
+      "size": 2616,
+      "sha256": "1ea349b1a679a9859a918459dd55d39716934746c5c52783e314daa4505decb3"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/001.bin",
+      "size": 4432,
+      "sha256": "33dbd7a324656c28abcfad841c3ba324ed03aeee18321a02f4c7d275f829ff57"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/002.bin",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/003.bin",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/004.bin",
+      "size": 618,
+      "sha256": "d5771cac38919a517f3ff228de56add0700fdac9e3e7f4d92c461f8ee2fe4767"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/005.bin",
+      "size": 418,
+      "sha256": "df9acac75b4b2906c6c0d953460de16f6e7de30789ec74fdea00f2faffabef43"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/006.bin",
+      "size": 128,
+      "sha256": "98367b4ecf45d8a48c1349b9931cd192d55b462aed49b71f14d21f92d5ef1f48"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/007.bin",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/008.bin",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/009.bin",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "path": "records/shared-20261030/battery/oxp3/010.bin",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/000.bin",
+      "size": 837,
+      "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/001.bin",
+      "size": 8463,
+      "sha256": "b4a0df256f978d7bd3c9fb1388a8da5df83767b068b9ca2ea96582bd40629e99"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/002.bin",
+      "size": 171,
+      "sha256": "a2f0853556e9387e7f1862a8d0a16fd2e8b8400eed67e595f63c3d68df1729b2"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/003.bin",
+      "size": 947,
+      "sha256": "17012e3b6d0d6861ea4e66426686545c5ea18227ddb7617bc116dc99f7679bfb"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/004.bin",
+      "size": 11336,
+      "sha256": "2e73f21f74bccdd06bbfebd2693d1dc744e980843290674bcb87338accc353fb"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/005.bin",
+      "size": 96,
+      "sha256": "ad11a19b1957aa12eb6bcc63c2c65a85516011ec5517ae725275777d6a41b668"
+    },
+    {
+      "path": "records/shared-20261030/battery/x2-mini/006.bin",
+      "size": 62,
+      "sha256": "b72b30577e44e59ec2850f7bfe79743ea6e4d10f0fb86e47b9d2f4f64a98772f"
+    },
+    {
+      "path": "records/shared-20261030/inputs.json",
+      "size": 9654,
+      "sha256": "089a7c31bd1e96a4b7396f40adbd142ce14af7abd5c1858ef9aba86a955ea7a0"
+    },
+    {
+      "path": "records/shared-20261030/microphone/oxp3/000.bin",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269"
+    },
+    {
+      "path": "records/shared-20261030/microphone/oxp3/001.bin",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
+    },
+    {
+      "path": "records/shared-20261030/microphone/oxp3/002.bin",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888"
+    },
+    {
+      "path": "records/shared-20261030/microphone/x2-mini/000.bin",
+      "size": 9440,
+      "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269"
+    },
+    {
+      "path": "records/shared-20261030/microphone/x2-mini/001.bin",
+      "size": 364,
+      "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
+    },
+    {
+      "path": "records/shared-20261030/microphone/x2-mini/002.bin",
+      "size": 36,
+      "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888"
+    },
+    {
+      "path": "records/x2-keyboard/runtime-source-lock.json",
+      "size": 4698,
+      "sha256": "0df9fbd4289a890db80e84e3a8d5036bb79129f851de4d83aed5360ddbb7fe7b"
+    },
+    {
+      "path": "resource-build-inputs.json",
+      "size": 11504,
+      "sha256": "727e3b51d67e6967fa00a732f7f39d35a2fa9be372c681f9b2ccaac7ade4ef5c"
+    },
+    {
+      "path": "resource-public-source-proof.json",
+      "size": 8927,
+      "sha256": "ed3ec2e75d2371dbcb4b19e6bb3e7d53abede0ac1e251c9f8fb5479e1a0bef2f"
+    },
+    {
+      "path": "retained-build-inputs.json",
+      "size": 1096,
+      "sha256": "95f0e63c6ff3f7793e0179903807f2d11e1b319127e708e33e720c85a49235c4"
+    },
+    {
+      "path": "scripts/adaptations.py",
+      "size": 16704,
+      "sha256": "2faf58d71b9d0c22d3abbc94fced9f3c23bba9ebf23856759a8590a9cc5535f0"
+    },
+    {
+      "path": "scripts/build-complete-bridge.py",
+      "size": 5659,
+      "sha256": "22abb0b48e4378e1d0e9b9b51cd89517d24a69612a419196a7aa456fbc768794"
+    },
+    {
+      "path": "scripts/build-current-opti.py",
+      "size": 36660,
+      "sha256": "50737e663a2dea8c21be720ae85f781970823da923aa5e0c9ee0b336805a79a6"
+    },
+    {
+      "path": "scripts/build-fingerprint-overlay.py",
+      "size": 14311,
+      "sha256": "9493353672fee16f25c31de510f347c9b3216e23ba958a0a0cc73ff2c5b6714d"
+    },
+    {
+      "path": "scripts/build-index.py",
+      "size": 20181,
+      "sha256": "03dc586b04f6a2f6d86eac31427d4a69312893539084183128d6e10cb29c7419"
+    },
+    {
+      "path": "scripts/build-keyboard-runtime.py",
+      "size": 3643,
+      "sha256": "7d901b7750801c17ab6e4efb64fba9fd3fb95d5f474721636cea924c97a42e59"
+    },
+    {
+      "path": "scripts/build-shared-base.py",
+      "size": 9640,
+      "sha256": "e4ef0c3baa39d0f4d9174e44551d196c226afa411dbbe9f41b89038155babe5f"
+    },
+    {
+      "path": "scripts/build-upstream-repairs.py",
+      "size": 18594,
+      "sha256": "439c1a87d42774dcb5593f2aaed37bce6fa7f9bce112db56ea4c45dbb155a90e"
+    },
+    {
+      "path": "scripts/build-x2-complete.py",
+      "size": 18351,
+      "sha256": "246ca33f9f0b43ecd5d1c6ada168e2fb381223e1bec8f4b41aa1242fa65a9df5"
+    },
+    {
+      "path": "scripts/build-x2-hdr-overlay.py",
+      "size": 15538,
+      "sha256": "0fbeb08adfcbc40b7ccab5a0d3f806eea79354cfcc53f2c1c7dac57aeced3167"
+    },
+    {
+      "path": "scripts/common-device-sources.py",
+      "size": 10513,
+      "sha256": "5432bd8a6359ec51ccca0248885e6597bbbea5dedbf099f46d7a24c9c3a1f1a6"
+    },
+    {
+      "path": "scripts/fingerprint_provenance.py",
+      "size": 2313,
+      "sha256": "607f96c809650fd4f4669e7f897ed02224a88b3b10cd0be565f4b169b1e3ef3f"
+    },
+    {
+      "path": "scripts/prepare-current-inputs.py",
+      "size": 7013,
+      "sha256": "2bc8ec793af42306b230e316c17e3e5ee55db045961fe0bd8fcb803d66a60d01"
+    },
+    {
+      "path": "scripts/prepare-fingerprint.py",
+      "size": 4941,
+      "sha256": "f62601456660c1a419f6afc008453f493764f3707f976395273bd0a2884c21aa"
+    },
+    {
+      "path": "scripts/validate-fingerprint-native.py",
+      "size": 6086,
+      "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
+    },
+    {
+      "path": "source-files.txt",
+      "size": 52210,
+      "sha256": "1998f4481d24be1c043a468af718f6e156bfe8c1a7e814fbaa7029e5ecc6fc2a"
+    },
+    {
+      "path": "source-lock.json",
+      "size": 27296,
+      "sha256": "b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa"
+    },
+    {
+      "path": "source-plan.json",
+      "size": 16490,
+      "sha256": "5d40dc14731ba10a382991d3bbf9080ec2b4d9f104e9af9c0c710bc47340905b"
+    },
+    {
+      "path": "tests/test_adaptations.py",
+      "size": 17024,
+      "sha256": "44aa1bf4b9371a9b629b820a4a622c0b1d8ba42228833b9d70b7e0137475b0cf"
+    },
+    {
+      "path": "tests/test_common_device_sources.py",
+      "size": 4820,
+      "sha256": "f87fb74d1cb0be94b89ed1bf6bfb4e626e3e9a61dc8aaf635b9f75b32740089c"
+    },
+    {
+      "path": "tests/test_registry.py",
+      "size": 12496,
+      "sha256": "a12cd82b35416f67e42c72023b71587d82e0410202098ec3084a64e69fc6ad84"
+    },
+    {
+      "path": "toon-parser-lock.json",
+      "size": 2365,
+      "sha256": "f8314cd5f40ccbe494e0d2887ad504e43af9eab39ded46894a5389c273c1dbc8"
+    },
+    {
+      "path": "upstream-source-lock.json",
+      "size": 4360,
+      "sha256": "099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc"
+    },
+    {
+      "path": "vendor/toon-parser-lock.json",
+      "size": 2365,
+      "sha256": "f8314cd5f40ccbe494e0d2887ad504e43af9eab39ded46894a5389c273c1dbc8"
+    },
+    {
+      "path": "vendor/toon_format-1.2.0.dist-info/METADATA",
+      "size": 8292,
+      "sha256": "b9a288a35b78f7c9d790053742bb0e7c19140ee10cefe43a46662446afd1a251"
+    },
+    {
+      "path": "vendor/toon_format-1.2.0.dist-info/RECORD",
+      "size": 947,
+      "sha256": "2c24710f53b681c9f67124c5dd34b8791cfa208a6f497b2931f2934a0d201c0a"
+    },
+    {
+      "path": "vendor/toon_format-1.2.0.dist-info/WHEEL",
+      "size": 80,
+      "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4"
+    },
+    {
+      "path": "vendor/toon_format-1.2.0.dist-info/licenses/LICENSE",
+      "size": 1244,
+      "sha256": "26da95efc362eba3999b4b72a7e163c37908f5515cacac36c46011e595ee8d42"
+    },
+    {
+      "path": "vendor/toon_format/__init__.py",
+      "size": 1287,
+      "sha256": "5b6550985ffe3b2e1178087ec442ce4f5a9f67a5e3779d2e82f000e1946d864f"
+    },
+    {
+      "path": "vendor/toon_format/_api.py",
+      "size": 6222,
+      "sha256": "3eedb3fb29a7c3b1d5dad2814154f59391bb7120f19310eff36bf7bb09b6b55d"
+    },
+    {
+      "path": "vendor/toon_format/_decoder.py",
+      "size": 25143,
+      "sha256": "20800ade21b98e5699f4e849ab1ace39c8649f4ce41edefce26248de7228eda3"
+    },
+    {
+      "path": "vendor/toon_format/_encoder.py",
+      "size": 14028,
+      "sha256": "39be8b180e4991cc02fba743707151485fac87e2b8350296c67f1ed7214b50bd"
+    },
+    {
+      "path": "vendor/toon_format/_errors.py",
+      "size": 1127,
+      "sha256": "8a2730b09fb67e844db45462ba875c732eae73311b8110a2c91e72bc6c9aed27"
+    },
+    {
+      "path": "vendor/toon_format/_text.py",
+      "size": 4289,
+      "sha256": "b6e1fc249ee473be80768d608b63cef193ff609c33e6623af5db301960b467cd"
+    },
+    {
+      "path": "vendor/toon_format/py.typed",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "vendor/toon_format/pydantic.py",
+      "size": 2502,
+      "sha256": "f44b93401a26b417d9f3b60da9dc84e5af5bb8999116fe5743278959a86f9666"
+    },
+    {
+      "path": "xevma-kmod-source-lock.json",
+      "size": 388,
+      "sha256": "74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17"
+    }
+  ]
+}

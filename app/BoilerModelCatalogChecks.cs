@@ -82,8 +82,16 @@ internal static class BoilerModelCatalogChecks
                         if (id == "device:x2-mini") core.IsChecked = false;
                         Commit();
                         var boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
-                        var components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
-                        if (id == "device:x2-mini")
+                        var allComponents = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+                        var ssdProviders = package.GetProperty("components").EnumerateArray()
+                            .Where(item => item.TryGetProperty("ssd_boot_policy", out _))
+                            .Select(item => item.GetProperty("id").GetString()!).ToHashSet();
+                        if (ssdProviders.Count != 0)
+                            Require(ssdProviders.All(key => allComponents[key].IsChecked != true)
+                                && !(window.CurrentOptions.DeviceComponents ?? []).Any(ssdProviders.Contains),
+                                prefix + "-unmatched-ssd-provider-not-selected");
+                        var components = allComponents.Where(pair => !ssdProviders.Contains(pair.Key)).ToDictionary();
+                        if (id == "device:x2-mini" && components.ContainsKey("x2-mini:battery"))
                             Require(core.IsChecked == true && window.CurrentOptions.Plugins.Contains("core:decky"), prefix + "-import-defaults-enable-decky");
                         HashSet<string> Selected() => boxes.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToHashSet();
                         void Clear() { foreach (var box in boxes.Values) box.IsChecked = false; }

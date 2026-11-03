@@ -11,26 +11,36 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT/'scripts')]
+def model_source_names():
+    return ['adaptations/brands/onexplayer/oxp3/oxp3.toon','adaptations/brands/onexplayer/x2-mini/x2-mini.toon']
+
 spec = importlib.util.spec_from_file_location('project_resource_build', ROOT/'scripts/prepare-resource-pool.py')
 builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
 
 
 class ProjectResourceBuildTests(unittest.TestCase):
+    def copy_locked_inputs(self, project, lock, omit=None):
+        mapping=json.loads((ROOT/builder.build_wifi_pool.INPUT_MAP).read_bytes())
+        paths={row['legacy']:row['canonical'] for row in mapping['files']}
+        for row in lock['files']:
+            if row['path']==omit: continue
+            name=paths.get(row['path'],row['path']); target=project/name
+            target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
+        name=builder.build_wifi_pool.INPUT_MAP;target=project/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
+        target=project/builder.LOCK;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(lock))
+        return paths
+
     def test_kmod_transform_is_a_locked_resource_input(self):
         _, lock, _ = builder.check_inputs(ROOT)
         names = {'adaptations/common/xevma/kmod_transform.py', 'adaptations/xevma-kmod-source-lock.json'}
         self.assertTrue(names <= {row['path'] for row in lock['files']})
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
-            for row in lock['files']:
-                target = project/row['path']; target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(ROOT/row['path'], target)
-            target = project/builder.LOCK; target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(lock))
+            self.copy_locked_inputs(project,lock)
             for name in names:
                 original = (project/name).read_bytes()
                 (project/name).write_bytes(original+b'\n')
-                with self.assertRaisesRegex(ValueError, 'Locked project input differs'):
+                with patch.object(builder.model_source,'sources',return_value=model_source_names()), self.assertRaisesRegex(ValueError, 'Locked project input differs'):
                     builder.check_inputs(project)
                 (project/name).write_bytes(original)
 
@@ -123,13 +133,9 @@ class ProjectResourceBuildTests(unittest.TestCase):
         for missing in (False, True):
             with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
-                (root/'adaptations').mkdir(); (root/builder.LOCK).write_bytes(lock_raw)
-                for row in lock['files']:
-                    if missing and row == target: continue
-                    dest = root/row['path']; dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(ROOT/row['path'], dest)
-                if not missing: (root/target['path']).write_bytes(b'changed')
-                with self.assertRaises((ValueError, OSError)):
+                paths=self.copy_locked_inputs(root,lock,omit=target['path'] if missing else None)
+                if not missing: (root/paths[target['path']]).write_bytes(b'changed')
+                with patch.object(builder.model_source,'sources',return_value=model_source_names()), self.assertRaises((ValueError, OSError)):
                     builder.check_inputs(root)
 
     def test_generated_project_license_has_accurate_agpl_name_and_references(self):

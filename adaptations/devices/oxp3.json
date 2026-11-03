@@ -5,8 +5,8 @@
     "en": "ONEXPLAYER 3",
     "zh": "ONEXPLAYER 3"
   },
-  "repository": "FlightDan/Boiler-installer",
-  "local_candidate": "brands/onexplayer/oxp3/bridge",
+  "repository": "FlightDan/OneXPlayer3-SteamOS",
+  "local_candidate": "Boiler-oxp3",
   "package_status": "experimental",
   "notes": [
     "The Boiler package explicitly carries model policy, including its acknowledged OS-image update hold; generic installation does not select this policy automatically.",
@@ -84,6 +84,5 @@
         "model": "ONEXPLAYER 3"
       }
     ]
-  },
-  "upstream_repository": "FlightDan/OneXPlayer3-SteamOS"
+  }
 }

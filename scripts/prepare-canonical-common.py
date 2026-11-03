@@ -15,7 +15,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from protocol.resource_pool import decoder, local
-from scripts.resources import xevma_proof
+from scripts.resources import xevma_proof, model_source, canonical_stage, build_wifi_pool
 
 COMMIT = 'fb102eb212c08a714ab7bb8e5de0a09b6df067f6'
 ARCHIVE_SHA = 'c6431ee949d5ba81c9522d1e3584d5c4a538c74465fa1f7c0f2cb9fb8218cc0d'
@@ -172,12 +172,68 @@ def prepare(project, archive_path, gyro_archive_path, output):
     return proof
 
 
+def prepare_snapshot(project, gyro_archive_path, output):
+    """Prepare common sources from the exact bound canonical source snapshot."""
+    project=Path(project);output=Path(output)
+    if os.path.lexists(output): raise FileExistsError('Use a fresh output directory')
+    model_source.sources(project)
+    snapshot_raw=local(project,model_source.SNAPSHOT).read_bytes();snapshot=json.loads(snapshot_raw)
+    rows={row['path'].removeprefix('adaptations/'):row for row in snapshot['files']}
+    names={n for n in rows if n.startswith(canonical_stage.PREFIXES)}|set(canonical_stage.RECORDS)
+    if not names<=set(rows):raise ValueError('Canonical common snapshot closure is incomplete')
+    contents={name:local(project,'adaptations/'+name).read_bytes() for name in names}
+    toon=decoder(project/'adaptations')
+    expected_ids={'resource:intel-xevmafix-724','resource:intel-be201-firmware','resource:oxp3-speaker-route','resource:bmi260-gyro'}
+    for model in ('oxp3','x2-mini'):
+        base='brands/onexplayer/'+model+'/'
+        guide=toon.loads(contents[base+model+'.toon'].decode('utf-8'),strict=True)
+        reference=toon.loads(contents[base+'common-device-sources.toon'].decode('utf-8'),strict=True)
+        if (guide.get('resource_model',{}).get('common_references')!=reference or reference.get('model_id')!='device:'+model
+                or {item['id'] for item in reference.get('resources',[])}!=expected_ids
+                or [item['id'] for item in reference.get('boot_policies',[])]!=['ssd:gm7-boot-repair']):
+            raise ValueError('Canonical model common references differ')
+    lock_raw=local(project,LOCK).read_bytes();lock=json.loads(lock_raw)
+    if lock.get('public_baseline')!='72f864e0498c10366493c74608c5ffed62cc99ca':raise ValueError('Public CPU baseline changed')
+    xevma_proof.verified_rebuild(project)
+    module=locked_input(project,{row['path']:row for row in lock['files']},lock['xevma_module'])
+    module_lock=json.loads(contents[PREFIXES[0]+'sources/module-lock.json'])['module']
+    if len(module)!=module_lock['size'] or sha(module)!=module_lock['sha256'] or ('vermagic='+module_lock['vermagic']).encode() not in module:
+        raise ValueError('Xe module differs from canonical source lock')
+    recipe=json.loads(build_wifi_pool.resolve(project,build_wifi_pool.LEGACY_SOURCE));firmware={}
+    for row in recipe['files']:
+        if '/inputs/' in row['path']:
+            firmware[PurePosixPath(row['path']).name[4:]]=build_wifi_pool.resolve(project,row['path'])
+    if len(firmware)!=9:raise ValueError('Expected nine canonical firmware inputs')
+    gyro=gyro_public_members(project,gyro_archive_path);validate_gyro_sources(contents,gyro)
+    staged={'source/'+name:data for name,data in contents.items()}
+    staged.update({'payload-inputs/xevma/xevmafix.ko':module,'payload-inputs/xevma/load.py':contents[PREFIXES[0]+'final/load.py'],
+        'payload-inputs/alc245/speaker_route.py':contents[PREFIXES[2]+'final/speaker_route.py']})
+    staged.update({'payload-inputs/be201/'+name:data for name,data in firmware.items()})
+    staged.update({'payload-inputs/bmi260/'+name.removeprefix('cache/integration/'):data for name,data in gyro.items()})
+    inventory=[dict(path=name,size=len(data),sha256=sha(data)) for name,data in sorted(staged.items())]
+    proof=dict(kind='CanonicalCommonSnapshotPreparation',source_repository='FlightDan/Boiler-adaptations',source_commit=snapshot['commit'],
+        snapshot_sha256=sha(snapshot_raw),project_input_lock=LOCK,project_input_lock_sha256=sha(lock_raw),
+        gyro_public_input=dict(size=GYRO_ASSET['size'],sha256=GYRO_ASSET['sha256']),official_release=False,deployable=False,files=inventory,
+        blocked=['Physical device identity, calibration and recovery remain unaccepted'])
+    output.mkdir(parents=True)
+    for name,data in staged.items():
+        target=local(output,name);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+    (output/'preparation.json').write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
+    canonical_stage.verify(output,project)
+    return proof
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--archive', required=True); p.add_argument('--gyro-public-archive', required=True)
+    p.add_argument('--archive'); p.add_argument('--canonical-snapshot', action='store_true'); p.add_argument('--gyro-public-archive', required=True)
     p.add_argument('--output', required=True); p.add_argument('--project', default=str(ROOT))
     args = p.parse_args()
-    proof = prepare(args.project, args.archive, args.gyro_public_archive, args.output)
+    if args.canonical_snapshot:
+        if args.archive: p.error('--archive cannot accompany --canonical-snapshot')
+        proof=prepare_snapshot(args.project,args.gyro_public_archive,args.output)
+    else:
+        if not args.archive: p.error('--archive is required for historical preparation')
+        proof=prepare(args.project,args.archive,args.gyro_public_archive,args.output)
     print(json.dumps({k: v for k, v in proof.items() if k != 'files'}, indent=2))
 
 

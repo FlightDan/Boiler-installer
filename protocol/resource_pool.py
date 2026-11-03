@@ -46,7 +46,11 @@ def decoder(tools=None):
         path=local(vendor,row['path']); raw=path.read_bytes()
         require(len(raw)==row['size'] and sha(raw)==row['sha256'],'Parser member differs from lock')
         if path.suffix=='.py': sources[str(path)]=raw
-    require({p.relative_to(vendor).as_posix() for p in vendor.rglob('*') if p.is_file() and p.suffix!='.pyc' and '__pycache__' not in p.parts}=={r['path'] for r in lock['files']},'Uninventoried parser member')
+    actual={p.relative_to(vendor).as_posix() for p in vendor.rglob('*') if p.is_file() and p.suffix!='.pyc' and '__pycache__' not in p.parts}
+    if 'toon-parser-lock.json' in actual:
+        require(json_document((vendor/'toon-parser-lock.json').read_bytes())==lock,'Vendored parser lock differs')
+        actual.remove('toon-parser-lock.json')
+    require(actual=={r['path'] for r in lock['files']},'Uninventoried parser member')
     class Loader(importlib.machinery.SourceFileLoader):
         def get_code(self,fullname): return compile(sources[self.path],self.path,'exec',dont_inherit=True)
     class Finder:

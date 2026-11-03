@@ -1,0 +1,11 @@
+[Unit]
+Description=Boiler OXP3 fingerprint service
+[Service]
+Type=dbus
+BusName=net.reactivated.Fprint
+UnsetEnvironment=LD_LIBRARY_PATH
+ExecStart=/var/lib/oxp3-installer/fingerprint/libexec/fprintd
+DeviceAllow=char-spi rw
+DeviceAllow=char-gpiochip rw
+StateDirectory=fprint
+StateDirectoryMode=0700

@@ -9,6 +9,7 @@
 <!-- BEGIN GENERATED INSTALL LIST -->
 | 组件 ID | 适配项目 | 建议 | 验证与适用边界 |
 | --- | --- | --- | --- |
+| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. X2 reset electrical behavior is not verified; no reset GPIO is configured.；依赖：decky |
 | slot-switch | KDE 槽位切换 / 系统回退 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | partition-mount | KDE 图形分区持久挂载 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | refind | rEFInd · 双系统图形启动菜单 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
@@ -20,11 +21,11 @@
 | keyboard | KDE 屏幕键盘配置 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | input | 背键驱动 · M1/L4、M2/R4、Home/L5 | 推荐 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | multifunction | 多功能键映射为 R5 | 推荐 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：input |
-| gyro | BMI260 陀螺仪（新装需校准） | 推荐 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：input |
+| gyro | BMI260 陀螺仪（新装需校准） | 推荐 | Source reference only; verify BMI260 identity, kernel and InputPlumber compatibility before installation or calibration.；依赖：input |
 | xe-dsb | OXP3 显示兼容修复 · 暂停 DSB | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
-| gm7-resume | GM7 休眠恢复 · 自动匹配目标 SSD | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
+| gm7-resume | GM7 休眠恢复 · 自动匹配目标 SSD | 条件适用 | Apply only after matching the target SSD identity; verify installation and recovery. |
 | split-lock | Split-lock 报告洪泛修复 · 需要重启 | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
-| wifi | BE201 无线 c106 与蓝牙固件 | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
+| wifi | BE201 无线 c106 与蓝牙固件 | 条件适用 | Source reference only; verify the actual wireless device and firmware compatibility. |
 | manager | SteamOS Manager 状态与错误修复 | 推荐 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | native-tdp | 原生 TDP 10–40W 控制 | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：manager |
 | overlay | CPU/GPU/APU 功耗与 PVRAM 叠加层 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
@@ -40,7 +41,7 @@
 | base-system | SteamOS、按芯片匹配的固件与维护运行时 | 必装 | 由 Boiler 通用流程提供；核对实际系统和内核版本。 |
 | pl4-175w | PL4 175W（用户指定需求） | 待补实现 | 已有用户测试反馈；未找到独立公开脚本，原值备份、应用与恢复入口待补，不能以 PL1/PL2 代替。 |
 | lsfg-vk | LSFG-VK | 可选 | 默认不选；需要 Decky、用户购买 Lossless Scaling 并按插件流程安装；依赖：decky |
-| speaker-route | 扬声器声道修复 | 可选 | 复用 OXP3 公开载荷；核对实际系统与依赖，硬件验收单独记录。 |
+| speaker-route | 扬声器声道修复 | 可选 | Source reference only; verify the actual audio device and routing compatibility. |
 | xevmafix | xevma 显示模块修复 | 可选 | 复用 OXP3 公开载荷；核对实际系统与依赖，硬件验收单独记录。 |
 <!-- END GENERATED INSTALL LIST -->
 

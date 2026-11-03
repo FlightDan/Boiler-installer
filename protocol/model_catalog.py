@@ -11,8 +11,9 @@ from urllib.request import Request, urlopen
 from .manifest import ProtocolError, confined, relative_path, validate_package
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = 'FlightDan/Boiler-installer'
-SOURCE_SUBTREE = 'adaptations'
+REPOSITORY = 'FlightDan/Boiler-adaptations'
+SOURCE_SUBTREE = ''
+LEGACY_SOURCE = ('FlightDan/Boiler-installer', 'adaptations')
 MAX_MODELS = 128
 MAX_CATALOG_BYTES = 32 * 1024 * 1024
 # Compatibility for immutable catalogs predating TOON runtime metadata only.
@@ -156,10 +157,10 @@ def read_lock(root):
     source = value.get('source', {})
     if (value.get('kind') != 'ModelCatalogLock' or value.get('schema_version') != 1
             or type(value.get('schema_version')) is not int or not isinstance(source,dict)
-            or source.get('repository') != REPOSITORY
+            or (source.get('repository'),source.get('subtree')) not in ((REPOSITORY,SOURCE_SUBTREE),LEGACY_SOURCE)
             or not isinstance(source.get('commit'),str) or not re.fullmatch('[0-9a-f]{40}', source['commit'])):
         raise ProtocolError('Invalid pinned model catalog lock')
-    relative_path(source.get('subtree'))
+    if source.get('subtree'): relative_path(source['subtree'])
     files=value.get('files')
     if not isinstance(files,list) or not 2<=len(files)<=MAX_MODELS+1 or any(not isinstance(row,dict) for row in files):
         raise ProtocolError('Unexpected model catalog source inventory')
@@ -179,7 +180,8 @@ def read_lock(root):
 
 def source_member(source, path):
     """Resolve a pinned member inside the explicitly recorded public subtree."""
-    return relative_path(source['subtree']) + '/' + relative_path(path)
+    subtree=source['subtree']
+    return (relative_path(subtree)+'/' if subtree else '') + relative_path(path)
 
 
 def guide_model(value, path, source, metadata=None):
@@ -208,7 +210,11 @@ def guide_model(value, path, source, metadata=None):
         raise ProtocolError('Invalid or duplicate guide component identity')
     components = []
     for item in items:
-        if (item.get('default') is not False or item.get('recommendation') not in
+        fingerprint_default = (item.get('default') is True and item['id'] == 'fingerprint-unlock'
+            and (value['id'], path) in {
+                ('guide:oxp3', 'brands/onexplayer/oxp3/manifest.json'),
+                ('guide:x2-mini', 'brands/onexplayer/x2-mini/manifest.json')})
+        if (not (item.get('default') is False or fingerprint_default) or item.get('recommendation') not in
                 {'required', 'recommended', 'optional', 'conditional', 'pending', 'excluded'}
                 or not isinstance(item.get('dependencies'), list) or any(not isinstance(dep,str) or dep not in ids for dep in item['dependencies'])
                 or not isinstance(item.get('name'), str) or not isinstance(item.get('notes'), str)):
@@ -306,7 +312,7 @@ def load_models(*, root=ROOT, online=True, reader=None, include_bundles=True):
     if online:
         try:
             for entry in lock['files']:
-                url = ('https://raw.githubusercontent.com/' + REPOSITORY + '/' + lock['source']['commit']
+                url = ('https://raw.githubusercontent.com/' + lock['source']['repository'] + '/' + lock['source']['commit']
                        + '/' + source_member(lock['source'], entry['path']))
                 files[entry['path']] = checked(reader(url, entry['size']), entry)
         except (URLError, TimeoutError, ConnectionError, OSError) as error:

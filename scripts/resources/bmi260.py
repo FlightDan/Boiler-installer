@@ -37,6 +37,18 @@ def validated_stage(stage):
     stage = Path(stage)
     proof_raw = (stage / 'preparation.json').read_bytes()
     proof = json.loads(proof_raw)
+    if proof.get('kind')=='CanonicalCommonSnapshotPreparation':
+        project=Path(__file__).resolve().parents[2]
+        if __package__:
+            from . import canonical_stage
+        else:
+            import sys
+            sys.path.insert(0,str(project))
+            from scripts.resources import canonical_stage
+        content,provenance=canonical_stage.verify(stage,project)
+        needed={'payload-inputs/bmi260/gyro/000.bin','payload-inputs/bmi260/gyro/001.bin',COMMON+'sources/gyro_binding.py'}
+        if not needed <= set(content):raise ValueError('Canonical BMI inputs missing')
+        return {name:content[name] for name in needed},provenance
     lock_sha = proof.get('project_input_lock_sha256')
     if not isinstance(lock_sha, str) or not re.fullmatch(r'[0-9a-f]{64}', lock_sha):
         raise ValueError('Canonical preparation lock hash is missing or invalid')
@@ -131,7 +143,8 @@ def write_output(destination, files, profiles, provenance):
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_bytes(data)
             records.append(dict(group=group, target=target, mode=mode, size=len(data), sha256=digest(data)))
-    proof = dict(kind='BMI260RuntimePreparation', source_commit=COMMIT, **provenance,
+    provenance=dict(provenance); source_commit=provenance.pop('source_commit',COMMIT)
+    proof = dict(kind='BMI260RuntimePreparation', source_commit=source_commit, **provenance,
                  archive_sha256=ARCHIVE_SHA, official_release=False, deployable=False,
                  x2_orientation='inherited original OXP3 profile; no independent measurement', files=records)
     (destination / 'preparation.json').write_text(json.dumps(proof, indent=2) + '\n', encoding='utf-8', newline='\n')

@@ -9,7 +9,15 @@ source_revision:
   kind: github
   repository: FlightDan/OneXPlayer3-SteamOS
   commit: 72f864e0498c10366493c74608c5ffed62cc99ca
-components[33]:
+components[34]:
+  - id: fingerprint-unlock
+    name: 指纹解锁（实验功能）
+    recommendation: optional
+    default: true
+    dependencies[1]: decky
+    sources[3]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules
+    status: external_runtime_required
+    notes: "Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. X2 reset electrical behavior is not verified; no reset GPIO is configured."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional
@@ -103,9 +111,9 @@ components[33]:
     recommendation: recommended
     default: false
     dependencies[1]: input
-    sources[4]: brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c,brands/onexplayer/common/scripts/gyro/launch.sh,brands/onexplayer/common/scripts/gyro/oxp3-gyro.service,brands/onexplayer/common/scripts/gyro/gyro_binding.py
-    status: shared_oxp3_implementation
-    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+    sources[1]: brands/onexplayer/x2-mini/common-device-sources.toon
+    status: source_reference_only
+    notes: "Source reference only; verify BMI260 identity, kernel and InputPlumber compatibility before installation or calibration."
   - id: xe-dsb
     name: OXP3 显示兼容修复 · 暂停 DSB
     recommendation: conditional
@@ -119,9 +127,9 @@ components[33]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
-    status: shared_oxp3_implementation
-    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+    sources[1]: brands/onexplayer/x2-mini/common-device-sources.toon
+    status: source_reference_only
+    notes: Apply only after matching the target SSD identity; verify installation and recovery.
   - id: split-lock
     name: Split-lock 报告洪泛修复 · 需要重启
     recommendation: conditional
@@ -135,9 +143,9 @@ components[33]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources: []
-    status: shared_oxp3_implementation
-    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+    sources[1]: brands/onexplayer/x2-mini/common-device-sources.toon
+    status: source_reference_only
+    notes: Source reference only; verify the actual wireless device and firmware compatibility.
   - id: manager
     name: SteamOS Manager 状态与错误修复
     recommendation: recommended
@@ -263,9 +271,9 @@ components[33]:
     recommendation: optional
     default: false
     dependencies: []
-    sources: []
-    status: shared_oxp3_implementation
-    notes: 复用 OXP3 公开载荷；核对实际系统与依赖，硬件验收单独记录。
+    sources[1]: brands/onexplayer/x2-mini/common-device-sources.toon
+    status: source_reference_only
+    notes: Source reference only; verify the actual audio device and routing compatibility.
   - id: xevmafix
     name: xevma 显示模块修复
     recommendation: optional
@@ -278,11 +286,12 @@ build:
   adapter: x2-complete-v1
   complete: true
   missing: []
-  materials[4]{scope,lock,sha256}:
+  materials[5]{scope,lock,sha256}:
     common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
     common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
+    common,adaptations/fingerprint-source-lock.json,9f42a57dc5bd823e02d85b390a82780be8b937ad853215988ca39ea0b2e42232
   inputs[3]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."
     bridge_overlay,locked-directory,adaptations/inputs/x2-bridge-overlay,adaptations/inputs/x2-bridge-overlay/overlay-lock.json,a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d,Explicit reviewed X2 identity and recovery bridge overlay.
@@ -303,3 +312,45 @@ runtime:
     pairs[2]{manufacturer,model}:
       ONE-NETBOOK,ONEXPLAYER X2 Mini
       ONE-NETBOOK,ONEXPLAYER X2 Mini PRO
+resource_model:
+  schema_version: 1
+  kind: BoilerModelResourceSource
+  id: "device:x2-mini"
+  name: ONEXPLAYER X2 Mini / Mini PRO
+  hardware_matching:
+    mode: advisory-exact-dmi-v1
+    pairs[2]{manufacturer,model}:
+      ONE-NETBOOK,ONEXPLAYER X2 Mini
+      ONE-NETBOOK,ONEXPLAYER X2 Mini PRO
+  parameters:
+  resources[14]{id}:
+    "resource:onexplayer-microphone"
+    "resource:oxp3-speaker-route"
+    "resource:intel-xevmafix-724"
+    "resource:common-slot-switch"
+    "resource:common-partition-mount"
+    "resource:common-windows-reboot"
+    "resource:onexplayer-light"
+    "resource:common-serial-console-policy"
+    "resource:onexplayer-battery-common"
+    "resource:onexplayer-battery-charge-backend"
+    "resource:common-charge-compatibility-guard"
+    "resource:intel-be201-firmware"
+    "resource:intel-g3e-public-cpu-controls"
+    "resource:gamma22-hdr-game"
+  hdr:
+    profile: x2-mini
+    full_frame: 475
+    peak: 700
+  common_references:
+    schema_version: 1
+    kind: BoilerModelCommonReferences
+    model_id: "device:x2-mini"
+    source_only: true
+    resources[4]{id,source}:
+      "resource:intel-xevmafix-724",common/gpu/intel/xe/xevmafix-724/source.toon
+      "resource:intel-be201-firmware",common/network/intel/be201/source.toon
+      "resource:oxp3-speaker-route",common/audio/realtek/alc245/speaker-route/source.toon
+      "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon
+    boot_policies[1]{id,version,source,component_ref}:
+      "ssd:gm7-boot-repair",1,common/ssd/acer/gm7/components.toon,ssd-gm7-boot-repair

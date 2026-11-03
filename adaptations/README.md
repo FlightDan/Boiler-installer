@@ -1,7 +1,7 @@
 # Boiler device registry
 
 This repository contains the Boiler device registry and a brand/model adaptation source collection.
-Start at [ADAPTATIONS.md](ADAPTATIONS.md) for OXP3 and X2 Mini installation guides.
+Start at [ADAPTATIONS.md](docs/ADAPTATIONS.md) for OXP3 and X2 Mini installation guides.
 Executable device packages continue to use the existing authenticated package workflow.
 
 `device-index.json` follows DeviceIndex schema version 1. Sequence numbers are

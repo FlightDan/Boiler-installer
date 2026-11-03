@@ -124,6 +124,9 @@ def decoder(adaptations=ADAPTATIONS):
         if path.suffix == '.py': authenticated_sources[str(path)] = raw
     expected = {row['path'] for row in lock['files']}
     actual = {p.relative_to(vendor).as_posix() for p in vendor.rglob('*') if p.is_file() and p.suffix!='.pyc' and '__pycache__' not in p.parts}
+    if 'toon-parser-lock.json' in actual:
+        require(json_document((vendor/'toon-parser-lock.json').read_bytes())==lock,'Vendored parser lock differs')
+        actual.remove('toon-parser-lock.json')
     require(actual==expected,'Uninventoried TOON parser member')
     # Python -B suppresses cache writes, but still reads .pyc. Load only the
     # authenticated source snapshots, including package submodules; never
@@ -249,7 +252,10 @@ def guide_text(model, existing=None):
 
 def validate_model(model, path):
     required = {'schema_version','kind','id','name','installable','guide','source_inventory','source_revision','components','package','build','runtime'}
-    require(set(model)==required,'Unknown or missing model fields: '+str(path))
+    require(set(model) in (required,required|{'resource_model'}),'Unknown or missing model fields: '+str(path))
+    if 'resource_model' in model:
+        resource=validate_resource_model_source(model['resource_model'],path)
+        require(resource['id']==model.get('id','').replace('guide:','device:',1),'Resource/guide identity differs')
     require(type(model['schema_version']) is int and model['schema_version']==1 and model['kind']=='ModelInstallGuide'
         and model['installable'] is False,'Source guide must remain non-installable')
     require(isinstance(model['id'],str) and re.fullmatch('guide:[a-z0-9][a-z0-9-]*',model['id']),'Invalid model ID')
@@ -269,7 +275,7 @@ def validate_model(model, path):
     for row in model['components']:
         require(isinstance(row,dict) and set(row)==fields,'Invalid component fields')
         require(isinstance(row['id'],str) and re.fullmatch('[a-z][a-z0-9-]*',row['id']) and row['id'] not in components,'Duplicate/invalid component ID')
-        require(row['recommendation'] in LEVELS and row['default'] is False,'Guide recommendation cannot enable installation defaults')
+        require(row['recommendation'] in LEVELS and (row['default'] is False or (row['default'] is True and model['id'] in ('guide:oxp3', 'guide:x2-mini') and row['id']=='fingerprint-unlock')),'Guide recommendation cannot enable installation defaults')
         require(all(isinstance(row[k],str) and row[k] for k in ('name','status','notes')),'Missing component description/status')
         for key in ('dependencies','sources'):
             require(isinstance(row[key],list) and all(isinstance(v,str) for v in row[key]) and len(set(row[key]))==len(row[key]),'Invalid component '+key)
@@ -395,7 +401,7 @@ def validate_model(model, path):
 
 def validate_resource_model_source(value, path):
     required={'schema_version','kind','id','name','hardware_matching','parameters','resources'}
-    require(isinstance(value,dict) and required <= set(value) and not set(value)-required-{'hdr'}, 'Invalid model resource source fields: '+str(path))
+    require(isinstance(value,dict) and required <= set(value) and not set(value)-required-{'hdr','common_references'}, 'Invalid model resource source fields: '+str(path))
     require(type(value['schema_version']) is int and value['schema_version']==1 and value['kind']=='BoilerModelResourceSource', 'Invalid model resource source schema: '+str(path))
     require(isinstance(value['id'],str) and re.fullmatch(r'device:[a-z][a-z0-9-]*',value['id']) and isinstance(value['name'],str) and value['name'].strip() and isinstance(value['parameters'],dict), 'Invalid resource model identity')
     matching=value['hardware_matching'];require(isinstance(matching,dict) and set(matching)=={'mode','pairs'} and matching['mode']=='advisory-exact-dmi-v1' and isinstance(matching['pairs'],list) and len(matching['pairs'])<=32 and all(isinstance(x,dict) and set(x)=={'manufacturer','model'} and all(isinstance(x[k],str) and x[k].strip() for k in ('manufacturer','model')) for x in matching['pairs']), 'Invalid advisory model names')
@@ -416,11 +422,15 @@ def models(adaptations=ADAPTATIONS):
         if (len(relative_name.parts)==4 and relative_name.parts[2:] == ('common','components.toon')):
             continue
         local(adaptations,relative_name.as_posix())
-        if len(relative_name.parts)==4 and relative_name.parts[2]=='models':
-            resource_model=validate_resource_model_source(load(path,adaptations),relative_name)
-            require(resource_model['id'] not in resource_seen,'Duplicate resource model identity'); resource_seen.add(resource_model['id'])
+        if len(relative_name.parts)==4 and relative_name.name=='common-device-sources.toon':
+            guide_name=relative_name.with_name(relative_name.parts[2]+'.toon')
+            guide=load(adaptations/guide_name,adaptations)
+            require(load(path,adaptations)==guide.get('resource_model',{}).get('common_references'),
+                'Generated common references differ from model TOON')
             continue
         model=validate_model(expand_package(load(path,adaptations),adaptations),relative_name)
+        if (adaptations/'model-source-files.json').is_file():
+            require('resource_model' in model,'Canonical model lacks resource declarations')
         require(model['id'] not in seen,'Duplicate model identity'); seen.add(model['id'])
         result.append((relative_name.as_posix(),model))
     require(result,'No model TOON sources found')
@@ -430,6 +440,27 @@ def models(adaptations=ADAPTATIONS):
 def check_sources(root, model, adaptations=None):
     """Source guide validation never requires binary installation artifacts."""
     root=Path(root); adaptations=Path(adaptations) if adaptations is not None else root/'adaptations'; sources=set(); locks={}
+    # Current canonical snapshots preserve historical lock bytes and record
+    # the one approved BMI source relocation separately.
+    relocation={}
+    index_path=adaptations/'model-source-files.json'
+    if index_path.is_file():
+        index=json_document(index_path.read_bytes())
+        require(index.get('kind')=='CanonicalAdaptationSourceFiles' and index.get('schema_version')==1,'Invalid canonical source inventory')
+        for item in index['files']:
+            original=local(adaptations,item['path'])
+            require(original.is_file() and original.stat().st_size==item['size'] and sha(original)==item['sha256'],
+                'Canonical source differs from inventory: '+item['path'])
+            sources.add(item['path'])
+        migration=json_document(local(adaptations,'records/migrations/bmi260-source-relocation-20261103.json').read_bytes())
+        require(migration.get('kind')=='BoilerSourceRelocation' and migration.get('schema_version')==1,'Invalid BMI source relocation')
+        for item in migration['files']:
+            old=item['old_path'];new=item['new_path']
+            require(old.startswith('brands/onexplayer/common/scripts/gyro/') and new=='common/sensors/bosch/bmi260/gyro/sources/'+old.rsplit('/',1)[1]
+                and old not in relocation and not local(adaptations,old).exists(),'Invalid BMI source relocation member')
+            target=local(adaptations,new)
+            require(target.is_file() and target.stat().st_size==item['size'] and sha(target)==item['sha256'],'BMI relocation bytes differ')
+            relocation[old]=new
     for row in model['build']['materials']:
         path=(local(adaptations,row['lock'].removeprefix('adaptations/'))
               if row['lock'].startswith('adaptations/') else local(root,row['lock']))
@@ -439,7 +470,7 @@ def check_sources(root, model, adaptations=None):
         # scan imports sibling sources or changes the fixed public CPU baseline.
         for item in lock.get('files',[]):
             if isinstance(item,dict) and {'path','size','sha256'}<=set(item):
-                original=local(adaptations,item['path'])
+                original=local(adaptations,relocation.get(item['path'],item['path']))
                 require(type(item['size']) is int and original.is_file() and original.stat().st_size==item['size']
                     and sha(original)==item['sha256'],'Source differs from reviewed inventory: '+item['path'])
                 sources.add(item['path'])
@@ -479,7 +510,7 @@ def check_sources(root, model, adaptations=None):
 def views(adaptations=ADAPTATIONS):
     records=models(adaptations); outputs={}; index=[]; runtime=[]
     for name,model in records:
-        guide={k:v for k,v in model.items() if k not in ('build','package','runtime')}
+        guide={k:v for k,v in model.items() if k not in ('build','package','runtime','resource_model')}
         destination=Path(name).with_name('manifest.json').as_posix()
         runtime.append(runtime_metadata(model,destination))
         outputs[destination]=json_bytes(guide)
@@ -680,14 +711,47 @@ def build(root, model, output, complete=True, executor=None, input_paths=None):
     return result
 
 
+def canonical_build(root, model, output, input_paths, base_manifest_sha256, version=None):
+    """Build one local DevicePackage from the selected authoritative guide."""
+    root=Path(root).resolve();output=Path(output).absolute()
+    require(set(input_paths)=={'base','stage','public-installer'},
+        'Canonical build requires explicit base, stage and public-installer inputs')
+    require(isinstance(base_manifest_sha256,str) and re.fullmatch('[0-9a-f]{64}',base_manifest_sha256),
+        'Canonical build requires the exact base manifest SHA-256')
+    check_sources(root,model)
+    sys.path[:0]=[str(root),str(root/'scripts')]
+    from resources import model_source
+    model_source.sources(root)
+    from protocol.manifest import validate_package
+    base=artifact_path(input_paths['base']);stage=artifact_path(input_paths['stage']);public=artifact_path(input_paths['public-installer'])
+    identity=model['resource_model']['id']
+    require(validate_package(base,expected_manifest_sha256=base_manifest_sha256)['id']==identity,
+        'Selected guide and base package identity differ')
+    spec=importlib.util.spec_from_file_location('_canonical_model_finalizer',local(root,'scripts/finalize-canonical-model.py'))
+    implementation=importlib.util.module_from_spec(spec);spec.loader.exec_module(implementation)
+    content,stage_proof=implementation.stage_snapshot(stage)
+    snapshot=json_document(local(root,model_source.SNAPSHOT).read_bytes())
+    require(stage_proof.get('source_commit')==snapshot['commit'],
+        'Canonical build requires the current canonical snapshot stage')
+    reference,_=implementation.stage_reference(content,identity)
+    require(reference==model['resource_model']['common_references'],'Selected guide and canonical stage differ')
+    options={} if version is None else {'version':version}
+    result=implementation.build(base,base_manifest_sha256,stage,public,output,**options)
+    require(result.get('id')==identity and result.get('official_release') is False,
+        'Canonical builder returned a different model or trust state')
+    return result
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=('generate','check','preflight','build'))
+    parser.add_argument('action',choices=('generate','check','preflight','build','canonical-build'))
     parser.add_argument('--root',type=Path,default=ROOT)
     parser.add_argument('--catalog-root',type=Path,default=ADAPTATIONS)
     parser.add_argument('--model',help='guide:model ID, selected from the model TOON files')
     parser.add_argument('--output',type=Path)
     parser.add_argument('--allow-incomplete',action='store_true')
+    parser.add_argument('--base-manifest-sha256')
+    parser.add_argument('--version')
     parser.add_argument('--input',action='append',default=[],metavar='NAME=PATH',
         help='Explicit authenticated artifact mapping; never persisted to TOON')
     args=parser.parse_args()
@@ -704,6 +768,12 @@ def main():
     else:
         selected=[model for _,model in models(args.catalog_root) if model['id']==args.model]
         require(len(selected)==1,'Select one known --model guide:model')
+        if args.action=='canonical-build':
+            require(args.output is not None,'Canonical build requires --output')
+            require(Path(args.root).resolve()==ROOT.resolve() and Path(args.catalog_root).resolve()==ADAPTATIONS.resolve(),
+                'Canonical build must use the current checked source snapshot')
+            result=canonical_build(args.root,selected[0],args.output,input_paths,args.base_manifest_sha256,version=args.version)
+            print(json.dumps(result,ensure_ascii=False,indent=2));return 0
         if args.action=='preflight':
             _,errors=preflight(args.root,selected[0],complete=not args.allow_incomplete,input_paths=input_paths)
             result=dict(ready=not errors,blockers=errors)

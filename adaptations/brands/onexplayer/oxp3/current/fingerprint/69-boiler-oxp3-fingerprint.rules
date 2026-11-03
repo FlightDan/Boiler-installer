@@ -1,0 +1,2 @@
+ACTION=="add|change", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER 3", RUN{builtin}+="kmod load spi:spidev", RUN+="/bin/sh -c 'test -e %S%p/driver || { echo spidev > %S%p/driver_override && echo %k > %S%p/subsystem/drivers/spidev/bind; }'"
+ACTION!="remove", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER 3", ENV{LIBFPRINT_BF63112_RESET_GPIO}="INTC10BC:01 16 active-high"

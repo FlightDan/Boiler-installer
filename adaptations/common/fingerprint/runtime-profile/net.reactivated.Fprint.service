@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=net.reactivated.Fprint
+Exec=/var/lib/oxp3-installer/fingerprint/libexec/fprintd
+User=root
+SystemdService=boiler-fprintd.service

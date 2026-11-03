@@ -58,6 +58,7 @@ class Sources:
         self.current_used = {}
         self.current_lock = None
         self.upstream_used = {}
+        self.common_used = {}
         self.upstream_lock = None
         self.candidate_used = {}
         self.xevma_module = Path(xevma_module) if xevma_module is not None else None
@@ -88,7 +89,25 @@ class Sources:
                 if self.upstream_lock.get('kind')!='BoilerUpstreamRepairSources' or self.upstream_lock.get('upstream')!=expected:
                     raise ValueError('Unexpected immutable upstream source lock')
                 self.upstream_rows={r['path']:r for r in self.upstream_lock['files']}
-            row=self.upstream_rows[name];data=path(self.root,name).read_bytes()
+            row=self.upstream_rows[name]
+            roots={'upstream-20261029':'common/audio/realtek/alc245/speaker-route/',
+                   'xevma-20261029':'common/gpu/intel/xe/xevmafix-724/'}
+            family=next((value for key,value in roots.items() if '/'+key+'/' in name),None)
+            data_path=name
+            if family:
+                from protocol.resource_pool import decoder
+                record=decoder(self.root).loads(path(self.root,family+'source.toon').read_text(encoding='utf-8'),strict=True)
+                candidate='sources/'+Path(name).name
+                matches=[entry for entry in record['files'] if entry['path']==candidate and entry['availability']=='checked-in']
+                if matches:
+                    if len(matches)!=1 or matches[0]['size']!=row['size'] or matches[0]['sha256']!=row['sha256']:
+                        raise ValueError('Common source differs from immutable upstream lock: '+name)
+                    data_path=family+candidate;self.common_used[name]=data_path
+                elif Path(name).name=='UPSTREAM_LICENSE' and 'licenses/MIT.txt' in record.get('licenses',[]):
+                    data_path=family+'licenses/MIT.txt';self.common_used[name]=data_path
+                elif Path(name).name!='dock_input.py':
+                    raise ValueError('Missing canonical common source mapping: '+name)
+            data=path(self.root,data_path).read_bytes()
             if len(data)!=row['size'] or sha(data)!=row['sha256']:raise ValueError('Upstream source differs from lock: '+name)
             self.upstream_used[name]=row
             return data
@@ -304,7 +323,7 @@ def build(project, output, xevma_module=None):
                 member = f'{folder}/files/{len(stored):03d}-'+target.rsplit('/', 1)[-1]
                 write(member, data); stored[key] = member
                 payload.append(dict(path=member, size=len(data), sha256=sha(data)))
-                origins.append(dict(payload=member, source_path=original, source_sha256=sha(raw),
+                origins.append(dict(payload=member, source_path=original, common_source_path=source.common_used.get(original), source_sha256=sha(raw),
                                     source_lock='provenance/candidate-source-lock.json' if original in source.candidate_used else
                                         'provenance/current-source-lock.json' if original in source.current_used else
                                         'provenance/upstream-source-lock.json' if original in source.upstream_used else 'provenance/source-lock.json',

@@ -8,7 +8,7 @@ The application offers custom builds, prebuilt IMG/Boiler package import, and
 Vanilla installation. The official 3.10 upgrade is optional. Generic additions
 are Intel, Realtek and MediaTek firmware for existing kernel modules, Decky,
 and the maintenance runtime. Device-specific policy is supplied by a pinned
-package from [Boiler-devices](https://github.com/FlightDan/Boiler-devices).
+package from [Boiler-adaptations](https://github.com/FlightDan/Boiler-adaptations).
 The first model package remains in OneXPlayer3-SteamOS.
 
 ## Build from an independent checkout

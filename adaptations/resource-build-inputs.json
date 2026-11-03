@@ -26,8 +26,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/oxp3.toon",
-      "size": 15193,
-      "sha256": "5ef3934eaccb0d779f231fcc0763f644764c4e74970898312eedd8ae15691021"
+      "size": 16201,
+      "sha256": "a574f57330f1fad94f632c49275ed182f029796d4a0c8b6ebf14ec47c3043d31"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/controls/compatibility.py",
@@ -71,8 +71,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/x2-mini.toon",
-      "size": 14796,
-      "sha256": "73d21c0cc3c3700371a159eea2468413d4aa13c390dbf4e69ecf89a301921c37"
+      "size": 15601,
+      "sha256": "8b1f1f57a8bf673c3005c4b5587c973c681de223491039569e357e878df6dd95"
     },
     {
       "path": "adaptations/common/resource-inputs/intel-be201/inputs/000-iwlwifi-sc-a0-fm-c0-c101.ucode",

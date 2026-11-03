@@ -27,7 +27,7 @@ class ModelCatalogTests(unittest.TestCase):
         # independent public source commit exists. Test the new lock shape here.
         path=root/'components/model-catalog/lock.json'
         lock=json.loads(path.read_bytes())
-        lock['source']={'repository':REPOSITORY,'commit':'a'*40,'subtree':'adaptations'}
+        lock['source']={'repository':REPOSITORY,'commit':'a'*40,'subtree':''}
         path.write_text(json.dumps(lock))
 
     def bundle(self,root):
@@ -45,6 +45,17 @@ class ModelCatalogTests(unittest.TestCase):
         (root/'cache/model-bundles/manifest.json').write_text(json.dumps(descriptor))
         return package
 
+    def test_historical_installer_catalog_lock_remains_readable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            shutil.copytree(ROOT/'components/model-catalog',root/'components/model-catalog')
+            path=root/'components/model-catalog/lock.json';lock=json.loads(path.read_bytes())
+            lock['source']=dict(repository='FlightDan/Boiler-installer',commit='a'*40,subtree='adaptations');path.write_text(json.dumps(lock))
+            result=load_models(root=root,online=False)
+            self.assertEqual(result['source']['repository'],'FlightDan/Boiler-installer')
+            self.assertEqual(result['source']['subtree'],'adaptations')
+            self.assertEqual(len(result['models']),2)
+
     def test_offline_guides_are_display_only(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);self.fixture(root)
@@ -56,15 +67,34 @@ class ModelCatalogTests(unittest.TestCase):
             pl4=next(item for item in x2['components'] if item['id']=='pl4-175w')
             self.assertEqual(pl4['recommendation'],'pending')
             self.assertFalse(x2['installable'])
-            self.assertTrue(all(item['default'] is False for item in x2['components']))
-            self.assertIn('/Boiler-installer/blob/'+'a'*40+'/adaptations/brands/',x2['guide_url'])
+            self.assertTrue(all(item['default'] is False or item['id']=='fingerprint-unlock' for item in x2['components']))
+            self.assertIn('/Boiler-adaptations/blob/'+'a'*40+'/brands/',x2['guide_url'])
+
+    def test_known_fingerprint_defaults_and_false_values_reach_runtime(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);self.fixture(root)
+            lock_path=root/'components/model-catalog/lock.json';lock=json.loads(lock_path.read_bytes())
+            for selected in (True,False):
+                for entry in lock['files']:
+                    if not entry['path'].endswith('/manifest.json'):continue
+                    path=root/'components/model-catalog/snapshot'/entry['path'];guide=json.loads(path.read_bytes())
+                    guide['components']=[item for item in guide['components'] if item['id']!='fingerprint-unlock']
+                    guide['components'].append(dict(id='fingerprint-unlock',name='Fingerprint',recommendation='optional',default=selected,dependencies=[],sources=[],status='external_runtime_required',notes='Fixture'))
+                    raw=json.dumps(guide).encode();path.write_bytes(raw);entry.update(size=len(raw),sha256=hashlib.sha256(raw).hexdigest())
+                lock_path.write_text(json.dumps(lock))
+                result=load_models(root=root,online=False)
+                for model in result['models']:
+                    self.assertIs(next(item for item in model['components'] if item['id']=='fingerprint-unlock')['default'],selected)
+            entry=next(x for x in lock['files'] if x['path'].endswith('/manifest.json'));path=root/'components/model-catalog/snapshot'/entry['path'];guide=json.loads(path.read_bytes());guide['components'][0]['default']=True
+            raw=json.dumps(guide).encode();path.write_bytes(raw);entry.update(size=len(raw),sha256=hashlib.sha256(raw).hexdigest());lock_path.write_text(json.dumps(lock))
+            with self.assertRaises(ProtocolError):load_models(root=root,online=False)
 
     def test_online_reads_exact_repository_commit_and_hashes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);self.fixture(root)
             lock=json.loads((root/'components/model-catalog/lock.json').read_text())
             def reader(url,maximum):
-                prefix='https://raw.githubusercontent.com/FlightDan/Boiler-installer/'+lock['source']['commit']+'/adaptations/'
+                prefix='https://raw.githubusercontent.com/FlightDan/Boiler-adaptations/'+lock['source']['commit']+'/'
                 self.assertTrue(url.startswith(prefix))
                 return (root/'components/model-catalog/snapshot'/url.removeprefix(prefix)).read_bytes()
             self.assertFalse(load_models(root=root,reader=reader)['offline'])
@@ -86,30 +116,30 @@ class ModelCatalogTests(unittest.TestCase):
             git('init');git('remote','add','origin','https://github.com/'+REPOSITORY+'.git')
             snapshot=ROOT/'components/model-catalog/snapshot'
             for member in ('adaptations.json','brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'):
-                destination=checkout/'adaptations'/member;destination.parent.mkdir(parents=True,exist_ok=True)
+                destination=checkout/member;destination.parent.mkdir(parents=True,exist_ok=True)
                 destination.write_bytes((snapshot/member).read_bytes())
-            git('add','adaptations');git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','Public fixture')
+            git('add','adaptations.json','brands');git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','Public fixture')
             commit=git('rev-parse','HEAD')
             # A dirty working copy cannot replace the explicitly pinned commit.
-            (checkout/'adaptations/adaptations.json').write_text('{}')
+            (checkout/'adaptations.json').write_text('{}')
             output=root/'prepared'
             lock=preparer.prepare(checkout,commit,output)
-            self.assertEqual(lock['source'],dict(repository=REPOSITORY,commit=commit,subtree='adaptations'))
+            self.assertEqual(lock['source'],dict(repository=REPOSITORY,commit=commit,subtree=''))
             for member in lock['files']:
                 self.assertEqual((output/'snapshot'/member['path']).read_bytes(),(snapshot/member['path']).read_bytes())
             installed=root/'consumer/components/model-catalog';installed.parent.mkdir(parents=True)
             shutil.copytree(output,installed)
             result=load_models(root=root/'consumer',online=False)
-            self.assertTrue(all('/'+commit+'/adaptations/' in model['guide_url'] for model in result['models']))
+            self.assertTrue(all('/'+commit+'/brands/' in model['guide_url'] for model in result['models']))
             git('remote','set-url','origin','https://github.com/FlightDan/Boiler-devices.git')
-            with self.assertRaisesRegex(ValueError,'Boiler-installer'):
+            with self.assertRaisesRegex(ValueError,'Boiler-adaptations'):
                 preparer.prepare(checkout,commit,root/'rejected')
 
     def test_model_registry_asset_names_are_separate_from_maintenance_feed(self):
         source=(ROOT/'app/BoilerDevicePanel.cs').read_text(encoding='utf-8')
-        base='https://github.com/FlightDan/Boiler-installer/releases/latest/download/'
-        self.assertIn(base+'boiler-device-index.json',source)
-        self.assertIn(base+'boiler-device-index.sig',source)
+        base='https://github.com/FlightDan/Boiler-adaptations/releases/latest/download/'
+        self.assertIn(base+'index.json',source)
+        self.assertIn(base+'index.sig',source)
         self.assertNotIn('Boiler-devices/releases/latest',source)
 
     def test_network_failure_uses_bundled_snapshot(self):

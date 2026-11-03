@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerSourceRelocation",
+  "repository_baseline": "5c79ead752e21970303f0a2d03b810a1ee77ac43",
+  "historical_source_sha256": { "source-plan.json": "5d40dc14731ba10a382991d3bbf9080ec2b4d9f104e9af9c0c710bc47340905b", "source-lock.json": "b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa" },
+  "source": {
+    "kind": "github",
+    "repository": "FlightDan/OneXPlayer3-SteamOS",
+    "commit": "72f864e0498c10366493c74608c5ffed62cc99ca"
+  },
+  "files": [
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/gyro_binding.py",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/gyro_binding.py",
+      "upstream_path": "steamos-maintenance/oxp3_maintenance/gyro_binding.py",
+      "size": 11894,
+      "sha256": "967701d1cbb3ba274acb459a87df9de81309f33530f582b995bdb9f1fa298926",
+      "license": "MIT"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/Makefile",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/Makefile",
+      "upstream_path": "windows-installer/components/gyro/Makefile",
+      "size": 23,
+      "sha256": "6fed206b92d43604d3ef666034373e76dbdae380c2858c58ff1566955838747d",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/bmi270.h",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/bmi270.h",
+      "upstream_path": "windows-installer/components/gyro/bmi270.h",
+      "size": 614,
+      "sha256": "14d9457dd5aae818db61bf9247c6f395520aeb0bcdbf6ab2abbb8f0d8aed9cb8",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/inputplumber.conf",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/inputplumber.conf",
+      "upstream_path": "windows-installer/components/gyro/inputplumber.conf",
+      "size": 119,
+      "sha256": "7f63d87e14553a7c274d99eb58d4ae292e56bc8a873f7b29a56d5ed3e0b1506e",
+      "license": "MIT"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/launch.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/launch.sh",
+      "upstream_path": "windows-installer/components/gyro/launch.sh",
+      "size": 287,
+      "sha256": "57d5822fd1bc56c6dbba01d9775a30cffeb3ab3f47bfbfc778478edcba5bce95",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/load.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/load.sh",
+      "upstream_path": "windows-installer/components/gyro/load.sh",
+      "size": 369,
+      "sha256": "6457a8d68a16e6f68481b7e9173cb64878e9579ae86affbb002de4f81c512314",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/onexplayer3-bmi260.patch",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/onexplayer3-bmi260.patch",
+      "upstream_path": "windows-installer/components/gyro/onexplayer3-bmi260.patch",
+      "size": 2400,
+      "sha256": "d869d7c3e67815c4c44ea508c8ae32a30de4af021f1a59475172638c817c4fa5",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/oxp3-gyro.service",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/oxp3-gyro.service",
+      "upstream_path": "windows-installer/components/gyro/oxp3-gyro.service",
+      "size": 384,
+      "sha256": "5aeea94e5e7c999cd90058c88101c174e23f6317b14d1eca3af201ac5badf66b",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/oxp3_bmi260.c",
+      "upstream_path": "windows-installer/components/gyro/oxp3_bmi260.c",
+      "size": 1906,
+      "sha256": "6d5db91566ac5d6fbf0838d87d6a3e611be4ebd7cc7f373f6dad557bcd831939",
+      "license": "GPL-2.0"
+    },
+    {
+      "old_path": "brands/onexplayer/common/scripts/gyro/unload.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/unload.sh",
+      "upstream_path": "windows-installer/components/gyro/unload.sh",
+      "size": 83,
+      "sha256": "370f22b1be7b537169238f809ba66ef9f83d19e551a073df20f6a3e68b7d62e9",
+      "license": "GPL-2.0"
+    }
+  ],
+  "license_records": "common/sensors/bosch/bmi260/gyro/source.toon",
+  "scope": "Source-only deduplication; no device package or runtime payload is built or published.",
+  "acceptance": {
+    "source_checks": "Two source checks and 35 regression tests passed. Independent review fixed historical source hash verification and retained inventory-based sources for other gyroscopes. Non-BMI260 shared TOON support remains outside this migration.",
+    "installation_maintenance_recovery": "Source-only relocation; no payload produced. Existing binding journal, dependency and recovery limits remain; integration requires separate verification before release.",
+    "package_download_and_release": "Not applicable: no release requested.",
+    "hardware": "Not performed; source checks do not establish device compatibility or calibration."
+  },
+  "model_index_extension": "New models must also be registered in scripts/common-device-sources.py MODELS and the common device source index regenerated; passing the adaptations check alone does not mean a model is included in that index."
+}

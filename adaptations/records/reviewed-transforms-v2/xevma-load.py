@@ -1,0 +1,68 @@
+"""Load the opt-in xe allocation workaround on the reviewed OXP3 baseline."""
+from __future__ import annotations
+import hashlib
+import os
+from pathlib import Path
+import shlex
+import subprocess
+
+KERNEL = '7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9'
+MODULE = '/usr/lib/modules/' + KERNEL + '/extra/xevmafix.ko'
+MODULE_SHA256 = '10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b'
+
+def validate(root: Path = Path('/')) -> Path:
+    def read(path: str) -> str:
+        return (root / path.lstrip('/')).read_text(encoding='utf-8').strip()
+    if read('/proc/sys/kernel/osrelease') != KERNEL:
+        raise RuntimeError('xevmafix requires the reviewed exact 7.2.4 kernel')
+    values = {}
+    for line in read('/etc/os-release').splitlines():
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        parsed = shlex.split(value, comments=True)
+        if len(parsed) != 1 or key in values:
+            raise RuntimeError('ambiguous os-release')
+        values[key] = parsed[0]
+    if any(values.get(key) != value for key, value in {
+        'ID': 'steamos', 'VERSION_ID': '3.10', 'BUILD_ID': '20260924.1000'
+    }.items()):
+        raise RuntimeError('xevmafix requires SteamOS 3.10 build 20260924.1000')
+    try:
+        known_model = (read('/sys/class/dmi/id/sys_vendor'), read('/sys/class/dmi/id/product_name')) == (
+            'ONE-NETBOOK', 'ONEXPLAYER 3'
+        )
+    except OSError:
+        known_model = False
+    if not known_model:
+        print('xevmafix model name is advisory; checking actual Intel xe interfaces', flush=True)
+    matches = []
+    for device in (root / 'sys/class/drm').glob('card[0-9]*/device'):
+        try:
+            vendor = (device / 'vendor').read_text().strip().lower()
+            fields = dict(line.split('=', 1) for line in (device / 'uevent').read_text().splitlines() if '=' in line)
+            if vendor == '0x8086' and fields.get('DRIVER') == 'xe':
+                matches.append(device)
+        except (OSError, UnicodeError):
+            continue
+    if not matches:
+        raise RuntimeError('xevmafix requires an actual Intel GPU bound to xe')
+    module = root / str(MODULE).lstrip('/')
+    if module.is_symlink() or not module.is_file():
+        raise RuntimeError('xevmafix module is missing or is a symlink')
+    if hashlib.sha256(module.read_bytes()).hexdigest() != MODULE_SHA256:
+        raise RuntimeError('xevmafix module digest differs from the reviewed build')
+    return module
+
+def main() -> None:
+    if os.geteuid() != 0:
+        raise RuntimeError('xevmafix loader requires root')
+    module = validate()
+    if Path('/sys/module/xevmafix').is_dir():
+        print('xevmafix already loaded: active build is not verified; reboot required for locked build validation')
+        return
+    subprocess.run(['modprobe', 'xe'], executable='/usr/bin/kmod', check=True)
+    subprocess.run(['insmod', str(module)], executable='/usr/bin/kmod', check=True)
+
+if __name__ == '__main__':
+    main()

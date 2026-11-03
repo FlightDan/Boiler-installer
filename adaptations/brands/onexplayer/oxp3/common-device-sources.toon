@@ -1,0 +1,11 @@
+schema_version: 1
+kind: BoilerModelCommonReferences
+model_id: "device:oxp3"
+source_only: true
+resources[4]{id,source}:
+  "resource:intel-xevmafix-724",common/gpu/intel/xe/xevmafix-724/source.toon
+  "resource:intel-be201-firmware",common/network/intel/be201/source.toon
+  "resource:oxp3-speaker-route",common/audio/realtek/alc245/speaker-route/source.toon
+  "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon
+boot_policies[1]{id,version,source,component_ref}:
+  "ssd:gm7-boot-repair",1,common/ssd/acer/gm7/components.toon,ssd-gm7-boot-repair

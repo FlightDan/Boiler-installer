@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerFingerprintSourceLock",
+  "repository": "podothecat/decky-fingerprint-unlock",
+  "commit": "d5b077c3cfad098909a2849529a27aff55e5354f",
+  "license": "MIT",
+  "files": [
+    {
+      "path": "dist/index.js",
+      "size": 35815,
+      "sha256": "5f9d9d1d94b94fb4cf21d07632b6c2f35ab4497c525058a44d0959ba4b2e6295",
+      "git_blob_sha1": "229b30de02ff54f73a7b12cbcf34a30d089c8bf2"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1067,
+      "sha256": "52a65e9c001fbd9a4d411363103a5ad9b2aa5a0e8a2c6b672159788f2d7b3d69",
+      "git_blob_sha1": "b347ce0bea8e9d492ce0dd355b953ab6bb3dd376"
+    },
+    {
+      "path": "main.py",
+      "size": 17528,
+      "sha256": "7298a16670e373800c92bbf6172d1813ea24aba40ddb9adb2001d9c1e5e1202b",
+      "git_blob_sha1": "351d9482ae30b82fbb9df534f6f581c2872c8265"
+    },
+    {
+      "path": "package.json",
+      "size": 677,
+      "sha256": "f8a0990777fc27883787da4dd71ddea5fcd084c211aceaa101d7fc94fd0c3391",
+      "git_blob_sha1": "924c338207e562191d706cfbb97131dc9126753f"
+    },
+    {
+      "path": "plugin.json",
+      "size": 523,
+      "sha256": "731ddb300e4bb46b30a5d93d0461947998d291d9d8e999366aa9a5e6e1c8253c",
+      "git_blob_sha1": "62f527a9d10f1c3d016a2735ba45d2293ac53e29"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "size": 39947,
+      "sha256": "cbf4accdee69270cbb10c9a4dbf0fb12344d1f6c0ad8d3858cb5e3487248784a",
+      "git_blob_sha1": "bb9def0f6040796e8e7758f4d5f83beb76606623"
+    },
+    {
+      "path": "rollup.config.js",
+      "size": 311,
+      "sha256": "62b83d8699a8607fd1d5678dba85df37ba7ee7eb4ab7551e4a3fdbde57be600c",
+      "git_blob_sha1": "dbb88cf51a2d7e77def78f1e85b128554b8b169b"
+    },
+    {
+      "path": "src/index.tsx",
+      "size": 32506,
+      "sha256": "32934d9f6e36ea16114b5e0d22c1bc969c36ab66f69149f74be646da3603ce81",
+      "git_blob_sha1": "6f5f525727e87dbde365a8cdae75b1d44b5fab6f"
+    },
+    {
+      "path": "tsconfig.json",
+      "size": 837,
+      "sha256": "0c25a159538ae436532d3226f24937d6b351d5135130c72020e339447a8c3025",
+      "git_blob_sha1": "17a10284fce03f3cb9c2494546ff61c9ec7b4942"
+    }
+  ]
+}

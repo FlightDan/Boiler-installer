@@ -1,0 +1,27 @@
+schema_version: 1
+kind: BoilerCommonDeviceSource
+id: "resource:intel-be201-firmware"
+source_only: true
+hardware_matching:
+  mode: advisory
+  driver: iwlwifi
+  firmware_prefixes[2]: iwlwifi-sc-a0-fm-c0,ibt-00a0-0291
+compatibility:
+  architectures[1]: x86_64
+  os_ids[1]: steamos
+  os_versions[1]: "3.10"
+files[9]{path,size,sha256,origin,license,availability}:
+  inputs/iwlwifi-sc-a0-fm-c0-c101.ucode,2305636,3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.iwlwifi_firmware,external-locked
+  inputs/iwlwifi-sc-a0-fm-c0-c102.ucode,2311660,4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.iwlwifi_firmware,external-locked
+  inputs/iwlwifi-sc-a0-fm-c0-c103.ucode,2326720,cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.iwlwifi_firmware,external-locked
+  inputs/iwlwifi-sc-a0-fm-c0-c106.ucode,2226844,7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.iwlwifi_firmware,external-locked
+  inputs/ibt-00a0-0291-iml.sfi,62892,a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.ibt_firmware,external-locked
+  inputs/ibt-00a0-0291-pci.ddc,4,e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.ibt_firmware,external-locked
+  inputs/ibt-00a0-0291-pci.sfi,997224,6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.ibt_firmware,external-locked
+  inputs/ibt-00a0-0291-usb.ddc,4,e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.ibt_firmware,external-locked
+  inputs/ibt-00a0-0291-usb.sfi,991052,b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778,linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0,LICENCE.ibt_firmware,external-locked
+lifecycle:
+  install: existing fixed firmware handler only after separately prepared inputs
+  restore: transaction backup is a downstream handler responsibility
+  limitation: no PCI numeric identifier or firmware byte is asserted present here
+licenses[2]: licenses/LICENCE.iwlwifi_firmware,licenses/LICENCE.ibt_firmware

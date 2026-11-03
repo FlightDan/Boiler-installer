@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "CanonicalFirmwareInputMap",
+  "source_record": "common/network/intel/be201/source.toon",
+  "files": [
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "canonical": "adaptations/common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "size": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "canonical": "adaptations/common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "size": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "canonical": "adaptations/common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "size": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "canonical": "adaptations/common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "size": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/004-ibt-00a0-0291-iml.sfi",
+      "canonical": "adaptations/common/network/intel/be201/inputs/ibt-00a0-0291-iml.sfi",
+      "size": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/005-ibt-00a0-0291-pci.ddc",
+      "canonical": "adaptations/common/network/intel/be201/inputs/ibt-00a0-0291-pci.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/006-ibt-00a0-0291-pci.sfi",
+      "canonical": "adaptations/common/network/intel/be201/inputs/ibt-00a0-0291-pci.sfi",
+      "size": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/007-ibt-00a0-0291-usb.ddc",
+      "canonical": "adaptations/common/network/intel/be201/inputs/ibt-00a0-0291-usb.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/inputs/008-ibt-00a0-0291-usb.sfi",
+      "canonical": "adaptations/common/network/intel/be201/inputs/ibt-00a0-0291-usb.sfi",
+      "size": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/source.json",
+      "canonical": "adaptations/common/network/intel/be201/build-recipe.json",
+      "size": 17916,
+      "sha256": "d23fafbae52da609cb1ba84fc4032640b8e127ebf9ad6c6f94cc043530ba1c6a"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/sources/000-LICENCE.ibt_firmware",
+      "canonical": "adaptations/common/network/intel/be201/licenses/LICENCE.ibt_firmware",
+      "size": 2040,
+      "sha256": "5181b0b51efc79d5acb2c9bb92042878fdbad97a92114d4ab5e32e2b5b52fce4"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/sources/001-LICENCE.iwlwifi_firmware",
+      "canonical": "adaptations/common/network/intel/be201/licenses/LICENCE.iwlwifi_firmware",
+      "size": 2046,
+      "sha256": "16d5040c7cf851fc693b7542e20870935b99802533ea1bfd231c377a2305e5c5"
+    },
+    {
+      "legacy": "adaptations/common/resource-inputs/intel-be201/sources/002-provenance.json",
+      "canonical": "adaptations/common/network/intel/be201/provenance/firmware-source.json",
+      "size": 4512,
+      "sha256": "e820cc0d41fdb7ddbd73a8c8432ecc5f70b44e4a0148b26bc5a1e486f68b47d8"
+    }
+  ]
+}

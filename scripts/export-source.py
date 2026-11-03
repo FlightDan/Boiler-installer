@@ -35,12 +35,27 @@ def reviewed_files(root=ROOT):
 
 
 def verify_adaptation_snapshots(root, files):
+    # Preserve the historical source lock while validating the explicit
+    # relocation of its BMI260 sources into the common device tree.
+    record=json.loads((root/'adaptations/records/migrations/bmi260-source-relocation-20261103.json').read_bytes())
+    if record.get('kind')!='BoilerSourceRelocation' or record.get('schema_version')!=1:
+        raise ValueError('Invalid BMI source relocation')
+    mapping={}
+    for row in record['files']:
+        old=row['old_path'];new=row['new_path']
+        if (old in mapping or not old.startswith('brands/onexplayer/common/scripts/gyro/')
+                or new!='common/sensors/bosch/bmi260/gyro/sources/'+old.rsplit('/',1)[1]):
+            raise ValueError('Invalid BMI source relocation member')
+        mapping[old]=row
     for name in ('source-lock.json', 'current-source-lock.json', 'upstream-source-lock.json'):
         lock = root/'adaptations'/name
         if not lock.exists():
             raise ValueError('Required adaptation source inventory is missing: '+name)
         for entry in json.loads(lock.read_bytes())['files']:
-            relative = 'adaptations/'+entry['path']
+            relocation=mapping.get(entry['path']) if name=='source-lock.json' else None
+            if relocation and (relocation['size']!=entry['size'] or relocation['sha256']!=entry['sha256']):
+                raise ValueError('BMI relocation differs from historical inventory')
+            relative = 'adaptations/'+(relocation['new_path'] if relocation else entry['path'])
             if relative not in files:
                 raise ValueError('Adaptation source inventory is outside the reviewed source whitelist: '+relative)
             data = confined(root, relative).read_bytes()

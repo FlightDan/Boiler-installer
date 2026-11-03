@@ -1,0 +1,1 @@
+{"verify_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-verify","list_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-list","enroll_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-enroll -f right-index-finger"}

@@ -1,0 +1,1 @@
+ACTION=="add|change", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER X2 Mini|ONEXPLAYER X2 Mini PRO", RUN{builtin}+="kmod load spi:spidev", RUN+="/bin/sh -c 'test -e %S%p/driver || { echo spidev > %S%p/driver_override && echo %k > %S%p/subsystem/drivers/spidev/bind; }'"

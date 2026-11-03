@@ -13,6 +13,22 @@
   },
   "components": [
     {
+      "id": "fingerprint-unlock",
+      "name": "指纹解锁（实验功能）",
+      "recommendation": "optional",
+      "default": true,
+      "dependencies": [
+        "decky"
+      ],
+      "sources": [
+        "common/fingerprint/bridge/main.py",
+        "common/fingerprint/runtime-profile/profile.json",
+        "brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules"
+      ],
+      "status": "external_runtime_required",
+      "notes": "Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json."
+    },
+    {
       "id": "slot-switch",
       "name": "KDE 槽位切换 / 系统回退",
       "recommendation": "optional",
@@ -162,13 +178,10 @@
         "input"
       ],
       "sources": [
-        "brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c",
-        "brands/onexplayer/common/scripts/gyro/launch.sh",
-        "brands/onexplayer/common/scripts/gyro/oxp3-gyro.service",
-        "brands/onexplayer/common/scripts/gyro/gyro_binding.py"
+        "brands/onexplayer/oxp3/common-device-sources.toon"
       ],
       "status": "source_reference_only",
-      "notes": "需精确内核、BMI260 芯片识别、bmi270_core/固件及配套 InputPlumber；新装重新校准。"
+      "notes": "Source reference only; verify BMI260 identity, kernel and InputPlumber compatibility before installation or calibration."
     },
     {
       "id": "xe-dsb",
@@ -189,10 +202,10 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/oxp3/common-device-sources.toon"
       ],
       "status": "source_reference_only",
-      "notes": "只有实际 SSD 命中适用条件时安装；验证休眠与恢复。"
+      "notes": "Apply only after matching the target SSD identity; verify installation and recovery."
     },
     {
       "id": "split-lock",
@@ -212,9 +225,11 @@
       "recommendation": "conditional",
       "default": false,
       "dependencies": [],
-      "sources": [],
+      "sources": [
+        "brands/onexplayer/oxp3/common-device-sources.toon"
+      ],
       "status": "source_reference_only",
-      "notes": "按实际无线芯片选择 Boiler 通用固件；不固定为所有机器均需 BE201。"
+      "notes": "Source reference only; verify the actual wireless device and firmware compatibility."
     },
     {
       "id": "manager",

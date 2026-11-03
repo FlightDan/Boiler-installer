@@ -1,0 +1,8 @@
+[Unit]
+Description=Opt-in ONEXPLAYER 3 xe VMA allocation workaround
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I -B /usr/lib/boiler/oxp3/xevmafix/load.py
+RemainAfterExit=yes

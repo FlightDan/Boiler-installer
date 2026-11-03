@@ -12,6 +12,23 @@ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 
 class FinalizeCanonicalModelTests(unittest.TestCase):
+    def test_unknown_target_cannot_select_legacy_wifi_and_other_defaults_remain(self):
+        from protocol.model_options import validated_selection
+        from protocol.manifest import ProtocolError
+        def package():
+            return dict(id='device:oxp3',selection_contract={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'},legacy_capabilities=[
+                dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+                dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,default=False,reason={})])
+        previous=dict(repairs=['oxp3:input'],plugins=[]);reviewed=dict(repairs=['oxp3:input','oxp3:wifi'],plugins=[])
+        value=package();choice=module.configure_wifi_selection(value,previous,reviewed,canonical=True)
+        self.assertEqual(choice,previous);self.assertTrue(value['legacy_capabilities'][0]['default'])
+        wifi=value['legacy_capabilities'][1];self.assertFalse(wifi['available']);self.assertFalse(wifi['default']);self.assertIn('target BE201',wifi['reason']['en'])
+        with self.assertRaisesRegex(ProtocolError,'Unavailable or unknown'):
+            validated_selection(value,['oxp3:input','oxp3:wifi'],[],acknowledge_update_hold=True)
+        self.assertEqual(validated_selection(value,['oxp3:input'],[],acknowledge_update_hold=True)['repairs'],['oxp3:input'])
+        historical=package();self.assertEqual(module.configure_wifi_selection(historical,previous,reviewed,canonical=False),reviewed)
+        self.assertTrue(historical['legacy_capabilities'][1]['default']);self.assertTrue(historical['legacy_capabilities'][1]['available'])
+
     def test_legacy_version_targets_id_independent_of_component_order(self):
         value={'components':[{'id':'oxp3:microphone','version':'1.0.0'},
                              {'id':'oxp3:legacy-adaptation','version':'1.0.0'}]}

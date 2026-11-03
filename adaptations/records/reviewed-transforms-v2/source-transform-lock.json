@@ -1,0 +1,37 @@
+{
+  "kind": "HardwareModelAdvisoryPatches",
+  "upstream": {
+    "repository": "HHHHanasak1/onexplayer3-steamos-setup",
+    "tag": "20261029",
+    "commit": "e72e814da1944da3792076689995b6fe961f5768",
+    "license": "MIT; xevma module declares GPL"
+  },
+  "upstream_source_lock_sha256": "099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc",
+  "files": [
+    {
+      "file": "speaker_route.py",
+      "source_path": "brands/onexplayer/oxp3/current/upstream-20261029/speaker_route.py",
+      "source_size": 5510,
+      "source_sha256": "b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739",
+      "output_size": 5602,
+      "output_sha256": "bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a",
+      "patch": "speaker_route.py.patch",
+      "patch_sha256": "636967265f109fd5a376ec892e091ca191178ed9c24bd55039b885baefa241e2"
+    },
+    {
+      "file": "xevma-load.py",
+      "source_path": "brands/onexplayer/oxp3/current/xevma-20261029/load.py",
+      "source_size": 2330,
+      "source_sha256": "bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646",
+      "output_size": 3033,
+      "output_sha256": "d39cda04906560f5d3e0a01d94c1d649e97920bb685573b96a43a827a06cda63",
+      "patch": "xevma-load.py.patch",
+      "patch_sha256": "d9892245f3803a27ab9257898978fc73a390786bda15e7829f4686476716de9d"
+    }
+  ],
+  "notes": [
+    "Original source tree and source lock are unchanged.",
+    "Xevma kernel/OS/module digest guards are preserved and real Intel xe binding is required.",
+    "Speaker still checks the actual local ALC245 codec, empty headphone jack and available speaker profile before any route write."
+  ]
+}

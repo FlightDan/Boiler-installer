@@ -1,0 +1,563 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerSourceOwnershipMigration",
+  "version": "20261103.1",
+  "canonical_repository": {
+    "repository": "FlightDan/Boiler-devices",
+    "base_commit": "d72035c81126b5149d70723a104b631835a4d037"
+  },
+  "scope": {
+    "included": [
+      "xevmafix-724",
+      "be201",
+      "alc245-speaker-route",
+      "bmi260-gyro",
+      "gm7"
+    ],
+    "excluded": [
+      "cpu",
+      "battery",
+      "hdr",
+      "light",
+      "input"
+    ],
+    "execution": "source-only"
+  },
+  "imports": [
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029",
+      "new": "common/gpu/intel/xe/xevmafix-724",
+      "source_commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "license": "GPL-2.0",
+      "transform": "kmod_transform.py guards three known loader hashes; no module is imported"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old": "adaptations/common/resource-inputs/intel-be201",
+      "new": "common/network/intel/be201",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "linux-firmware licenses",
+      "transform": "none; nine firmware bytes remain external hash-locked inputs"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029",
+      "new": "common/audio/realtek/alc245/speaker-route",
+      "source_commit": "e72e814da1944da3792076689995b6fe961f5768",
+      "license": "MIT",
+      "transform": "verified current source import; model board routes remain parameters"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old": "brands/onexplayer/common/scripts/gyro",
+      "new": "common/sensors/bosch/bmi260/gyro",
+      "source_commit": "72f864e0498c10366493c74608c5ffed62cc99ca",
+      "license": "GPL-2.0 and retained notices",
+      "transform": "byte-exact copy; bmi160_i2c restoration and actual module availability remain downstream checks"
+    },
+    {
+      "id": "ssd:gm7-boot-repair",
+      "old": "adaptations/common/ssd/GM7_POLICY.md",
+      "new": "common/ssd/acer/gm7/components.toon",
+      "source_commit": "72f864e0498c10366493c74608c5ffed62cc99ca",
+      "license": "MIT source notice",
+      "transform": "fileless existing ComponentManifest provider; generic installer and maintenance transaction code is not imported"
+    }
+  ],
+  "file_maps": [
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/xevmafix.c",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/xevmafix.c",
+      "size": 5135,
+      "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "GPL-module-declaration-variant-unspecified",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/Makefile",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/Makefile",
+      "size": 20,
+      "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/common/xevma/kmod_transform.py",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/kmod_transform.py",
+      "size": 1048,
+      "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/load.py",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/load.py",
+      "size": 2330,
+      "sha256": "bf49070cb295c872c3059480cc0a393c77bc1b129ffdaba05e12e90ec78dc646",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/module-lock.json",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/module-lock.json",
+      "size": 26919,
+      "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/boiler-oxp3-xevmafix.service",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/boiler-oxp3-xevmafix.service",
+      "size": 218,
+      "sha256": "4e05053564db612fab03dd7c838aa85b7472c4dc3791a5bee5f1162acc6641e8",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/90-boiler-oxp3-xevmafix.conf",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/90-boiler-oxp3-xevmafix.conf",
+      "size": 42,
+      "sha256": "ba2a8b4edebc640910521643e7962d09546a043cd8f539fcb1b504047e503132",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/install.json",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/install.json",
+      "size": 2187,
+      "sha256": "bb427afb8db3152dec0b2cb79ff47631a06dc183582c2156c6f69736936fe76e",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/README.md",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/README.md",
+      "size": 2300,
+      "sha256": "3382fb696e004bc00ddabb8729ca16ba2b32f6e5be0b6ca244ced88f4cc74b00",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_README.md",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/UPSTREAM_README.md",
+      "size": 3528,
+      "sha256": "bc478f9e972bc5ace5d594d337e5e16c83e7fd9b6729321ebb084471877638c7",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-MIT-notice",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/UPSTREAM_LICENSE",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/UPSTREAM_LICENSE",
+      "size": 1070,
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/xevma-20261029/LICENSE",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/sources/LICENSE",
+      "size": 18600,
+      "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "upstream-license-record",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "scripts/resources/hardware_name_patches.py#xevma_model_advisory",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/transforms/xevma_model_advisory.py",
+      "size": 1756,
+      "sha256": "a7b3b3b2b53763558f0835ce002677a508d8a8612baba1b0d6c835d001b3f9ad",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer",
+      "source_revision": {
+        "kind": "sha256",
+        "file": "scripts/resources/hardware_name_patches.py",
+        "sha256": "5260a187b9d210ddf19c674baec9ad621da429096d47557850c210b8b6196ffa",
+        "function": "xevma_model_advisory",
+        "function_sha256": "119e7050e024074004fafdd35cae6d266dba0db5bf93dee8863744bd052f3ca7"
+      }
+    },
+    {
+      "id": "resource:intel-xevmafix-724",
+      "old_path": "scripts/resources/hardware_name_patches.py#xevma_model_advisory output",
+      "new_path": "common/gpu/intel/xe/xevmafix-724/final/load.py",
+      "size": 3033,
+      "sha256": "d39cda04906560f5d3e0a01d94c1d649e97920bb685573b96a43a827a06cda63",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer",
+      "source_revision": {
+        "kind": "sha256",
+        "file": "scripts/resources/hardware_name_patches.py",
+        "sha256": "5260a187b9d210ddf19c674baec9ad621da429096d47557850c210b8b6196ffa",
+        "function": "xevma_model_advisory",
+        "function_sha256": "119e7050e024074004fafdd35cae6d266dba0db5bf93dee8863744bd052f3ca7"
+      }
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/speaker_route.py",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/speaker_route.py",
+      "size": 5510,
+      "sha256": "b47f916aa80036d5730c0df26deac7aedcd8f9af14cc615058d9f6432e9c7739",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-route.service",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/oxp3-speaker-route.service",
+      "size": 221,
+      "sha256": "327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/90-oxp3-speaker-route.conf",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/90-oxp3-speaker-route.conf",
+      "size": 40,
+      "sha256": "7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/oxp3-speaker-resume.service",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/oxp3-speaker-resume.service",
+      "size": 284,
+      "sha256": "efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/20-oxp3-speaker-resume.conf",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/20-oxp3-speaker-resume.conf",
+      "size": 41,
+      "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/install.json",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/install.json",
+      "size": 1580,
+      "sha256": "e99f5e6240d8271ef41b7055026d8915d697ac2992a8524ca50fd1b6fe8c6490",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/PROVENANCE.json",
+      "new_path": "common/audio/realtek/alc245/speaker-route/sources/PROVENANCE.json",
+      "size": 1347,
+      "sha256": "198409b82781c0d7885de76c667cceee81411dacb9191d1c95caffc1b61782d2",
+      "source_commit": "c1c70ea7d1234b59372bb5c595ec2fd0fe5b1989",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer"
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "scripts/resources/split_components.py#speaker_model_advisory",
+      "new_path": "common/audio/realtek/alc245/speaker-route/transforms/speaker_model_advisory.py",
+      "size": 517,
+      "sha256": "da90f9f67f6f845ecb13e12e26613df7f170b9065a78274941e2e32d9b0d77c4",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer",
+      "source_revision": {
+        "kind": "sha256",
+        "file": "scripts/resources/split_components.py",
+        "sha256": "efbcd2d66dd7f9d0a0c9c5f286236c32492e8b5a46a4bcb6cf8839538157707c",
+        "function": "speaker_model_advisory",
+        "function_sha256": "abaeb47246a8ec7990e3c94512db79e3ee8e8f087f2e291e1076343f1f9e12f8"
+      }
+    },
+    {
+      "id": "resource:oxp3-speaker-route",
+      "old_path": "scripts/resources/split_components.py#speaker_model_advisory output",
+      "new_path": "common/audio/realtek/alc245/speaker-route/final/speaker_route.py",
+      "size": 5602,
+      "sha256": "bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a",
+      "license": "AGPL-3.0-or-later",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-installer",
+      "source_revision": {
+        "kind": "sha256",
+        "file": "scripts/resources/split_components.py",
+        "sha256": "efbcd2d66dd7f9d0a0c9c5f286236c32492e8b5a46a4bcb6cf8839538157707c",
+        "function": "speaker_model_advisory",
+        "function_sha256": "abaeb47246a8ec7990e3c94512db79e3ee8e8f087f2e291e1076343f1f9e12f8"
+      }
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/gyro_binding.py",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/gyro_binding.py",
+      "size": 11894,
+      "sha256": "967701d1cbb3ba274acb459a87df9de81309f33530f582b995bdb9f1fa298926",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/onexplayer3-bmi260.patch",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/onexplayer3-bmi260.patch",
+      "size": 2400,
+      "sha256": "d869d7c3e67815c4c44ea508c8ae32a30de4af021f1a59475172638c817c4fa5",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/oxp3_bmi260.c",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/oxp3_bmi260.c",
+      "size": 1906,
+      "sha256": "6d5db91566ac5d6fbf0838d87d6a3e611be4ebd7cc7f373f6dad557bcd831939",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/inputplumber.conf",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/inputplumber.conf",
+      "size": 119,
+      "sha256": "7f63d87e14553a7c274d99eb58d4ae292e56bc8a873f7b29a56d5ed3e0b1506e",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "MIT",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/bmi270.h",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/bmi270.h",
+      "size": 614,
+      "sha256": "14d9457dd5aae818db61bf9247c6f395520aeb0bcdbf6ab2abbb8f0d8aed9cb8",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/launch.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/launch.sh",
+      "size": 287,
+      "sha256": "57d5822fd1bc56c6dbba01d9775a30cffeb3ab3f47bfbfc778478edcba5bce95",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/load.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/load.sh",
+      "size": 369,
+      "sha256": "6457a8d68a16e6f68481b7e9173cb64878e9579ae86affbb002de4f81c512314",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/unload.sh",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/unload.sh",
+      "size": 83,
+      "sha256": "370f22b1be7b537169238f809ba66ef9f83d19e551a073df20f6a3e68b7d62e9",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/oxp3-gyro.service",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/oxp3-gyro.service",
+      "size": 384,
+      "sha256": "5aeea94e5e7c999cd90058c88101c174e23f6317b14d1eca3af201ac5badf66b",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    },
+    {
+      "id": "resource:bmi260-gyro",
+      "old_path": "brands/onexplayer/common/scripts/gyro/Makefile",
+      "new_path": "common/sensors/bosch/bmi260/gyro/sources/Makefile",
+      "size": 23,
+      "sha256": "6fed206b92d43604d3ef666034373e76dbdae380c2858c58ff1566955838747d",
+      "source_commit": "d72035c81126b5149d70723a104b631835a4d037",
+      "license": "GPL-2.0",
+      "transform": "source-only declaration",
+      "source_repository": "FlightDan/Boiler-devices"
+    }
+  ],
+  "external_input_maps": [
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "new_path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c101.ucode",
+      "size": 2305636,
+      "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.iwlwifi_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "new_path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c102.ucode",
+      "size": 2311660,
+      "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.iwlwifi_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "new_path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c103.ucode",
+      "size": 2326720,
+      "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.iwlwifi_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "new_path": "common/network/intel/be201/inputs/iwlwifi-sc-a0-fm-c0-c106.ucode",
+      "size": 2226844,
+      "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.iwlwifi_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-iml.sfi",
+      "new_path": "common/network/intel/be201/inputs/ibt-00a0-0291-iml.sfi",
+      "size": 62892,
+      "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.ibt_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.ddc",
+      "new_path": "common/network/intel/be201/inputs/ibt-00a0-0291-pci.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.ibt_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-pci.sfi",
+      "new_path": "common/network/intel/be201/inputs/ibt-00a0-0291-pci.sfi",
+      "size": 997224,
+      "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.ibt_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-usb.ddc",
+      "new_path": "common/network/intel/be201/inputs/ibt-00a0-0291-usb.ddc",
+      "size": 4,
+      "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.ibt_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    },
+    {
+      "id": "resource:intel-be201-firmware",
+      "old_path": "linux-firmware@2ab4ce216003ee2c2396c69e19455e4379b0e1f0/intel/ibt-00a0-0291-usb.sfi",
+      "new_path": "common/network/intel/be201/inputs/ibt-00a0-0291-usb.sfi",
+      "size": 991052,
+      "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778",
+      "source_commit": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "license": "LICENCE.ibt_firmware",
+      "transform": "source-only declaration",
+      "source_repository": "linux-firmware"
+    }
+  ],
+  "constraints": [
+    "The immutable 72f864e0498c10366493c74608c5ffed62cc99ca snapshot and its source lock are unchanged.",
+    "No firmware, kernel module, package hook, privileged handler, or DevicePackage metadata is imported.",
+    "No OXP3/X2 identity whitelist, EFI rule, CPU policy, HDR, light, input, or battery material is changed."
+  ]
+}

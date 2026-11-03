@@ -85,6 +85,8 @@ def package(root: str | Path, output: str | Path) -> dict:
     del archive_contents[BOOTSTRAP_SOURCE]
     archive_contents[ARCHIVE_BOOTSTRAP] = contents[BOOTSTRAP_SOURCE]
     archive_contents["__main__.py"] = MAIN
+    # zipimport cannot discover an implicit namespace without directory entries.
+    archive_contents["components/__init__.py"] = b""
     partial = output.with_name(output.name + ".partial")
     try:
         with partial.open("xb") as stream:

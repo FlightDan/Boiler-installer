@@ -1,0 +1,24 @@
+schema_version: 1
+kind: BoilerComponentDefinitions
+definitions:
+  ssd-gm7-boot-repair:
+    schema_version: 1
+    kind: ComponentManifest
+    version: 0.1.0
+    minimum_engine_version: 0.1.3
+    name:
+      en: "Predator GM7 suspend boot repair"
+      zh: "Predator GM7 休眠启动修复"
+    description:
+      en: "Fileless provider declaration for the existing fixed GM7 boot-policy transaction. It is selected only after downstream physical-target review."
+      zh: "现有固定 GM7 启动策略事务的无文件提供方声明；只在下游完成物理目标核验后选择。"
+    default: false
+    optional: true
+    requires: []
+    conflicts: []
+    files: []
+    hooks:
+    compatibility:
+    ssd_boot_policy:
+      id: "ssd:gm7-boot-repair"
+      version: 1

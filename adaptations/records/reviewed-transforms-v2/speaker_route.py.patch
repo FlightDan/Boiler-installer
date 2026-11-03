@@ -1,0 +1,11 @@
+--- upstream/speaker_route.py
++++ resource/speaker_route.py
+@@ -131,7 +131,7 @@
+ 
+ def main():
+     if not supported():
+-        return 0
++        print('Speaker route: model name is advisory; checking actual ALC245/audio interfaces.', flush=True)
+     since = int(time.time()) - 30
+     failed = False
+     for delay in (3, 7, 20):
