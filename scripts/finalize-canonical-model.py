@@ -28,7 +28,7 @@ MODEL_REFS = {
 RESOURCE_IDS = {'resource:intel-xevmafix-724', 'resource:intel-be201-firmware',
                 'resource:oxp3-speaker-route', 'resource:bmi260-gyro'}
 POLICY = 'common/ssd/acer/gm7/components.toon'
-VERSION = '0.1.0-localtest.20261103.canonical-common.1'
+VERSION = '0.1.0-localtest.20261103.canonical-common.2'
 COMPONENT_VERSIONS = {'oxp3:xevmafix':'2026.10.30', 'oxp3:speaker-route':'2026.10.30'}
 BASE_COMPONENTS = {'oxp3:legacy-adaptation','oxp3:microphone','oxp3:speaker-route','oxp3:xevmafix'}
 
@@ -205,10 +205,6 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     speaker=replace_component_bytes(directory,manifest,'oxp3:speaker-route',{
         'speaker_route.py':content['payload-inputs/alc245/speaker_route.py']})
     version_replaced_components(xe,speaker)
-    if identity=='device:x2-mini':
-        speaker['available']=False
-        speaker['reason']={'en':'X2 board-specific speaker routing is not independently validated.',
-                           'zh':'X2 机型扬声器板级路由尚未独立验证。'}
     gyro_targets=update_gyro(directory,identity,files,profiles[identity.split(':',1)[1]])
     manifest['components'].append(provider)
     manifest['version']=version
@@ -222,6 +218,10 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
         be201='source and firmware preparation only; fixed matching handler integration pending',
         physical_hardware_accepted=False)
     update_capabilities(manifest,identity,gyro_targets)
+    wifi = [cap for cap in manifest.get('legacy_capabilities', []) if cap.get('id') == 'oxp3:wifi']
+    if len(wifi) != 1 or wifi[0].get('available') is not True:
+        raise ValueError('Expected the available legacy BE201 firmware handler')
+    wifi[0]['default'] = True
     # Neither the verified EFI code closure nor unrelated legacy payloads are
     # modified by this finalization. Verify again after all generated writes.
     manifest['files']=[dict(path=p.relative_to(directory).as_posix(),size=p.stat().st_size,sha256=sha(p.read_bytes()))
@@ -241,7 +241,7 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     report=dict(kind='CanonicalCommonModelCandidate',id=identity,version=version,manifest_sha256=digest,
         archive=archive.name,size=archive.stat().st_size,sha256=sha(archive.read_bytes()),
         source_commit=bmi260.COMMIT,hardware_acceptance=False,official_release=False,
-        pending=['BE201 fixed handler binding','X2 speaker board route' if identity=='device:x2-mini' else 'physical audio acceptance',
+        pending=['BE201 fixed handler binding','physical audio acceptance',
                  'BMI260 physical calibration and X2 orientation','full Linux install, maintenance and recovery'])
     (output/'verification.json').write_bytes(json_bytes(report))
     return report
