@@ -133,7 +133,7 @@ components[28]:
   - id: wifi
     name: BE201 无线 c106 与蓝牙固件
     recommendation: conditional
-    default: true
+    default: false
     dependencies: []
     sources: []
     status: source_reference_only
