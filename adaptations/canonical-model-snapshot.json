@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "f8f86448f740334ef9fdc3b26fe3155c9b639a87",
+  "commit": "094832de987707407fdcf146f70fa46822114b62",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -1786,8 +1786,8 @@
     },
     {
       "path": "adaptations/tests/test_fingerprint_overlay.py",
-      "size": 11142,
-      "sha256": "78eb44bc1128c50e95ffebdbf67a5440d644df225b41da4b62324ba7222efad6"
+      "size": 11381,
+      "sha256": "334c833e2a0cbd67454bd1736853619dea310615fc5d151b1fec969476ad119d"
     },
     {
       "path": "adaptations/tests/test_index_models.py",
@@ -1882,7 +1882,7 @@
     {
       "path": "adaptations/model-source-files.json",
       "size": 68053,
-      "sha256": "037be90e360a294ff2dec92918ccc45f1ebbdbcecce4633c7079250c9fde315c"
+      "sha256": "90517e1471c19e5a4c3d99ae6dd52e9dd88468f08f111cf6e952ca7f6332af93"
     }
   ]
 }

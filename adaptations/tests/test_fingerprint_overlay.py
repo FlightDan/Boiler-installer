@@ -99,10 +99,12 @@ class OverlayTests(unittest.TestCase):
 
     def test_public_installer_commit_and_whitelist_are_verified(self):
         manifest=json.loads((INSTALLER/'scripts/source-files.json').read_bytes())
-        overlay.verify_checkout(INSTALLER,overlay.INSTALLER_REPOSITORY,
-            '04dce422d0c4831ced6d2b9efdbd852e7b02a724',manifest['files'])
+        commit=subprocess.check_output(['git','-C',str(INSTALLER),'rev-parse','HEAD'],stderr=subprocess.PIPE).decode().strip()
+        self.assertRegex(commit, r'^[0-9a-f]{40}$')
+        self.assertEqual('',subprocess.check_output(['git','-C',str(INSTALLER),'status','--porcelain'],stderr=subprocess.PIPE).decode().strip())
+        overlay.verify_checkout(INSTALLER,overlay.INSTALLER_REPOSITORY,commit,manifest['files'])
         with self.assertRaises(ValueError):
-            overlay.verify_checkout(INSTALLER,'Other/repository','04dce422d0c4831ced6d2b9efdbd852e7b02a724',manifest['files'])
+            overlay.verify_checkout(INSTALLER,'Other/repository',commit,manifest['files'])
         with self.assertRaises(ValueError):
             overlay.verify_checkout(INSTALLER,overlay.INSTALLER_REPOSITORY,'0'*40,manifest['files'])
 

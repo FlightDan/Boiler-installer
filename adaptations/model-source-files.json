@@ -1785,8 +1785,8 @@
     },
     {
       "path": "tests/test_fingerprint_overlay.py",
-      "size": 11142,
-      "sha256": "78eb44bc1128c50e95ffebdbf67a5440d644df225b41da4b62324ba7222efad6"
+      "size": 11381,
+      "sha256": "334c833e2a0cbd67454bd1736853619dea310615fc5d151b1fec969476ad119d"
     },
     {
       "path": "tests/test_index_models.py",
