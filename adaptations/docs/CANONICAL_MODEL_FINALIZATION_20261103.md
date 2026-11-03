@@ -35,7 +35,8 @@ provider still requires the actual target SSD identity and transaction review.
 
 The nine BE201 firmware files and licenses are retained as source material.
 Their model-package installation remains blocked pending trusted target-device
-matching and connection to the fixed firmware handler. X2 speaker selection is
+matching and connection to the fixed firmware handler. The user has
+confirmed that X2 Mini uses the Realtek ALC245 codec. X2 speaker selection is
 unavailable until its board route is verified. X2 gyro orientation is inherited
 and has not been independently measured. Source preparation and archive import
 do not establish Linux lifecycle, physical hardware, release signing, or public
