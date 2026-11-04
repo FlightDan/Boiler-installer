@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "094832de987707407fdcf146f70fa46822114b62",
+  "commit": "8d5053462aac703866866ca18b8f8635c5d0c007",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -26,8 +26,8 @@
     },
     {
       "path": "adaptations/README.md",
-      "size": 3250,
-      "sha256": "6d91a14b8d9783001d0e9e8a7fd5126630e6efebc8a7ef0c163c6468c7af9251"
+      "size": 1967,
+      "sha256": "16a1a7d2c1a68582b208343a799d624ad0eae5eda093a0ac6955c510592ffe1f"
     },
     {
       "path": "adaptations/THIRD_PARTY_NOTICES.md",
@@ -431,8 +431,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/oxp3.toon",
-      "size": 17325,
-      "sha256": "b62626ab658627bc293180640b1f16ae77961402a6960e153046a5ab1024adc5"
+      "size": 20712,
+      "sha256": "001cda218934eb47a242355b969279c25ad6f4c983a9206b357ba6e1b96c35cf"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -710,6 +710,11 @@
       "sha256": "44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856"
     },
     {
+      "path": "adaptations/brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py",
+      "size": 6237,
+      "sha256": "4cf182707c825c5cca150364566aee0921f45cf428fbd2df137360d579cf91d2"
+    },
+    {
       "path": "adaptations/brands/onexplayer/x2-mini/bridge/scripts/build.py",
       "size": 6236,
       "sha256": "cb94e3e0dc68d2a202b41a23053e7007d5cc4cfdd8bb8ec1a7c8325fe96037d5"
@@ -766,8 +771,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/x2-mini.toon",
-      "size": 17072,
-      "sha256": "15ae384768a13ff119cb0626665d73145dfe9bed707ce6cda29a10eed30d0fa7"
+      "size": 17327,
+      "sha256": "12f72f4b7bbe71ceb5141a2b85768d86db1f4c2575428d169cc3fb46bb733bf2"
     },
     {
       "path": "adaptations/common-device-source-index.json",
@@ -1455,14 +1460,49 @@
       "sha256": "6bb7ff5bb57f2f757a34c8547ddc0e800b348e73052515622752519280f46349"
     },
     {
+      "path": "adaptations/docs/BUILD.en.md",
+      "size": 7863,
+      "sha256": "11306b2d9fd4476c48e5c8f58809ed42c26eb9a2d388a34d87015bb6aab02c3f"
+    },
+    {
+      "path": "adaptations/docs/BUILD.md",
+      "size": 7310,
+      "sha256": "09fabce9d36d0b6502c8dea68ee7494c149ced3ae98903513f2ebe8f0000b51e"
+    },
+    {
       "path": "adaptations/docs/FINGERPRINT_OVERLAY_AUTHORITY_PREVIEW_20261104.md",
       "size": 1610,
       "sha256": "94d1d39ada7b402db04bd9c40f6886789384ed10062c87d2fdec40136cb5dda5"
     },
     {
+      "path": "adaptations/docs/README.zh.md",
+      "size": 1765,
+      "sha256": "2c20f6104309ca5a46dfaac09ef9a324e755a2ec21c70228eae578b9b1de9ba9"
+    },
+    {
+      "path": "adaptations/docs/REGISTRY.en.md",
+      "size": 3502,
+      "sha256": "e024e3d983116a46daa79790006e3aeb0b42e83f89567ab9477947375aa68c5f"
+    },
+    {
+      "path": "adaptations/docs/REGISTRY.md",
+      "size": 2965,
+      "sha256": "f85b66820ce6df0e2adb6300f6c0bbd0010307f140fa832b8ebbfb4f5dd1e625"
+    },
+    {
       "path": "adaptations/docs/RELEASE_0.1.0-layout.1.md",
       "size": 4247,
       "sha256": "162562c25df38c24c1930e5f0eab9aa47460fd5aafe546f4edc2dafe6d3a033c"
+    },
+    {
+      "path": "adaptations/docs/TOON.en.md",
+      "size": 4788,
+      "sha256": "b028650e909a736cf71d4db6938cb8444dd9fa452d7d5fc3ac38d6eed04d0dab"
+    },
+    {
+      "path": "adaptations/docs/TOON.md",
+      "size": 4312,
+      "sha256": "036224f91bd3614bdddb93c5afb3bdfea344ddd80ae654334b3c34b8642655b9"
     },
     {
       "path": "adaptations/fingerprint-source-lock.json",
@@ -1482,17 +1522,22 @@
     {
       "path": "adaptations/model-index.json",
       "size": 806,
-      "sha256": "b8f54f5035ec033cd67425de8a9ff7bd76a79b28d9c346fc018302869f87d849"
+      "sha256": "2fad26bfbedb21c584c517332d2e4297f2c5e4578439e121fef1b5acf923ffd0"
     },
     {
       "path": "adaptations/models.toon",
-      "size": 658,
-      "sha256": "eecef70f69ada5f8ca2433c21883ad3cd36ea31862df0caff8bebec22c5cf45b"
+      "size": 214,
+      "sha256": "fb4853caa0522cc8cab4a33c0e2540f88cd7fd53217cfcd0c4b2cf9388e25bab"
     },
     {
       "path": "adaptations/records/migrations/bmi260-source-relocation-20261103.json",
       "size": 5237,
       "sha256": "460226bb632cac6dbd8849ac715bc6483da64de509fd72b606a6499c9c2b7b79"
+    },
+    {
+      "path": "adaptations/records/migrations/branded-model-identity-20261104.md",
+      "size": 1547,
+      "sha256": "87d628ff2e1fcb82bca480661d71fcc8ed95e0eebcc1d24a53590d56ec548508"
     },
     {
       "path": "adaptations/records/migrations/common-bmi260-inputplumber-20261103.json",
@@ -1503,6 +1548,16 @@
       "path": "adaptations/records/migrations/common-device-resource-ownership-20261103.json",
       "size": 26319,
       "sha256": "7b56b449ea011d8c0677bc72e8a41ed3c9c0216e3da2803eaa36fc83314946b8"
+    },
+    {
+      "path": "adaptations/records/migrations/generic-model-candidate-20261104.md",
+      "size": 2066,
+      "sha256": "a33521470167ecc8ce5a428763635b75da44923f9c42162fc38b1b594f8a5937"
+    },
+    {
+      "path": "adaptations/records/migrations/x2-installer-catalog-entrypoints-20261104.json",
+      "size": 1522,
+      "sha256": "546a89d55d1d946d92508cb3f56b484535e50bdafb2a446012b68a83514df433"
     },
     {
       "path": "adaptations/records/oxp3-shared-base/opti031-inputs.json",
@@ -1686,8 +1741,8 @@
     },
     {
       "path": "adaptations/scripts/adaptations.py",
-      "size": 16704,
-      "sha256": "2faf58d71b9d0c22d3abbc94fced9f3c23bba9ebf23856759a8590a9cc5535f0"
+      "size": 16651,
+      "sha256": "5a500d3d35e3fdc8a94dfcdd1acc0f79944cf28f1795d836d0b617422779e310"
     },
     {
       "path": "adaptations/scripts/build-complete-bridge.py",
@@ -1706,8 +1761,8 @@
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 34520,
-      "sha256": "ba68ec057315bd45f2e70df3f4479438300926811cabf658981a026e9f56a8ef"
+      "size": 41011,
+      "sha256": "d4604e3e4078a19cdccee834ca2e10c98b88b5e223a309fab84f66d46840c516"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
@@ -1725,6 +1780,11 @@
       "sha256": "439c1a87d42774dcb5593f2aaed37bce6fa7f9bce112db56ea4c45dbb155a90e"
     },
     {
+      "path": "adaptations/scripts/build-x2-complete-installer-catalog.py",
+      "size": 18339,
+      "sha256": "eaddb5758c5b70abbb4e8e69c9cdd2276a081da32976dce22c9597e1ca401002"
+    },
+    {
       "path": "adaptations/scripts/build-x2-complete.py",
       "size": 18351,
       "sha256": "246ca33f9f0b43ecd5d1c6ada168e2fb381223e1bec8f4b41aa1242fa65a9df5"
@@ -1736,13 +1796,18 @@
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
-      "size": 10513,
-      "sha256": "5432bd8a6359ec51ccca0248885e6597bbbea5dedbf099f46d7a24c9c3a1f1a6"
+      "size": 12259,
+      "sha256": "ca4374dd88edf12ea9ff2b913b1967457d1694b5d1e770c5fe1e852c51f87122"
     },
     {
       "path": "adaptations/scripts/fingerprint_provenance.py",
       "size": 2313,
       "sha256": "607f96c809650fd4f4669e7f897ed02224a88b3b10cd0be565f4b169b1e3ef3f"
+    },
+    {
+      "path": "adaptations/scripts/model-identity.py",
+      "size": 13935,
+      "sha256": "3505a19b772600cedab73288d6818c3307c00beb29363eecca181f9f164dc58a"
     },
     {
       "path": "adaptations/scripts/prepare-current-inputs.py",
@@ -1755,14 +1820,19 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
+      "path": "adaptations/scripts/refresh-model-source-inventory.py",
+      "size": 3039,
+      "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
+    },
+    {
       "path": "adaptations/scripts/validate-fingerprint-native.py",
       "size": 6086,
       "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 52210,
-      "sha256": "1998f4481d24be1c043a468af718f6e156bfe8c1a7e814fbaa7029e5ecc6fc2a"
+      "size": 52844,
+      "sha256": "e050e53b157db3b68f616ece6d350e7e7e3774abc24ce1b1cf316356e40145a2"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1776,13 +1846,13 @@
     },
     {
       "path": "adaptations/tests/test_adaptations.py",
-      "size": 17024,
-      "sha256": "44aa1bf4b9371a9b629b820a4a622c0b1d8ba42228833b9d70b7e0137475b0cf"
+      "size": 19473,
+      "sha256": "aefff98cb8854358082ad4dce320cff4219aac1237900f8ab8a8b3ba4bb4348a"
     },
     {
       "path": "adaptations/tests/test_common_device_sources.py",
-      "size": 4820,
-      "sha256": "f87fb74d1cb0be94b89ed1bf6bfb4e626e3e9a61dc8aaf635b9f75b32740089c"
+      "size": 4839,
+      "sha256": "1685259401f90040500738131e5f81d7d1c3aa9e8aca737098cc98f0f483c7ed"
     },
     {
       "path": "adaptations/tests/test_fingerprint_overlay.py",
@@ -1791,13 +1861,23 @@
     },
     {
       "path": "adaptations/tests/test_index_models.py",
-      "size": 13466,
-      "sha256": "e32d1d4321234f92f7ef3c24b265bc0a816df89e604c22fff651c1f8cbef4828"
+      "size": 27692,
+      "sha256": "c7b0cc33c0a76b02ce1b9f7ab51992ac0fffbd50bf000dffd1f032df92461766"
+    },
+    {
+      "path": "adaptations/tests/test_model_identity.py",
+      "size": 12541,
+      "sha256": "791727776b66fd705f22136efdf42f7737e2274b887003e85ce937306fbdf1ad"
     },
     {
       "path": "adaptations/tests/test_registry.py",
       "size": 13088,
       "sha256": "72086d6d9f0c00cebad46e8d06fc05bf230f9bb031acc8f8d4ae3974e1884dd5"
+    },
+    {
+      "path": "adaptations/tests/test_x2_catalog_entrypoints.py",
+      "size": 3657,
+      "sha256": "3c99c4fe3f4df594c47dabfc34d2bb850a3114f146c3879f9a36eb8a52426316"
     },
     {
       "path": "adaptations/toon-parser-lock.json",
@@ -1881,8 +1961,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 68053,
-      "sha256": "90517e1471c19e5a4c3d99ae6dd52e9dd88468f08f111cf6e952ca7f6332af93"
+      "size": 70723,
+      "sha256": "5023e97cdf8dc6124d538a88568879a7b99fe3d0492c51c5cffe1744e370dbd5"
     }
   ]
 }

@@ -74,6 +74,48 @@ class CanonicalSnapshotTests(unittest.TestCase):
    self.assertEqual(receipt['status'],'committed');self.assertTrue(all(x['ok'] for x in session.verify(['resource:a'])))
    for slot in ('A','B','shared-home'):session.restore(receipt,slot)
    for slot in ('A','B'):self.assertFalse((slots[slot]['root']/'etc/a').exists())
+ def test_v2_index_scans_all_models_and_keeps_legacy_resource_identity(self):
+  contents={}
+  for name in self.names:
+   guide=self.model(name);slug=Path(name).stem
+   guide['canonical_id']='device:onexplayer-'+slug
+   guide['legacy_aliases']=dict(guide=['guide:'+slug],package=['device:'+slug])
+   self.write_guide(name,guide)
+   contents[name.removeprefix('adaptations/')]=(self.project/name).read_bytes()
+  new='brands/example/oxp3/oxp3.toon'
+  original=self.model(self.names[0]);original['canonical_id']='device:example-oxp3'
+  original['legacy_aliases']=dict(guide=[],package=[]);original['id']='guide:example-oxp3';original['resource_model']['id']='device:example-oxp3'
+  contents[new]=(self.toon.dumps(original)+'\n').encode()
+  rows=[dict(id=guide['canonical_id'],source=name) for name,guide in ((name,self.toon.loads(raw.decode(),strict=True)) for name,raw in sorted(contents.items()))]
+  contents['models.toon']=(self.toon.dumps(dict(schema_version=2,kind='BoilerModelSourceIndex',generated=True,models=rows))+'\n').encode()
+  self.assertTrue(model_source.validate_model_index(contents,self.toon))
+  for mutation in ('missing','wrong_id','unindexed','duplicate_alias'):
+   data=contents.copy()
+   if mutation=='missing': del data['models.toon']
+   elif mutation=='wrong_id':
+    index=self.toon.loads(data['models.toon'].decode(),strict=True);index['models'][0]['id']='device:wrong';data['models.toon']=(self.toon.dumps(index)+'\n').encode()
+   elif mutation=='unindexed':
+    index=self.toon.loads(data['models.toon'].decode(),strict=True);index['models'].pop();data['models.toon']=(self.toon.dumps(index)+'\n').encode()
+   else:
+    guide=self.toon.loads(data[new].decode(),strict=True);guide['legacy_aliases']['package']=['device:oxp3'];guide['resource_model']['id']='device:oxp3';data[new]=(self.toon.dumps(guide)+'\n').encode()
+   with self.subTest(mutation=mutation),self.assertRaises(ValueError):model_source.validate_model_index(data,self.toon)
+
+ def test_v2_projects_resource_metadata_from_runtime(self):
+  for name in self.names:
+   guide=self.model(name);slug=Path(name).stem;spec=guide['resource_model']
+   guide['canonical_id']='device:onexplayer-'+slug
+   guide['legacy_aliases']=dict(guide=['guide:'+slug],package=['device:'+slug])
+   guide['runtime']=dict(id=spec['id'],name=dict(en=spec.pop('name'),zh='fixture'),hardware_matching=spec.pop('hardware_matching'))
+   self.write_guide(name,guide)
+  with patch.object(model_source,'sources',return_value=self.names):model_source.apply(self.pool,self.project,self.catalog)
+  self.assertEqual({row['id'] for row in self.catalog['models']},{'device:oxp3','device:x2-mini'})
+  for ref in self.catalog['models']:
+   model=self.toon.loads((self.pool/ref['path']).read_text(encoding='utf-8'),strict=True)
+   self.assertEqual(model['name'],ref['id'].split(':')[1]);self.assertEqual(model['hardware_matching']['mode'],'advisory-exact-dmi-v1')
+  guide=self.model(self.names[0]);guide['resource_model']['name']='conflicting';self.write_guide(self.names[0],guide)
+  with patch.object(model_source,'sources',return_value=self.names),self.assertRaisesRegex(ValueError,'Conflicting canonical runtime projection'):
+   model_source.apply(self.pool,self.project,self.catalog)
+
  def test_duplicate_unknown_and_missing_dependency_rejected(self):
   name=self.names[0];original=self.model(name)
   for case in ('duplicate','unknown','dependency'):

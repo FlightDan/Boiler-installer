@@ -3,11 +3,22 @@ import importlib.util,json,sys,tempfile,types,unittest
 from pathlib import Path
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1];sys.path[:0]=[str(ROOT),str(ROOT/'scripts')]
-spec=importlib.util.spec_from_file_location('canonical_catalog_test',ROOT/'adaptations/scripts/toon_catalog.py');catalog=importlib.util.module_from_spec(spec);spec.loader.exec_module(catalog)
+spec=importlib.util.spec_from_file_location('canonical_catalog_test',ROOT/'scripts/toon_catalog.py');catalog=importlib.util.module_from_spec(spec);spec.loader.exec_module(catalog)
 from resources import model_source
 import protocol.manifest
 
 class CanonicalBuildEntryTests(unittest.TestCase):
+ def test_v2_x2_uses_fixed_new_entries_and_legacy_keeps_old_paths(self):
+  for name,expected in (('x2-current-v1','adaptations/brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py'),
+                        ('x2-complete-v1','adaptations/scripts/build-x2-complete-installer-catalog.py')):
+   model=dict(canonical_id='device:onexplayer-x2-mini',build=dict(adapter=name))
+   self.assertEqual(catalog.adapter(model)[0],expected)
+   old=dict(build=dict(adapter=name));self.assertEqual(catalog.adapter(old),catalog.ADAPTERS[name])
+   with tempfile.TemporaryDirectory() as temp:
+    root=Path(temp);entry=root/expected;entry.parent.mkdir(parents=True);entry.write_text('fixture')
+    self.assertEqual(catalog.local(root,catalog.adapter(model)[0]),entry)
+    with self.assertRaises(catalog.CatalogError):catalog.local(root,'../'+expected)
+
  def test_selected_model_drives_base_and_common_stage(self):
   with tempfile.TemporaryDirectory() as temp:
    root=Path(temp);refs={'kind':'fixture'};model={'resource_model':{'id':'device:oxp3','common_references':refs}};inputs={k:root/k for k in ('base','stage','public-installer')};calls=[]

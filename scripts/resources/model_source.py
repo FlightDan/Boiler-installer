@@ -11,6 +11,71 @@ PATTERN = re.compile(r'adaptations/brands/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)/\2
 SNAPSHOT = 'adaptations/canonical-model-snapshot.json'
 def sha(data): return hashlib.sha256(data).hexdigest()
 
+def validate_model_index(contents, toon):
+    """Validate the derived v2 index against all inventoried model TOONs.
+
+    A missing index is accepted only for historical, pre-index snapshots.
+    """
+    names=sorted(name for name in contents if PATTERN.fullmatch('adaptations/'+name))
+    guides={}
+    for name in names:
+        raw=contents[name]
+        if len(raw)>1024*1024: raise ValueError('Model source too large')
+        guide=toon.loads(raw.decode('utf-8'),strict=True)
+        if not isinstance(guide,dict) or guide.get('kind')!='ModelInstallGuide': raise ValueError('Invalid model guide: '+name)
+        guides[name]=guide
+    if 'models.toon' not in contents:
+        if any('canonical_id' in guide for guide in guides.values()): raise ValueError('Canonical model index missing')
+        return False
+    index=toon.loads(contents['models.toon'].decode('utf-8'),strict=True)
+    # v1 has a different, display-oriented index. Preserve old snapshot behavior;
+    # v2 identity-bearing guides must never be accepted through this path.
+    if (isinstance(index,dict) and type(index.get('schema_version')) is int
+            and index['schema_version']==1 and index.get('kind')=='BoilerModelSourceIndex'
+            and index.get('generated') is True and isinstance(index.get('models'),list)
+            and all('canonical_id' not in guide for guide in guides.values())):
+        rows=index['models']
+        if (len(rows)!=len(names) or any(not isinstance(row,dict) or not isinstance(row.get('source'),str)
+                or row.get('source') not in guides or row.get('id')!=guides[row['source']].get('id') for row in rows)
+                or sorted(row['source'] for row in rows)!=names):
+            raise ValueError('Legacy model index differs from inventory')
+        return False
+    if (not isinstance(index,dict) or set(index)!={'schema_version','kind','generated','models'}
+            or type(index['schema_version']) is not int or index['schema_version']!=2
+            or index['kind']!='BoilerModelSourceIndex' or index['generated'] is not True
+            or not isinstance(index['models'],list)):
+        raise ValueError('Invalid canonical model index')
+    expected=[]; claimed=set()
+    for name,guide in guides.items():
+        match=PATTERN.fullmatch('adaptations/'+name);brand,model=match.groups()
+        canonical='device:'+brand+'-'+model
+        aliases=guide.get('legacy_aliases')
+        if (guide.get('canonical_id')!=canonical or not isinstance(aliases,dict)
+                or set(aliases)!={'guide','package'} or any(not isinstance(aliases[k],list) for k in aliases)
+                or any(not isinstance(v,str) or not re.fullmatch(prefix+r':[a-z][a-z0-9-]*',v)
+                    for key,prefix in (('guide','guide'),('package','device')) for v in aliases[key])
+                or len(aliases['guide'])>1 or len(aliases['package'])>1):
+            raise ValueError('Invalid canonical model identity: '+name)
+        legacy={
+            'brands/onexplayer/oxp3/oxp3.toon': ('guide:oxp3','device:oxp3'),
+            'brands/onexplayer/x2-mini/x2-mini.toon': ('guide:x2-mini','device:x2-mini'),
+        }.get(name)
+        if (aliases['guide'] or aliases['package']) and (legacy is None or aliases != {'guide':[legacy[0]],'package':[legacy[1]]}):
+            raise ValueError('Unrecognized legacy model alias: '+name)
+        package=aliases['package'][0] if aliases['package'] else canonical
+        guide_id=aliases['guide'][0] if aliases['guide'] else 'guide:'+canonical.split(':',1)[1]
+        if guide.get('id')!=guide_id or not isinstance(guide.get('resource_model'),dict) or guide['resource_model'].get('id')!=package:
+            raise ValueError('Model guide and resource identities differ: '+name)
+        for ident in [canonical,*aliases['package']]:
+            if ident in claimed: raise ValueError('Duplicate canonical model identity: '+ident)
+            claimed.add(ident)
+        expected.append(dict(id=canonical,source=name))
+    actual=index['models']
+    if (any(not isinstance(row,dict) or set(row)!={'id','source'} or not isinstance(row['id'],str) or not isinstance(row['source'],str) for row in actual)
+            or sorted(actual,key=lambda row:row['source'])!=expected):
+        raise ValueError('Canonical model index differs from inventory')
+    return True
+
 def sources(project):
     project=Path(project)
     names=json_document(local(project,'scripts/source-files.json').read_bytes()).get('files')
@@ -51,6 +116,7 @@ def sources(project):
     discovered=sorted('adaptations/'+p.relative_to(project/'adaptations').as_posix() for p in (project/'adaptations/brands').rglob('*.toon')
         if PATTERN.fullmatch('adaptations/'+p.relative_to(project/'adaptations').as_posix()))
     if sorted(found)!=candidates or sorted(found)!=discovered: raise ValueError('Canonical model snapshot differs from whitelist')
+    validate_model_index({name.removeprefix('adaptations/'):local(project,name).read_bytes() for name in checked if name != index_name}, decoder(project/'adaptations'))
     return sorted(found)
 
 def apply(pool, project, catalog):
@@ -63,7 +129,17 @@ def apply(pool, project, catalog):
         raw=local(project,source).read_bytes();guide=toon.loads(raw.decode('utf-8'),strict=True)
         if not isinstance(guide,dict) or guide.get('kind')!='ModelInstallGuide': raise ValueError('Invalid canonical model guide: '+source)
         spec=guide.get('resource_model')
-        if not isinstance(spec,dict) or guide.get('id','').replace('guide:','device:',1)!=spec.get('id'): raise ValueError('Canonical guide/resource identity differs: '+source)
+        if not isinstance(spec,dict) or ('canonical_id' not in guide and guide.get('id','').replace('guide:','device:',1)!=spec.get('id')): raise ValueError('Canonical guide/resource identity differs: '+source)
+        if 'canonical_id' in guide:
+            runtime=guide.get('runtime')
+            if (not isinstance(runtime,dict) or runtime.get('id')!=spec.get('id')
+                    or not isinstance(runtime.get('name'),dict) or not isinstance(runtime['name'].get('en'),str)
+                    or not runtime['name']['en'].strip() or not isinstance(runtime.get('hardware_matching'),dict)):
+                raise ValueError('Invalid canonical runtime projection: '+source)
+            projected={'name':runtime['name']['en'],'hardware_matching':runtime['hardware_matching']}
+            if any(key in spec and spec[key]!=value for key,value in projected.items()):
+                raise ValueError('Conflicting canonical runtime projection: '+source)
+            spec=dict(spec,**projected)
         required={'schema_version','kind','id','name','hardware_matching','parameters','resources'}
         if (not isinstance(spec,dict) or not required <= set(spec) or set(spec)-required-{'hdr','common_references'}
                 or type(spec['schema_version']) is not int or spec['schema_version']!=1

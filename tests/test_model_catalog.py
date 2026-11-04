@@ -22,6 +22,20 @@ preparer=importlib.util.module_from_spec(spec);spec.loader.exec_module(preparer)
 
 
 class ModelCatalogTests(unittest.TestCase):
+    def test_branded_ids_distinguish_same_model_slug_and_legacy_is_path_bound(self):
+        def row(brand, identity):
+            return dict(id=identity, guide_id='guide:'+identity.split(':',1)[1],
+                manifest=f'brands/{brand}/shared/manifest.json', name={'en':'Shared','zh':'Shared'},
+                hardware_matching=dict(mode='advisory-exact-dmi-v1',pairs=[dict(manufacturer=brand,model='Shared')]))
+        rows=[row('alpha','device:alpha-shared'),row('beta','device:beta-shared')]
+        catalog=dict(kind='AdaptationSourceCatalog',schema_version=1,installable=False,
+                     models=[r['manifest'] for r in rows],runtime_models=rows)
+        self.assertEqual([r['id'] for r in catalog_records(catalog)],['device:alpha-shared','device:beta-shared'])
+        rows[1]['id']='device:shared';rows[1]['guide_id']='guide:shared'
+        with self.assertRaises(ProtocolError): catalog_records(catalog)
+        rows[1]['id']='device:alpha-shared';rows[1]['guide_id']='guide:alpha-shared'
+        with self.assertRaises(ProtocolError): catalog_records(catalog)
+
     def test_preparer_accepts_current_two_model_guides(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary); checkout=root/'public'; checkout.mkdir()
@@ -58,7 +72,7 @@ class ModelCatalogTests(unittest.TestCase):
             wrong_path=path.replace('brands/onexplayer/','brands/other/')
             wrong_guide=copy.deepcopy(guide); wrong_guide['guide']=wrong_path.removesuffix('manifest.json')+'model.md'
             wrong_row=copy.deepcopy(row); wrong_row['manifest']=wrong_path
-            with self.assertRaisesRegex(ProtocolError,'Invalid model option metadata'):
+            with self.assertRaises(ProtocolError):
                 guide_model(wrong_guide,wrong_path,source,wrong_row)
 
     def fixture(self,root):

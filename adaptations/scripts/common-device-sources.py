@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.machinery
+import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import sys
@@ -52,7 +54,7 @@ def load(name: str) -> dict:
     return value
 
 
-def validate_codec() -> None:
+def _authenticated_codec_sources() -> dict[str, bytes]:
     """Accept exactly the pinned TOON decoder source, not local bytecode."""
     lock_path = VENDOR / 'toon-parser-lock.json'
     lock = json.loads(lock_path.read_text(encoding='utf-8'))
@@ -65,15 +67,55 @@ def validate_codec() -> None:
               if path.is_file() and '__pycache__' not in path.parts and path.name != 'toon-parser-lock.json'}
     if actual != set(expected):
         raise ValueError('TOON codec file set differs from lock')
+    authenticated = {}
     for name, row in expected.items():
         path = VENDOR.joinpath(*PurePosixPath(name).parts)
-        if path.is_symlink() or path.stat().st_size != row['size'] or digest(path) != row['sha256']:
+        if path.is_symlink():
             raise ValueError('TOON codec bytes differ from lock: ' + name)
+        raw = path.read_bytes()
+        if len(raw) != row['size'] or hashlib.sha256(raw).hexdigest() != row['sha256']:
+            raise ValueError('TOON codec bytes differ from lock: ' + name)
+        if path.suffix == '.py':
+            authenticated[str(path)] = raw
+    return authenticated
 
 
-# Authenticate vendored parser bytes before importing executable parser code.
-validate_codec()
-import toon_format  # noqa: E402
+def validate_codec() -> None:
+    _authenticated_codec_sources()
+
+
+def load_verified_codec():
+    # Compile the exact authenticated bytes, never cached bytecode or a
+    # previously imported module with the same package name.
+    sources = _authenticated_codec_sources()
+    class VerifiedLoader(importlib.machinery.SourceFileLoader):
+        def get_code(self, fullname):
+            return compile(sources[self.path], self.path, 'exec', dont_inherit=True)
+    class VerifiedFinder:
+        def find_spec(self, fullname, path=None, target=None):
+            if fullname != 'toon_format' and not fullname.startswith('toon_format.'):
+                return None
+            member = VENDOR.joinpath(*fullname.split('.'))
+            source = member/'__init__.py' if member.is_dir() else member.with_suffix('.py')
+            if str(source) not in sources:
+                raise ValueError('Uninventoried TOON import: ' + fullname)
+            return importlib.util.spec_from_file_location(fullname, source,
+                loader=VerifiedLoader(fullname, str(source)))
+    for name in list(sys.modules):
+        if name == 'toon_format' or name.startswith('toon_format.'):
+            del sys.modules[name]
+    finder = VerifiedFinder()
+    sys.meta_path.insert(0, finder)
+    try:
+        import toon_format as codec
+    finally:
+        sys.meta_path.remove(finder)
+    if codec.__version__ != '1.2.0' or codec.__toon_spec__ != '4.4':
+        raise ValueError('Unexpected TOON implementation')
+    return codec
+
+
+toon_format = load_verified_codec()
 
 
 def checked_file(row: dict, source: str) -> None:

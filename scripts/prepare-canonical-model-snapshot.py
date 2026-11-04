@@ -12,6 +12,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from protocol.resource_pool import decoder, json_document, relative
+from scripts.resources.model_source import validate_model_index
 
 REPOSITORY='FlightDan/Boiler-adaptations'
 MEMBERS=('brands/onexplayer/oxp3/oxp3.toon','brands/onexplayer/x2-mini/x2-mini.toon')
@@ -42,8 +43,9 @@ def prepare(checkout,commit,output):
             raise ValueError('Canonical source inventory differs: '+member)
         path='adaptations/'+member; contents[path]=raw
         rows.append(dict(path=path,size=len(raw),sha256=hashlib.sha256(raw).hexdigest()))
-    if not set(MEMBERS)<=seen: raise ValueError('Canonical model TOON missing from source inventory')
-    for member in MEMBERS:
+    indexed=validate_model_index({name.removeprefix('adaptations/'):raw for name,raw in contents.items()},toon)
+    if not indexed and not set(MEMBERS)<=seen: raise ValueError('Canonical model TOON missing from source inventory')
+    for member in (() if indexed else MEMBERS):
         raw=contents['adaptations/'+member]
         if len(raw)>1024*1024: raise ValueError('Model source too large')
         guide=toon.loads(raw.decode('utf-8'),strict=True); identity='device:'+Path(member).stem

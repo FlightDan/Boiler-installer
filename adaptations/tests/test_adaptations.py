@@ -16,14 +16,28 @@ spec.loader.exec_module(collection)
 class AdaptationCollectionTests(unittest.TestCase):
     def copy_collection(self, destination):
         inventory=json.loads((ROOT/'model-source-files.json').read_bytes())
-        for name in ['model-source-files.json','records/installer-adaptation-source-import-20261104.json']+[row['path'] for row in inventory['files']]:
+        for name in ['model-source-files.json']+[row['path'] for row in inventory['files']]:
             target=destination/name; target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
 
+    def identity(self):
+        spec = importlib.util.spec_from_file_location('test_model_identity', ROOT/'scripts/model-identity.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def update_model(self, root, transform):
-        path = root/'brands/onexplayer/x2-mini/manifest.json'
-        model = json.loads(path.read_text(encoding='utf-8'))
+        identity = self.identity()
+        path = root/'brands/onexplayer/x2-mini/x2-mini.toon'
+        model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         transform(model)
-        path.write_text(json.dumps(model, ensure_ascii=False), encoding='utf-8')
+        path.write_text(identity.common.toon_format.dumps(model)+'\n', encoding='utf-8')
+        identity.generate(root)
+
+    def validate_models(self, root):
+        plan = collection.read(root/'source-plan.json')
+        inventory = {row['path']: row for row in collection.read(root/'source-lock.json')['files']}
+        current = {row['path']: row for row in collection.read(root/'model-source-files.json')['files']}
+        return collection.validate_models(root, plan, inventory, current, collection.validate_common(root))
 
     def test_collection_and_source_only_choices(self):
         result = collection.check()
@@ -39,6 +53,25 @@ class AdaptationCollectionTests(unittest.TestCase):
         self.assertEqual(x2['hdr']['sources'], [])
         self.assertTrue(x2['fingerprint-unlock']['default'])
         self.assertEqual(x2['gyro']['sources'], ['brands/onexplayer/x2-mini/common-device-sources.toon'])
+
+    def test_current_fingerprint_update_is_not_blocked_by_import_history(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.copy_collection(root)
+            history = Path('records/installer-adaptation-source-import-20261104.json')
+            (root/history).parent.mkdir(parents=True, exist_ok=True)
+            (root/history).write_text(json.dumps({'files': [{
+                'path': 'common/fingerprint/bridge/index.js',
+                'size': 1, 'sha256': '0' * 64,
+            }]}), encoding='utf-8')
+            source = root/'common/fingerprint/bridge/index.js'
+            source.write_bytes(source.read_bytes() + b'\n// current update\n')
+            spec = importlib.util.spec_from_file_location('refresh_inventory', ROOT/'scripts/refresh-model-source-inventory.py')
+            refresh = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(refresh)
+            refresh.refresh(root)
+            refresh.refresh(root, check=True)
+            self.assertEqual(collection.check(root)['status'], 'source-collection-verified')
 
     def test_tampered_source_fails_inventory_check(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -62,8 +95,10 @@ class AdaptationCollectionTests(unittest.TestCase):
             root = Path(temporary)
             self.copy_collection(root)
             self.update_model(root, lambda model: model['components'][1].update(notes='Changed recommendation'))
+            guide = root/'brands/onexplayer/x2-mini/model.md'
+            guide.write_text(guide.read_text(encoding='utf-8').replace('Changed recommendation', 'Stale recommendation'), encoding='utf-8')
             with self.assertRaisesRegex(ValueError, 'Guide differs'):
-                collection.check(root)
+                self.validate_models(root)
 
     def test_missing_dependencies_and_runtime_defaults_are_rejected(self):
         for change, message in (
@@ -76,15 +111,16 @@ class AdaptationCollectionTests(unittest.TestCase):
                 self.copy_collection(root)
                 self.update_model(root, change)
                 with self.assertRaisesRegex(ValueError, message):
-                    collection.check(root)
+                    self.validate_models(root)
 
     def test_new_candidate_cannot_claim_uninventoried_script(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.copy_collection(root)
+            (root/'private-or-missing.py').write_text('unreviewed')
             self.update_model(root, lambda model: model['components'][1].update(sources=['private-or-missing.py']))
             with self.assertRaisesRegex(ValueError, 'Uninventoried component source'):
-                collection.check(root)
+                self.validate_models(root)
 
     def test_stale_model_provenance_is_rejected(self):
         for change in (lambda model: model['source_revision'].update(commit='a'*40),
@@ -94,7 +130,7 @@ class AdaptationCollectionTests(unittest.TestCase):
                 self.copy_collection(root)
                 self.update_model(root, change)
                 with self.assertRaisesRegex(ValueError, 'Model source revision'):
-                    collection.check(root)
+                    self.validate_models(root)
 
     def test_local_guide_links_resolve_inside_collection(self):
         guides = [ROOT/'docs/ADAPTATIONS.md', ROOT/'common/components.md',
@@ -117,7 +153,7 @@ class AdaptationCollectionTests(unittest.TestCase):
                 self.copy_collection(root)
                 self.update_model(root, lambda m: next(c for c in m['components'] if c['id'] == 'gyro').update(sources=sources))
                 with self.assertRaisesRegex(ValueError, 'own model TOON'):
-                    collection.check(root)
+                    self.validate_models(root)
 
     def test_missing_gyro_component_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -125,73 +161,81 @@ class AdaptationCollectionTests(unittest.TestCase):
             self.copy_collection(root)
             self.update_model(root, lambda m: m.update(components=[c for c in m['components'] if c['id'] != 'gyro']))
             with self.assertRaisesRegex(ValueError, 'Missing gyro component'):
-                collection.check(root)
+                self.validate_models(root)
 
     def test_common_gyro_reference_missing_duplicate_or_wrong_fails(self):
         for mutation in ('missing', 'duplicate', 'wrong'):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 self.copy_collection(root)
-                path = root/'brands/onexplayer/x2-mini/common-device-sources.toon'
-                data = path.read_text(encoding='utf-8')
-                line = '  "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon\n'
-                if mutation == 'missing':
-                    data = data.replace(line, '')
-                elif mutation == 'duplicate':
-                    data = data.replace('resources[4]', 'resources[5]').replace(line, line + line)
-                else:
-                    data = data.replace('common/sensors/bosch/bmi260/gyro/source.toon', 'wrong/source.toon')
-                if mutation == 'missing':
-                    data = data.replace('resources[4]', 'resources[3]')
-                path.write_text(data, encoding='utf-8')
-                with self.assertRaises(ValueError):
-                    collection.check(root)
+                common = collection.validate_common(root)
+                def mutate(model):
+                    rows = model['resource_model']['common_references']['resources']
+                    gyro = next(row for row in rows if row['id'] == 'resource:bmi260-gyro')
+                    if mutation == 'missing':
+                        rows.remove(gyro)
+                    elif mutation == 'duplicate':
+                        rows.append(dict(gyro))
+                    else:
+                        gyro['source'] = 'wrong/source.toon'
+                with self.assertRaisesRegex(ValueError, 'common (resources|source)'):
+                    self.update_model(root, mutate)
 
     def test_third_model_gyro_toon_is_validated(self):
         for case in ('valid', 'no-gyro', 'other-gyro', 'other-gyro-uninventoried', 'missing', 'wrong', 'duplicate', 'identity', 'source-only'):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 self.copy_collection(root)
+                identity = self.identity()
                 directory = root/'brands/onexplayer/test-model'
                 directory.mkdir()
                 guide = 'brands/onexplayer/test-model/model.md'
-                manifest = 'brands/onexplayer/test-model/manifest.json'
-                toon = 'brands/onexplayer/test-model/common-device-sources.toon'
+                reference_path = 'brands/onexplayer/test-model/common-device-sources.toon'
                 shutil.copyfile(root/'brands/onexplayer/x2-mini/model.md', root/guide)
-                model = json.loads((root/'brands/onexplayer/x2-mini/manifest.json').read_text(encoding='utf-8'))
-                model['id'] = 'guide:test-model'
+                original = root/'brands/onexplayer/x2-mini/x2-mini.toon'
+                model = identity.common.toon_format.loads(original.read_text(encoding='utf-8'), strict=True)
+                model['canonical_id'] = 'device:onexplayer-test-model'
+                model['legacy_aliases'] = {'guide': [], 'package': []}
+                model['id'] = 'guide:onexplayer-test-model'
+                model['runtime']['id'] = model['canonical_id']
+                model['resource_model']['id'] = model['canonical_id']
+                model['device_record_path'] = 'devices/onexplayer-test-model.json'
                 model['guide'] = guide
                 next(item for item in model['components'] if item['id']=='fingerprint-unlock')['default'] = False
                 if case == 'no-gyro':
                     model['components'] = [item for item in model['components'] if item['id'] != 'gyro']
                 else:
                     sources = ([('brands/onexplayer/common/scripts/input_profile.py' if case == 'other-gyro' else 'unreviewed-gyro.py')]
-                               if case in ('other-gyro', 'other-gyro-uninventoried') else [toon])
+                               if case in ('other-gyro', 'other-gyro-uninventoried') else [reference_path])
                     next(item for item in model['components'] if item['id'] == 'gyro')['sources'] = sources
-                (root/manifest).write_text(json.dumps(model, ensure_ascii=False), encoding='utf-8')
-                collection.guide(root, model, write=True)
-                catalog = json.loads((root/'adaptations.json').read_text(encoding='utf-8'))
-                catalog['models'].append(manifest)
-                (root/'adaptations.json').write_text(json.dumps(catalog), encoding='utf-8')
-                reference = ('schema_version: 1\nkind: BoilerModelCommonReferences\n'
-                             'model_id: "device:test-model"\nsource_only: true\n'
-                             'resources[1]{id,source}:\n'
-                             '  "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon\n')
+                reference = {'schema_version': 1, 'kind': 'BoilerModelCommonReferences',
+                             'model_id': 'device:onexplayer-test-model', 'source_only': True,
+                             'resources': [{'id':'resource:bmi260-gyro', 'source':'common/sensors/bosch/bmi260/gyro/source.toon'}]}
                 if case == 'wrong':
-                    reference = reference.replace('common/sensors/bosch/bmi260/gyro/source.toon', 'wrong/source.toon')
+                    reference['resources'][0]['source'] = 'wrong/source.toon'
                 elif case == 'duplicate':
-                    reference = reference.replace('resources[1]', 'resources[2]') + '  "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon\n'
+                    reference['resources'].append(dict(reference['resources'][0]))
                 elif case == 'identity':
-                    reference = reference.replace('device:test-model', 'device:x2-mini')
+                    reference['model_id'] = 'device:x2-mini'
                 elif case == 'source-only':
-                    reference = reference.replace('source_only: true', 'source_only: false')
-                if case not in ('missing', 'no-gyro', 'other-gyro', 'other-gyro-uninventoried'):
-                    (root/toon).write_text(reference, encoding='utf-8')
-                if case in ('valid', 'no-gyro', 'other-gyro'):
-                    self.assertEqual(collection.check(root)['models'], 3)
-                else:
+                    reference['source_only'] = False
+                model['resource_model']['common_references'] = reference
+                (root/reference_path).write_text(identity.common.toon_format.dumps(model['resource_model']['common_references'])+'\n', encoding='utf-8')
+                if case == 'other-gyro-uninventoried':
+                    (root/'unreviewed-gyro.py').write_text('unreviewed')
+                (directory/'test-model.toon').write_text(identity.common.toon_format.dumps(model)+'\n', encoding='utf-8')
+                if case in ('wrong', 'duplicate', 'identity', 'source-only'):
                     with self.assertRaises(ValueError):
-                        collection.check(root)
+                        identity.generate(root)
+                    continue
+                identity.generate(root)
+                if case == 'missing':
+                    (root/reference_path).unlink()
+                if case in ('valid', 'no-gyro', 'other-gyro'):
+                    self.assertEqual(len(self.validate_models(root)), 3)
+                else:
+                    with self.assertRaises((ValueError, FileNotFoundError)):
+                        self.validate_models(root)
 
     def test_relocated_source_tamper_missing_or_legacy_copy_fails(self):
         for mutation in ('tamper', 'missing', 'legacy'):

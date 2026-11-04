@@ -202,48 +202,8 @@ def prepare(checkout, root=ROOT):
     return check(root)
 
 
-def check(root=ROOT):
-    plan, lock = read(root/'source-plan.json'), read(root/'source-lock.json')
-    if lock['source'] != plan['source']:
-        raise ValueError('Source inventory is from another upstream revision')
-    planned = {item['path']: item for item in plan['files']}
-    inventory = {item['path']: item for item in lock['files']}
-    if (len(planned) != len(plan['files']) or len(inventory) != len(lock['files'])
-            or set(planned) != set(inventory)):
-        raise ValueError('Source plan and generated inventory differ')
-    mapping = relocations(root, lock)
-    common = validate_common(root)
-    for name, item in inventory.items():
-        if item['upstream_path'] != planned[name]['upstream_path']:
-            raise ValueError('Source provenance mismatch: ' + name)
-        data = local(root, mapping.get(name, name)).read_bytes()
-        if len(data) != item['size'] or hashlib.sha256(data).hexdigest() != item['sha256']:
-            raise ValueError('Adaptation source changed; prepare from reviewed source again: ' + name)
-        if name.endswith('.py'):
-            ast.parse(data, filename=name)
-    # Extra files in the source trees must also receive an explicit provenance entry.
-    actual = {path.relative_to(root).as_posix() for folder in (root/'common/scripts', root/'brands')
-              for path in folder.rglob('*') if path.is_file() and 'scripts' in path.relative_to(root).parts
-              and '__pycache__' not in path.parts and path.suffix != '.pyc'}
-    # The original upstream lock remains immutable. Additional reviewed source
-    # members have their own explicit canonical source inventory.
-    current = read(root/'model-source-files.json')
-    if current.get('kind') != 'CanonicalAdaptationSourceFiles':
-        raise ValueError('Missing canonical source inventory')
-    current_rows = {row['path']: row for row in current['files']}
-    if len(current_rows) != len(current['files']): raise ValueError('Duplicate canonical source member')
-    imported = read(root/'records/installer-adaptation-source-import-20261104.json')['files']
-    for row in imported:
-        name = row['path']
-        if name not in current_rows or any(current_rows[name][k] != row[k] for k in ('size','sha256')):
-            raise ValueError('Imported source missing from canonical inventory: '+name)
-        data = local(root, name).read_bytes()
-        if len(data) != row['size'] or hashlib.sha256(data).hexdigest() != row['sha256']:
-            raise ValueError('Canonical source member differs: '+name)
-    expected_actual = (set(inventory) - set(mapping)) | {name for name in current_rows
-        if name.startswith('brands/') and '/scripts/' in name}
-    if actual != expected_actual:
-        raise ValueError('Uninventoried or missing adaptation script files: '+str(sorted(actual ^ expected_actual)))
+def validate_models(root, plan, inventory, current_rows, common):
+    """Validate TOON-derived guide semantics after source inventories are checked."""
     models = records(root)
     for name, model in models:
         if model['kind'] != 'ModelInstallGuide' or model['installable'] is not False:
@@ -279,6 +239,48 @@ def check(root=ROOT):
             if item['recommendation'] == 'pending' and item['sources']:
                 raise ValueError('Pending implementation must not claim an existing script')
         guide(root, model)
+    return models
+
+
+def check(root=ROOT):
+    spec = importlib.util.spec_from_file_location('model_identity', Path(__file__).with_name('model-identity.py'))
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    identity.generate(root, check=True)
+    plan, lock = read(root/'source-plan.json'), read(root/'source-lock.json')
+    if lock['source'] != plan['source']:
+        raise ValueError('Source inventory is from another upstream revision')
+    planned = {item['path']: item for item in plan['files']}
+    inventory = {item['path']: item for item in lock['files']}
+    if (len(planned) != len(plan['files']) or len(inventory) != len(lock['files'])
+            or set(planned) != set(inventory)):
+        raise ValueError('Source plan and generated inventory differ')
+    mapping = relocations(root, lock)
+    common = validate_common(root)
+    for name, item in inventory.items():
+        if item['upstream_path'] != planned[name]['upstream_path']:
+            raise ValueError('Source provenance mismatch: ' + name)
+        data = local(root, mapping.get(name, name)).read_bytes()
+        if len(data) != item['size'] or hashlib.sha256(data).hexdigest() != item['sha256']:
+            raise ValueError('Adaptation source changed; prepare from reviewed source again: ' + name)
+        if name.endswith('.py'):
+            ast.parse(data, filename=name)
+    # Extra files in the source trees must also receive an explicit provenance entry.
+    actual = {path.relative_to(root).as_posix() for folder in (root/'common/scripts', root/'brands')
+              for path in folder.rglob('*') if path.is_file() and 'scripts' in path.relative_to(root).parts
+              and '__pycache__' not in path.parts and path.suffix != '.pyc'}
+    # The original upstream lock remains immutable. Additional reviewed source
+    # members have their own explicit canonical source inventory.
+    current = read(root/'model-source-files.json')
+    if current.get('kind') != 'CanonicalAdaptationSourceFiles':
+        raise ValueError('Missing canonical source inventory')
+    current_rows = {row['path']: row for row in current['files']}
+    if len(current_rows) != len(current['files']): raise ValueError('Duplicate canonical source member')
+    expected_actual = (set(inventory) - set(mapping)) | {name for name in current_rows
+        if name.startswith('brands/') and '/scripts/' in name}
+    if actual != expected_actual:
+        raise ValueError('Uninventoried or missing adaptation script files: '+str(sorted(actual ^ expected_actual)))
+    models = validate_models(root, plan, inventory, current_rows, common)
     for item in read(root/'licenses/license-inventory.json')['files']:
         data = local(root, item['path']).read_bytes()
         if len(data) != item['size'] or hashlib.sha256(data).hexdigest() != item['sha256']:
