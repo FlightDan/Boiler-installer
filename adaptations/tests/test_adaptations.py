@@ -16,7 +16,7 @@ spec.loader.exec_module(collection)
 class AdaptationCollectionTests(unittest.TestCase):
     def copy_collection(self, destination):
         inventory=json.loads((ROOT/'model-source-files.json').read_bytes())
-        for name in ['model-source-files.json','records/installer-adaptation-source-import-20261104.json']+[row['path'] for row in inventory['files']]:
+        for name in ['model-source-files.json']+[row['path'] for row in inventory['files']]:
             target=destination/name; target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
 
     def identity(self):
@@ -53,6 +53,25 @@ class AdaptationCollectionTests(unittest.TestCase):
         self.assertEqual(x2['hdr']['sources'], [])
         self.assertTrue(x2['fingerprint-unlock']['default'])
         self.assertEqual(x2['gyro']['sources'], ['brands/onexplayer/x2-mini/common-device-sources.toon'])
+
+    def test_current_fingerprint_update_is_not_blocked_by_import_history(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.copy_collection(root)
+            history = Path('records/installer-adaptation-source-import-20261104.json')
+            (root/history).parent.mkdir(parents=True, exist_ok=True)
+            (root/history).write_text(json.dumps({'files': [{
+                'path': 'common/fingerprint/bridge/index.js',
+                'size': 1, 'sha256': '0' * 64,
+            }]}), encoding='utf-8')
+            source = root/'common/fingerprint/bridge/index.js'
+            source.write_bytes(source.read_bytes() + b'\n// current update\n')
+            spec = importlib.util.spec_from_file_location('refresh_inventory', ROOT/'scripts/refresh-model-source-inventory.py')
+            refresh = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(refresh)
+            refresh.refresh(root)
+            refresh.refresh(root, check=True)
+            self.assertEqual(collection.check(root)['status'], 'source-collection-verified')
 
     def test_tampered_source_fails_inventory_check(self):
         with tempfile.TemporaryDirectory() as temporary:

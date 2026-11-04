@@ -276,14 +276,6 @@ def check(root=ROOT):
         raise ValueError('Missing canonical source inventory')
     current_rows = {row['path']: row for row in current['files']}
     if len(current_rows) != len(current['files']): raise ValueError('Duplicate canonical source member')
-    imported = read(root/'records/installer-adaptation-source-import-20261104.json')['files']
-    for row in imported:
-        name = row['path']
-        if name not in current_rows or any(current_rows[name][k] != row[k] for k in ('size','sha256')):
-            raise ValueError('Imported source missing from canonical inventory: '+name)
-        data = local(root, name).read_bytes()
-        if len(data) != row['size'] or hashlib.sha256(data).hexdigest() != row['sha256']:
-            raise ValueError('Canonical source member differs: '+name)
     expected_actual = (set(inventory) - set(mapping)) | {name for name in current_rows
         if name.startswith('brands/') and '/scripts/' in name}
     if actual != expected_actual:
