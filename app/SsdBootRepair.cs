@@ -49,7 +49,7 @@ internal static class SsdBootRepair
         if (providers.Length > 1) throw new IOException("Multiple SSD boot providers require review.");
         return providers.SingleOrDefault();
     }
-    internal static bool SupportsFixedOxp3(SelectedOptions options)
+    internal static bool SupportsFixedModelEfi(SelectedOptions options)
     {
         if (options.DevicePackage == null || options.DeviceManifestSha256 == null) return false;
         var path = Path.Combine(BoilerProtocol.PackageRoot, options.DevicePackage, "manifest.json");
@@ -57,14 +57,36 @@ internal static class SsdBootRepair
         var bytes = File.ReadAllBytes(path);
         if (Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant() != options.DeviceManifestSha256)
             throw new IOException("Selected device package manifest changed.");
-        using var doc = JsonDocument.Parse(bytes); var package = doc.RootElement;
-        if (package.GetProperty("id").GetString() != "device:oxp3"
-            || !package.TryGetProperty("oxp3_efi_contract", out var contract) || contract.ValueKind != JsonValueKind.Object
-            || contract.EnumerateObject().Count() != 2 || contract.GetProperty("kind").GetString() != "oxp3-split-lock-efi-v1"
-            || contract.GetProperty("component").GetString() != "oxp3:legacy-adaptation"
-            || !(options.DeviceComponents ?? []).Contains("oxp3:legacy-adaptation")) return false;
+        using var doc = JsonDocument.Parse(bytes);
+        return SupportsFixedModelEfi(doc.RootElement, options.DeviceComponents ?? []);
+    }
+    // The fixed split-lock EFI bridge is model-owned. OXP3 declares either its legacy or its complete
+    // provider; X2 declares its own. Exactly one matching contract must be present. This contract set
+    // mirrors components/integration.py authenticate_model_efi.
+    internal static bool SupportsFixedModelEfi(JsonElement package, IReadOnlyCollection<string> components)
+    {
+        if (!components.Contains("oxp3:legacy-adaptation")
+            || !package.TryGetProperty("id", out var identity) || identity.ValueKind != JsonValueKind.String) return false;
+        var allowed = identity.GetString() switch
+        {
+            "device:oxp3" => new Dictionary<string, string> {
+                ["oxp3_efi_contract"] = "oxp3-split-lock-efi-v1",
+                ["oxp3_full_efi_contract"] = "oxp3-full-split-lock-efi-v1" },
+            "device:x2-mini" => new Dictionary<string, string> {
+                ["x2_efi_contract"] = "x2-split-lock-efi-v1" },
+            _ => null
+        };
+        if (allowed == null) return false;
+        var declared = allowed.Where(pair => package.TryGetProperty(pair.Key, out _)).ToArray();
+        if (declared.Length != 1) return false;
+        if (!package.TryGetProperty(declared[0].Key, out var contract) || contract.ValueKind != JsonValueKind.Object
+            || contract.EnumerateObject().Count() != 2
+            || !contract.TryGetProperty("kind", out var kind) || kind.ValueKind != JsonValueKind.String
+            || kind.GetString() != declared[0].Value
+            || !contract.TryGetProperty("component", out var component) || component.ValueKind != JsonValueKind.String
+            || component.GetString() != "oxp3:legacy-adaptation") return false;
         return package.TryGetProperty("legacy_capabilities", out var capabilities) && capabilities.ValueKind == JsonValueKind.Array
-            && capabilities.EnumerateArray().Count(c => c.GetProperty("id").GetString() == "oxp3:gm7-resume"
+            && capabilities.EnumerateArray().Count(c => c.TryGetProperty("id", out var id) && id.GetString() == "oxp3:gm7-resume"
                 && c.TryGetProperty("available", out var available) && available.ValueKind == JsonValueKind.False) == 1;
     }
     private static string Normalize(string value)

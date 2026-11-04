@@ -114,10 +114,16 @@ public partial class MainWindow : Window
             RecentPanel.Visibility = Visibility.Visible;
             RecentText.Text = recent.Status switch {
                 "awaiting-device-boot" => PartitionInventory.L("上次安装写入完成，可以启动 SteamOS。", "The last installation was written successfully. You can boot SteamOS."),
-                "complete" => InstallerI18n.T("上次虚拟盘演练已完成。记录中保留了分区写入和启动验证结果。"),
+                "complete" => physicalInstallation
+                    ? PartitionInventory.L("上次安装已写入完成。记录中保留了分区写入和启动验证结果。", "The last installation was written. The record keeps the partition write and boot verification results.")
+                    : InstallerI18n.T("上次虚拟盘演练已完成。记录中保留了分区写入和启动验证结果。"),
                 "running" => InstallerI18n.T("上次任务没有最终结果，或仍在其他窗口运行。请先查看记录；不要将其视为安装完成。"),
-                "cancelled" => InstallerI18n.T("上次任务已停止。可以查看记录，再开始一次新的演练。"),
-                _ => InstallerI18n.T("上次任务未完成。可以查看记录，排查问题后重新演练。") };
+                "cancelled" => physicalInstallation
+                    ? PartitionInventory.L("上次安装已停止。可以查看记录，再开始一次新的安装。", "The last installation stopped. Review the record, then start a new installation.")
+                    : InstallerI18n.T("上次任务已停止。可以查看记录，再开始一次新的演练。"),
+                _ => physicalInstallation
+                    ? PartitionInventory.L("上次安装未完成。可以查看记录，排查问题后重新安装。", "The last installation did not complete. Review the record, fix the problem, then install again.")
+                    : InstallerI18n.T("上次任务未完成。可以查看记录，排查问题后重新演练。") };
         }
         CreateInputAssociationPanel(); CreateSystemSourceCards(); CreateAdaptationFlow(); CreateCustomBuild(); AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
         Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/boiler-app-icon.png"));
@@ -581,7 +587,9 @@ public partial class MainWindow : Window
         {
             offerFailureFeedback = FeedbackReport.OfferForException(error, operation.Token);
             feedbackDiagnostic?.Failure(error);
-            Log(error.ToString()); ShowStep(6); ResultTitle.Text = InstallerI18n.T("无法开始演练"); ResultMessage.Text = error.Message;
+            Log(error.ToString()); ShowStep(6);
+            ResultTitle.Text = physicalInstallation ? PartitionInventory.L("无法开始安装", "Installation could not start") : InstallerI18n.T("无法开始演练");
+            ResultMessage.Text = error.Message;
             ResultScope.Text = InstallerI18n.T("查看任务记录后重试。没有完整写入与启动证据时，不会显示安装完成。");
         }
         finally { FinishOperation(); }
@@ -694,7 +702,9 @@ public partial class MainWindow : Window
         {
             offerFailureFeedback = FeedbackReport.OfferForException(error, operation.Token);
             feedbackDiagnostic?.Failure(error);
-            Log(error.ToString()); ShowStep(6); ResultTitle.Text = InstallerI18n.T("无法继续演练"); ResultMessage.Text = error.Message;
+            Log(error.ToString()); ShowStep(6);
+            ResultTitle.Text = physicalInstallation ? PartitionInventory.L("无法继续安装", "Installation could not continue") : InstallerI18n.T("无法继续演练");
+            ResultMessage.Text = error.Message;
             ResultScope.Text = InstallerI18n.T("原任务记录已保留。请先处理提示中的问题，再重试。");
         }
         finally { FinishOperation(); }

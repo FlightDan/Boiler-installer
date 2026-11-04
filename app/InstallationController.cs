@@ -140,8 +140,8 @@ public static partial class InstallationController
         if (ssdSelected && request.Options.DeviceLegacyOptions?.Repairs.Contains("oxp3:gm7-resume") == true)
             throw new IOException("The legacy GM7 boot repair is unavailable.");
         if (ssdSelected && request.Options.DeviceLegacyOptions?.Repairs.Contains("oxp3:split-lock") == true
-            && !SsdBootRepair.SupportsFixedOxp3(request.Options))
-            throw new IOException("The selected split-lock repair requires an updated fixed EFI bridge for SSD handoff.");
+            && !SsdBootRepair.SupportsFixedModelEfi(request.Options))
+            throw new IOException("The selected split-lock repair requires an updated fixed EFI bridge for SSD handoff. / 所选 split-lock 修复需要与 SSD 移交匹配的固定 EFI 桥接。");
         if (request.Physical && request.Options?.StorageMounts is { Length: > 0 } mounts)
         {
             using var inventoryTimeout = CancellationTokenSource.CreateLinkedTokenSource(token);

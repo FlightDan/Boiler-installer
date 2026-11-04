@@ -11,6 +11,7 @@ internal static class SsdUiChecks
 {
     internal static string Run()
     {
+        CheckFixedEfiContracts();
         var window = new MainWindow(rehearsal: false);
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var type = typeof(MainWindow);
@@ -117,5 +118,41 @@ internal static class SsdUiChecks
             return "SSD route and target-scoped default, opt-out, provider priority, and target-change checks passed; synthetic inventory only.";
         }
         finally { window.Close(); }
+    }
+
+    // The packaged OXP3 and X2 manifests declare model-owned EFI contracts, not the legacy OXP3 field.
+    // This runs before any UI so the physical split-lock gate cannot regress unnoticed.
+    private static void CheckFixedEfiContracts()
+    {
+        void Require(bool value, string name) { if (!value) throw new IOException(name); }
+        static JsonElement Package(string id, bool gm7Available, params (string Name, string Kind)[] contracts)
+        {
+            var node = new JsonObject {
+                ["id"] = id,
+                ["legacy_capabilities"] = new JsonArray(new JsonObject { ["id"] = "oxp3:gm7-resume", ["available"] = gm7Available })
+            };
+            foreach (var (name, kind) in contracts)
+                node[name] = new JsonObject { ["kind"] = kind, ["component"] = "oxp3:legacy-adaptation" };
+            using var document = JsonDocument.Parse(node.ToJsonString());
+            return document.RootElement.Clone();
+        }
+        var selected = new[] { "oxp3:legacy-adaptation" };
+        Require(SsdBootRepair.SupportsFixedModelEfi(Package("device:oxp3", false, ("oxp3_efi_contract", "oxp3-split-lock-efi-v1")), selected),
+            "legacy-oxp3-split-lock-bridge-accepted");
+        Require(SsdBootRepair.SupportsFixedModelEfi(Package("device:oxp3", false, ("oxp3_full_efi_contract", "oxp3-full-split-lock-efi-v1")), selected),
+            "full-oxp3-split-lock-bridge-accepted");
+        Require(SsdBootRepair.SupportsFixedModelEfi(Package("device:x2-mini", false, ("x2_efi_contract", "x2-split-lock-efi-v1")), selected),
+            "x2-split-lock-bridge-accepted");
+        Require(!SsdBootRepair.SupportsFixedModelEfi(Package("device:x2-mini", true, ("x2_efi_contract", "x2-split-lock-efi-v1")), selected),
+            "x2-available-gm7-owner-rejected");
+        Require(!SsdBootRepair.SupportsFixedModelEfi(Package("device:x2-mini", false, ("oxp3_full_efi_contract", "oxp3-full-split-lock-efi-v1")), selected),
+            "x2-oxp3-contract-rejected");
+        Require(!SsdBootRepair.SupportsFixedModelEfi(Package("device:oxp3", false,
+            ("oxp3_efi_contract", "oxp3-split-lock-efi-v1"), ("oxp3_full_efi_contract", "oxp3-full-split-lock-efi-v1")), selected),
+            "ambiguous-contracts-rejected");
+        Require(!SsdBootRepair.SupportsFixedModelEfi(Package("device:x2-mini", false, ("x2_efi_contract", "x2-split-lock-efi-v1")), []),
+            "unselected-adaptation-rejected");
+        Require(!SsdBootRepair.SupportsFixedModelEfi(Package("device:other", false, ("x2_efi_contract", "x2-split-lock-efi-v1")), selected),
+            "unknown-model-rejected");
     }
 }

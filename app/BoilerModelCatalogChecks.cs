@@ -63,6 +63,8 @@ internal static class BoilerModelCatalogChecks
                 using var document = JsonDocument.Parse(bytes);
                 var package = document.RootElement.Clone();
                 Require(package.GetProperty("id").GetString() == id, id + "-manifest-identity");
+                Require(SsdBootRepair.SupportsFixedModelEfi(package, new[] { "oxp3:legacy-adaptation" }), id + "-split-lock-efi-bridge");
+                Require(!SsdBootRepair.SupportsFixedModelEfi(package, []), id + "-split-lock-efi-bridge-requires-adaptation");
                 var metadata = package.TryGetProperty("legacy_capabilities", out var capabilities)
                     ? capabilities.EnumerateArray().ToDictionary(item => item.GetProperty("id").GetString()!) : new Dictionary<string, JsonElement>();
                 string[] Dependencies(string identity) => metadata[identity].GetProperty("dependencies").EnumerateArray().Select(item => item.GetString()!).ToArray();
