@@ -138,13 +138,15 @@ internal static class BoilerCustomBuildChecks
                     .ToDictionary(row => (string)row.Tag!, row => row.Children.OfType<TextBlock>().Single(text => Equals(text.Tag, "availability")).Text, StringComparer.Ordinal);
                 foreach (var result in hardwareDetection.Results)
                 {
-                    var expected = language == "en-US"
+                    var expected = result.ComponentId == "intel-be201-firmware"
+                        ? language == "en-US" ? "BE201 on the destination is unconfirmed; firmware will not be installed." : "目标是否为 BE201 尚未确认，暂不安装固件。"
+                        : language == "en-US"
                         ? HasAvailableComponent(result.ComponentId) ? "Related component: currently available (select it manually)." : "Related component: not currently provided. Detection does not establish Linux-driver or hardware support."
                         : HasAvailableComponent(result.ComponentId) ? "对应构件：当前可选（请手动选择）。" : "对应构件：尚未提供。识别结果不代表 Linux 驱动或硬件支持。";
                     Require(availabilityByComponent[result.ComponentId] == expected,
                         $"current-pc-related-component-availability-localizes-{result.ComponentId}-{language}");
                 }
-                var unavailableWirelessText = language == "en-US" ? "Related component: not currently provided. Detection does not establish Linux-driver or hardware support." : "对应构件：尚未提供。识别结果不代表 Linux 驱动或硬件支持。";
+                var unavailableWirelessText = language == "en-US" ? "BE201 on the destination is unconfirmed; firmware will not be installed." : "目标是否为 BE201 尚未确认，暂不安装固件。";
                 Require(options.RepairsExpander.Visibility == Visibility.Collapsed && !options.OptionBoxes["wifi:intel"].IsEnabled
                     && !HasAvailableComponent("intel-be201-firmware")
                     && availabilityByComponent["intel-be201-firmware"] == unavailableWirelessText,

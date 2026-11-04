@@ -9,8 +9,33 @@ namespace OxpInstaller;
 
 internal static class SsdUiChecks
 {
+    private static void CheckBe201Selection()
+    {
+        var choices = new Be201Selection();
+        var first = new Be201Selection.TargetKey(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "NVME", "DISK", "ONE", 100);
+        var second = first with { Serial = "TWO", DiskId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb") };
+        void Require(bool value, string name) { if (!value) throw new IOException("be201-" + name); }
+        foreach (var match in new[] { Be201Selection.TargetMatch.Unknown, Be201Selection.TargetMatch.Candidate, Be201Selection.TargetMatch.Different })
+            Require(!choices.Get(first, match, true, true).Selected && !choices.Get(first, match, true, true).Enabled, "unconfirmed-not-selected");
+        var confirmed = Be201Selection.TargetMatch.Confirmed;
+        Require(!choices.Get(null, confirmed, true, true).Selected, "no-target");
+        Require(!choices.Get(first, confirmed, false, false).Enabled, "no-provider");
+        var state = choices.Get(first, confirmed, true, true);
+        Require(state.Enabled && state.Selected && state.Source == Be201Selection.Provider.Model, "model-first-default");
+        choices.Remember(first, confirmed, true, true, false);
+        Require(!choices.Get(first, confirmed, true, true).Selected, "refresh-keeps-opt-out");
+        state = choices.Get(first, confirmed, false, true);
+        Require(state.Source == Be201Selection.Provider.Common && !state.Selected, "provider-switch-keeps-opt-out");
+        Require(choices.Get(second, confirmed, true, true).Selected, "other-target-default");
+        choices.Remember(second, confirmed, true, true, false);
+        Require(!choices.Get(first, confirmed, true, true).Selected && !choices.Get(second, confirmed, true, true).Selected, "target-return-keeps-opt-out");
+        choices.Remember(first, Be201Selection.TargetMatch.Unknown, true, true, true);
+        Require(!choices.Get(first, confirmed, true, true).Selected, "unknown-cannot-change-preference");
+    }
+
     internal static string Run()
     {
+        CheckBe201Selection();
         var window = new MainWindow(rehearsal: false);
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var type = typeof(MainWindow);

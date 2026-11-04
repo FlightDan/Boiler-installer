@@ -16,6 +16,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'scripts')]
 from protocol.manifest import confined, validate_manifest, validate_package
+from protocol.firmware_contract import validate_contract as validate_firmware_contract
 from components import oxp3_full_efi_provider, x2_efi_provider
 from maintenance.updates import _version_key
 from protocol.resource_pool import decoder, json_document, validate_pool
@@ -580,6 +581,7 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
             if name not in rows:
                 raise ValueError('Component file missing from input manifest: ' + name)
         resource_mappings, resource_extras, resource_records = {}, {}, {}
+        be201_descriptor = None
         declared_resources = {row['id'] for row in guide['resource_model'].get('resources', [])}
         if pool:
             pool_model = pool_models.get(identity)
@@ -591,6 +593,43 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
                   'resource:intel-xevmafix-724': 'oxp3:xevmafix'}
         for resource in sorted(declared_resources):
             candidate = pool_resources.get(resource)
+            if resource == 'resource:intel-be201-firmware' and candidate:
+                validate_firmware_contract(candidate)
+                reference = pool_refs[resource]['path']
+                if reference != 'common/network/intel/be201/resource.toon':
+                    raise ValueError('Unexpected BE201 resource record path')
+                if any(c.get('id') == 'oxp3:wifi' and (c.get('available') or c.get('default'))
+                       for c in manifest.get('legacy_capabilities', [])):
+                    raise ValueError('BE201 cannot share ownership with legacy Wi-Fi')
+                payload = {row['path']: row for row in candidate['payload']['files']}
+                inputs = {}
+                for item in candidate['install']['files']:
+                    name = item['source']
+                    canonical = 'common/network/intel/be201/inputs/' + PurePosixPath(item['target']).name
+                    source = inventory.get('adaptations/' + canonical)
+                    if name not in payload or not source or (source['size'], source['sha256']) != (payload[name]['size'], payload[name]['sha256']):
+                        raise ValueError('BE201 input differs from canonical source: ' + canonical)
+                    inputs.setdefault(name, canonical)
+                if set(inputs) != set(payload):
+                    raise ValueError('BE201 source references differ from payload')
+                for name, canonical in inputs.items():
+                    entry = pool_inventory.get(name)
+                    if not entry or (entry['size'], entry['sha256']) != (payload[name]['size'], payload[name]['sha256']):
+                        raise ValueError('BE201 payload differs from pool inventory: ' + name)
+                    rows[name] = entry
+                    chosen.add(name)
+                    source_mappings[name] = canonical
+                for name in [reference, *candidate['license_files']]:
+                    entry = pool_inventory.get(name)
+                    if not entry:
+                        raise ValueError('BE201 resource metadata absent from pool: ' + name)
+                    rows[name] = entry
+                    chosen.add(name)
+                    resource_mappings[name] = (name, name)
+                be201_descriptor = {'kind': 'intel-be201-firmware-v1', 'resource': reference}
+                pending.append({'model': identity, 'resource': resource, 'status': 'hardware-and-lifecycle-validation-pending',
+                                'payload_included': True, 'reason': 'hardware matching and lifecycle require validation'})
+                continue
             old_sources = []
             if resource in direct:
                 old = next((c for c in components if c['id'] == direct[resource]), None)
@@ -661,6 +700,8 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
         # identity and its historical inventory remain untouched.
         generated['version'] = version
         generated['name'] = guide['runtime']['name']
+        if be201_descriptor:
+            generated['be201_firmware'] = be201_descriptor
         generated['components'] = components
         generated['files'] = [rows[name] for name in sorted(chosen)]
         validate_manifest(generated, 'DevicePackage')

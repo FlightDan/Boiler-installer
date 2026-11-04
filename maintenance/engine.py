@@ -54,7 +54,7 @@ RUNTIME_FILES = (
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
     'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
     'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
-    'maintenance/resource_runtime.py', 'maintenance/resource_entrypoints.py', 'maintenance/firmware_resources.py', 'maintenance/cpu_resources.py', 'maintenance/resource_cli.py',
+    'maintenance/resource_runtime.py', 'maintenance/resource_entrypoints.py', 'maintenance/firmware_resources.py', 'maintenance/be201_model_resource.py', 'maintenance/cpu_resources.py', 'maintenance/resource_cli.py',
     'maintenance/feedback.py', 'maintenance/reporter.py', 'maintenance/release.json',
     'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py', 'protocol/brand_bundle.py',
     'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',

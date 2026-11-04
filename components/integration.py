@@ -155,6 +155,9 @@ def device_plan(payload, options, source):
         if item.get('ssd_boot_policy') == {'id': SSD_REPAIR, 'version': 1}
         and item.get('available', True) is True and compatible(item, environment)]
     if ssd_providers: descriptor['ssd_providers'] = ssd_providers
+    # The fixed BE201 source is part of the already verified model package.
+    if package.get('be201_firmware') is not None:
+        descriptor['be201_firmware'] = package['be201_firmware']
     if package.get('oxp3_efi_contract') is not None:
         descriptor['oxp3_efi_contract'] = package['oxp3_efi_contract']
     if package.get('x2_efi_contract') is not None:
@@ -573,7 +576,9 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         Engine = maintenance_api(payload)
         engine = Engine(root, root / 'var/lib/boiler/maintenance')
     retained_item = None
-    if package_root and device_components and 'core:maintenance' in choices:
+    # Retain a selected BE201 provider even when no other model component was
+    # selected; the fixed handler can then be reviewed on the real target.
+    if package_root and (device_components or descriptor.get('be201_firmware')) and 'core:maintenance' in choices:
         retained_item = retained_model_preflight(engine, package_root, options)
     if 'core:maintenance' in choices:
         component = manifest['core:maintenance']['component']

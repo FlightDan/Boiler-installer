@@ -279,6 +279,13 @@ def validate_manifest(obj, kind=None):
                     or 'minimum_engine_version' not in obj
                     or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 4)):
                 _fail('Invalid full OXP3 EFI bridge contract')
+        if 'be201_firmware' in obj:
+            if obj['be201_firmware'] != {'kind': 'intel-be201-firmware-v1',
+                    'resource': 'common/network/intel/be201/resource.toon'}:
+                _fail('Invalid fixed BE201 firmware descriptor')
+            if any(c.get('id') == 'oxp3:wifi' and (c.get('available') or c.get('default'))
+                   for c in obj.get('legacy_capabilities', [])):
+                _fail('BE201 descriptor conflicts with legacy Wi-Fi handler')
         if "maintenance_entry" in obj:
             entry = obj["maintenance_entry"]
             if isinstance(entry, dict):
@@ -367,6 +374,34 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
         if path.is_file(): actual.add(path.relative_to(root).as_posix())
     if actual != {"manifest.json",*inventory}: _fail("Package inventory does not match directory")
     for name, entry in inventory.items(): verify_file(confined(root,name),entry)
+    if 'be201_firmware' in obj:
+        from protocol.resource_pool import decoder
+        from protocol.firmware_contract import validate_contract
+        resource_path = obj['be201_firmware']['resource']
+        if resource_path not in inventory:
+            _fail('BE201 resource record absent from inventory')
+        try:
+            resource = decoder().loads(_bounded_bytes(confined(root, resource_path), MAX_MANIFEST).decode('utf-8'), strict=True)
+            validate_contract(resource)
+            if resource.get('kind') != 'BoilerResource' or resource.get('schema_version') != 1:
+                _fail('Invalid BE201 resource record')
+            payload = resource.get('payload', {}).get('files', [])
+            paths = set()
+            for row in payload:
+                name = row['path']
+                if name in paths or name not in inventory or not name.startswith('common/network/intel/be201/files/'):
+                    _fail('Invalid BE201 payload inventory')
+                if any(row[k] != inventory[name][k] for k in ('size', 'sha256')):
+                    _fail('BE201 payload differs from package inventory')
+                paths.add(name)
+            if not paths or {row['source'] for row in resource['install']['files']} != paths:
+                _fail('BE201 install sources differ from inventory')
+            licenses = resource.get('license_files', [])
+            if len(licenses) != 2 or len(set(licenses)) != 2 or any(
+                    name not in inventory or not name.startswith('common/network/intel/be201/sources/') for name in licenses):
+                _fail('BE201 licenses absent from package inventory')
+        except (KeyError, TypeError, UnicodeError, ValueError) as exc:
+            _fail('Invalid BE201 resource: ' + str(exc))
     for component in obj["components"]:
         for entry in component.get("files",[]):
             if entry["source"] not in inventory: _fail("Component source absent from package inventory")

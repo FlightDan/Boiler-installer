@@ -67,6 +67,24 @@ class FirstInstallModelRetention(unittest.TestCase):
         # Use independent roots to avoid previous ownership affecting these cases.
     def test_no_selected_device_does_not_retain(self):
         self.install(device_components=[]); self.assertFalse(self.pointer.exists())
+    def test_be201_provider_is_retained_without_other_model_choices(self):
+        from test_be201_model_resource import ModelFirmwareTests
+        fixture = ModelFirmwareTests(methodName='test_unknown_facts_stop_before_slot_writes')
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        for row in fixture.manifest['files']:
+            source = fixture.root / row['path']
+            destination = self.package / row['path']
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+            self.manifest['files'].append(row)
+        self.manifest['be201_firmware'] = fixture.manifest['be201_firmware']
+        self.save_manifest()
+        self.install(device_components=[], device_manifest_sha256=self.anchor)
+        self.assertTrue(self.pointer.is_file())
+        retained = self.state / 'models/packages' / self.anchor
+        self.assertTrue((retained / fixture.manifest['be201_firmware']['resource']).is_file())
+
     def test_unrecognized_contract_does_not_retain(self):
         self.manifest.pop('maintenance_contract'); self.save_manifest(); self.install(device_manifest_sha256=self.anchor); self.assertFalse(self.pointer.exists())
     def test_tampered_input_fails_before_component_writes(self):

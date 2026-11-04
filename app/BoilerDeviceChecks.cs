@@ -99,7 +99,7 @@ internal static class BoilerDeviceChecks
         {
             var availability = (string)typeof(MainWindow).GetMethod("CurrentHardwareAvailability", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, ["intel-be201-firmware"])!;
             if (options.RepairsExpander.Visibility != Visibility.Collapsed
-                || availability != PartitionInventory.L("对应构件：尚未提供。识别结果不代表 Linux 驱动或硬件支持。", "Related component: not currently provided. Detection does not establish Linux-driver or hardware support."))
+                || availability != PartitionInventory.L("目标是否为 BE201 尚未确认，暂不安装固件。", "BE201 on the destination is unconfirmed; firmware will not be installed."))
                 throw new IOException("A hidden generic wireless option was advertised as available.");
         }
         finally { choices["wifi:intel"] = fixtureWirelessChoice; }

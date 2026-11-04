@@ -13,6 +13,8 @@
       "properties":{"kind":{"const":"x2-split-lock-efi-v1"},"component":{"const":"oxp3:legacy-adaptation"}}},
     "oxp3_full_efi_contract":{"type":"object","required":["kind","component"],"additionalProperties":false,
       "properties":{"kind":{"const":"oxp3-full-split-lock-efi-v1"},"component":{"const":"oxp3:legacy-adaptation"}}},
+    "be201_firmware":{"type":"object","required":["kind","resource"],"additionalProperties":false,
+      "properties":{"kind":{"const":"intel-be201-firmware-v1"},"resource":{"const":"common/network/intel/be201/resource.toon"}}},
     "maintenance_entry":{
       "description":"Engine-managed hook lifecycle declaration. Legacy script paths are readable metadata but cannot enable generic scripted updates.",
       "oneOf":[

@@ -81,10 +81,11 @@ public partial class MainWindow
     private static string CurrentHardwareName(string id) => id switch { "intel-xevma" => "Intel xeVMA", "intel-be201-firmware" => "Intel BE201", "realtek-alc245-speaker" => PartitionInventory.L("Realtek ALC245 扬声器", "Realtek ALC245 speaker"), "bmi260-gyro" => PartitionInventory.L("BMI260 陀螺仪", "BMI260 gyro"), _ => id };
     private string CurrentHardwareAvailability(string id)
     {
+        if (id == "intel-be201-firmware")
+            return PartitionInventory.L("目标是否为 BE201 尚未确认，暂不安装固件。", "BE201 on the destination is unconfirmed; firmware will not be installed.");
         var aliases = id switch
         {
             "intel-xevma" => new[] { "resource:intel-xevmafix-724", "oxp3:xevmafix", "x2-mini:xevmafix", "generic:xevmafix" },
-            "intel-be201-firmware" => new[] { "resource:intel-be201-firmware", "wifi:intel" },
             "realtek-alc245-speaker" => new[] { "resource:oxp3-speaker-route", "oxp3:speaker-route" },
             "bmi260-gyro" => new[] { "resource:bmi260-gyro" },
             _ => []
