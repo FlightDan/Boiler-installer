@@ -82,7 +82,9 @@ public partial class MainWindow
     private string CurrentHardwareAvailability(string id)
     {
         if (id == "intel-be201-firmware")
-            return PartitionInventory.L("目标是否为 BE201 尚未确认，暂不安装固件。", "BE201 on the destination is unconfirmed; firmware will not be installed.");
+            return FindCurrentHardwareChoice("resource:" + id) is { IsEnabled: true }
+                ? PartitionInventory.L("可在机型构件里手动选择。请确认目标设备使用 BE201。", "Available in the model components. Confirm the target uses BE201 before selecting it.")
+                : PartitionInventory.L("目标是否为 BE201 尚未确认，暂不安装固件。", "BE201 on the destination is unconfirmed; firmware will not be installed.");
         var aliases = id switch
         {
             "intel-xevma" => new[] { "resource:intel-xevmafix-724", "oxp3:xevmafix", "x2-mini:xevmafix", "generic:xevmafix" },

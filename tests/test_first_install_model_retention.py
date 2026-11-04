@@ -85,6 +85,51 @@ class FirstInstallModelRetention(unittest.TestCase):
         retained = self.state / 'models/packages' / self.anchor
         self.assertTrue((retained / fixture.manifest['be201_firmware']['resource']).is_file())
 
+    def test_selected_model_resource_uses_normal_install_verify_and_restore(self):
+        from test_be201_model_resource import ModelFirmwareTests
+        from integration import verify_device_components
+        from protocol.firmware_contract import IDENTITY, TARGETS
+        fixture = ModelFirmwareTests(methodName='test_unknown_facts_stop_before_slot_writes')
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        for row in fixture.manifest['files']:
+            source = fixture.root / row['path']
+            destination = self.package / row['path']
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+            self.manifest['files'].append(row)
+        self.manifest['resources'] = [{'id': IDENTITY, 'path': 'common/network/intel/be201/resource.toon'}]
+        # The fixture firmware is compatible with this synthetic image kernel.
+        (self.root/'usr/lib/modules/fixture-kernel').mkdir()
+        self.save_manifest()
+        options = dict(self.options, device_components=[IDENTITY], device_manifest_sha256=self.anchor)
+        target = next(path for path, missing in TARGETS.items() if not missing)
+        prior = self.root/target
+        prior.parent.mkdir(parents=True, exist_ok=True)
+        prior.write_bytes(b'previous firmware')
+        result = stage(self.root, self.payload, options, 'A')
+        self.assertIn(IDENTITY, result['components'])
+        self.assertNotEqual(prior.read_bytes(), b'previous firmware')
+        self.assertEqual(verify_device_components(self.root, self.payload, options, 'A', result['components']), {IDENTITY})
+        engine = Engine(self.root)
+        transaction = engine._state()['components'][IDENTITY]['transaction']
+        engine.restore(transaction)
+        self.assertEqual(prior.read_bytes(), b'previous firmware')
+        self.manifest['id'] = 'device:x2-mini'
+        self.save_manifest()
+        second = self.work/'root-B'; second.mkdir()
+        (second/'etc').mkdir(); (second/'etc/os-release').write_text('ID=steamos\nVERSION_ID=3.10\nBUILD_ID=fixture\n')
+        (second/'usr/lib/modules/kernel-fixture').mkdir(parents=True)
+        (second/'usr/lib/modules/fixture-kernel').mkdir()
+        (second/'usr/bin').mkdir(parents=True); shutil.copyfile(self.root/'usr/bin/env', second/'usr/bin/env')
+        options['device_manifest_sha256'] = self.anchor
+        result = stage(second, self.payload, options, 'B')
+        self.assertEqual(verify_device_components(second, self.payload, options, 'B', result['components']), {IDENTITY})
+        engine = Engine(second)
+        transaction = engine._state()['components'][IDENTITY]['transaction']
+        engine.restore(transaction)
+        self.assertFalse((second/target).exists())
+
     def test_unrecognized_contract_does_not_retain(self):
         self.manifest.pop('maintenance_contract'); self.save_manifest(); self.install(device_manifest_sha256=self.anchor); self.assertFalse(self.pointer.exists())
     def test_tampered_input_fails_before_component_writes(self):

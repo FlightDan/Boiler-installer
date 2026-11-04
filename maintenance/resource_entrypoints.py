@@ -10,6 +10,14 @@ except ImportError:  # Standalone isolated candidate harness.
     from resource_runtime import ResourcePool, ResourceError, installer_install, maintenance_action
 
 
+def model_resource_pool(root, identity, path, *, trust_local_test=False, expected_manifest_sha256=None):
+    """Load a supported fixed handler from the authenticated model reference."""
+    if identity == 'resource:intel-be201-firmware' and path == 'common/network/intel/be201/resource.toon':
+        from .be201_model_resource import model_resource_pool as load
+        return load(root, trust_local_test=trust_local_test, expected_manifest_sha256=expected_manifest_sha256)
+    raise ResourceError('Unsupported model resource: ' + identity)
+
+
 def model_references(pool, model_id):
     matches = [row for row in pool.catalog['models'] if row['id'] == model_id]
     if len(matches) != 1:

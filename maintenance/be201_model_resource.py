@@ -16,7 +16,7 @@ RESOURCE = 'common/network/intel/be201/resource.toon'
 DESCRIPTOR = {'kind': KIND, 'resource': RESOURCE}
 
 
-def model_resource_pool(root, *, authenticate_package=None, trust_local_test=False):
+def model_resource_pool(root, *, authenticate_package=None, trust_local_test=False, expected_manifest_sha256=None):
     """Return the existing pool interface for a model-authorized fixed resource."""
     if authenticate_package is None and trust_local_test is not True:
         raise ResourceError('A verified index or explicit local-test trust is required')
@@ -26,8 +26,8 @@ def model_resource_pool(root, *, authenticate_package=None, trust_local_test=Fal
     # Production authentication is owned by the same host verifier that
     # authenticates the signed index and package, never by package data.
     package = (authenticate_package(root) if authenticate_package is not None
-               else validate_package(root, allow_unsigned=True))
-    if package.get('be201_firmware') != DESCRIPTOR:
+               else validate_package(root, allow_unsigned=True, expected_manifest_sha256=expected_manifest_sha256))
+    if package.get('be201_firmware') != DESCRIPTOR and {'id': IDENTITY, 'path': RESOURCE} not in package.get('resources', []):
         raise ResourceError('Model package does not authorize the fixed BE201 resource')
     inventory = {item['path']: item for item in package['files']}
     if RESOURCE not in inventory:

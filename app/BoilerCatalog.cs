@@ -308,7 +308,7 @@ public partial class MainWindow
         deviceAdaptationsChoice = null;
         deviceComponentsPanel = new StackPanel { Margin = new Thickness(0, 20, 0, 0) };
         deviceComponentsPanel.Children.Add(new TextBlock { Text = PartitionInventory.L("机型专属组件", "Device-specific components"), FontSize = 19, FontWeight = FontWeights.SemiBold });
-        foreach (var component in package.GetProperty("components").EnumerateArray())
+        foreach (var component in DeviceOptionRows(package, selection.Trust))
         {
             var id = component.GetProperty("id").GetString()!;
             var componentText = component.TryGetProperty("name", out var name) ? LocalizedValue(name) : id;
@@ -332,7 +332,8 @@ public partial class MainWindow
                 if (updatingDeviceAdaptations) return;
                 if (id == FingerprintId) RecordFingerprintPreference(check);
                 if (SsdBootRepair.IsProvider(component)) RecordSsdPreference(check);
-                if (check.IsChecked == true && SsdBootRepair.IsProvider(component) && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance)) maintenance.IsChecked = true;
+                if (check.IsChecked == true && (SsdBootRepair.IsProvider(component) || component.TryGetProperty("resource_path", out _))
+                    && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance)) maintenance.IsChecked = true;
                 EnsureStaticDeckyProvider();
                 RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             }
@@ -368,6 +369,31 @@ public partial class MainWindow
         deviceStatus!.Text += "\n" + PartitionInventory.L("已加入安装配置。可在安装选项中调整。", "Added to the installation. Adjust it in Installation options.");
         ConfigurationChanged();
         if (homeScreen == null && !inputAssociationBusy && !customBuildSwitchingDevice) ContinueAfterDeviceSelection();
+    }
+
+    private static IEnumerable<JsonElement> DeviceOptionRows(JsonElement package, string trust)
+    {
+        foreach (var component in package.GetProperty("components").EnumerateArray()) yield return component;
+        if (trust != "developer-session" || !package.TryGetProperty("resources", out var resources)) yield break;
+        foreach (var resource in resources.EnumerateArray())
+        {
+            var id = resource.GetProperty("id").GetString()!;
+            yield return JsonSerializer.SerializeToElement(new
+            {
+                id,
+                name = CurrentHardwareName(id["resource:".Length..]),
+                description = PartitionInventory.L(
+                    "确认目标设备使用此硬件后再勾选。", "Select only after confirming this hardware is in the target device."),
+                selection_policy = "explicit-opt-in",
+                resource_path = resource.GetProperty("path").GetString()
+            });
+        }
+    }
+
+    private void ClearModelResourceSelection()
+    {
+        foreach (var box in deviceComponentChoices.Values)
+            if (box.Tag is JsonElement component && component.TryGetProperty("resource_path", out _)) box.IsChecked = false;
     }
 
     private static bool IsExplicitDeviceOption(JsonElement item) => item.TryGetProperty("ssd_boot_policy", out _) || item.TryGetProperty("selection_policy", out var policy)

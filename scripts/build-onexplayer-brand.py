@@ -701,7 +701,8 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
         generated['version'] = version
         generated['name'] = guide['runtime']['name']
         if be201_descriptor:
-            generated['be201_firmware'] = be201_descriptor
+            generated.pop('be201_firmware', None)
+            generated['resources'] = [{'id': 'resource:intel-be201-firmware', 'path': be201_descriptor['resource']}]
         generated['components'] = components
         generated['files'] = [rows[name] for name in sorted(chosen)]
         validate_manifest(generated, 'DevicePackage')

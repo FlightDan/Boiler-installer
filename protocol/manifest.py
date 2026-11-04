@@ -279,6 +279,18 @@ def validate_manifest(obj, kind=None):
                     or 'minimum_engine_version' not in obj
                     or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 4)):
                 _fail('Invalid full OXP3 EFI bridge contract')
+        if 'resources' in obj:
+            resources = obj['resources']
+            if not isinstance(resources, list): _fail('Invalid model resource references')
+            ids, paths = set(), set()
+            for row in resources:
+                if not isinstance(row, dict) or set(row) != {'id', 'path'} or not isinstance(row['id'], str) or not _ID.fullmatch(row['id']) or not row['id'].startswith('resource:'):
+                    _fail('Invalid model resource reference')
+                relative_path(row['path'])
+                if row['id'] in ids or row['path'] in paths: _fail('Duplicate model resource reference')
+                ids.add(row['id']); paths.add(row['path'])
+            if 'resource:intel-be201-firmware' in ids and any(c.get('id') == 'oxp3:wifi' and (c.get('available') or c.get('default')) for c in obj.get('legacy_capabilities', [])):
+                _fail('Model resource conflicts with legacy Wi-Fi handler')
         if 'be201_firmware' in obj:
             if obj['be201_firmware'] != {'kind': 'intel-be201-firmware-v1',
                     'resource': 'common/network/intel/be201/resource.toon'}:
@@ -301,6 +313,8 @@ def validate_manifest(obj, kind=None):
             validate_manifest(component, "ComponentManifest")
             if component["id"] in ids: _fail("Duplicate component")
             ids.add(component["id"])
+        if ids.intersection(row['id'] for row in obj.get('resources', [])):
+            _fail('Model resource ID conflicts with a component')
         if sum('ssd_boot_policy' in c for c in components) > 1:
             _fail('Only one SSD boot provider is supported per package')
         providers = {c['id'] for c in components if 'ssd_boot_policy' in c}
@@ -374,10 +388,15 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
         if path.is_file(): actual.add(path.relative_to(root).as_posix())
     if actual != {"manifest.json",*inventory}: _fail("Package inventory does not match directory")
     for name, entry in inventory.items(): verify_file(confined(root,name),entry)
-    if 'be201_firmware' in obj:
+    for reference in obj.get('resources', []):
+        if reference['path'] not in inventory: _fail('Model resource record absent from inventory')
+    resource_references = [r for r in obj.get('resources', []) if r['id'] == 'resource:intel-be201-firmware']
+    if resource_references and resource_references != [{'id':'resource:intel-be201-firmware', 'path':'common/network/intel/be201/resource.toon'}]:
+        _fail('Invalid fixed firmware resource reference')
+    if 'be201_firmware' in obj or resource_references:
         from protocol.resource_pool import decoder
         from protocol.firmware_contract import validate_contract
-        resource_path = obj['be201_firmware']['resource']
+        resource_path = obj['be201_firmware']['resource'] if 'be201_firmware' in obj else resource_references[0]['path']
         if resource_path not in inventory:
             _fail('BE201 resource record absent from inventory')
         try:

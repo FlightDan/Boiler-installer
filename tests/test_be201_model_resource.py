@@ -74,6 +74,39 @@ class ModelFirmwareTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             model_resource_pool(self.root, trust_local_test=True)
 
+    def test_reviewed_manifest_anchor_is_rechecked(self):
+        digest = hashlib.sha256((self.root/'manifest.json').read_bytes()).hexdigest()
+        model_resource_pool(self.root, trust_local_test=True, expected_manifest_sha256=digest)
+        self.manifest['version'] = '0.1.1'
+        self.write_manifest()
+        with self.assertRaises(ValueError):
+            model_resource_pool(self.root, trust_local_test=True, expected_manifest_sha256=digest)
+
+    def test_normal_device_plan_resolves_selected_model_resource(self):
+        import shutil
+        from integration import device_plan
+        resource_id = 'resource:intel-be201-firmware'
+        self.manifest['resources'] = [{'id': resource_id, 'path': RESOURCE}]
+        self.manifest.pop('be201_firmware')
+        self.write_manifest()
+        package = self.base / 'payload/device-packages/fixture'
+        package.parent.mkdir(parents=True)
+        shutil.copytree(self.root, package)
+        digest = hashlib.sha256((package/'manifest.json').read_bytes()).hexdigest()
+        options = dict(device_package='fixture', device_manifest_sha256=digest,
+                       device_trust='developer-session', device_components=[resource_id],
+                       repairs=[], plugins=['core:maintenance'])
+        source = dict(ID='steamos', VERSION_ID='3.10', KERNELS=ENV['kernels'])
+        _, selected, _, descriptor = device_plan(self.base/'payload', options, source)
+        self.assertEqual([c['id'] for c in selected], [resource_id])
+        self.assertEqual(descriptor['resources'][0]['path'], RESOURCE)
+        options['device_trust'] = 'signed-index'
+        with self.assertRaisesRegex(ValueError, 'hardware verification'):
+            device_plan(self.base/'payload', options, source)
+        options['device_trust'] = 'developer-session'; options['plugins'] = []
+        with self.assertRaisesRegex(ValueError, 'retained maintenance'):
+            device_plan(self.base/'payload', options, source)
+
     def test_unknown_facts_stop_before_slot_writes(self):
         pool = model_resource_pool(self.root, trust_local_test=True)
         self.slots['B']['hardware'] = {}

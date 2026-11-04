@@ -144,7 +144,27 @@ def device_plan(payload, options, source):
     for component in package['components']:
         check_fingerprint_model(component, package['id'])
     selected = (options.get('device_components') or []) + [identity for identity in options.get('repairs', []) if identity not in CORE | WIRELESS | {SSD_REPAIR}]
-    plan = resolve_plan(package['components'], selected, environment)
+    resource_ids = {row['id'] for row in package.get('resources', [])}
+    chosen_resources = [identity for identity in selected if identity in resource_ids]
+    ordinary = [identity for identity in selected if identity not in resource_ids]
+    plan = resolve_plan(package['components'], ordinary, environment)
+    if chosen_resources:
+        if options.get('device_trust') != 'developer-session':
+            raise ValueError('Model resource requires target hardware verification')
+        if 'core:maintenance' not in options.get('plugins', []):
+            raise ValueError('Model resource requires retained maintenance')
+        from maintenance.resource_entrypoints import model_resource_pool
+        from maintenance.resource_runtime import resolve, component
+        for identity in chosen_resources:
+            path = next(row['path'] for row in package['resources'] if row['id'] == identity)
+            pool = model_resource_pool(folder, identity, path, trust_local_test=True,
+                                       expected_manifest_sha256=options['device_manifest_sha256'])
+            for resource in resolve(pool, [{'resource': identity}], [identity]):
+                if resource.get('dependencies') or any(row.get('scope') != 'root-slots' for row in resource['install']['files']):
+                    raise ValueError('Model resource requires unsupported cross-slot coordination')
+                if not compatible(resource, environment):
+                    raise ValueError('Model resource is incompatible with the image')
+                plan['components'].append(component(resource, 'root-slots'))
     legacy_choice = device_legacy_selection(package, options, plan['components'])
     validate_fingerprint_provider(plan['components'], options)
     warning = device_advisory(package, environment)
@@ -158,6 +178,8 @@ def device_plan(payload, options, source):
     # The fixed BE201 source is part of the already verified model package.
     if package.get('be201_firmware') is not None:
         descriptor['be201_firmware'] = package['be201_firmware']
+    if package.get('resources'):
+        descriptor['resources'] = package['resources']
     if package.get('oxp3_efi_contract') is not None:
         descriptor['oxp3_efi_contract'] = package['oxp3_efi_contract']
     if package.get('x2_efi_contract') is not None:
@@ -344,6 +366,15 @@ def verify_device_components(root, payload, options, slot, installed, model_revi
             continue
         if not engine.verify_readonly(component['id'])['ok']:
             raise ValueError('Device managed files differ: ' + component['id'])
+        if component['id'] in {row['id'] for row in descriptor.get('resources', [])}:
+            from maintenance.resource_entrypoints import model_resource_pool
+            from maintenance.firmware_resources import verification
+            from protocol.manifest import load_json
+            pool = model_resource_pool(folder, component['id'], next(row['path'] for row in descriptor['resources'] if row['id'] == component['id']), trust_local_test=True, expected_manifest_sha256=descriptor['manifest_sha256'])
+            state = engine._state()['components'][component['id']]
+            journal = load_json(engine._journal(state['transaction']))
+            if not verification(pool.resource(component['id']), component, journal, root)['ok']:
+                raise ValueError('Device resource verification failed: ' + component['id'])
         hooks = component.get('hooks', {})
         if hooks:
             if 'verify' not in hooks: raise ValueError('Scripted device component has no readonly verification hook')
@@ -619,6 +650,11 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         if component['id'] in ('x2-mini:battery', 'x2-mini:gamescope-env', 'x2-mini:slot-switch', 'oxp3:fingerprint-unlock'):
             from maintenance.shared_models import prepare_component_dirs
             prepare_component_dirs(engine, component)
+        if component['id'] in {row['id'] for row in descriptor.get('resources', [])}:
+            from maintenance.resource_entrypoints import model_resource_pool
+            from maintenance.firmware_resources import prepare
+            pool = model_resource_pool(package_root, component['id'], next(row['path'] for row in descriptor['resources'] if row['id'] == component['id']), trust_local_test=True, expected_manifest_sha256=descriptor['manifest_sha256'])
+            component = prepare(pool.resource(component['id']), component, engine)
         operation = engine.apply(component, package_root, allow_hooks=True, environment=environment,
                                  hook_environment=device_hook_environment(descriptor, component, model_review_path if fixed_model is not None else None))
         result['components'][component['id']] = dict(status='files_installed', runtime='not_validated', operation=operation)

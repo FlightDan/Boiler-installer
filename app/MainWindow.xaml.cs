@@ -94,7 +94,7 @@ public partial class MainWindow : Window
         PartitionSelector.Changed += () =>
         {
             acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false;
-            ClearSsdSelection(); SyncFingerprintCandidateSelection();
+            ClearSsdSelection(); ClearModelResourceSelection(); SyncFingerprintCandidateSelection();
             if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); }
         };
         ImagePath.TextChanged += (_, _) => { ResetImageInspection(); ConfigurationChanged(); RefreshWorkspace(); };

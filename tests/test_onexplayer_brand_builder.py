@@ -355,10 +355,9 @@ class ActualBrandSelectionTests(unittest.TestCase):
             self.assertEqual(len(be201), 1)
             self.assertEqual(be201[0]['status'], 'hardware-and-lifecycle-validation-pending')
             self.assertTrue(be201[0]['payload_included'])
-            self.assertEqual(generated['be201_firmware'], {
-                'kind': 'intel-be201-firmware-v1',
-                'resource': 'common/network/intel/be201/resource.toon'})
-            self.assertIn(generated['be201_firmware']['resource'], selected)
+            self.assertEqual(generated['resources'], [{'id':'resource:intel-be201-firmware', 'path':'common/network/intel/be201/resource.toon'}])
+            self.assertNotIn('be201_firmware', generated)
+            self.assertIn(generated['resources'][0]['path'], selected)
             for row in pending:
                 if row['model'] == model['id'] and 'definition' in row:
                     self.assertIn(row['definition'], model['resource_records'])
