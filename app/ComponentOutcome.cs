@@ -5,17 +5,34 @@ namespace OxpInstaller;
 
 internal static class ComponentOutcome
 {
-    internal static HashSet<string> Expected(SelectedOptions options)
+    private static HashSet<string> Base(SelectedOptions options)
     {
         var expected = options.Repairs.Concat(options.Plugins).ToHashSet();
         if (options.SetDeckPassword || options.EnableSsh || options.KdeLanguage != "system") expected.Add("core:system-presets");
         if (options.GraphicsProfile != null) expected.Add(options.GraphicsProfile);
         foreach (var vendor in options.Wireless ?? []) expected.Add(vendor.Contains(':') ? vendor : "wifi:" + vendor);
+        return expected;
+    }
+    internal static HashSet<string> Expected(SelectedOptions options)
+    {
+        var expected = Base(options);
         var selected = options.DeviceComponents ?? [];
         if (selected.Length == 0) return expected;
         if (options.DevicePackage == null || options.DeviceManifestSha256 == null) throw new IOException("Device package identity is missing.");
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(BoilerProtocol.PackageRoot, options.DevicePackage, "manifest.json")));
-        var components = doc.RootElement.GetProperty("components").EnumerateArray().ToDictionary(c => c.GetProperty("id").GetString()!);
+        return Expected(options, doc.RootElement);
+    }
+    // Developer-session model resources are selectable install components with their own ids even
+    // though they live in the package's "resources" list. The guest plan installs them as ordinary
+    // components, so the host's expected set must resolve both lists before comparing reports.
+    internal static HashSet<string> Expected(SelectedOptions options, JsonElement package)
+    {
+        var expected = Base(options);
+        var selected = options.DeviceComponents ?? [];
+        if (selected.Length == 0) return expected;
+        var components = package.GetProperty("components").EnumerateArray().ToDictionary(c => c.GetProperty("id").GetString()!);
+        if (package.TryGetProperty("resources", out var resources) && resources.ValueKind == JsonValueKind.Array)
+            foreach (var resource in resources.EnumerateArray()) components.TryAdd(resource.GetProperty("id").GetString()!, resource);
         var visiting = new HashSet<string>();
         void Add(string id)
         {

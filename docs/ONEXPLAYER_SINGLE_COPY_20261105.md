@@ -43,3 +43,23 @@ The brand ZIP, model manifests, and maintenance runtime are unchanged from
 rehearsals, and physical ONEXPLAYER acceptance are separate gates; physical
 acceptance of this build remains pending.
 
+## 0.2.0-preview.20261105.8 — model resource component fix
+
+Preview `.7` stopped at the component step with `Invalid device dependency graph.`
+whenever a model resource such as the default `resource:intel-be201-firmware`
+was selected. `ComponentOutcome.Expected` resolved selected ids only against the
+package `components` list, while the guest plan installs developer-session
+`resources` as ordinary components with their own ids. The host therefore
+rejected its own selection before the guest integration ran.
+
+The expected set now resolves both `components` and `resources` (resources stay
+leaves), keeps dependency closure and duplicate/unknown-id rejection, and the
+plugin matrix asserts that the shipped OXP3 and X2 manifests include their
+resources in the expected set. `component-outcome-checks` covers the resource
+leaf, dependency closure, and unknown-selection refusal.
+
+The brand ZIP, model manifests, and maintenance runtime are unchanged from
+`.6`. A physical run past this point still exercises the guest integration,
+resource installation, SSD transaction, writes, and first boot on the target.
+
+

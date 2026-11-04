@@ -57,6 +57,25 @@ internal static class ComponentOutcomeChecks
         }
         try { ComponentOutcome.Validate(ssdRows, ssdOptions); throw new IOException("SSD result without host binding was accepted."); }
         catch (IOException error) when (!error.Message.Contains("was accepted", StringComparison.Ordinal)) { }
+        var resourcePackage = JsonSerializer.SerializeToElement(new {
+            components = new object[] {
+                new { id = "device:base", requires = new[] { "device:dependency" } },
+                new { id = "device:dependency" },
+                new { id = "device:unselected" } },
+            resources = new object[] { new { id = "resource:intel-be201-firmware", files = Array.Empty<object>() } } });
+        var resourceOptions = new SelectedOptions(1, [], ["core:maintenance"], "en-US", "system",
+            DeviceComponents: ["device:base", "resource:intel-be201-firmware"]);
+        var resourceExpected = ComponentOutcome.Expected(resourceOptions, resourcePackage);
+        if (!resourceExpected.SetEquals(["core:maintenance", "device:base", "device:dependency", "resource:intel-be201-firmware"]))
+            throw new IOException("Selected model resource was not resolved as an install component.");
+        var unknownSelectionRefused = false;
+        try
+        {
+            ComponentOutcome.Expected(new SelectedOptions(1, [], ["core:maintenance"], "en-US", "system",
+                DeviceComponents: ["resource:other"]), resourcePackage);
+        }
+        catch (IOException) { unknownSelectionRefused = true; }
+        if (!unknownSelectionRefused) throw new IOException("Unknown device selection was accepted.");
         return "Exact selected component coverage on both slots; empty Vanilla requires no implicit policy. Missing, duplicate, failed, skipped and unexpected results block deployment.";
     }
 }
