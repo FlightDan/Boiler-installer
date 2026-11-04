@@ -86,7 +86,8 @@ public partial class MainWindow
     private bool deviceActionBusy;
     private string? deviceActionError;
     private readonly Dictionary<string, CheckBox> deviceComponentChoices = new();
-    private readonly Dictionary<(string Model, string Component), bool> modelResourceChoices = new();
+    private readonly Dictionary<(SsdBootRepair.PreferenceKey? Target, string Model, string Component), bool> modelResourceChoices = new();
+    private SsdBootRepair.PreferenceKey? modelResourceTarget;
     private StackPanel? deviceComponentsPanel;
     private CheckBox? deviceAdaptationsChoice;
     private bool updatingDeviceAdaptations;
@@ -319,7 +320,7 @@ public partial class MainWindow
             if (!available) componentText += "\n" + (component.TryGetProperty("reason", out var reason) ? LocalizedValue(reason)
                 : PartitionInventory.L("此组件暂不可安装。", "This component is currently unavailable."));
             var modelResource = component.TryGetProperty("resource_path", out _);
-            var initial = modelResource ? modelResourceChoices.GetValueOrDefault((modelId, id), !IsExplicitDeviceOption(component))
+            var initial = modelResource ? modelResourceChoices.GetValueOrDefault((modelResourceTarget, modelId, id), !IsExplicitDeviceOption(component))
                 : priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !IsExplicitDeviceOption(component);
             if (id == FingerprintId)
             {
@@ -403,7 +404,44 @@ public partial class MainWindow
 
     private void RecordModelResourceChoice(string model, string component, bool selected)
     {
-        modelResourceChoices[(model, component)] = selected;
+        modelResourceChoices[(modelResourceTarget, model, component)] = selected;
+    }
+
+    private void SyncModelResourceTarget(PartitionSelection selection)
+    {
+        SsdBootRepair.PreferenceKey target;
+        try { target = SsdBootRepair.PreferenceTarget(selection); }
+        catch (Exception error) when (error is IOException or InvalidOperationException or JsonException or ArgumentException) { return; }
+        SetModelResourceTarget(target);
+    }
+
+    private void SetModelResourceTarget(SsdBootRepair.PreferenceKey target)
+    {
+        if (target == modelResourceTarget) return;
+        if (modelResourceTarget == null)
+        {
+            foreach (var entry in modelResourceChoices.Where(pair => pair.Key.Target == null).ToArray())
+            {
+                modelResourceChoices[(target, entry.Key.Model, entry.Key.Component)] = entry.Value;
+                modelResourceChoices.Remove(entry.Key);
+            }
+        }
+        modelResourceTarget = target;
+        if (fingerprintModel == null) return;
+        updatingDeviceAdaptations = true;
+        try
+        {
+            foreach (var pair in deviceComponentChoices)
+                if (pair.Value.Tag is JsonElement row && row.TryGetProperty("resource_path", out _))
+                {
+                    pair.Value.IsChecked = pair.Value.IsEnabled && modelResourceChoices.GetValueOrDefault(
+                        (target, fingerprintModel, pair.Key), !IsExplicitDeviceOption(row));
+                    if (pair.Value.IsChecked == true && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))
+                        core.IsChecked = true;
+                }
+        }
+        finally { updatingDeviceAdaptations = false; }
+        RefreshDeviceAdaptationsChoice();
     }
 
     private static bool IsExplicitDeviceOption(JsonElement item) => item.TryGetProperty("ssd_boot_policy", out _) || item.TryGetProperty("selection_policy", out var policy)

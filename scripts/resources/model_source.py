@@ -169,7 +169,8 @@ def apply(pool, project, catalog):
                 or set(x)!={'manufacturer','model'} or any(not isinstance(x[k],str) or not x[k].strip() for k in ('manufacturer','model')) for x in matching['pairs'])):
             raise ValueError('Invalid advisory model names: '+source)
         rows=spec['resources']
-        if not isinstance(rows,list) or not rows or any(not isinstance(x,dict) or set(x)!={'id'} or not isinstance(x['id'],str) for x in rows):
+        if not isinstance(rows,list) or not rows or any(not isinstance(x,dict) or 'id' not in x or set(x)-{'id','default'}
+                or ('default' in x and type(x['default']) is not bool) or not isinstance(x['id'],str) for x in rows):
             raise ValueError('Invalid model resource references: '+source)
         ids=[x['id'] for x in rows]; requested.update(ids)
         if len(ids)!=len(set(ids)):raise ValueError('Duplicate model resource references: '+source)

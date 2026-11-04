@@ -166,6 +166,19 @@ internal static class BoilerDeviceChecks
             || (window.CurrentOptions.DeviceComponents ?? []).Contains("resource:intel-be201-firmware")
             || choices["resource:explicitly-disabled"].IsChecked != true)
             throw new IOException("Reloading the model from another package overrode the user's choice.");
+        var changeTarget = typeof(MainWindow).GetMethod("SetModelResourceTarget", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var first = new SsdBootRepair.PreferenceKey("NVMe", "fixture", "one", Guid.NewGuid(), 512L * PartitionInventory.GiB,
+            PartitionInventory.GiB, 128L * PartitionInventory.GiB, false, SsdBootRepair.Option);
+        var second = first with { Serial = "two", DiskId = Guid.NewGuid() };
+        changeTarget.Invoke(window, [first]);
+        if (choices["resource:intel-be201-firmware"].IsChecked == true)
+            throw new IOException("Confirming the first target discarded its resource choice.");
+        changeTarget.Invoke(window, [second]);
+        if (choices["resource:intel-be201-firmware"].IsChecked != true || choices["resource:explicitly-disabled"].IsChecked == true)
+            throw new IOException("A different target did not use the TOON defaults.");
+        changeTarget.Invoke(window, [first]);
+        if (choices["resource:intel-be201-firmware"].IsChecked == true)
+            throw new IOException("Returning to the original target discarded its resource choice.");
         typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
     }
 

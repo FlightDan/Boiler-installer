@@ -472,7 +472,7 @@ public partial class MainWindow : Window
         try
         {
             if (pendingSelection != PartitionSelector.Selection) throw new InvalidOperationException(PartitionInventory.L("安装范围已变化，请重新确认。", "The target range changed. Confirm it again."));
-            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); SyncSsdSelection(); SyncFingerprintSelection(); ShowStep(installMode is "imported" or "local" ? 4 : 2);
+            acknowledgedSelection = pendingSelection; CancelSafety(sender, e); SyncSsdSelection(); SyncFingerprintSelection(); SyncModelResourceTarget(acknowledgedSelection); ShowStep(installMode is "imported" or "local" ? 4 : 2);
         }
         catch (Exception error) { CancelSafety(sender, e); ValidationMessage.Text = error.Message; }
     }

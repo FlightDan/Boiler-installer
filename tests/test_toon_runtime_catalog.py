@@ -29,6 +29,15 @@ bundles=module('runtime_bundle_preparer',ROOT/'scripts/prepare-model-bundles.py'
 
 
 class ToonRuntimeCatalogTests(unittest.TestCase):
+    def test_executable_toon_resource_accepts_explicit_default_off(self):
+        spec = dict(schema_version=1, kind='BoilerModelResourceSource', id='device:fixture',
+                    name='Fixture', parameters={}, hardware_matching=dict(mode='advisory-exact-dmi-v1', pairs=[]),
+                    resources=[dict(id='resource:fixture', default=False)])
+        self.assertIs(catalog.validate_resource_model_source(spec, 'fixture.toon')['resources'][0]['default'], False)
+        spec['resources'][0]['default'] = 'false'
+        with self.assertRaises(ValueError):
+            catalog.validate_resource_model_source(spec, 'fixture.toon')
+
     def source_fixture(self,root):
         adaptations=root/'source/adaptations'; adaptations.mkdir(parents=True)
         for folder in ('brands','vendor'):
