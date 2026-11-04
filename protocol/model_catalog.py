@@ -272,8 +272,19 @@ def bundled_packages(root):
         return []
     allowed=model_identities(root)
     value = document(confined(root, 'cache/model-bundles/manifest.json').read_bytes())
-    if value.get('kind') != 'LocalTestModelBundles' or value.get('schema_version') != 1:
+    kind = value.get('kind')
+    if kind not in ('LocalTestModelBundles', 'LocalTestModelBrandBundle') or value.get('schema_version') != 1:
         raise ProtocolError('Invalid local test bundle descriptor')
+    archive = None
+    if kind == 'LocalTestModelBrandBundle':
+        archive = value.get('archive')
+        if (not isinstance(archive, dict) or archive.get('path') != 'cache/model-bundles/onexplayer.zip'
+                or type(archive.get('size')) is not int or archive['size'] <= 0
+                or not isinstance(archive.get('sha256'), str) or not re.fullmatch('[0-9a-f]{64}', archive['sha256'])):
+            raise ProtocolError('Invalid bundled brand archive anchor')
+        archive = dict(archive, path=str(confined(root, archive['path'])))
+        if not Path(archive['path']).is_file():
+            raise ProtocolError('Bundled brand archive is missing')
     items = value.get('packages')
     if not isinstance(items, list) or len(items) > len(allowed):
         raise ProtocolError('Invalid bundled model list')
@@ -286,6 +297,15 @@ def bundled_packages(root):
                 or not isinstance(item.get('version'), str)):
             raise ProtocolError('Invalid bundled model identity or anchor')
         identities.add(identity)
+        if archive is not None:
+            if (type(item.get('manifest_size')) is not int or item['manifest_size'] <= 0
+                    or type(item.get('files')) is not int or item['files'] < 0
+                    or item.get('official_release') is not False):
+                raise ProtocolError('Invalid bundled brand package metadata')
+            result.append(dict(id=identity, version=item['version'], manifest_sha256=item['manifest_sha256'],
+                               manifest_size=item['manifest_size'], files=item['files'],
+                               official_release=False, archive=archive, trust='local-test'))
+            continue
         expected_path = 'cache/model-bundles/packages/' + identity.removeprefix('device:')
         if item.get('directory') != expected_path:
             raise ProtocolError('Bundled model path differs from its fixed identity')
@@ -297,17 +317,31 @@ def bundled_packages(root):
     return result
 
 
-def bundled_model_package(identity, *, trust_local_test=False, root=ROOT):
+def bundled_model_package(identity, *, trust_local_test=False, root=ROOT, destination=None):
     if not trust_local_test:
         raise ProtocolError('Explicit session trust is required for a local test package')
     root = Path(root).resolve()
     item = next((item for item in bundled_packages(root) if item['id'] == identity), None)
     if item is None:
         raise ProtocolError('No bundled executable package is available for this model')
-    package = validate_package(item['directory'], expected_manifest_sha256=item['manifest_sha256'])
+    if 'archive' in item:
+        if destination is None:
+            raise ProtocolError('A fresh package destination is required')
+        if Path(destination).exists():
+            directory = str(destination)
+            package = validate_package(directory, expected_manifest_sha256=item['manifest_sha256'])
+        else:
+            from .brand_bundle import import_bundled_brand
+            result = import_bundled_brand(item['archive'], destination, identity, item['manifest_sha256'],
+                                          item['manifest_size'], item['files'], item['version'])
+            package = result['package']
+            directory = result['directory']
+    else:
+        directory = item['directory']
+        package = validate_package(directory, expected_manifest_sha256=item['manifest_sha256'])
     if package['id'] != identity or package['version'] != item['version'] or package.get('purpose') == 'maintenance':
         raise ProtocolError('Bundled package does not match its model or installation purpose')
-    return dict(directory=item['directory'], manifest_sha256=item['manifest_sha256'], package=package)
+    return dict(directory=directory, manifest_sha256=item['manifest_sha256'], package=package)
 
 
 def load_models(*, root=ROOT, online=True, reader=None, include_bundles=True):

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 from pathlib import Path
 import tempfile
 import zipfile
@@ -22,8 +23,13 @@ from .resource_pool import decoder
 
 def _brand(root):
     root = _safe_path(root)
-    index = confined(root, "brand.toon")
-    raw = _bounded_bytes(index, MAX_MANIFEST, "Brand index")
+    def read_member(name, limit):
+        return _bounded_bytes(confined(root, name), limit)
+    return _read_brand(read_member, lambda name: confined(root, name).is_file())
+
+
+def _read_brand(read_member, has_member):
+    raw = read_member("brand.toon", MAX_MANIFEST)
     try:
         value = decoder().loads(raw.decode("utf-8"), strict=True)
     except (UnicodeError, ValueError) as error:
@@ -56,9 +62,9 @@ def _brand(root):
             relative_path(path)
             if not path.startswith("brands/onexplayer/"):
                 raise ProtocolError("Brand metadata path outside brand")
-        if not confined(root, guide).is_file():
+        if not has_member(guide):
             raise ProtocolError("Brand model guide is missing")
-        manifest_raw = _bounded_bytes(confined(root, manifest_name), MAX_MANIFEST)
+        manifest_raw = read_member(manifest_name, MAX_MANIFEST)
         manifest = validate_manifest(_decode_json(manifest_raw), "DevicePackage")
         if manifest["id"] != identity:
             raise ProtocolError("Brand model identity differs from package")
@@ -76,8 +82,7 @@ def _brand(root):
             if logical.casefold() in paths:
                 raise ProtocolError("Duplicate brand package path")
             paths[logical.casefold()] = (logical, member)
-            source = confined(root, member)
-            if not source.is_file():
+            if not has_member(member):
                 raise ProtocolError("Brand payload member missing")
             members[logical] = member
         if set(members) != {item["path"] for item in manifest.get("files", [])}:
@@ -152,3 +157,88 @@ def import_brand(source, destination, identity, expected_manifest_sha256, *, dev
         _publish_directory(ready, destination, os.rename, guard=_safe_path)
     return {"package": package, "directory": str(destination),
             "manifest_sha256": expected_manifest_sha256, "kind": "brand"}
+
+
+def import_bundled_brand(anchor, destination, identity, expected_manifest_sha256, manifest_size, files, version):
+    """Verify the bundled archive and materialize only the selected model."""
+    source, destination = _safe_path(anchor["path"]), _safe_path(destination)
+    if os.path.lexists(destination):
+        raise ProtocolError("Package destination already exists")
+    with _regular_file(source) as stream:
+        digest = hashlib.sha256()
+        size = 0
+        while block := stream.read(1024 * 1024):
+            size += len(block)
+            if size > anchor["size"] or size > MAX_ARCHIVE:
+                raise ProtocolError("Bundled archive size mismatch")
+            digest.update(block)
+        if size != anchor["size"] or digest.hexdigest() != anchor["sha256"]:
+            raise ProtocolError("Bundled archive verification failed")
+        stream.seek(0)
+        try:
+            archive = zipfile.ZipFile(stream)
+        except (zipfile.BadZipFile, OSError) as error:
+            raise ProtocolError("Invalid bundled archive") from error
+        with archive:
+            members, folded, total = {}, set(), 0
+            for count, member in enumerate(archive.infolist(), 1):
+                if count > 100000:
+                    raise ProtocolError("Archive file count exceeds limit")
+                name = relative_path(member.filename.rstrip("/"))
+                if name.casefold() in folded:
+                    raise ProtocolError("Duplicate archive path")
+                folded.add(name.casefold())
+                if stat.S_IFMT(member.external_attr >> 16) not in (0, stat.S_IFREG, stat.S_IFDIR):
+                    raise ProtocolError("Archive links or special files are forbidden")
+                total += member.file_size
+                if member.file_size < 0 or total > 8 * 1024**3:
+                    raise ProtocolError("Archive size exceeds limit")
+                if not member.is_dir():
+                    members[name] = member
+
+            def read_member(name, limit):
+                member = members.get(name)
+                if member is None or member.file_size > limit:
+                    raise ProtocolError("Missing or oversized brand member")
+                with archive.open(member) as entry:
+                    data = entry.read(limit + 1)
+                if len(data) != member.file_size:
+                    raise ProtocolError("Invalid brand member length")
+                return data
+            brand, models = _read_brand(read_member, members.__contains__)
+            if brand["unresolved"]:
+                raise ProtocolError("Brand bundle contains unresolved required resources")
+            selected = next((model for model in models if model["id"] == identity), None)
+            if selected is None:
+                raise ProtocolError("Unknown brand model")
+            if selected["manifest_sha256"] != expected_manifest_sha256:
+                raise ProtocolError("Reviewed package manifest changed")
+            raw = read_member(selected["manifest"], MAX_MANIFEST)
+            manifest = validate_manifest(_decode_json(raw), "DevicePackage")
+            if (len(raw) != manifest_size or manifest["version"] != version
+                    or len(manifest["files"]) != files or manifest.get("purpose") == "maintenance"):
+                raise ProtocolError("Bundled model metadata mismatch")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix=".bundled-model-", dir=destination.parent) as temporary:
+                ready = Path(temporary) / "verified"
+                ready.mkdir()
+                (ready / "manifest.json").write_bytes(raw)
+                for item in manifest["files"]:
+                    target = confined(ready, item["path"])
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    member = members[selected["files"][item["path"]]]
+                    if member.file_size != item["size"]:
+                        raise ProtocolError("Brand member size differs from inventory")
+                    with archive.open(member) as entry, target.open("xb") as output:
+                        remaining = member.file_size
+                        while remaining:
+                            block = entry.read(min(1024 * 1024, remaining))
+                            if not block:
+                                raise ProtocolError("Truncated archive")
+                            output.write(block)
+                            remaining -= len(block)
+                        if entry.read(1):
+                            raise ProtocolError("Archive entry exceeds declared size")
+                package = validate_package(ready, expected_manifest_sha256=expected_manifest_sha256)
+                _publish_directory(ready, destination, os.rename, guard=_safe_path)
+    return {"package": package, "directory": str(destination)}

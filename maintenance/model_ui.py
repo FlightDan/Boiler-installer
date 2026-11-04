@@ -478,7 +478,7 @@ class ModelUI:
             if choice == 'guide':
                 self.guide(model)
                 continue
-            needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] == 'device:oxp3'
+            needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] in ('device:oxp3','device:x2-mini')
             if needs_trust and not self.trusted:
                 if not self.dialog.confirm(self.tr(
                         '此包为本地测试包，尚未公开发布，也不代表实机运行验收通过。\n仅在本次会话信任该包并读取本机维护状态？',

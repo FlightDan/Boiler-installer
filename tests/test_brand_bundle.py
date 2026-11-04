@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import shutil
@@ -48,6 +49,48 @@ class BrandBundleImportTests(unittest.TestCase):
 
     def stage(self):
         return stage_brand(self.archive, self.root / "staged", developer=True)
+
+    def test_bundled_archive_lists_without_extracting_and_selects_only_one_model(self):
+        from protocol.model_catalog import bundled_packages, bundled_model_package
+        bundle = self.root / "cache/model-bundles"
+        bundle.mkdir(parents=True)
+        archive = bundle / "onexplayer.zip"
+        shutil.copyfile(self.archive, archive)
+        rows = []
+        for model in self.models:
+            raw = self.manifests[model["manifest"]]
+            manifest = json.loads(raw)
+            rows.append(dict(id=model["id"], version=manifest["version"],
+                             manifest_sha256=hashlib.sha256(raw).hexdigest(), manifest_size=len(raw),
+                             files=len(manifest["files"]), official_release=False))
+        data = archive.read_bytes()
+        descriptor = dict(schema_version=1, kind="LocalTestModelBrandBundle",
+                          archive=dict(path="cache/model-bundles/onexplayer.zip", size=len(data),
+                                       sha256=hashlib.sha256(data).hexdigest()), packages=rows)
+        (bundle / "manifest.json").write_text(json.dumps(descriptor))
+        listed = bundled_packages(self.root)
+        self.assertEqual({x["id"] for x in listed}, {x["id"] for x in rows})
+        self.assertFalse((self.root / "output").exists())
+        with self.assertRaises(ProtocolError):
+            bundled_model_package(rows[0]["id"], root=self.root, destination=self.root / "output")
+        result = bundled_model_package(rows[0]["id"], root=self.root, trust_local_test=True,
+                                       destination=self.root / "output")
+        self.assertEqual(result["package"]["id"], rows[0]["id"])
+        self.assertEqual({p.relative_to(self.root / "output").as_posix() for p in (self.root / "output").rglob("*") if p.is_file()},
+                         {"manifest.json", "payload/test"})
+        again = bundled_model_package(rows[0]["id"], root=self.root, trust_local_test=True,
+                                      destination=self.root / "output")
+        self.assertEqual(again["directory"], result["directory"])
+        (self.root / "output/payload/test").write_bytes(b"no")
+        with self.assertRaises(ProtocolError):
+            bundled_model_package(rows[0]["id"], root=self.root, trust_local_test=True,
+                                  destination=self.root / "output")
+        self.assertEqual((self.root / "output/payload/test").read_bytes(), b"no")
+        archive.write_bytes(data + b"tampered")
+        with self.assertRaises(ProtocolError):
+            bundled_model_package(rows[1]["id"], root=self.root, trust_local_test=True,
+                                  destination=self.root / "tampered")
+        self.assertFalse((self.root / "tampered").exists())
 
     def test_both_models_materialize_one_shared_file_into_valid_packages(self):
         result = self.stage()

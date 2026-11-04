@@ -109,8 +109,6 @@ internal static class BoilerModelCatalogChecks
                                 prefix + "/" + name + "-single-decky-provider");
                             Require(Field<InstallerOptionsPanel>(window, "optionsPanel").OptionBoxes["core:maintenance"].IsChecked == true,
                                 prefix + "/" + name + "-maintenance-preserved");
-                            Require(components.Where(pair => pair.Key != "oxp3:legacy-adaptation").All(pair => pair.Value.IsChecked == true),
-                                prefix + "/" + name + "-unrelated-package-components-preserved");
                             InstallerOptions.Validate(plan);
                         }
                         Require(components.Values.All(box => box.IsChecked == true), prefix + "-all-package-components-default-selected");

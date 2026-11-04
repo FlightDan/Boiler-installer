@@ -34,9 +34,15 @@ public partial class MainWindow
         return source.GetRawText();
     }
     private JsonElement? ChosenModelGuide => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry } && IsModelGuide(entry) ? entry : null;
-    private bool HasBundledModel(string id) => modelCatalog is JsonElement catalog && catalog.TryGetProperty("bundled_packages", out var packages)
-        && packages.EnumerateArray().Any(package => package.GetProperty("id").GetString() == id
-            && package.TryGetProperty("trust", out var trust) && trust.GetString() == "local-test");
+    private JsonElement? BundledModel(string id)
+    {
+        if (modelCatalog is not JsonElement catalog || !catalog.TryGetProperty("bundled_packages", out var packages)) return null;
+        foreach (var package in packages.EnumerateArray())
+            if (package.GetProperty("id").GetString() == id && package.TryGetProperty("trust", out var trust)
+                && trust.GetString() == "local-test") return package;
+        return null;
+    }
+    private bool HasBundledModel(string id) => BundledModel(id) != null;
     private bool CanUseChosenDevice => deviceList?.SelectedItem is ComboBoxItem { Tag: JsonElement entry }
         && (!IsModelGuide(entry) || deviceSourceBundled && HasBundledModel(entry.GetProperty("id").GetString()!));
     private string ChosenDeviceActionLabel => PartitionInventory.L("使用所选机型包", "Use selected device package");
@@ -65,7 +71,8 @@ public partial class MainWindow
         try
         {
             var result = ModelCatalogLoaderForChecks != null ? await ModelCatalogLoaderForChecks(token)
-                : await BoilerProtocol.RunAsync(["model-catalog"], token);
+                : await BoilerProtocol.RunAsync(File.Exists(Path.Combine(Backend.Root, "cache/model-bundles/manifest.json"))
+                    ? ["model-catalog", "--offline"] : ["model-catalog"], token);
             if (generation != devicePanelGeneration || token.IsCancellationRequested) return;
             modelCatalog = result.Clone();
             PopulateDeviceList();
@@ -165,12 +172,24 @@ public partial class MainWindow
     {
         if (ChosenModelGuide is not JsonElement model) { await SelectSignedDeviceAsync(); return; }
         var id = model.GetProperty("id").GetString()!;
-        if (!HasBundledModel(id)) throw new IOException(PartitionInventory.L("此机型尚无随包测试适配。", "This model has no bundled test adaptation."));
+        if (BundledModel(id) is not JsonElement bundled) throw new IOException(PartitionInventory.L("此机型尚无随包测试适配。", "This model has no bundled test adaptation."));
         var generation = devicePanelGeneration;
         var chosenKey = DeviceEntryKey(model);
         var token = deviceIndexCancellation?.Token ?? CancellationToken.None;
+        var arguments = new List<string> { "bundled-model-package", id, "--trust-local-test" };
+        string? archiveDigest = null;
+        if (bundled.TryGetProperty("archive", out _))
+        {
+            archiveDigest = bundled.GetProperty("manifest_sha256").GetString();
+            if (archiveDigest == null || !System.Text.RegularExpressions.Regex.IsMatch(archiveDigest, "^[0-9a-f]{64}$"))
+                throw new IOException("Invalid bundled model manifest digest.");
+            var destination = Path.Combine(BoilerProtocol.PackageRoot, archiveDigest[..24]);
+            arguments.AddRange(["--destination", destination]);
+        }
         var response = BundledModelLoaderForChecks != null ? await BundledModelLoaderForChecks(id, token)
-            : await BoilerProtocol.RunAsync(["bundled-model-package", id, "--trust-local-test"], token);
+            : await BoilerProtocol.RunAsync(arguments, token);
+        if (archiveDigest != null && response.GetProperty("manifest_sha256").GetString() != archiveDigest)
+            throw new IOException("Bundled model changed after review.");
         if (generation != devicePanelGeneration || ChosenModelGuide is not JsonElement chosen || DeviceEntryKey(chosen) != chosenKey) return;
         var selection = await PrepareDeviceSelectionAsync(response.GetProperty("directory").GetString()!, "developer-session",
             response.GetProperty("manifest_sha256").GetString(), token, sessionTrusted: true);

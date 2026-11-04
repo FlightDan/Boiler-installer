@@ -20,7 +20,7 @@ def main(argv=None):
     command=commands.add_parser("import-resource"); command.add_argument("source"); command.add_argument("destination"); command.add_argument("--trust-local-test",action="store_true")
     command=commands.add_parser("model-catalog"); command.add_argument("--offline",action="store_true")
     command=commands.add_parser("bundled-model-package"); command.add_argument("identity")
-    command.add_argument("--trust-local-test",action="store_true")
+    command.add_argument("--trust-local-test",action="store_true"); command.add_argument("--destination")
     command=commands.add_parser("plan"); command.add_argument("request",help="JSON {components,selected,environment,mode}")
     command=commands.add_parser("extract"); command.add_argument("archive"); command.add_argument("destination")
     command=commands.add_parser("fetch-index"); command.add_argument("url"); command.add_argument("signature_url"); command.add_argument("cache")
@@ -50,7 +50,7 @@ def main(argv=None):
             result=load_models(online=not args.offline)
         elif args.command=="bundled-model-package":
             from .model_catalog import bundled_model_package
-            result=bundled_model_package(args.identity,trust_local_test=args.trust_local_test)
+            result=bundled_model_package(args.identity,trust_local_test=args.trust_local_test,destination=args.destination)
         elif args.command=="import-resource":
             from .resource_import import import_resource_pool
             result=import_resource_pool(args.source,args.destination,trust_local_test=args.trust_local_test)

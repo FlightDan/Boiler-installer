@@ -88,8 +88,22 @@ def local_model_package_files(root, *, local_test=False):
     if not descriptor.exists():return {}
     if not local_test:raise ValueError('Local device candidates require explicit --local-test packaging')
     from protocol.model_catalog import bundled_packages, bundled_model_package
+    model_bundles = bundled_packages(root)
+    descriptor_name = 'cache/model-bundles/manifest.json'
+    descriptor_record = {'size': descriptor.stat().st_size, 'sha256': digest(descriptor)}
+    if json.loads(descriptor.read_bytes()).get('kind') == 'LocalTestModelBrandBundle':
+        if not model_bundles:
+            raise ValueError('Bundled brand has no model packages')
+        archive = model_bundles[0]['archive']
+        path = archive['path']
+        verify_file(confined(root, path), archive)
+        files = {descriptor_name: descriptor_record, path: archive}
+        actual = {p.relative_to(root).as_posix() for p in descriptor.parent.rglob('*') if p.is_file()}
+        if actual != set(files):
+            raise ValueError('Bundled brand directory contains duplicate or unlisted payloads')
+        return files
     files={}
-    for item in bundled_packages(root):
+    for item in model_bundles:
         result=bundled_model_package(item['id'],trust_local_test=True,root=root)
         package=result['package']
         prefix=Path(item['directory']).relative_to(root).as_posix()
@@ -104,7 +118,7 @@ def local_model_package_files(root, *, local_test=False):
                                        'sha256':item['manifest_sha256']}
         for entry in package['files']:
             files[prefix+'/'+entry['path']]=entry
-    files['cache/model-bundles/manifest.json']={'size':descriptor.stat().st_size,'sha256':digest(descriptor)}
+    files[descriptor_name]=descriptor_record
     base=root/'cache/model-bundles'
     actual={'cache/model-bundles/'+path.relative_to(base).as_posix() for path in base.rglob('*') if path.is_file()}
     if actual!=set(files):raise ValueError('Local test model directory contains unlisted files')
@@ -186,9 +200,15 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
         for name,path in expected.items():add('runtime/python/'+name,{'size':path.stat().st_size,'sha256':digest(path)})
     integration_bytes=confined(root,'cache/integration/manifest.json').read_bytes()
     integration=json.loads(integration_bytes)
+    descriptor = root/'cache/model-bundles/manifest.json'
+    if local_test and descriptor.is_file():
+        brand_archive = json.loads(descriptor.read_bytes()).get('kind') == 'LocalTestModelBrandBundle'
+        maintenance_mirror = integration.get('local_test_models') is True
+        if brand_archive and maintenance_mirror:
+            raise ValueError('The bundled brand cannot be copied into maintenance')
+        if not brand_archive and not maintenance_mirror:
+            raise ValueError('Local model tests must synchronize the on-device maintenance model assets')
     integration_files=integration_package_files(root,integration,local_test=local_test)
-    if local_test and (root/'cache/model-bundles/manifest.json').exists() and integration.get('local_test_models') is not True:
-        raise ValueError('Local model tests must synchronize the on-device maintenance model assets')
     add('cache/integration/manifest.json',{'size':len(integration_bytes),'sha256':hashlib.sha256(integration_bytes).hexdigest()})
     for name,entry in integration_files.items():add('cache/integration/'+name,entry)
     # Display metadata remains pinned and verified even for offline test use.
