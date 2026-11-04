@@ -44,8 +44,19 @@ internal static class BoilerModelCatalogChecks
             foreach (var entry in entries)
             {
                 var id = entry.GetProperty("id").GetString()!;
-                var packagePath = Path.GetFullPath(Path.Combine(Backend.Root, entry.GetProperty("directory").GetString()!, "manifest.json"));
-                MediaSource.Ordinary(packagePath, Path.Combine(Backend.Root, "cache/model-bundles"));
+                string packagePath;
+                if (index.RootElement.GetProperty("kind").GetString() == "LocalTestModelBrandBundle")
+                {
+                    var target = Path.Combine(directory, id.Replace(':', '-'));
+                    var extracted = await BoilerProtocol.RunAsync(["bundled-model-package", id, "--trust-local-test", "--destination", target], CancellationToken.None);
+                    packagePath = Path.Combine(extracted.GetProperty("directory").GetString()!, "manifest.json");
+                    MediaSource.Ordinary(packagePath, directory);
+                }
+                else
+                {
+                    packagePath = Path.GetFullPath(Path.Combine(Backend.Root, entry.GetProperty("directory").GetString()!, "manifest.json"));
+                    MediaSource.Ordinary(packagePath, Path.Combine(Backend.Root, "cache/model-bundles"));
+                }
                 var bytes = await File.ReadAllBytesAsync(packagePath);
                 var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
                 Require(bytes.Length == entry.GetProperty("manifest_size").GetInt64() && digest == entry.GetProperty("manifest_sha256").GetString(), id + "-manifest-lock");

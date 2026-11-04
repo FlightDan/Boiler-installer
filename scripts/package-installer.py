@@ -95,8 +95,9 @@ def local_model_package_files(root, *, local_test=False):
         if not model_bundles:
             raise ValueError('Bundled brand has no model packages')
         archive = model_bundles[0]['archive']
-        path = archive['path']
-        verify_file(confined(root, path), archive)
+        archive_file = Path(archive['path'])
+        path = archive_file.relative_to(root).as_posix()
+        verify_file(archive_file, archive)
         files = {descriptor_name: descriptor_record, path: archive}
         actual = {p.relative_to(root).as_posix() for p in descriptor.parent.rglob('*') if p.is_file()}
         if actual != set(files):

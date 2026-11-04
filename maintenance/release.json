@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "product": "Boiler Maintenance",
-  "version": "0.2.0+maintenance.15",
-  "display_version": "0.2.0+maintenance.15",
+  "version": "0.2.0+maintenance.16",
+  "display_version": "0.2.0+maintenance.16",
   "channel": "preview",
   "minimum_engine_version": "0.1.0",
   "compatibility": {
