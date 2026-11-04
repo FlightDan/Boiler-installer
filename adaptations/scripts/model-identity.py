@@ -27,6 +27,51 @@ def resource_view(model):
         raise ValueError('Invalid duplicated resource identity or hardware metadata')
     return dict(resource, name=runtime['name']['en'], hardware_matching=runtime['hardware_matching'])
 
+def common_reference_view(root, model, canonical, package_id):
+    """Validate declared source-only references against the locked common sources."""
+    reference = model['resource_model'].get('common_references')
+    if 'common_references' not in model['resource_model']:
+        if canonical in ('device:onexplayer-oxp3', 'device:onexplayer-x2-mini'):
+            raise ValueError('Published model must retain common references')
+        return None
+    if (not isinstance(reference, dict)
+            or set(reference) - {'schema_version', 'kind', 'model_id', 'source_only', 'resources', 'boot_policies'}
+            or type(reference.get('schema_version')) is not int or reference['schema_version'] != 1
+            or reference.get('kind') != 'BoilerModelCommonReferences'
+            or reference.get('model_id') != package_id or reference.get('source_only') is not True
+            or not isinstance(reference.get('resources'), list)
+            or not isinstance(reference.get('boot_policies', []), list)):
+        raise ValueError('Invalid model common references: ' + canonical)
+    resources = reference['resources']
+    seen = set()
+    for item in resources:
+        if (not isinstance(item, dict) or set(item) != {'id', 'source'}
+                or not isinstance(item['id'], str) or not isinstance(item['source'], str)
+                or item['id'] not in common.RESOURCES or common.RESOURCES[item['id']] != item['source']
+                or item['id'] in seen):
+            raise ValueError('Unknown, duplicate or mismatched common source: ' + canonical)
+        seen.add(item['id'])
+    policies = reference.get('boot_policies', [])
+    expected_policy = {'id': 'ssd:gm7-boot-repair', 'version': 1,
+                       'source': common.GM7, 'component_ref': 'ssd-gm7-boot-repair'}
+    if policies not in ([], [expected_policy]) or (policies and type(policies[0].get('version')) is not int):
+        raise ValueError('Unknown or duplicate common boot policy: ' + canonical)
+    if canonical in ('device:onexplayer-oxp3', 'device:onexplayer-x2-mini'):
+        if seen != set(common.RESOURCES) or policies != [expected_policy]:
+            raise ValueError('Published model common resources or GM7 differ: ' + canonical)
+    previous_root, previous_vendor = common.ROOT, common.VENDOR
+    try:
+        common.ROOT, common.VENDOR = root, root/'vendor'
+        common.validate_codec()
+        common.validate_migration()
+        for item in resources:
+            common.resource(item['id'], item['source'])
+        if policies:
+            common.gm7()
+    finally:
+        common.ROOT, common.VENDOR = previous_root, previous_vendor
+    return reference
+
 def generate(root=ROOT, check=False):
     root = Path(root)
     outputs, index, runtime, concise = {}, [], [], []
@@ -98,8 +143,17 @@ def generate(root=ROOT, check=False):
         if not isinstance(resource_model, dict) or resource_model.get('id') != legacy_package:
             raise ValueError('Resource and runtime identity differs: ' + name)
         resource_view(model)
+        reference_path = '/'.join(parts[:3]) + '/common-device-sources.toon'
+        reference = common_reference_view(root, model, canonical, legacy_package)
+        if reference is None:
+            if adaptations.local(root, reference_path).exists():
+                raise ValueError('Undeclared common reference view: ' + reference_path)
+        else:
+            outputs[reference_path] = (common.toon_format.dumps(reference) + '\n').encode('utf-8')
         for component in model['components']:
             for source in component['sources']:
+                if source == reference_path and reference is not None:
+                    continue  # This source is generated in the same operation.
                 if not adaptations.local(root, source).is_file():
                     raise ValueError('Missing component source: ' + source)
         record = model.get('device_record')

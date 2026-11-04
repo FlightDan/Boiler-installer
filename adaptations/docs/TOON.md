@@ -47,3 +47,5 @@ TOON 中的 `resources[4]{id,source}` 表示四行，每行按顺序填写资源
 TOON 写的是需要什么；运行、维护和恢复逻辑由构建器与对应组件提供。把 TOON 用作两台机型共同的购物清单时，同一路径只应收录一份，机型专属文件分别保留。
 
 `models.toon` 的 schema 2 只列出带品牌的 `canonical_id` 和相对仓库根目录的 `source`。机型 TOON 的 `legacy_aliases` 明确保存旧指南及包标识；`device_record` 保存设备记录的其余元数据，名称和硬件匹配从 `runtime` 生成。`devices/*.json` 是旧协议视图，不会改写历史签名。运行 `python -B scripts/model-identity.py write` 更新视图，使用 `check` 验证。`resource_model` 的名称和硬件匹配由 `runtime` 投影，避免重复维护。
+
+新机型如声明 `resource_model.common_references`，`model-identity.py` 按该声明生成并检查同目录 `common-device-sources.toon`，并核验公共资源来源锁；未声明时不生成，GM7 也只在明确引用时列出。`common-device-source-index.json` 保留为旧双机型兼容视图，不代表新机型已接入安装、维护或恢复。

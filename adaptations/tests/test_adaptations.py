@@ -159,10 +159,8 @@ class AdaptationCollectionTests(unittest.TestCase):
                         rows.append(dict(gyro))
                     else:
                         gyro['source'] = 'wrong/source.toon'
-                self.update_model(root, mutate)
-                with patch('sys.argv', ['common-device-sources.py', 'write']):
-                    with self.assertRaisesRegex(ValueError, 'model common resources differ'):
-                        common.main()
+                with self.assertRaisesRegex(ValueError, 'common (resources|source)'):
+                    self.update_model(root, mutate)
 
     def test_third_model_gyro_toon_is_validated(self):
         for case in ('valid', 'no-gyro', 'other-gyro', 'other-gyro-uninventoried', 'missing', 'wrong', 'duplicate', 'identity', 'source-only'):
@@ -207,6 +205,10 @@ class AdaptationCollectionTests(unittest.TestCase):
                 if case == 'other-gyro-uninventoried':
                     (root/'unreviewed-gyro.py').write_text('unreviewed')
                 (directory/'test-model.toon').write_text(identity.common.toon_format.dumps(model)+'\n', encoding='utf-8')
+                if case in ('wrong', 'duplicate', 'identity', 'source-only'):
+                    with self.assertRaises(ValueError):
+                        identity.generate(root)
+                    continue
                 identity.generate(root)
                 if case == 'missing':
                     (root/reference_path).unlink()

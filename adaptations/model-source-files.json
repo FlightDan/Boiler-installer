@@ -1495,13 +1495,13 @@
     },
     {
       "path": "docs/TOON.en.md",
-      "size": 4312,
-      "sha256": "87fe6d11b2bf2d050f9eecc29206f2668f9a5056c196ee13c182bd1f3828672c"
+      "size": 4788,
+      "sha256": "b028650e909a736cf71d4db6938cb8444dd9fa452d7d5fc3ac38d6eed04d0dab"
     },
     {
       "path": "docs/TOON.md",
-      "size": 3948,
-      "sha256": "b8763943916c5edf3aff47b059f2781da8b3f28228b9bbe723e1e8e3a619c930"
+      "size": 4312,
+      "sha256": "036224f91bd3614bdddb93c5afb3bdfea344ddd80ae654334b3c34b8642655b9"
     },
     {
       "path": "fingerprint-source-lock.json",
@@ -1800,8 +1800,8 @@
     },
     {
       "path": "scripts/model-identity.py",
-      "size": 10345,
-      "sha256": "669f7540f176a16655faa9d78a8cb3192b11e40b76957fada8e62f3a7bc89271"
+      "size": 13623,
+      "sha256": "f2f1c23d00792c3b6e6017c3691388cc5d38dd1d91c5d8bf0b67440e6e32b3f2"
     },
     {
       "path": "scripts/prepare-current-inputs.py",
@@ -1835,8 +1835,8 @@
     },
     {
       "path": "tests/test_adaptations.py",
-      "size": 18318,
-      "sha256": "c7029f844a4170a00ed7c76e8863b57835221f5bfaad0c1a112958b454197185"
+      "size": 18408,
+      "sha256": "8aa800cf88bb3a26e2783af817a19a1c8e4a911dc3f5b6b10a6bb33f81f4d609"
     },
     {
       "path": "tests/test_common_device_sources.py",
@@ -1855,8 +1855,8 @@
     },
     {
       "path": "tests/test_model_identity.py",
-      "size": 6957,
-      "sha256": "f9772378d2046c2af5bf249e555a38ca5ecdb229bc756eb1ca2bf9997d114848"
+      "size": 12541,
+      "sha256": "791727776b66fd705f22136efdf42f7737e2274b887003e85ce937306fbdf1ad"
     },
     {
       "path": "tests/test_registry.py",

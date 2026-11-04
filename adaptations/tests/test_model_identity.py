@@ -19,6 +19,22 @@ class IdentityTests(unittest.TestCase):
         shutil.copytree(ROOT/'brands/onexplayer/oxp3', self.root/'brands/onexplayer/oxp3')
         shutil.copytree(ROOT/'brands/onexplayer/x2-mini', self.root/'brands/onexplayer/x2-mini')
         (self.root/'devices').mkdir()
+        shutil.copytree(ROOT/'vendor', self.root/'vendor')
+        shutil.copy2(ROOT/'toon-parser-lock.json', self.root/'toon-parser-lock.json')
+        shutil.copy2(ROOT/'common-device-source-index.json', self.root/'common-device-source-index.json')
+        def copy(name):
+            dest = self.root/name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT/name, dest)
+        for migration in identity.common.MIGRATIONS: copy(migration)
+        copy(identity.common.GM7)
+        for source in identity.common.RESOURCES.values():
+            copy(source)
+            value = identity.common.toon_format.loads((ROOT/source).read_text(encoding='utf-8'), strict=True)
+            base = Path(source).parent
+            for row in value['files']:
+                if row['availability'] == 'checked-in': copy(base/row['path'])
+            for license in value['licenses']: copy(base/license)
         for path in self.root.glob('brands/*/*/*.toon'):
             if path.name != path.parent.name + '.toon': continue
             model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
@@ -104,6 +120,64 @@ class IdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing component source'):
             identity.generate(self.root)
 
+    def test_published_model_requires_all_resources_and_gm7(self):
+        path = self.root/'brands/onexplayer/oxp3/oxp3.toon'
+        model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
+        original = json.loads(json.dumps(model['resource_model']['common_references']))
+        for mutation in ('missing-resource', 'missing-gm7'):
+            with self.subTest(mutation=mutation):
+                refs = json.loads(json.dumps(original))
+                if mutation == 'missing-resource': refs['resources'].pop()
+                else: refs['boot_policies'] = []
+                model['resource_model']['common_references'] = refs
+                self.save(path, model)
+                with self.assertRaisesRegex(ValueError, 'Published model common resources or GM7 differ'):
+                    identity.generate(self.root)
+
+    def test_referenced_source_bytes_must_match_lock(self):
+        path = self.root/'common/sensors/bosch/bmi260/gyro/sources/launch.sh'
+        path.write_bytes(path.read_bytes()+b'tampered')
+        with self.assertRaisesRegex(ValueError, 'source bytes differ'):
+            identity.generate(self.root)
+
+    def test_unrecognized_reference_and_absent_reference(self):
+        src = self.root/'brands/onexplayer/oxp3'
+        dest = self.root/'brands/example/oxp3'
+        shutil.copytree(src, dest)
+        path = dest/'oxp3.toon'
+        model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
+        model['canonical_id'] = 'device:example-oxp3'
+        model['legacy_aliases'] = {'guide': [], 'package': []}
+        model['id'] = 'guide:example-oxp3'
+        model['runtime']['id'] = model['canonical_id']
+        model['resource_model']['id'] = model['canonical_id']
+        model['device_record_path'] = 'devices/example-oxp3.json'
+        model['guide'] = 'brands/example/oxp3/model.md'
+        refs = model['resource_model']['common_references']
+        refs['model_id'] = model['canonical_id']
+        refs['resources'] = refs['resources'][:1]
+        refs['boot_policies'] = []
+        baseline = json.loads(json.dumps(refs))
+        for mutation in ('unknown', 'wrong-path', 'duplicate', 'wrong-id', 'unsupported-policy'):
+            with self.subTest(mutation=mutation):
+                refs = json.loads(json.dumps(baseline))
+                if mutation == 'unknown': refs['resources'][0]['id'] = 'resource:unknown'
+                elif mutation == 'wrong-path': refs['resources'][0]['source'] = 'common/wrong.toon'
+                elif mutation == 'duplicate': refs['resources'].append(dict(refs['resources'][0]))
+                elif mutation == 'wrong-id': refs['model_id'] = 'device:oxp3'
+                else: refs['boot_policies'] = [{'id': 'ssd:unknown'}]
+                model['resource_model']['common_references'] = refs
+                self.save(path, model)
+                with self.assertRaises(ValueError): identity.generate(self.root)
+        del model['resource_model']['common_references']
+        self.save(path, model)
+        (dest/'common-device-sources.toon').unlink()
+        identity.generate(self.root)
+        self.assertFalse((dest/'common-device-sources.toon').exists())
+        (dest/'common-device-sources.toon').write_text('stale')
+        with self.assertRaisesRegex(ValueError, 'Undeclared common reference view'):
+            identity.generate(self.root, check=True)
+
     def test_same_slug_across_brands_without_legacy_alias(self):
         src = self.root/'brands/onexplayer/oxp3'
         dest = self.root/'brands/example/oxp3'
@@ -115,6 +189,12 @@ class IdentityTests(unittest.TestCase):
         model['id'] = 'guide:example-oxp3'
         model['runtime']['id'] = 'device:example-oxp3'
         model['resource_model']['id'] = 'device:example-oxp3'
+        refs = model['resource_model']['common_references']
+        refs['model_id'] = model['canonical_id']
+        refs['resources'] = [next(row for row in refs['resources'] if row['id'] == 'resource:bmi260-gyro')]
+        refs.pop('boot_policies')
+        next(item for item in model['components'] if item['id']=='gyro')['sources'] = ['brands/example/oxp3/common-device-sources.toon']
+        (dest/'common-device-sources.toon').unlink()
         model['device_record_path'] = 'devices/example-oxp3.json'
         model['guide'] = 'brands/example/oxp3/model.md'
         self.save(path, model)
@@ -122,5 +202,16 @@ class IdentityTests(unittest.TestCase):
         index = identity.common.toon_format.loads((self.root/'models.toon').read_text(encoding='utf-8'), strict=True)
         self.assertEqual({r['id'] for r in index['models']}, {'device:example-oxp3', 'device:onexplayer-oxp3', 'device:onexplayer-x2-mini'})
         self.assertEqual(json.loads((self.root/'devices/example-oxp3.json').read_bytes())['id'], 'device:example-oxp3')
+        ref = identity.common.toon_format.loads((dest/'common-device-sources.toon').read_text(encoding='utf-8'), strict=True)
+        self.assertEqual(ref, refs)
+        self.assertNotIn('boot_policies', ref)
+        self.assertEqual((self.root/'common-device-source-index.json').read_bytes(), (ROOT/'common-device-source-index.json').read_bytes())
+        for slug in ('oxp3', 'x2-mini'):
+            name = f'brands/onexplayer/{slug}/common-device-sources.toon'
+            self.assertEqual((self.root/name).read_bytes(), (ROOT/name).read_bytes())
+        identity.generate(self.root, check=True)
+        (dest/'common-device-sources.toon').write_text('tampered')
+        with self.assertRaisesRegex(ValueError, 'Generated view differs'):
+            identity.generate(self.root, check=True)
 
 if __name__ == '__main__': unittest.main()
