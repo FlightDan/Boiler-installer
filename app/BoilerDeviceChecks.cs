@@ -1,4 +1,5 @@
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -157,11 +158,48 @@ internal static class BoilerDeviceChecks
             foreach (var language in new[] { "zh-CN", "en-US" })
             {
                 InstallerI18n.SetLanguage(language);
+                var brandModel = JsonSerializer.SerializeToElement(new { id = "device:fixture", name = new { en = "English model", zh = "中文机型" } });
+                Require(MainWindow.BrandModelLabel(brandModel) == (language == "en-US" ? "English model" : "中文机型"),
+                    "brand-model-localized-name-" + language);
+                var brandPending = JsonSerializer.SerializeToElement(new { pending = new[] {
+                    new { resource = "resource:intel-be201-firmware", status = "disabled-resource-not-integrated" },
+                    new { resource = "resource:gamma22-hdr-game", status = "disabled-resource-not-integrated" } } });
+                var pendingText = MainWindow.BrandPendingDescription(brandPending);
+                Require(pendingText.Contains("Intel BE201") && pendingText.Contains(language == "en-US" ? "Game HDR" : "游戏 HDR")
+                    && pendingText.Contains(language == "en-US" ? "not integrated" : "尚未接入"),
+                    "brand-pending-localized-resource-status-" + language);
+                var legacyPending = JsonSerializer.SerializeToElement(new { pending = new[] { new { component = "oxp3:legacy-adaptation", status = "linux-lifecycle-not-verified" } } });
+                var legacyPendingText = MainWindow.BrandPendingDescription(legacyPending);
+                Require(legacyPendingText.Contains(language == "en-US" ? "not yet verified" : "仍待验证"), "brand-pending-lifecycle-" + language);
+                Require(MainWindow.BrandPendingDescription(JsonSerializer.SerializeToElement(new { id = "old" })) == "",
+                    "brand-old-package-no-pending-" + language);
                 var calls = 0;
                 window = new MainWindow(rehearsal: true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false };
                 ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
                 window.DeviceIndexLoaderForChecks = _ => { calls++; return Task.FromResult(IndexResponse()); };
                 window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
+                var modelChoices = JsonSerializer.SerializeToElement(new[] {
+                    new { id = "device:oxp3", name = new { en = "OXP3", zh = "OXP3" }, pending = new[] {
+                        new { resource = "resource:intel-be201-firmware", status = "disabled-resource-not-integrated" } } },
+                    new { id = "device:x2-mini", name = new { en = "X2 Mini", zh = "X2 Mini" }, pending = new[] {
+                        new { resource = "resource:gamma22-hdr-game", status = "disabled-resource-not-integrated" } } } });
+                var dialogShowsSelectedPending = false;
+                _ = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+                {
+                    var dialog = Application.Current.Windows.OfType<Window>().Single(candidate => candidate.Owner == window);
+                    var body = (StackPanel)dialog.Content;
+                    var chooser = body.Children.OfType<ComboBox>().Single();
+                    var notice = (TextBlock)body.Children.OfType<ScrollViewer>().Single().Content;
+                    chooser.SelectedIndex = 1;
+                    dialogShowsSelectedPending = notice.Text.Contains(language == "en-US" ? "Game HDR" : "游戏 HDR")
+                        && !notice.Text.Contains("BE201");
+                    var select = body.Children.OfType<StackPanel>().Single().Children.OfType<Button>().Last();
+                    select.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                }));
+                var chosenModel = (JsonElement?)typeof(MainWindow).GetMethod("ChooseBrandModel", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [modelChoices]);
+                Require(dialogShowsSelectedPending && chosenModel?.GetProperty("id").GetString() == "device:x2-mini",
+                    "brand-selection-dialog-shows-selected-pending-" + language);
                 Require(calls == 1, "inline-device-choice-loads-device-index-" + language);
                 typeof(MainWindow).GetMethod("ChooseDeviceInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null); await Flush(window);
                 Require(calls == 1, "automatic-index-load-once-" + language);
@@ -233,6 +271,76 @@ internal static class BoilerDeviceChecks
                     await BoilerProtocol.RunAsync(["import-device", copied, guest, "--developer"], CancellationToken.None);
                     await BoilerProtocol.RunAsync(["package", guest, "--manifest-sha256", digest], CancellationToken.None);
                     Require(File.Exists(Path.Combine(guest, "data/cache.pyc")), "guest-transport-preserves-inventoried-pyc");
+
+                    // Import the same inventoried bytes as a two-model brand ZIP.
+                    var brandZip = Path.Combine(directory, "brand-fixture.zip");
+                    var fixtureManifest = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(imported, "manifest.json")))!;
+                    var fixtureFiles = fixtureManifest["files"]!.AsArray().Select(node => node!["path"]!.GetValue<string>()).ToArray();
+                    var toon = new StringBuilder("schema_version: 1\nkind: BoilerBrandBundle\nbrand: onexplayer\nsource_repository: FlightDan/Boiler-adaptations\nsource_commit: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nunresolved: []\npending[3]:\n  - model: device:oxp3\n    resource: resource:intel-be201-firmware\n    status: disabled-resource-not-integrated\n  - model: device:x2-mini\n    component: pl4-175w\n    status: implementation_missing\n  - model: device:x2-mini\n    component: lsfg-vk\n    status: external_plugin\nmodels[2]:\n");
+                    using (var brandArchive = ZipFile.Open(brandZip, ZipArchiveMode.Create))
+                    {
+                        void AddText(string path, string text)
+                        {
+                            using var writer = new StreamWriter(brandArchive.CreateEntry(path).Open(), new UTF8Encoding(false));
+                            writer.Write(text);
+                        }
+                        foreach (var (id, model) in new[] { ("device:oxp3", "oxp3"), ("device:x2-mini", "x2-mini") })
+                        {
+                            var guide = "brands/onexplayer/" + model + "/" + model + ".toon";
+                            var name = "brands/onexplayer/" + model + "/runtime/manifest.json";
+                            var item = fixtureManifest.DeepClone();
+                            item["id"] = id;
+                            item["name"] = JsonSerializer.SerializeToNode(new { en = model, zh = model });
+                            AddText(guide, "schema_version: 1\n"); AddText(name, item.ToJsonString());
+                            toon.Append("  - id: ").Append(id).Append("\n    guide: ").Append(guide)
+                                .Append("\n    manifest: ").Append(name).Append("\n    files[")
+                                .Append(fixtureFiles.Length).Append("]{path,member}:\n");
+                            foreach (var nameInPackage in fixtureFiles)
+                                toon.Append("      ").Append(nameInPackage).Append(",common/fixture/").Append(nameInPackage).Append('\n');
+                        }
+                        foreach (var nameInPackage in fixtureFiles)
+                            brandArchive.CreateEntryFromFile(Path.Combine(imported, nameInPackage.Replace('/', Path.DirectorySeparatorChar)), "common/fixture/" + nameInPackage);
+                        AddText("brand.toon", toon.ToString());
+                    }
+                    string? brandStage = null;
+                    window.BrandStageForChecks = path => brandStage = path;
+                    window.BrandModelChooserForChecks = models =>
+                    {
+                        var choices = models.EnumerateArray().ToArray();
+                        var oxpText = MainWindow.BrandPendingDescription(choices[0]);
+                        var x2Text = MainWindow.BrandPendingDescription(choices[1]);
+                        Require(oxpText.Contains("Intel BE201") && !oxpText.Contains("PL4")
+                            && x2Text.Contains("PL4 175 W") && x2Text.Contains("LSFG-VK") && !x2Text.Contains("BE201"),
+                            "brand-pending-follows-selected-model");
+                        return choices[1].Clone();
+                    };
+                    await Import(window, brandZip);
+                    var chosenBrandPath = Path.Combine(BoilerProtocol.PackageRoot, window.CurrentOptions.DevicePackage!, "manifest.json");
+                    var chosenBrand = JsonNode.Parse(await File.ReadAllTextAsync(chosenBrandPath))!;
+                    Require(chosenBrand["id"]!.GetValue<string>() == "device:x2-mini"
+                        && window.CurrentOptions.DeviceTrust == "developer-session", "brand-import-selects-x2-through-normal-package-flow");
+                    Require(brandStage != null && !Directory.Exists(brandStage) && File.Exists(brandZip) && File.Exists(chosenBrandPath),
+                        "brand-success-cleans-stage-and-preserves-input-and-selected-cache");
+                    var selectedBeforeCancel = window.CurrentOptions.DevicePackage;
+                    window.BrandModelChooserForChecks = _ => null;
+                    await Import(window, brandZip);
+                    Require(brandStage != null && !Directory.Exists(brandStage) && File.Exists(brandZip)
+                        && window.CurrentOptions.DevicePackage == selectedBeforeCancel && File.Exists(chosenBrandPath),
+                        "brand-cancel-cleans-stage-and-preserves-previous-selection");
+                    var incompleteZip = Path.Combine(directory, "brand-incomplete.zip");
+                    File.Copy(brandZip, incompleteZip);
+                    using (var incomplete = ZipFile.Open(incompleteZip, ZipArchiveMode.Update))
+                    {
+                        incomplete.GetEntry("brand.toon")!.Delete();
+                        using var writer = new StreamWriter(incomplete.CreateEntry("brand.toon").Open(), new UTF8Encoding(false));
+                        writer.Write(toon.ToString().Replace("unresolved: []", "unresolved[1]: missing-runtime"));
+                    }
+                    await Import(window, incompleteZip);
+                    Require(brandStage != null && !Directory.Exists(brandStage) && File.Exists(incompleteZip)
+                        && window.CurrentOptions.DevicePackage == selectedBeforeCancel && File.Exists(chosenBrandPath),
+                        "brand-failure-cleans-stage-and-preserves-previous-selection");
+                    window.BrandModelChooserForChecks = null;
+                    window.BrandStageForChecks = null;
                     await Import(window, Path.Combine(directory, "missing.zip"));
                     Require(window.CurrentOptions.DevicePackage == null && Field<TextBlock>(window, "deviceStatus").Text.Length > 0, "failed-import-has-no-stale-selection");
 

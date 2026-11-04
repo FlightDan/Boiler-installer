@@ -4,6 +4,7 @@ import os
 import stat
 from pathlib import Path
 import subprocess
+from layout import PARTS
 from source_profile import inspect_source
 
 
@@ -22,23 +23,38 @@ def reject_bound_ssd_home(home):
     raise ValueError('Source contains destination-bound SSD records; use an unbound original system source')
 
 
+def source_partitions(table):
+    """Identify recovery or the exact prepared SteamOS suffix on a GPT source."""
+    if table.get('label') != 'gpt' or table.get('sectorsize') != 512:
+        raise ValueError('Source is not a supported GPT SteamOS image')
+    partitions = table['partitions']
+    names = [part.get('name') for part in partitions]
+    recovery = ['esp', 'efi-A', 'rootfs-A', 'var-A', 'home']
+    if names == recovery:
+        return 'steamos-recovery', {part['name']: part['node'] for part in partitions}
+    roles = {name: kind for name, _, kind in PARTS}
+    roles['home'] = '933AC7E1-2EB4-4F13-B844-0E14E2AEF915'
+    count = len(roles)
+    if (names[-count:] != list(roles) or set(names[:-count]).intersection(roles)
+            or any(not isinstance(part.get('type'), str)
+                   or part['type'].upper() != roles[part['name']]
+                   for part in partitions[-count:])):
+        raise ValueError('Source is not a supported recovery or prepared SteamOS image')
+    return 'steamos-ab', {part['name']: part['node'] for part in partitions[-count:]}
+
+
 def inspect_image():
     if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU': raise RuntimeError('Managed VM required')
     if Path('/sys/class/block/vdc/ro').read_text().strip() != '1': raise RuntimeError('Source image must be read-only')
     table = json.loads(run('sfdisk', '--json', '/dev/vdc'))['partitiontable']
-    names = [part.get('name') for part in table['partitions']]
-    recovery = ['esp', 'efi-A', 'rootfs-A', 'var-A', 'home']
-    prepared = ['esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home']
-    if table.get('label') != 'gpt' or table.get('sectorsize') != 512 or names not in (recovery, prepared):
-        raise ValueError('Source is not a supported recovery or eight-partition SteamOS image')
-    nodes = {part['name']: part['node'] for part in table['partitions']}
+    layout, nodes = source_partitions(table)
     root = Path('/mnt/boiler-source-info'); root.mkdir(exist_ok=True)
     run('mount', '-t', 'ext4', '-o', 'ro,noload', nodes['home'], str(root))
     try: reject_bound_ssd_home(root)
     finally: run('umount', str(root))
     profiles = {}
     wireless = {vendor: False for vendor in ('intel', 'realtek', 'mediatek')}
-    for slot in ('A', 'B') if names == prepared else ('A',):
+    for slot in ('A', 'B') if layout == 'steamos-ab' else ('A',):
         run('mount', '-t', 'btrfs', '-o', 'ro,rescue=nologreplay', nodes['rootfs-' + slot], str(root))
         try:
             profiles[slot] = inspect_source(root)
@@ -51,7 +67,7 @@ def inspect_image():
                 if name.startswith(('rtw', 'rtl')) and ('wireless' in file.parts or not name.startswith('rtl81')): wireless['realtek'] = True
                 if name.startswith(('mt76', 'mt79')): wireless['mediatek'] = True
         finally: run('umount', str(root))
-    return dict(profiles['A'], layout='steamos-ab' if names == prepared else 'steamos-recovery',
+    return dict(profiles['A'], layout=layout,
                 slots=profiles, wireless_modules=wireless,
                 wireless_scope='Existing kernel modules only; physical wireless hardware is not verified')
 

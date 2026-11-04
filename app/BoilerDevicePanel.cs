@@ -473,6 +473,91 @@ public partial class MainWindow
         await SelectDeviceDirectory(folder, "signed-index", digest);
     }
 
+    internal static string BrandModelLabel(JsonElement item) => PreviewText(item, "name", item.GetProperty("id").GetString() ?? "");
+
+    internal static string BrandPendingDescription(JsonElement model)
+    {
+        if (!model.TryGetProperty("pending", out var pending) || pending.ValueKind != JsonValueKind.Array || pending.GetArrayLength() == 0)
+            return "";
+        var lines = new List<string> { PartitionInventory.L(
+            "以下为新资源和额外功能的状态；已有适配仍可使用：",
+            "Status of new resources and additional features; existing adaptations remain available:") };
+        foreach (var item in pending.EnumerateArray())
+        {
+            var id = item.TryGetProperty("resource", out var resource) ? resource.GetString()
+                : item.TryGetProperty("component", out var component) ? component.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+            var name = id switch
+            {
+                "resource:intel-be201-firmware" => PartitionInventory.L("Intel BE201 固件", "Intel BE201 firmware"),
+                "resource:intel-g3e-public-cpu-controls" => PartitionInventory.L("Intel CPU 控制", "Intel CPU controls"),
+                "resource:gamma22-hdr-game" => PartitionInventory.L("游戏 HDR", "Game HDR"),
+                "resource:onexplayer-battery-common" => PartitionInventory.L("电池功能", "Battery support"),
+                "resource:onexplayer-battery-charge-backend" => PartitionInventory.L("电池充电控制", "Battery charge control"),
+                "resource:common-charge-compatibility-guard" => PartitionInventory.L("充电兼容保护", "Charging compatibility guard"),
+                "resource:onexplayer-light" => PartitionInventory.L("灯效", "Lighting"),
+                "oxp3:legacy-adaptation" => PartitionInventory.L("旧机型适配", "Legacy model adaptation"),
+                "base-system" => PartitionInventory.L("系统镜像", "System image"),
+                "pl4-175w" => "PL4 175 W",
+                "lsfg-vk" => "LSFG-VK",
+                _ => id
+            };
+            var status = item.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            var description = status switch
+            {
+                "external_boiler_core" => PartitionInventory.L("在安装器中单独选择", "selected separately in the installer"),
+                "external_plugin" => PartitionInventory.L("需外部插件，未随包提供", "external plugin, not included"),
+                "linux-lifecycle-not-verified" => PartitionInventory.L("安装和维护仍待验证", "installation and maintenance not yet verified"),
+                "implementation_missing" => PartitionInventory.L("尚未实现", "not implemented"),
+                _ => PartitionInventory.L("新资源尚未接入", "new resource not integrated")
+            };
+            lines.Add("• " + name + " — " + description);
+        }
+        return lines.Count == 1 ? "" : string.Join("\n", lines);
+    }
+
+    internal Func<JsonElement, JsonElement?>? BrandModelChooserForChecks { get; set; }
+    internal Action<string>? BrandStageForChecks { get; set; }
+
+    private JsonElement? ChooseBrandModel(JsonElement models)
+    {
+        if (BrandModelChooserForChecks != null) return BrandModelChooserForChecks(models);
+        var choices = models.EnumerateArray().Select(item => item.Clone()).ToArray();
+        if (choices.Length == 0) throw new IOException(PartitionInventory.L("品牌包没有机型。", "The brand package has no models."));
+        var dialog = new Window
+        {
+            Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Title = PartitionInventory.L("选择机型", "Choose a model"),
+            SizeToContent = SizeToContent.WidthAndHeight, MinWidth = 390, ResizeMode = ResizeMode.NoResize
+        };
+        var body = new StackPanel { Margin = new Thickness(20) };
+        body.Children.Add(new TextBlock
+        {
+            Text = PartitionInventory.L("选择要从品牌包使用的机型：", "Choose the model to use from this brand package:"),
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12)
+        });
+        var list = new ComboBox { MinHeight = 38, MinWidth = 350, SelectedIndex = -1 };
+        foreach (var item in choices)
+            list.Items.Add(new ComboBoxItem { Content = BrandModelLabel(item), Tag = item });
+        body.Children.Add(list);
+        var pendingNotice = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
+        body.Children.Add(new ScrollViewer { MaxHeight = 180, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = pendingNotice });
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 16, 0, 0) };
+        var cancel = new Button { Content = PartitionInventory.L("取消", "Cancel"), MinWidth = 88, Margin = new Thickness(0, 0, 8, 0), IsCancel = true };
+        var select = new Button { Content = PartitionInventory.L("使用", "Use"), MinWidth = 88, IsDefault = true, IsEnabled = false };
+        list.SelectionChanged += (_, _) =>
+        {
+            select.IsEnabled = list.SelectedItem != null;
+            pendingNotice.Text = list.SelectedItem is ComboBoxItem { Tag: JsonElement selected } ? BrandPendingDescription(selected) : "";
+        };
+        select.Click += (_, _) => dialog.DialogResult = true;
+        buttons.Children.Add(cancel); buttons.Children.Add(select); body.Children.Add(buttons);
+        dialog.Content = body;
+        if (dialog.ShowDialog() != true) return null;
+        return list.SelectedItem is ComboBoxItem { Tag: JsonElement selected } ? selected.Clone() : null;
+    }
+
     private async Task ImportDeviceInputAsync(string path)
     {
         if (installMode != "custom" || homeScreen != null || operation != null || DownloadsBusy) return;
@@ -480,23 +565,51 @@ public partial class MainWindow
         SwitchDeviceSource(false);
         await DeviceAction(async () =>
         {
-            adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
-            ClearPackageOptionPreview(); ShowStep(AdaptationStep);
-            ClearDeviceSelection(); pendingDeviceDirectory = null;
-            signedDeviceUse!.Visibility = Visibility.Collapsed;
-            updatingDeviceList = true; deviceList!.SelectedIndex = 0; updatingDeviceList = false;
-            ClearModelGuide();
-            deviceStatus!.Text = PartitionInventory.L("正在识别并校验外部机型内容…", "Inspecting and verifying the external device content…");
             var destination = Path.Combine(InstallerWorkspace.DirectoryPath, "device-imports", Guid.NewGuid().ToString("N"));
-            var result = await BoilerProtocol.RunAsync(["import-device", path, destination, "--developer"], CancellationToken.None);
-            var package = result.GetProperty("package");
-            if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
-                throw new IOException(PartitionInventory.L("这是维护专用包，请使用维护器导入。", "This is a maintenance package. Import it with the maintainer."));
-            reviewedDeviceMetadata = null;
-            var selection = await PrepareDeviceSelectionAsync(result.GetProperty("directory").GetString()!,
-                "developer-session", result.GetProperty("manifest_sha256").GetString(), CancellationToken.None, sessionTrusted: true);
-            importedDeviceFileName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            CommitDeviceSelection(selection);
+            var stage = Path.Combine(InstallerWorkspace.DirectoryPath, "device-imports", Guid.NewGuid().ToString("N"));
+            if (Directory.Exists(stage) || File.Exists(stage)) throw new IOException("Brand staging path already exists.");
+            BrandStageForChecks?.Invoke(stage);
+            var previousStatus = deviceStatus!.Text;
+            try
+            {
+                deviceStatus.Text = PartitionInventory.L("正在识别并校验外部机型内容…", "Inspecting and verifying the external device content…");
+                var brand = await BoilerProtocol.RunAsync(["stage-brand", path, stage, "--developer"], CancellationToken.None);
+                JsonElement? selectedBrand = null;
+                if (brand.GetProperty("recognized").GetBoolean())
+                {
+                    if (brand.GetProperty("unresolved").GetArrayLength() != 0)
+                        throw new IOException(PartitionInventory.L("品牌包缺少必要内容，暂时无法使用。", "The brand package is missing required content."));
+                    selectedBrand = ChooseBrandModel(brand.GetProperty("models"));
+                    if (selectedBrand == null) { deviceStatus.Text = previousStatus; return; }
+                }
+
+                adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
+                ClearPackageOptionPreview(); ShowStep(AdaptationStep);
+                ClearDeviceSelection(); pendingDeviceDirectory = null;
+                signedDeviceUse!.Visibility = Visibility.Collapsed;
+                updatingDeviceList = true; deviceList!.SelectedIndex = 0; updatingDeviceList = false;
+                ClearModelGuide();
+                JsonElement result;
+                if (selectedBrand is JsonElement selected)
+                    result = await BoilerProtocol.RunAsync(["import-brand", brand.GetProperty("directory").GetString()!, destination,
+                        selected.GetProperty("id").GetString()!, selected.GetProperty("manifest_sha256").GetString()!,
+                        "--developer"], CancellationToken.None);
+                else result = await BoilerProtocol.RunAsync(["import-device", path, destination, "--developer"], CancellationToken.None);
+                var package = result.GetProperty("package");
+                if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
+                    throw new IOException(PartitionInventory.L("这是维护专用包，请使用维护器导入。", "This is a maintenance package. Import it with the maintainer."));
+                reviewedDeviceMetadata = null;
+                var selection = await PrepareDeviceSelectionAsync(result.GetProperty("directory").GetString()!,
+                    "developer-session", result.GetProperty("manifest_sha256").GetString(), CancellationToken.None, sessionTrusted: true);
+                importedDeviceFileName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                CommitDeviceSelection(selection);
+            }
+            finally
+            {
+                // Only the fresh, GUID-named brand staging tree is removed. The
+                // original archive, selected package and its cache are separate.
+                if (Directory.Exists(stage)) Directory.Delete(stage, recursive: true);
+            }
         });
     }
 

@@ -56,7 +56,7 @@ RUNTIME_FILES = (
     'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py',
     'maintenance/resource_runtime.py', 'maintenance/resource_entrypoints.py', 'maintenance/firmware_resources.py', 'maintenance/cpu_resources.py', 'maintenance/resource_cli.py',
     'maintenance/feedback.py', 'maintenance/reporter.py', 'maintenance/release.json',
-    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py',
+    'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py', 'protocol/brand_bundle.py',
     'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/trusted-public-key.pem',
     'protocol/resource_pool.py', 'protocol/resource_selection.py', 'protocol/resource_import.py', 'protocol/firmware_contract.py', 'protocol/cpu_contract.py', 'adaptations/toon-parser-lock.json',
     'components/model-catalog/lock.json',

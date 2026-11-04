@@ -162,6 +162,15 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
         if name not in committed: raise ValueError('Missing shared SSD runtime source: '+name)
         add(name, committed[name])
     for name,entry in catalog_files.items(): add(name,entry)
+    # The Windows brand-package importer uses the same pinned TOON decoder
+    # as the retained maintenance runtime.
+    from protocol.resource_pool import decoder
+    decoder(root/'adaptations')
+    parser_lock=json.loads((root/'adaptations/toon-parser-lock.json').read_text(encoding='utf-8'))
+    parser_names=['adaptations/toon-parser-lock.json', *('adaptations/vendor/'+entry['path'] for entry in parser_lock['files'])]
+    for name in parser_names:
+        if name not in committed: raise ValueError('Missing TOON decoder runtime source: '+name)
+        add(name,committed[name])
     lock=json.loads((root/'scripts/runtime-dependencies.lock.json').read_text(encoding='utf-8'))
     groups=set(lock['profiles']['runtime'])
     for archive in lock['archives']:

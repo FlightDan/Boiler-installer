@@ -66,7 +66,7 @@ if ssd_identity is not None or model_needed:
                 raise RuntimeError('Prepared root protection missing during SSD preflight')
             preflight_mount(parts['var-'+slot],root/'var','-t','ext4','-o','ro,noload')
             preflight_mount(parts['home'],root/'home','-t','ext4','-o','ro,noload')
-            mount_etc(root,mounts,readonly=True)
+            mount_etc(root,mounts,readonly=True,allow_uninitialized=True)
             preflight_mount(parts['efi-'+slot],root/'efi','-t','vfat','-o','ro')
         if ssd_identity is not None and ssd_identity in (options.get('device_components') or []):
             authenticated=[]

@@ -17,7 +17,7 @@ def etc_overlay_options(text):
     return options[0]
 
 
-def mount_etc(root, mounts, readonly=False):
+def mount_etc(root, mounts, readonly=False, *, allow_uninitialized=False):
     """Prepare/verify through SteamOS's actual per-slot persistent /etc view."""
     root=Path(root)
     unit=root/'usr/lib/systemd/system/etc.mount'
@@ -40,7 +40,17 @@ def mount_etc(root, mounts, readonly=False):
     if readonly:
         # Two read-only layers respect overlay whiteouts without needing a
         # writable workdir on the independently read-only var filesystem.
-        if not upper.is_dir(): raise RuntimeError('Persistent /etc overlay is missing')
+        if not upper.is_dir():
+            if allow_uninitialized:
+                for path in (upper, work):
+                    try: descriptor = directory_fd(path)
+                    except FileNotFoundError: continue
+                    os.close(descriptor)
+                    break
+                else:
+                    descriptor = directory_fd(target); os.close(descriptor)
+                    return False
+            raise RuntimeError('Persistent /etc overlay is missing')
     else:
         from safe_directories import ensure_directory
         for path in (upper,work): ensure_directory(path,0o755)

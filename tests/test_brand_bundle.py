@@ -1,0 +1,161 @@
+import json
+import os
+import shutil
+import subprocess
+from pathlib import Path
+import tempfile
+import unittest
+import zipfile
+
+from protocol.brand_bundle import stage_brand, import_brand
+from protocol.local import import_local
+from protocol.manifest import ProtocolError, validate_package
+from protocol.resource_pool import decoder
+from test_protocol import package
+
+
+class BrandBundleImportTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.addCleanup(self.temporary.cleanup)
+        self.material = self.root / "material"
+        self.material.mkdir()
+        manifest = package(self.material)
+        self.models = []
+        for identity, model in (("device:oxp3", "oxp3"), ("device:x2-mini", "x2-mini")):
+            guide = "brands/onexplayer/" + model + "/" + model + ".toon"
+            name = "brands/onexplayer/" + model + "/runtime/manifest.json"
+            self.models.append(dict(id=identity, guide=guide, manifest=name,
+                                    files=[dict(path="payload/test", member="common/example/payload")]))
+        self.brand = dict(schema_version=1, kind="BoilerBrandBundle", brand="onexplayer",
+                          source_repository="FlightDan/Boiler-adaptations", source_commit="a"*40,
+                          models=self.models, unresolved=[])
+        self.manifests = {}
+        for row in self.models:
+            data = dict(manifest, id=row["id"], name={"en": row["id"], "zh": "机型"})
+            self.manifests[row["manifest"]] = json.dumps(data).encode()
+        self.archive = self.root / "bundle.zip"
+        self.write_bundle()
+
+    def write_bundle(self):
+        with zipfile.ZipFile(self.archive, "w") as archive:
+            archive.writestr("brand.toon", decoder().dumps(self.brand))
+            archive.writestr("common/example/payload", b"ok")
+            for row in self.models:
+                archive.writestr(row["guide"], "schema_version: 1\n")
+                archive.writestr(row["manifest"], self.manifests[row["manifest"]])
+
+    def stage(self):
+        return stage_brand(self.archive, self.root / "staged", developer=True)
+
+    def test_both_models_materialize_one_shared_file_into_valid_packages(self):
+        result = self.stage()
+        self.assertTrue(result["recognized"])
+        self.assertEqual({row["id"] for row in result["models"]}, {"device:oxp3", "device:x2-mini"})
+        self.assertEqual(result["models"][0]["name"]["zh"], "机型")
+        for row in result["models"]:
+            target = self.root / row["id"].split(":")[1]
+            imported = import_brand(result["directory"], target, row["id"], row["manifest_sha256"], developer=True)
+            self.assertEqual(imported["package"]["id"], row["id"])
+            self.assertEqual((target / "payload/test").read_bytes(), b"ok")
+            validate_package(target, expected_manifest_sha256=row["manifest_sha256"])
+
+    def test_review_binding_and_payload_integrity(self):
+        result = self.stage()
+        chosen = result["models"][0]
+        with self.assertRaisesRegex(ProtocolError, "Unknown brand model"):
+            import_brand(result["directory"], self.root / "unknown", "device:other", chosen["manifest_sha256"], developer=True)
+        with self.assertRaisesRegex(ProtocolError, "manifest changed"):
+            import_brand(result["directory"], self.root / "changed", chosen["id"], "0"*64, developer=True)
+        (Path(result["directory"]) / "common/example/payload").write_bytes(b"no")
+        with self.assertRaises(ProtocolError):
+            import_brand(result["directory"], self.root / "tampered", chosen["id"], chosen["manifest_sha256"], developer=True)
+        self.assertFalse((self.root / "tampered").exists())
+
+    def test_pending_features_follow_selected_model_and_old_bundle_remains_compatible(self):
+        old = self.stage()
+        self.assertTrue(all(row["pending"] == [] for row in old["models"]))
+        self.brand["pending"] = [
+            {"model": "device:oxp3", "resource": "resource:intel-be201-firmware",
+             "status": "disabled-resource-not-integrated"},
+            {"model": "device:x2-mini", "component": "pl4-175w", "status": "implementation_missing"},
+            {"model": "device:x2-mini", "component": "lsfg-vk", "status": "external_plugin"},
+        ]
+        self.write_bundle()
+        staged = stage_brand(self.archive, self.root / "new-staged", developer=True)
+        by_id = {row["id"]: row for row in staged["models"]}
+        self.assertEqual([p.get("resource") for p in by_id["device:oxp3"]["pending"]],
+                         ["resource:intel-be201-firmware"])
+        self.assertEqual([p.get("component") for p in by_id["device:x2-mini"]["pending"]],
+                         ["pl4-175w", "lsfg-vk"])
+        selected = by_id["device:x2-mini"]
+        imported = import_brand(staged["directory"], self.root / "new-output",
+                                selected["id"], selected["manifest_sha256"], developer=True)
+        self.assertEqual(imported["package"]["id"], "device:x2-mini")
+
+    def test_unresolved_cannot_be_imported_and_developer_required(self):
+        self.brand["unresolved"] = ["missing required runtime"]
+        self.write_bundle()
+        with self.assertRaises(ProtocolError):
+            stage_brand(self.archive, self.root / "untrusted", developer=False)
+        result = self.stage()
+        self.assertEqual(result["unresolved"], ["missing required runtime"])
+        row = result["models"][0]
+        with self.assertRaisesRegex(ProtocolError, "unresolved"):
+            import_brand(result["directory"], self.root / "out", row["id"], row["manifest_sha256"], developer=True)
+
+    def test_standard_package_archive_is_still_importable(self):
+        normal = self.root / "normal.zip"
+        with zipfile.ZipFile(normal, "w") as archive:
+            for path in self.material.rglob("*"):
+                if path.is_file():
+                    archive.write(path, path.relative_to(self.material).as_posix())
+        self.assertFalse(stage_brand(normal, self.root / "brand", developer=True)["recognized"])
+        result = import_local(normal, self.root / "ordinary", developer=True)
+        self.assertEqual(result["package"]["id"], "device:test")
+
+    def test_isolated_installer_runtime_can_parse_and_import_brand(self):
+        source = Path(__file__).resolve().parents[1]
+        runtime = self.root / "installer-runtime"
+        shutil.copytree(source / "protocol", runtime / "protocol",
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        (runtime / "adaptations").mkdir()
+        shutil.copy2(source / "adaptations/toon-parser-lock.json", runtime / "adaptations/toon-parser-lock.json")
+        shutil.copytree(source / "adaptations/vendor", runtime / "adaptations/vendor",
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        python = source / "runtime/python/python.exe"
+        if not python.exists():
+            self.skipTest("Locked portable Windows Python has not been prepared")
+        command = [str(python), "-B", "-c",
+                   "import sys; sys.path.insert(0,sys.argv.pop(1)); from protocol.__main__ import main; sys.exit(main())",
+                   str(runtime)]
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+        staged = self.root / "isolated-staged"
+        result = subprocess.run(command + ["stage-brand", str(self.archive), str(staged), "--developer"],
+                                cwd=runtime, env=env, capture_output=True, text=True, check=True)
+        selected = json.loads(result.stdout)["result"]["models"][0]
+        output = self.root / "isolated-output"
+        result = subprocess.run(command + ["import-brand", str(staged), str(output), selected["id"],
+                                           selected["manifest_sha256"], "--developer"],
+                                cwd=runtime, env=env, capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout)["result"]["package"]["id"], selected["id"])
+        self.assertEqual((output / "payload/test").read_bytes(), b"ok")
+
+    def test_escaping_and_duplicate_mapping_are_rejected(self):
+        for files in (
+            [dict(path="../escape", member="common/example/payload")],
+            [dict(path="payload/test", member="../escape")],
+            [dict(path="payload/test", member="common/example/payload"),
+             dict(path="PAYLOAD/TEST", member="common/example/payload")],
+            [dict(path="payload/other", member="common/example/payload")],
+        ):
+            with self.subTest(files=files):
+                self.models[0]["files"] = files
+                self.write_bundle()
+                with self.assertRaises(ProtocolError):
+                    self.stage()
+
+
+if __name__ == "__main__":
+    unittest.main()

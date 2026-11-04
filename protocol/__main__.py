@@ -27,6 +27,10 @@ def main(argv=None):
     command.add_argument("--public-key"); command.add_argument("--openssl",default="openssl")
     command=commands.add_parser("load-index"); command.add_argument("url"); command.add_argument("signature_url"); command.add_argument("cache")
     command.add_argument("--public-key"); command.add_argument("--openssl",default="openssl")
+    command=commands.add_parser("stage-brand"); command.add_argument("source"); command.add_argument("destination")
+    command.add_argument("--developer",action="store_true")
+    command=commands.add_parser("import-brand"); command.add_argument("source"); command.add_argument("destination")
+    command.add_argument("identity"); command.add_argument("manifest_sha256"); command.add_argument("--developer",action="store_true")
     command=commands.add_parser("import-device"); command.add_argument("source"); command.add_argument("destination")
     command.add_argument("--developer",action="store_true")
     command=commands.add_parser("fetch-package"); command.add_argument("cache"); command.add_argument("identity"); command.add_argument("version"); command.add_argument("destination")
@@ -50,6 +54,12 @@ def main(argv=None):
         elif args.command=="import-resource":
             from .resource_import import import_resource_pool
             result=import_resource_pool(args.source,args.destination,trust_local_test=args.trust_local_test)
+        elif args.command=="stage-brand":
+            from .brand_bundle import stage_brand
+            result=stage_brand(args.source,args.destination,developer=args.developer)
+        elif args.command=="import-brand":
+            from .brand_bundle import import_brand
+            result=import_brand(args.source,args.destination,args.identity,args.manifest_sha256,developer=args.developer)
         elif args.command=="import-device":
             from .local import import_local
             result=import_local(args.source,args.destination,developer=args.developer)

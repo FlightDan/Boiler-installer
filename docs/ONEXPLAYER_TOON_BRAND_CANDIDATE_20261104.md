@@ -1,0 +1,9 @@
+# ONEXPLAYER TOON brand candidate
+
+The local candidate reads both ONEXPLAYER model TOONs from the canonical `FlightDan/Boiler-adaptations` snapshot. It selects requested sources and verified legacy runtime inputs into one brand archive. Shared files are stored once; each model maps its normal DevicePackage paths to those members. The installer stages the archive, presents the models and pending items, and imports the selected model through the existing local developer-session DevicePackage path. Existing signed-index and ordinary package paths remain available.
+
+The builder takes explicit model package directories, an optional resource pool, an output path, and a new candidate version. It uses the existing source and package inventories, EFI providers, and source whitelist. New resource implementations that the model pool marks disabled are listed as pending, rather than reported as installed. Current legacy options keep their existing availability and defaults. The archive does not itself grant release trust.
+
+The installer candidate is `0.2.0-preview.20261104.3`; the matching maintenance runtime is `0.2.0+maintenance.8`. The source probe supports a Windows partition prefix ahead of the checked SteamOS layout. For an entirely uninitialized `/etc` overlay, EFI preflight may inspect the read-only lower layer; partially initialized overlays remain errors.
+
+Current checks: source suite 911 tests, 87 platform skips (before the two guest fixes); targeted brand and local import checks; Windows Release and device UI checks; source-partition regression; Linux-only `/etc` preflight regression. Both models passed candidate archive import and EFI provider verification. Full Linux installation, retained maintenance, recovery, final artifact verification, and hardware acceptance remain separate gates and are not claimed by this record.
