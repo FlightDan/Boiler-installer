@@ -289,11 +289,6 @@ resource_model:
   schema_version: 1
   kind: BoilerModelResourceSource
   id: "device:oxp3"
-  name: ONEXPLAYER 3
-  hardware_matching:
-    mode: advisory-exact-dmi-v1
-    pairs[1]{manufacturer,model}:
-      ONE-NETBOOK,ONEXPLAYER 3
   parameters:
   resources[14]{id}:
     "resource:onexplayer-microphone"
@@ -326,3 +321,53 @@ resource_model:
       "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon
     boot_policies[1]{id,version,source,component_ref}:
       "ssd:gm7-boot-repair",1,common/ssd/acer/gm7/components.toon,ssd-gm7-boot-repair
+canonical_id: "device:onexplayer-oxp3"
+legacy_aliases:
+  guide[1]: "guide:oxp3"
+  package[1]: "device:oxp3"
+device_record_path: devices/oxp3.json
+device_record:
+  schema_version: 1
+  repository: FlightDan/OneXPlayer3-SteamOS
+  local_candidate: Boiler-oxp3
+  package_status: experimental
+  notes[2]: "The Boiler package explicitly carries model policy, including its acknowledged OS-image update hold; generic installation does not select this policy automatically.","Artifact verification and disposable-image tests do not certify first boot, suspend, performance or physical installation. The first bridge has no generic scripted maintenance upgrade entry."
+  compatibility_records[3]:
+    - status: supported
+      scope: existing-published-legacy-distribution
+      architecture: x86_64
+      os_id: steamos
+      os_version: "3.10"
+      build: "20260924.1000"
+      kernel: 7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9
+      evidence[2]: "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/tag/v1.0.6%2Binstaller.20261022.220437","https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/tag/maintenance-v1.0.6%2Bmaintenance.9"
+      note: Existing release evidence applies only to its stated tests and limitations; it does not validate the new Boiler bridge.
+    - status: experimental
+      scope: boiler-device-package
+      os_id: steamos
+      os_version: "3.10"
+      evidence[1]: "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/tag/boiler-device-v0.1.0-preview.1"
+      note: "Exact 0.1.0-preview.1 package passed disposable-image A/B installation, two anchored plans, read-only model byte/journal verification, and deployment readiness on SteamOS 3.10. Source image unchanged. Physical installation, first boot, activation, suspend and hardware acceptance remain pending."
+      kernel: 7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9
+      date: 2026-10-22
+    - status: blocked
+      scope: other-os-builds-and-kernels
+      evidence[1]: "https://github.com/FlightDan/OneXPlayer3-SteamOS/blob/e181a9055e1c94e8d758e2b9575f60fb5fc5109c/windows-installer/components/integration.py"
+      note: No compatible model package has been accepted for other OS builds or kernels. Existing legacy per-component exact compatibility gates remain authoritative.
+  known_issues[5]:
+    - issue: The first model adapter has no authenticated generic maintenance lifecycle declaration. Keep the existing legacy maintenance path; an install-once adapter cannot be used as an automatic model upgrade.
+      scope: new-boiler-bridge
+      state: blocked-generic-model-upgrade
+    - issue: Bridge interrupted staging before a complete legacy result journal requires explicit per-component recovery.
+      scope: new-boiler-bridge
+      state: blocked-production
+    - issue: Legacy installer and maintenance originals can be translated into protected adoption receipts; generic ownership commit and full live upgrade acceptance remain required.
+      scope: new-boiler-bridge
+      state: acceptance-pending
+    - issue: The legacy package contains an OS-image update hold. It must be acknowledged as model policy before building a selection.
+      scope: model-policy
+      state: explicit-choice-required
+    - issue: Upstream release acceptance does not cover a new Windows disk installation or game performance/suspend acceptance.
+      scope: legacy-maintenance.9
+      state: documented-upstream-limitation
+      evidence: "https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/tag/maintenance-v1.0.6%2Bmaintenance.9"

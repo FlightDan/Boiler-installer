@@ -316,12 +316,6 @@ resource_model:
   schema_version: 1
   kind: BoilerModelResourceSource
   id: "device:x2-mini"
-  name: ONEXPLAYER X2 Mini / Mini PRO
-  hardware_matching:
-    mode: advisory-exact-dmi-v1
-    pairs[2]{manufacturer,model}:
-      ONE-NETBOOK,ONEXPLAYER X2 Mini
-      ONE-NETBOOK,ONEXPLAYER X2 Mini PRO
   parameters:
   resources[14]{id}:
     "resource:onexplayer-microphone"
@@ -354,3 +348,15 @@ resource_model:
       "resource:bmi260-gyro",common/sensors/bosch/bmi260/gyro/source.toon
     boot_policies[1]{id,version,source,component_ref}:
       "ssd:gm7-boot-repair",1,common/ssd/acer/gm7/components.toon,ssd-gm7-boot-repair
+canonical_id: "device:onexplayer-x2-mini"
+legacy_aliases:
+  guide[1]: "guide:x2-mini"
+  package[1]: "device:x2-mini"
+device_record_path: devices/x2-mini.json
+device_record:
+  schema_version: 1
+  repository: FlightDan/Boiler-adaptations
+  package_status: experimental
+  notes[1]: "Model and fingerprint integration are experimental; first boot, physical hardware and live maintenance acceptance remain pending."
+  compatibility_records: []
+  known_issues: []

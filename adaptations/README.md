@@ -1,55 +1,35 @@
-# Boiler device registry
+[Boiler Installer](https://github.com/FlightDan/Boiler-installer) · [中文](docs/README.zh.md)
 
-This repository contains the Boiler device registry and a brand/model adaptation source collection.
-Start at [ADAPTATIONS.md](docs/ADAPTATIONS.md) for OXP3 and X2 Mini installation guides.
-Executable device packages continue to use the existing authenticated package workflow.
+# Boiler Adaptations
 
-`device-index.json` follows DeviceIndex schema version 1. Sequence numbers are
-monotonic, revocations refer to manifest SHA-256 values, and each production
-package must carry a pinned source and verified manifest digest. The current
-index is unsigned and intentionally advertises no production package. A key or
-release URL is never invented to make a draft look published.
+This repository collects device and model adaptations for Boiler. Browse the existing models, reuse shared hardware components, or contribute an adaptation of your own.
 
-`devices/oxp3.json` distinguishes existing legacy release support, experimental
-Boiler migration and blocked combinations. Evidence, notes and known limitations
-travel with the device record. Claims for an old release do not certify a newly
-packaged bridge.
+| Documentation | Models |
+| --- | --- |
+| [How TOON works](docs/TOON.en.md)<br>[Build a device package and installer](docs/BUILD.en.md)<br>[Device index and signatures](docs/REGISTRY.en.md)<br>[Brand and model adaptation reference](docs/ADAPTATIONS.md) (Chinese) | [ONEXPLAYER 3](brands/onexplayer/oxp3/model.md)<br>[ONEXPLAYER X2 Mini / Mini PRO](brands/onexplayer/x2-mini/model.md) |
 
-Build a local development index from a real package directory:
+<details open>
+<summary>Contribute an adaptation</summary>
 
-```sh
-python scripts/build-index.py --package ../Boiler-oxp3/dist/device-oxp3 --output dist/device-index.dev.json
-```
+1. Fork this repository.
+2. Add the adaptation under the right brand and model. Put reusable hardware resources in `common/` and reference them from the model's TOON.
+3. Include the model, operating system and kernel versions, what you tested, and screenshots or logs that show the result.
+4. Open a pull request. The author uses an agent to help check the code, then reviews and merges it.
 
-The command calculates the manifest digest and every inventory digest before
-adding a local-only source. It never signs, uploads or changes the production
-index. An authenticated production index and accepted model package are release
-gates. Boiler's generic installer consumes an authenticated index or a visible,
-explicit local development trust grant.
+When publishing packages, the author signs the device index. The documents above explain the workflow and build tools.
 
-The same standalone script can prepare an **unsigned release candidate** from
-the exact model package directory and its ZIP. Run this in the independent
-public registry checkout after committing the reviewed device metadata:
+</details>
 
-```sh
-python scripts/build-index.py --package /path/to/model-package --archive /path/to/model.zip --asset-url https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/REVIEWED_TAG/model.zip --sequence 1 --output dist/index.candidate.json
-```
+<details>
+<summary>License</summary>
 
-The tag and filename are explicit operator inputs, not a published-asset claim.
-The command validates every ZIP file against the package manifest, rejects
-additional files and links, and calculates both the ZIP and manifest size and
-SHA-256. Its standalone v1 preflight checks component identities, compatibility,
-file references and digests, and inventoried hooks and maintenance entries.
-The model manifest must name its actual full GitHub source commit.
-Metadata comes from exact committed `devices/oxp3.json` bytes and remains
-experimental. `verified_at` records local artifact inventory verification only;
-the compatibility records retain their independent evidence and limitations.
+This repository uses [AGPL-3.0](LICENSE). Some sources and resources use other licenses; see their directories and the [third-party notices](THIRD_PARTY_NOTICES.md).
 
-Sequence numbers must increase beyond the committed baseline. For later
-releases, supply the last independently signature-verified index using
-`--previous-index /path/to/verified/index.json`; the candidate must exceed that
-sequence and preserve all previous revocations in the committed registry.
-This script does not authenticate a previous-index file itself. Keep the
-candidate bytes immutable for the release operator's existing signing flow,
-publish and recheck the exact ZIP first, and only then expose the signed index.
-The script does not sign, access a key, upload, or change `device-index.json`.
+</details>
+
+<details>
+<summary>Signatures and trust</summary>
+
+The author keeps and controls the signing private key locally. The installer verifies a signed device index with a trusted public key, then uses that index to check packages. The [published signed catalog](https://github.com/FlightDan/Boiler-adaptations/releases/tag/catalog-v0.1.0-preview.1) and the development index in the repository root are maintained separately; see [Device index and signatures](docs/REGISTRY.en.md).
+
+</details>

@@ -23,7 +23,7 @@ def module(name,path):
     result=importlib.util.module_from_spec(spec); spec.loader.exec_module(result); return result
 
 
-catalog=module('runtime_toon_catalog',ROOT/'adaptations/scripts/toon_catalog.py')
+catalog=module('runtime_toon_catalog',ROOT/'scripts/toon_catalog.py')
 preparer=module('runtime_snapshot_preparer',ROOT/'scripts/prepare-model-catalog.py')
 bundles=module('runtime_bundle_preparer',ROOT/'scripts/prepare-model-bundles.py')
 
@@ -35,18 +35,27 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             shutil.copytree(ROOT/'adaptations'/folder,adaptations/folder)
         shutil.copyfile(ROOT/'adaptations/toon-parser-lock.json',adaptations/'toon-parser-lock.json')
         parser=catalog.decoder(adaptations)
-        # A new machine file is sufficient; no maintained Python model table.
+        # Migrate the two historical fixture guides and add a brand-qualified model.
+        for slug in ('oxp3','x2-mini'):
+            path=adaptations/f'brands/onexplayer/{slug}/{slug}.toon'
+            existing=parser.loads(path.read_bytes())
+            existing.update(canonical_id='device:onexplayer-'+slug,
+                legacy_aliases=dict(guide=['guide:'+slug],package=['device:'+slug]),
+                device_record_path='devices/'+slug+'.json',
+                device_record=dict(schema_version=1,repository='fixture',package_status='fixture',notes=[],compatibility_records=[],known_issues=[]))
+            existing['resource_model'].pop('name',None);existing['resource_model'].pop('hardware_matching',None)
+            path.write_text(parser.dumps(existing),encoding='utf-8')
         original=adaptations/'brands/onexplayer/oxp3/oxp3.toon'
         model=parser.loads(original.read_bytes())
-        model.update(id='guide:future',name='未来机型',guide='brands/example/future/model.md')
-        model['resource_model']['id']='device:future'
-        model['resource_model']['common_references']['model_id']='device:future'
-        model['runtime']=dict(id='device:future',name={'en':'Future Demo','zh':'未来机型'},
+        model.update(id='guide:example-future',canonical_id='device:example-future',legacy_aliases=dict(guide=[],package=[]),device_record_path='devices/example-future.json',name='未来机型',guide='brands/example/future/model.md')
+        model['resource_model']['id']='device:example-future'
+        model['resource_model']['common_references']['model_id']='device:example-future'
+        model['runtime']=dict(id='device:example-future',name={'en':'Future Demo','zh':'未来机型'},
             hardware_matching=dict(mode='advisory-exact-dmi-v1',pairs=[dict(manufacturer='EXAMPLE INC',model='FUTURE 1')]))
         model['components']=[dict(id='base-system',name='未来机型说明',recommendation='pending',default=False,
             dependencies=[],sources=[],status='implementation_missing',notes='Display-only synthetic model; no install implementation.')]
         model['build'].update(complete=False,missing=['Synthetic future implementation is not supplied.'])
-        model['package']=dict(schema_version=1,kind='DevicePackage',id='device:future',version='0.1.0',
+        model['package']=dict(schema_version=1,kind='DevicePackage',id='device:example-future',version='0.1.0',
             source=dict(kind='local',path='synthetic-test-only'),components=[dict(schema_version=1,kind='ComponentManifest',
                 id='future:fixture',version='0.1.0',default=False,files=[dict(source='payload/data',target='etc/future-test.conf',
                     size=8,sha256=hashlib.sha256(b'fixture\n').hexdigest(),mode=420)])])
@@ -81,13 +90,13 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             consumer,lock=self.snapshot_fixture(Path(temporary))
             offline=runtime.load_models(root=consumer,online=False)
-            future=next(row for row in offline['models'] if row['id']=='device:future')
+            future=next(row for row in offline['models'] if row['id']=='device:example-future')
             self.assertEqual(future['name'],{'en':'Future Demo','zh':'未来机型'})
             self.assertEqual(future['hardware_matching']['pairs'],[dict(manufacturer='EXAMPLE INC',model='FUTURE 1')])
             self.assertFalse(future['installable']); self.assertEqual(offline['bundled_packages'],[])
             from maintenance.models import catalog as maintenance_catalog
             self.assertEqual(maintenance_catalog(runtime_root=consumer,online=False)['models'],offline['models'])
-            self.assertNotIn('device:future',runtime.MODELS)  # legacy executable facade is deliberately unchanged
+            self.assertNotIn('device:example-future',runtime.MODELS)  # legacy executable facade is deliberately unchanged
             self.assertIn('/'+lock['source']['commit']+'/brands/example/future/model.md',future['guide_url'])
             def reader(url,maximum):
                 member=url.split('/'+lock['source']['commit']+'/',1)[1]
@@ -97,26 +106,54 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             self.assertFalse(online['offline']); self.assertEqual(online['models'],offline['models'])
             # A displayed model cannot acquire an executable package or trust.
             with self.assertRaisesRegex(ProtocolError,'Explicit session trust'):
-                runtime.bundled_model_package('device:future',root=consumer)
+                runtime.bundled_model_package('device:example-future',root=consumer)
             with self.assertRaisesRegex(ProtocolError,'No bundled executable'):
-                runtime.bundled_model_package('device:future',root=consumer,trust_local_test=True)
+                runtime.bundled_model_package('device:example-future',root=consumer,trust_local_test=True)
 
     def test_new_identity_bundle_preparation_keeps_hash_path_and_explicit_trust(self):
         with tempfile.TemporaryDirectory() as temporary:
             consumer,_=self.snapshot_fixture(Path(temporary))
-            package=consumer/'cache/model-bundles/packages/future'; (package/'payload').mkdir(parents=True)
+            package=consumer/'cache/model-bundles/packages/example-future'; (package/'payload').mkdir(parents=True)
             payload=b'fixture\n'; (package/'payload/data').write_bytes(payload)
-            value=dict(schema_version=1,kind='DevicePackage',id='device:future',version='0.1.0-test.1',
+            value=dict(schema_version=1,kind='DevicePackage',id='device:example-future',version='0.1.0-test.1',
                 source=dict(kind='local',path='fixture'),components=[],files=[dict(path='payload/data',size=len(payload),
                     sha256=hashlib.sha256(payload).hexdigest())])
             (package/'manifest.json').write_text(json.dumps(value),encoding='utf-8')
-            result=bundles.prepare(consumer,[package]); self.assertEqual(result['packages'][0]['id'],'device:future')
+            result=bundles.prepare(consumer,[package]); self.assertEqual(result['packages'][0]['id'],'device:example-future')
             with self.assertRaisesRegex(ProtocolError,'Explicit session trust'):
-                runtime.bundled_model_package('device:future',root=consumer)
-            item=runtime.bundled_model_package('device:future',root=consumer,trust_local_test=True)
-            self.assertEqual(item['package']['id'],'device:future')
+                runtime.bundled_model_package('device:example-future',root=consumer)
+            item=runtime.bundled_model_package('device:example-future',root=consumer,trust_local_test=True)
+            self.assertEqual(item['package']['id'],'device:example-future')
             (package/'payload/data').write_bytes(b'tampered')
-            with self.assertRaises(ProtocolError): runtime.bundled_model_package('device:future',root=consumer,trust_local_test=True)
+            with self.assertRaises(ProtocolError): runtime.bundled_model_package('device:example-future',root=consumer,trust_local_test=True)
+
+    def test_other_brand_x2_mini_does_not_inherit_onexplayer_builder_rules(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source=self.source_fixture(Path(temporary)); parser=catalog.decoder(source)
+            model=parser.loads((source/'brands/example/future/future.toon').read_bytes())
+            model.update(id='guide:example-x2-mini',canonical_id='device:example-x2-mini',
+                guide='brands/example/x2-mini/model.md',device_record_path='devices/example-x2-mini.json')
+            model['runtime']['id']='device:example-x2-mini';model['resource_model']['id']='device:example-x2-mini'
+            model['package']['id']='device:example-x2-mini';model['package']['components'][0]['id']='x2-mini:fixture'
+            catalog.validate_model(model,Path('brands/example/x2-mini/x2-mini.toon'))
+            onex=parser.loads((source/'brands/onexplayer/x2-mini/x2-mini.toon').read_bytes())
+            model['build']=onex['build'];model['package']=onex['package']
+            with self.assertRaisesRegex(catalog.CatalogError,'X2 adapter requires the ONEXPLAYER X2 Mini model'):
+                catalog.validate_model(model,Path('brands/example/x2-mini/x2-mini.toon'))
+
+    def test_cli_preflight_resolves_canonical_and_declared_legacy_ids(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source=self.source_fixture(Path(temporary)); results=[]
+            for identity in ('device:onexplayer-oxp3','guide:oxp3','device:oxp3'):
+                command=[sys.executable,'-B',str(ROOT/'scripts/toon_catalog.py'),'preflight',
+                         '--catalog-root',str(source),'--model',identity]
+                result=subprocess.run(command,capture_output=True,text=True,encoding='utf-8')
+                self.assertIn(result.returncode,(0,1),result.stderr)
+                results.append(json.loads(result.stdout))
+            self.assertEqual(results[0],results[1]);self.assertEqual(results[1],results[2])
+            bad=subprocess.run([sys.executable,'-B',str(ROOT/'scripts/toon_catalog.py'),'preflight',
+                '--catalog-root',str(source),'--model','guide:onexplayer-oxp3'],capture_output=True,text=True,encoding='utf-8')
+            self.assertNotEqual(bad.returncode,0);self.assertIn('uniquely known',bad.stderr)
 
     def test_runtime_metadata_rejects_identity_paths_names_dmi_and_trust_fields(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -159,7 +196,7 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
 
     def test_physical_model_mismatch_remains_advisory_while_system_requirements_stay_separate(self):
         from protocol.manifest import compatible, device_advisory
-        package=dict(id='device:future',compatibility=dict(device_ids=['future'],architectures=['x86_64'],
+        package=dict(id='device:example-future',compatibility=dict(device_ids=['future'],architectures=['x86_64'],
             os_ids=['steamos'],os_versions=['3.10']))
         other=dict(device_id='a-different-physical-model',architecture='x86_64',os_id='steamos',os_version='3.10')
         self.assertTrue(compatible(package,other))

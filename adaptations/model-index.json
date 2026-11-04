@@ -8,7 +8,7 @@
       "name": "ONEXPLAYER 3",
       "source": "brands/onexplayer/oxp3/oxp3.toon",
       "manifest": "brands/onexplayer/oxp3/manifest.json",
-      "source_sha256": "b62626ab658627bc293180640b1f16ae77961402a6960e153046a5ab1024adc5",
+      "source_sha256": "001cda218934eb47a242355b969279c25ad6f4c983a9206b357ba6e1b96c35cf",
       "components": 29,
       "complete": true,
       "missing": []
@@ -18,7 +18,7 @@
       "name": "ONEXPLAYER X2 Mini / Mini PRO",
       "source": "brands/onexplayer/x2-mini/x2-mini.toon",
       "manifest": "brands/onexplayer/x2-mini/manifest.json",
-      "source_sha256": "15ae384768a13ff119cb0626665d73145dfe9bed707ce6cda29a10eed30d0fa7",
+      "source_sha256": "12f72f4b7bbe71ceb5141a2b85768d86db1f4c2575428d169cc3fb46bb733bf2",
       "components": 34,
       "complete": true,
       "missing": []

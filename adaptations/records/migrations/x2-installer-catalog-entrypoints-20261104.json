@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerX2CatalogEntrypointMigration",
+  "source_repository": "FlightDan/Boiler-adaptations",
+  "source_baseline": "aea9ee329aee01896332f7156483436580acdb2a",
+  "historical_import_record": "records/installer-adaptation-source-import-20261104.json",
+  "description": "Exact historical script bytes are preserved; each new entry differs only in its explicitly supplied installer catalog path. No package was rebuilt.",
+  "files": [
+    {
+      "old_path": "brands/onexplayer/x2-mini/bridge/scripts/build.py",
+      "old_size": 6236,
+      "old_sha256": "cb94e3e0dc68d2a202b41a23053e7007d5cc4cfdd8bb8ec1a7c8325fe96037d5",
+      "new_path": "brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py",
+      "new_size": 6237,
+      "new_sha256": "4cf182707c825c5cca150364566aee0921f45cf428fbd2df137360d579cf91d2",
+      "old_expression": "confined(adaptations, 'scripts/toon_catalog.py')",
+      "new_expression": "confined(project_root, 'scripts/toon_catalog.py')"
+    },
+    {
+      "old_path": "scripts/build-x2-complete.py",
+      "old_size": 18351,
+      "old_sha256": "246ca33f9f0b43ecd5d1c6ada168e2fb381223e1bec8f4b41aa1242fa65a9df5",
+      "new_path": "scripts/build-x2-complete-installer-catalog.py",
+      "new_size": 18339,
+      "new_sha256": "eaddb5758c5b70abbb4e8e69c9cdd2276a081da32976dce22c9597e1ca401002",
+      "old_expression": "regular(root, 'adaptations/scripts/toon_catalog.py')",
+      "new_expression": "regular(root, 'scripts/toon_catalog.py')"
+    }
+  ]
+}

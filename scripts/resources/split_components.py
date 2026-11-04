@@ -291,7 +291,7 @@ def build(project, output, xevma_module=None):
     if output.exists(): raise ValueError('Use a new output directory')
     source = Sources(project/'adaptations',xevma_module=xevma_module)
     # Use the existing pinned TOON parser, not a private or permissive decoder.
-    spec = importlib.util.spec_from_file_location('component_split_toon', project/'adaptations/scripts/toon_catalog.py')
+    spec = importlib.util.spec_from_file_location('component_split_toon', project/'scripts/toon_catalog.py')
     tc = importlib.util.module_from_spec(spec); spec.loader.exec_module(tc)
     toon = tc.decoder(project/'adaptations')
     maps = static_maps(source)

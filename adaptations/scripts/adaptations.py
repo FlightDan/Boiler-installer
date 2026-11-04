@@ -202,7 +202,51 @@ def prepare(checkout, root=ROOT):
     return check(root)
 
 
+def validate_models(root, plan, inventory, current_rows, common):
+    """Validate TOON-derived guide semantics after source inventories are checked."""
+    models = records(root)
+    for name, model in models:
+        if model['kind'] != 'ModelInstallGuide' or model['installable'] is not False:
+            raise ValueError('A source guide is not a DevicePackage: '+name)
+        if model['source_revision'] != plan['source'] or model['source_inventory'] != 'source-lock.json':
+            raise ValueError('Model source revision or inventory differs from the prepared collection: '+name)
+        components = {item['id']: item for item in model['components']}
+        if len(components) != len(model['components']):
+            raise ValueError('Duplicate component ID: '+name)
+        if name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json') and 'gyro' not in components:
+            raise ValueError('Missing gyro component: '+name)
+        for item in components.values():
+            fingerprint_default = (item.get('default') is True and item['id']=='fingerprint-unlock'
+                and name in ('brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'))
+            if item['recommendation'] not in LEVELS or not (item.get('default') is False or fingerprint_default):
+                raise ValueError('Source-only choices cannot become installation defaults')
+            for dependency in item['dependencies']:
+                if dependency not in components or components[dependency]['recommendation'] == 'excluded':
+                    raise ValueError('Missing or excluded dependency: '+dependency)
+            expected_toon = str(PurePosixPath(name).parent / 'common-device-sources.toon')
+            bmi_gyro = (item['id'] == 'gyro' and
+                        (name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json')
+                         or expected_toon in item['sources']
+                         or 'common/sensors/bosch/bmi260/gyro/source.toon' in item['sources']))
+            if bmi_gyro:
+                if item['sources'] != [expected_toon]:
+                    raise ValueError('Gyro must reference its own model TOON: ' + name)
+                local(root, expected_toon)
+                validate_gyro_reference(common, expected_toon, model)
+            for path in item['sources']:
+                if not bmi_gyro and path not in inventory and path not in current_rows and path != expected_toon:
+                    raise ValueError('Uninventoried component source: '+path)
+            if item['recommendation'] == 'pending' and item['sources']:
+                raise ValueError('Pending implementation must not claim an existing script')
+        guide(root, model)
+    return models
+
+
 def check(root=ROOT):
+    spec = importlib.util.spec_from_file_location('model_identity', Path(__file__).with_name('model-identity.py'))
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    identity.generate(root, check=True)
     plan, lock = read(root/'source-plan.json'), read(root/'source-lock.json')
     if lock['source'] != plan['source']:
         raise ValueError('Source inventory is from another upstream revision')
@@ -244,41 +288,7 @@ def check(root=ROOT):
         if name.startswith('brands/') and '/scripts/' in name}
     if actual != expected_actual:
         raise ValueError('Uninventoried or missing adaptation script files: '+str(sorted(actual ^ expected_actual)))
-    models = records(root)
-    for name, model in models:
-        if model['kind'] != 'ModelInstallGuide' or model['installable'] is not False:
-            raise ValueError('A source guide is not a DevicePackage: '+name)
-        if model['source_revision'] != plan['source'] or model['source_inventory'] != 'source-lock.json':
-            raise ValueError('Model source revision or inventory differs from the prepared collection: '+name)
-        components = {item['id']: item for item in model['components']}
-        if len(components) != len(model['components']):
-            raise ValueError('Duplicate component ID: '+name)
-        if name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json') and 'gyro' not in components:
-            raise ValueError('Missing gyro component: '+name)
-        for item in components.values():
-            fingerprint_default = (item.get('default') is True and item['id']=='fingerprint-unlock'
-                and name in ('brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'))
-            if item['recommendation'] not in LEVELS or not (item.get('default') is False or fingerprint_default):
-                raise ValueError('Source-only choices cannot become installation defaults')
-            for dependency in item['dependencies']:
-                if dependency not in components or components[dependency]['recommendation'] == 'excluded':
-                    raise ValueError('Missing or excluded dependency: '+dependency)
-            expected_toon = str(PurePosixPath(name).parent / 'common-device-sources.toon')
-            bmi_gyro = (item['id'] == 'gyro' and
-                        (name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json')
-                         or expected_toon in item['sources']
-                         or 'common/sensors/bosch/bmi260/gyro/source.toon' in item['sources']))
-            if bmi_gyro:
-                if item['sources'] != [expected_toon]:
-                    raise ValueError('Gyro must reference its own model TOON: ' + name)
-                local(root, expected_toon)
-                validate_gyro_reference(common, expected_toon, model)
-            for path in item['sources']:
-                if not bmi_gyro and path not in inventory and path not in current_rows and path != expected_toon:
-                    raise ValueError('Uninventoried component source: '+path)
-            if item['recommendation'] == 'pending' and item['sources']:
-                raise ValueError('Pending implementation must not claim an existing script')
-        guide(root, model)
+    models = validate_models(root, plan, inventory, current_rows, common)
     for item in read(root/'licenses/license-inventory.json')['files']:
         data = local(root, item['path']).read_bytes()
         if len(data) != item['size'] or hashlib.sha256(data).hexdigest() != item['sha256']:

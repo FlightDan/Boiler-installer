@@ -304,7 +304,7 @@ class KeyboardPortable(unittest.TestCase):
 
 class KeyboardSourceBuilder(unittest.TestCase):
     def test_original_four_component_definitions_keep_their_system_constraints(self):
-        catalog=module('keyboard_static_constraint_catalog',ROOT/'adaptations/scripts/toon_catalog.py')
+        catalog=module('keyboard_static_constraint_catalog',ROOT/'scripts/toon_catalog.py')
         current=catalog.load(ROOT/'adaptations/brands/onexplayer/common/components.toon',ROOT/'adaptations')['definitions']
         pins=json.loads((ROOT/'tests/fixtures/x2/keyboard-static-baseline.json').read_bytes())
         for name,pin in pins.items():
