@@ -67,12 +67,12 @@ internal static class BoilerModelCatalogChecks
                 Require(!SsdBootRepair.SupportsFixedModelEfi(package, []), id + "-split-lock-efi-bridge-requires-adaptation");
                 var resourceIds = package.TryGetProperty("resources", out var resourceRows)
                     ? resourceRows.EnumerateArray().Select(row => row.GetProperty("id").GetString()!).ToArray() : [];
-                if (resourceIds.Length > 0)
-                {
-                    var resourceExpected = ComponentOutcome.Expected(new SelectedOptions(1, [], ["core:maintenance"], "en-US", "system",
-                        DeviceComponents: ["oxp3:legacy-adaptation", ..resourceIds]), package);
-                    Require(resourceIds.All(resourceExpected.Contains), id + "-model-resources-resolved-as-components");
-                }
+                var defaultComponents = MainWindow.DefaultDeviceComponentIds(package, "developer-session");
+                Require(defaultComponents.Contains("oxp3:legacy-adaptation"), id + "-default-selection-includes-adaptation");
+                Require(resourceIds.All(defaultComponents.Contains), id + "-default-selection-includes-model-resources");
+                var defaultExpected = ComponentOutcome.Expected(new SelectedOptions(1, [], ["core:maintenance"], "en-US", "system",
+                    DeviceComponents: defaultComponents), package);
+                Require(defaultComponents.All(defaultExpected.Contains), id + "-default-selection-resolves-as-components");
                 var metadata = package.TryGetProperty("legacy_capabilities", out var capabilities)
                     ? capabilities.EnumerateArray().ToDictionary(item => item.GetProperty("id").GetString()!) : new Dictionary<string, JsonElement>();
                 string[] Dependencies(string identity) => metadata[identity].GetProperty("dependencies").EnumerateArray().Select(item => item.GetString()!).ToArray();

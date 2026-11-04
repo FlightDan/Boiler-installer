@@ -62,4 +62,31 @@ The brand ZIP, model manifests, and maintenance runtime are unchanged from
 `.6`. A physical run past this point still exercises the guest integration,
 resource installation, SSD transaction, writes, and first boot on the target.
 
+## 0.2.0-preview.20261105.9 — guest TOON parser payload and real default-selection QA
+
+Preview `.8` reached the guest component step and failed resolving the package
+resource manifests: the managed payload carried `protocol/` and `maintenance/`
+but not `adaptations/toon-parser-lock.json` and `adaptations/vendor/`, so the
+pinned TOON decoder could not authenticate `resource:intel-be201-firmware`.
+
+The guest payload now includes the parser lock and vendored parser whenever the
+protocol is staged, and both model packages pass a real QEMU image run with the
+wizard's default selection.
+
+The model image QA harness no longer selects only `oxp3:legacy-adaptation`. It
+now derives the same default set a freshly selected model submits: every
+available non-owner component, developer resources whose default is not opt-in,
+the package Decky provider for static Decky consumers, and the legacy default
+repairs (including `oxp3:split-lock`). It also applies the Windows split-lock EFI
+gate and validates component outcomes with the installation gate. The previous
+narrow selection is why `.6`–`.8` host and guest gaps escaped VM testing.
+
+VM evidence for this build: OXP3 and X2 Mini both passed the disposable-image
+model integration, read-only verification (119 adaptation files and 16 journal
+entries per slot for OXP3), and physical-readiness probe with
+`oxp3-full-split-lock-efi-v1` / `x2-split-lock-efi-v1`. The GM7 SSD provider is
+excluded from the VM set because it requires a reviewed physical target; that
+transaction still needs hardware acceptance.
+
+
 

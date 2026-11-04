@@ -447,6 +447,15 @@ public partial class MainWindow
     private static bool IsExplicitDeviceOption(JsonElement item) => item.TryGetProperty("ssd_boot_policy", out _) || item.TryGetProperty("selection_policy", out var policy)
         && policy.ValueKind == JsonValueKind.String && policy.GetString() == "explicit-opt-in";
     private static bool IsExplicitDeviceOption(CheckBox box) => box.Tag is JsonElement item && IsExplicitDeviceOption(item);
+    // The default submitted set for a newly selected model: every available component and developer
+    // resource except owner/opt-in rows. QA harnesses must build their selection from this helper so
+    // a model default such as the BE201 resource cannot be skipped by the test.
+    internal static string[] DefaultDeviceComponentIds(JsonElement package, string trust)
+        => DeviceOptionRows(package, trust)
+            .Where(item => !(item.TryGetProperty("available", out var available) && available.ValueKind == JsonValueKind.False))
+            .Where(item => !IsExplicitDeviceOption(item))
+            .Select(item => item.GetProperty("id").GetString()!)
+            .ToArray();
 }
 
 internal static class BoilerJsonExtensions

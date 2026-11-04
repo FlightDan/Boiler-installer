@@ -175,7 +175,8 @@ internal static class BoilerImageBuildChecks
             await Check("explicit-developer-package-validation-and-cache", async () =>
             {
                 package = await BoilerProtocol.RunAsync(["package", packageDirectory, "--manifest-sha256", digest], token);
-                if (package.GetProperty("id").GetString() != "device:oxp3") throw new IOException("Expected the explicitly selected OXP3 device package.");
+                if (package.GetProperty("id").GetString() is not ("device:oxp3" or "device:x2-mini"))
+                    throw new IOException("Expected an explicitly selected supported model package.");
                 var adaptation = package.GetProperty("components").EnumerateArray().Single(c => c.GetProperty("id").GetString() == "oxp3:legacy-adaptation");
                 if (!adaptation.GetProperty("hooks").TryGetProperty("verify", out _)) throw new IOException("Model QA requires the declared guest verification hook.");
                 if (!Directory.Exists(cached)) Backend.CopyDirectory(packageDirectory, cached);
@@ -190,13 +191,33 @@ internal static class BoilerImageBuildChecks
                     .Where(item => item.GetProperty("available").GetBoolean() && item.GetProperty("default").GetBoolean()).ToArray();
                 string[] Selected(string category) => defaults.Where(item => item.GetProperty("category").GetString() == category)
                     .Select(item => item.GetProperty("id").GetString()!).ToArray();
+                var legacyRepairs = Selected("repairs");
+                var legacyPlugins = Selected("plugins").ToList();
+                // The UI switches the package Decky provider on for static Decky consumers; this
+                // packaged provider is available for both models and is what the wizard submits.
+                if (!legacyPlugins.Contains("oxp3:decky")
+                    && package.GetProperty("legacy_capabilities").EnumerateArray().Any(item =>
+                        item.GetProperty("id").GetString() == "oxp3:decky" && item.GetProperty("category").GetString() == "plugins"
+                        && item.GetProperty("available").GetBoolean()))
+                    legacyPlugins.Add("oxp3:decky");
                 // This explicit disposable-image QA invocation accepts the package's
                 // recorded policy, while the interactive UI requires user consent.
-                legacySelection = new(1, Selected("repairs"), Selected("plugins"), true);
+                legacySelection = new(1, legacyRepairs, legacyPlugins.ToArray(), true);
             }
-            var options = new SelectedOptions(1, [], ["core:decky", "core:maintenance"], "en-US", "system",
+            // Use the same default component policy as a freshly selected model, including
+            // developer-session resources such as the BE201 firmware. Selecting only the
+            // adaptation shell is what let the packaged defaults escape earlier VM runs.
+            var components = MainWindow.DefaultDeviceComponentIds(package, "developer-session");
+            if (!components.Contains("oxp3:legacy-adaptation")) throw new IOException("Model QA defaults must include the adaptation component.");
+            if (legacySelection is { } legacyDefaults && legacyDefaults.Repairs.Contains("oxp3:split-lock")
+                && !SsdBootRepair.SupportsFixedModelEfi(package, components))
+                throw new IOException("The packaged model does not satisfy the fixed split-lock EFI gate.");
+            // Generic Decky is not available in a locked local build; the package provider above
+            // covers Decky consumers. Only generations that actually carry it may be selected.
+            var plugins = new List<string> { "core:maintenance" };
+            var options = new SelectedOptions(1, [], plugins.ToArray(), "en-US", "system",
                 InstallMode: "custom", DevicePackage: cacheKey, DeviceManifestSha256: digest,
-                DeviceTrust: "developer-session", DeviceComponents: ["oxp3:legacy-adaptation"], DeviceLegacyOptions: legacySelection);
+                DeviceTrust: "developer-session", DeviceComponents: components, DeviceLegacyOptions: legacySelection);
             var selection = JsonSerializer.Serialize(options, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower });
             await File.WriteAllTextAsync(Path.Combine(directory, "selection.json"), selection);
             string output = "", outcome = "", readiness = "";

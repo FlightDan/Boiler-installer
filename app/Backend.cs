@@ -379,6 +379,15 @@ public static class Backend
         {
             CopyDirectory(Path.Combine(Root, "protocol"), Path.Combine(payload, "protocol"));
             CopyDirectory(Path.Combine(Root, "maintenance"), Path.Combine(payload, "maintenance"));
+            // Package resource manifests are TOON documents. The pinned decoder looks for its
+            // lock and vendored parser under the payload's adaptations directory.
+            var parserLock = Path.Combine(Root, "adaptations/toon-parser-lock.json");
+            if (File.Exists(parserLock))
+            {
+                Directory.CreateDirectory(Path.Combine(payload, "adaptations"));
+                File.Copy(parserLock, Path.Combine(payload, "adaptations/toon-parser-lock.json"), false);
+                CopyDirectory(Path.Combine(Root, "adaptations/vendor"), Path.Combine(payload, "adaptations/vendor"));
+            }
             if (selection != null)
             {
                 using var plan = System.Text.Json.JsonDocument.Parse(selection);
