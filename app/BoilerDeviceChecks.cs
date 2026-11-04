@@ -142,25 +142,30 @@ internal static class BoilerDeviceChecks
         await Flush(window); RequireGeneralPanel("after clearing a model");
         using var resourcePackage = JsonDocument.Parse("""
             {"id":"device:fixture","version":"0.1.0","components":[],"resources":[
-                {"id":"resource:intel-be201-firmware","path":"common/network/intel/be201/resource.toon"}]}
+                {"id":"resource:intel-be201-firmware","path":"common/network/intel/be201/resource.toon"},
+                {"id":"resource:explicitly-disabled","path":"common/fixture/resource.toon","default":false}]}
             """);
         var commit = typeof(MainWindow).GetMethod("CommitDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        object ResourceSelection(string trust) =>
-            Activator.CreateInstance(prepared, "resource-fixture", new string('b', 64), trust, resourcePackage.RootElement.Clone(), null)!;
+        object ResourceSelection(string trust, char digest = 'b') =>
+            Activator.CreateInstance(prepared, "resource-fixture", new string(digest, 64), trust, resourcePackage.RootElement.Clone(), null)!;
         commit.Invoke(window, [ResourceSelection("signed-index")]);
         if (choices.ContainsKey("resource:intel-be201-firmware"))
             throw new IOException("A signed-index resource was offered without target hardware verification.");
         commit.Invoke(window, [ResourceSelection("developer-session")]);
         var resourceChoice = choices["resource:intel-be201-firmware"];
-        if (!resourceChoice.IsEnabled || resourceChoice.IsChecked == true)
-            throw new IOException("A developer model resource must require explicit selection.");
-        resourceChoice.IsChecked = true;
-        if (!(window.CurrentOptions.DeviceComponents ?? []).Contains("resource:intel-be201-firmware")
+        if (!resourceChoice.IsEnabled || resourceChoice.IsChecked != true
+            || !(window.CurrentOptions.DeviceComponents ?? []).Contains("resource:intel-be201-firmware")
             || !window.CurrentOptions.Plugins.Contains("core:maintenance"))
-            throw new IOException("The resource did not enter the ordinary component and maintenance selection.");
-        typeof(MainWindow).GetMethod("ClearModelResourceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
-        if ((window.CurrentOptions.DeviceComponents ?? []).Contains("resource:intel-be201-firmware"))
-            throw new IOException("A resource choice survived a target change.");
+            throw new IOException("The model resource and its maintenance dependency were not selected by default.");
+        if (choices["resource:explicitly-disabled"].IsChecked == true)
+            throw new IOException("An explicit TOON default-off was ignored.");
+        resourceChoice.IsChecked = false;
+        choices["resource:explicitly-disabled"].IsChecked = true;
+        commit.Invoke(window, [ResourceSelection("developer-session", 'd')]);
+        if (choices["resource:intel-be201-firmware"].IsChecked == true
+            || (window.CurrentOptions.DeviceComponents ?? []).Contains("resource:intel-be201-firmware")
+            || choices["resource:explicitly-disabled"].IsChecked != true)
+            throw new IOException("Reloading the model from another package overrode the user's choice.");
         typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
     }
 

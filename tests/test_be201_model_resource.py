@@ -86,7 +86,7 @@ class ModelFirmwareTests(unittest.TestCase):
         import shutil
         from integration import device_plan
         resource_id = 'resource:intel-be201-firmware'
-        self.manifest['resources'] = [{'id': resource_id, 'path': RESOURCE}]
+        self.manifest['resources'] = [{'id': resource_id, 'path': RESOURCE, 'default': True}]
         self.manifest.pop('be201_firmware')
         self.write_manifest()
         package = self.base / 'payload/device-packages/fixture'
@@ -106,6 +106,15 @@ class ModelFirmwareTests(unittest.TestCase):
         options['device_trust'] = 'developer-session'; options['plugins'] = []
         with self.assertRaisesRegex(ValueError, 'retained maintenance'):
             device_plan(self.base/'payload', options, source)
+
+    def test_resource_default_requires_boolean(self):
+        from protocol.manifest import validate_manifest
+        for value in (True, False):
+            self.manifest['resources'] = [{'id': IDENTITY, 'path': RESOURCE, 'default': value}]
+            validate_manifest(self.manifest)
+        self.manifest['resources'][0]['default'] = 'false'
+        with self.assertRaises(ValueError):
+            validate_manifest(self.manifest)
 
     def test_unknown_facts_stop_before_slot_writes(self):
         pool = model_resource_pool(self.root, trust_local_test=True)

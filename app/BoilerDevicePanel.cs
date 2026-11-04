@@ -216,7 +216,6 @@ public partial class MainWindow
             : PartitionInventory.L("从 GitHub 目录查找机型，或导入已有机型包。", "Find a device in the GitHub directory or import an existing package.");
         deviceDirectoryDetails!.Header = deviceSourceBundled ? PartitionInventory.L("识别与适配信息", "Detection and adaptation details")
             : PartitionInventory.L("目录与识别信息", "Directory and detection details");
-        deviceImportArea!.Visibility = deviceSourceBundled ? Visibility.Collapsed : Visibility.Visible;
         deviceIndexStatus!.Visibility = deviceIndexRetry!.Visibility = deviceSourceBundled ? Visibility.Collapsed : Visibility.Visible;
         if (!deviceSourceBundled) deviceIndexRetry.Visibility = deviceIndexError != null || deviceIndexOffline || modelCatalogError != null ? Visibility.Visible : Visibility.Collapsed;
         string source = "";

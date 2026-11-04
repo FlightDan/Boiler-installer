@@ -702,7 +702,13 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
         generated['name'] = guide['runtime']['name']
         if be201_descriptor:
             generated.pop('be201_firmware', None)
-            generated['resources'] = [{'id': 'resource:intel-be201-firmware', 'path': be201_descriptor['resource']}]
+            resource_row = {'id': 'resource:intel-be201-firmware', 'path': be201_descriptor['resource']}
+            declaration = next(row for row in guide['resource_model']['resources'] if row['id'] == resource_row['id'])
+            if 'default' in declaration:
+                if type(declaration['default']) is not bool:
+                    raise ValueError('Resource default must be a boolean')
+                resource_row['default'] = declaration['default']
+            generated['resources'] = [resource_row]
         generated['components'] = components
         generated['files'] = [rows[name] for name in sorted(chosen)]
         validate_manifest(generated, 'DevicePackage')

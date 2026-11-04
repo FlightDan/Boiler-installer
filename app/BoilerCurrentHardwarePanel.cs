@@ -83,7 +83,7 @@ public partial class MainWindow
     {
         if (id == "intel-be201-firmware")
             return FindCurrentHardwareChoice("resource:" + id) is { IsEnabled: true }
-                ? PartitionInventory.L("可在机型构件里手动选择。请确认目标设备使用 BE201。", "Available in the model components. Confirm the target uses BE201 before selecting it.")
+                ? PartitionInventory.L("所选机型包含 BE201 固件，可在构件列表调整。", "The selected model includes BE201 firmware. Adjust it in the component list.")
                 : PartitionInventory.L("目标是否为 BE201 尚未确认，暂不安装固件。", "BE201 on the destination is unconfirmed; firmware will not be installed.");
         var aliases = id switch
         {

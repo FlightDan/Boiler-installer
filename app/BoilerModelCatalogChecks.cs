@@ -275,8 +275,8 @@ internal static class BoilerModelCatalogChecks
                     && list.Items.Count == 2 && list.SelectedIndex == 0,
                     language + "-bundled-source-defaults-when-a-local-package-is-present");
                 Require(((JsonElement)((ComboBoxItem)list.Items[1]).Tag).GetProperty("guide_id").GetString() == "guide:oxp3"
-                    && importArea.Visibility == Visibility.Collapsed,
-                    language + "-bundled-tab-shows-only-its-model-guide-and-hides-online-import");
+                    && importArea.IsVisible,
+                    language + "-bundled-tab-shows-its-model-guide-and-local-import");
                 Require(bundleCalls == 0 && window.CurrentOptions.DevicePackage == null, language + "-loading-does-not-grant-trust");
                 await CaptureSourceView(window, directory, language, "bundled-default", 1060, captures, captureScreenshots);
                 await CaptureSourceView(window, directory, language, "bundled-default", 640, captures, captureScreenshots);
@@ -306,9 +306,9 @@ internal static class BoilerModelCatalogChecks
                     && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null,
                     language + "-online-tab-shows-signed-index-entries-without-granting-trust");
                 bundledTab.IsChecked = true; await Flush(window);
-                Require(list.SelectedIndex == 0 && list.Items.Count == 2 && importArea.Visibility == Visibility.Collapsed
+                Require(list.SelectedIndex == 0 && list.Items.Count == 2 && importArea.IsVisible
                     && Field<TextBlock>(window, "deviceIndexStatus").Visibility == Visibility.Collapsed,
-                    language + "-switching-back-resets-candidate-and-hides-online-controls");
+                    language + "-switching-back-keeps-local-import-and-hides-online-status");
                 list.SelectedIndex = 1; await Flush(window);
                 Require(ChosenModelEntry(list).GetProperty("guide_id").GetString() == "guide:oxp3"
                     && use.IsEnabled && bundleCalls == 0 && window.CurrentOptions.DevicePackage == null,

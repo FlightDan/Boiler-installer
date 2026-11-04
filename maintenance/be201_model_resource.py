@@ -27,7 +27,7 @@ def model_resource_pool(root, *, authenticate_package=None, trust_local_test=Fal
     # authenticates the signed index and package, never by package data.
     package = (authenticate_package(root) if authenticate_package is not None
                else validate_package(root, allow_unsigned=True, expected_manifest_sha256=expected_manifest_sha256))
-    if package.get('be201_firmware') != DESCRIPTOR and {'id': IDENTITY, 'path': RESOURCE} not in package.get('resources', []):
+    if package.get('be201_firmware') != DESCRIPTOR and not any(row['id'] == IDENTITY and row['path'] == RESOURCE for row in package.get('resources', [])):
         raise ResourceError('Model package does not authorize the fixed BE201 resource')
     inventory = {item['path']: item for item in package['files']}
     if RESOURCE not in inventory:

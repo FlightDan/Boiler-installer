@@ -284,7 +284,7 @@ def validate_manifest(obj, kind=None):
             if not isinstance(resources, list): _fail('Invalid model resource references')
             ids, paths = set(), set()
             for row in resources:
-                if not isinstance(row, dict) or set(row) != {'id', 'path'} or not isinstance(row['id'], str) or not _ID.fullmatch(row['id']) or not row['id'].startswith('resource:'):
+                if not isinstance(row, dict) or (set(row) - {'id', 'path', 'default'} or not {'id', 'path'}.issubset(row) or ('default' in row and type(row['default']) is not bool)) or not isinstance(row['id'], str) or not _ID.fullmatch(row['id']) or not row['id'].startswith('resource:'):
                     _fail('Invalid model resource reference')
                 relative_path(row['path'])
                 if row['id'] in ids or row['path'] in paths: _fail('Duplicate model resource reference')
@@ -391,7 +391,7 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
     for reference in obj.get('resources', []):
         if reference['path'] not in inventory: _fail('Model resource record absent from inventory')
     resource_references = [r for r in obj.get('resources', []) if r['id'] == 'resource:intel-be201-firmware']
-    if resource_references and resource_references != [{'id':'resource:intel-be201-firmware', 'path':'common/network/intel/be201/resource.toon'}]:
+    if resource_references and any(row['path'] != 'common/network/intel/be201/resource.toon' for row in resource_references):
         _fail('Invalid fixed firmware resource reference')
     if 'be201_firmware' in obj or resource_references:
         from protocol.resource_pool import decoder

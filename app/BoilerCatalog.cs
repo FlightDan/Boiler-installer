@@ -86,6 +86,7 @@ public partial class MainWindow
     private bool deviceActionBusy;
     private string? deviceActionError;
     private readonly Dictionary<string, CheckBox> deviceComponentChoices = new();
+    private readonly Dictionary<(string Model, string Component), bool> modelResourceChoices = new();
     private StackPanel? deviceComponentsPanel;
     private CheckBox? deviceAdaptationsChoice;
     private bool updatingDeviceAdaptations;
@@ -294,7 +295,8 @@ public partial class MainWindow
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
             ?? new DeviceLegacySelection(1, [], [], deviceLegacyUpdateHold?.IsChecked == true) : null;
         var package = selection.Package;
-        fingerprintModel = package.GetProperty("id").GetString();
+        var modelId = package.GetProperty("id").GetString()!;
+        fingerprintModel = modelId;
         adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;
         ClearPackageOptionPreview();
         selectedDevicePackage = selection.Key; selectedDeviceDigest = selection.Digest; selectedDeviceTrust = selection.Trust;
@@ -316,7 +318,9 @@ public partial class MainWindow
             var available = !component.TryGetProperty("available", out var availability) || availability.ValueKind != JsonValueKind.False;
             if (!available) componentText += "\n" + (component.TryGetProperty("reason", out var reason) ? LocalizedValue(reason)
                 : PartitionInventory.L("此组件暂不可安装。", "This component is currently unavailable."));
-            var initial = priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !IsExplicitDeviceOption(component);
+            var modelResource = component.TryGetProperty("resource_path", out _);
+            var initial = modelResource ? modelResourceChoices.GetValueOrDefault((modelId, id), !IsExplicitDeviceOption(component))
+                : priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !IsExplicitDeviceOption(component);
             if (id == FingerprintId)
             {
                 if (CandidateFingerprintTarget() is FingerprintTarget fingerprintTarget)
@@ -330,15 +334,18 @@ public partial class MainWindow
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;
+                if (modelResource) RecordModelResourceChoice(modelId, id, check.IsChecked == true);
                 if (id == FingerprintId) RecordFingerprintPreference(check);
                 if (SsdBootRepair.IsProvider(component)) RecordSsdPreference(check);
-                if (check.IsChecked == true && (SsdBootRepair.IsProvider(component) || component.TryGetProperty("resource_path", out _))
+                if (check.IsChecked == true && (SsdBootRepair.IsProvider(component) || modelResource)
                     && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance)) maintenance.IsChecked = true;
                 EnsureStaticDeckyProvider();
                 RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             }
             check.Checked += Changed; check.Unchecked += Changed;
             deviceComponentChoices.Add(id, check);
+            if (modelResource && check.IsChecked == true && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))
+                core.IsChecked = true;
         }
         optionsPanel.SetSsdProvider(deviceComponentChoices.Values.SingleOrDefault(box => box.IsEnabled && box.Tag is JsonElement item && SsdBootRepair.IsProvider(item)));
         SyncSsdSelection();
@@ -353,6 +360,9 @@ public partial class MainWindow
             updatingDeviceAdaptations = true;
             try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
+            foreach (var pair in deviceComponentChoices)
+                if (pair.Value.Tag is JsonElement row && row.TryGetProperty("resource_path", out _))
+                    RecordModelResourceChoice(modelId, pair.Key, pair.Value.IsChecked == true);
             if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint) && fingerprint.IsEnabled && !IsExplicitDeviceOption(fingerprint)) RecordFingerprintPreference(fingerprint);
             EnsureStaticDeckyProvider();
             ConfigurationChanged();
@@ -383,17 +393,17 @@ public partial class MainWindow
                 id,
                 name = CurrentHardwareName(id["resource:".Length..]),
                 description = PartitionInventory.L(
-                    "确认目标设备使用此硬件后再勾选。", "Select only after confirming this hardware is in the target device."),
-                selection_policy = "explicit-opt-in",
+                    "所选机型包含的共用构件。", "Shared component included for the selected model."),
+                selection_policy = resource.TryGetProperty("default", out var initial) && initial.ValueKind == JsonValueKind.False
+                    ? "explicit-opt-in" : null,
                 resource_path = resource.GetProperty("path").GetString()
             });
         }
     }
 
-    private void ClearModelResourceSelection()
+    private void RecordModelResourceChoice(string model, string component, bool selected)
     {
-        foreach (var box in deviceComponentChoices.Values)
-            if (box.Tag is JsonElement component && component.TryGetProperty("resource_path", out _)) box.IsChecked = false;
+        modelResourceChoices[(model, component)] = selected;
     }
 
     private static bool IsExplicitDeviceOption(JsonElement item) => item.TryGetProperty("ssd_boot_policy", out _) || item.TryGetProperty("selection_policy", out var policy)
