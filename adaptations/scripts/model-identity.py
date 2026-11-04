@@ -11,7 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     result = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(result)
+    source = Path(path).read_bytes()
+    verified = globals().get('_VERIFIED_TOOL_SOURCES')
+    if verified is not None and verified.get(str(Path(path).resolve())) != source:
+        raise ValueError('Tool source differs from verified committed bytes: ' + str(path))
+    exec(compile(source, str(path), 'exec', dont_inherit=True), result.__dict__)
     return result
 
 common = module('common_device_sources', ROOT / 'scripts/common-device-sources.py')

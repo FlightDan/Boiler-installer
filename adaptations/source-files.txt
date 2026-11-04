@@ -624,6 +624,7 @@ records/migrations/bmi260-source-relocation-20261103.json
 records/migrations/branded-model-identity-20261104.md
 records/migrations/common-bmi260-inputplumber-20261103.json
 records/migrations/common-device-resource-ownership-20261103.json
+records/migrations/generic-model-candidate-20261104.md
 records/migrations/x2-installer-catalog-entrypoints-20261104.json
 records/oxp3-shared-base/opti031-inputs.json
 records/release-preservation-proof-20261104.json

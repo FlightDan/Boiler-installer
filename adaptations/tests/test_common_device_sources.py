@@ -20,7 +20,7 @@ class CommonDeviceSourceTests(unittest.TestCase):
         self.assertTrue(all(row['boot_policy'] == 'common:ssd-gm7-boot-repair' for row in result['models']))
 
     def test_toon_codec_is_locked(self):
-        catalog.validate_codec()
+        self.assertIsNone(catalog.validate_codec())
 
     def test_external_firmware_materialized_bytes_match_the_historical_lock(self):
         be201 = catalog.load(catalog.RESOURCES['resource:intel-be201-firmware'])

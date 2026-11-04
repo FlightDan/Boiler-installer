@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "8073a816f76d90224f792931c9e02fdc2fbdf083",
+  "commit": "18a3cf0bc8badc1ab976b3d3e8aec6902cb36d71",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -1481,13 +1481,13 @@
     },
     {
       "path": "adaptations/docs/REGISTRY.en.md",
-      "size": 2771,
-      "sha256": "7b53200a5dbca7df61095c9c4bb3571688b2cfd34ea80cbdf504cf1b3836af75"
+      "size": 3502,
+      "sha256": "e024e3d983116a46daa79790006e3aeb0b42e83f89567ab9477947375aa68c5f"
     },
     {
       "path": "adaptations/docs/REGISTRY.md",
-      "size": 2394,
-      "sha256": "a32dca363acb3b7e5af1a727f0d0d08af904d09530f7bc5d48d612162882b0cb"
+      "size": 2965,
+      "sha256": "f85b66820ce6df0e2adb6300f6c0bbd0010307f140fa832b8ebbfb4f5dd1e625"
     },
     {
       "path": "adaptations/docs/RELEASE_0.1.0-layout.1.md",
@@ -1548,6 +1548,11 @@
       "path": "adaptations/records/migrations/common-device-resource-ownership-20261103.json",
       "size": 26319,
       "sha256": "7b56b449ea011d8c0677bc72e8a41ed3c9c0216e3da2803eaa36fc83314946b8"
+    },
+    {
+      "path": "adaptations/records/migrations/generic-model-candidate-20261104.md",
+      "size": 2041,
+      "sha256": "69c1f51dbebe1b09ab2b23ea5c45173adcdfad96224036a05f5ed9cea92f7909"
     },
     {
       "path": "adaptations/records/migrations/x2-installer-catalog-entrypoints-20261104.json",
@@ -1756,8 +1761,8 @@
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 34520,
-      "sha256": "ba68ec057315bd45f2e70df3f4479438300926811cabf658981a026e9f56a8ef"
+      "size": 41011,
+      "sha256": "d4604e3e4078a19cdccee834ca2e10c98b88b5e223a309fab84f66d46840c516"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
@@ -1791,8 +1796,8 @@
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
-      "size": 10513,
-      "sha256": "5432bd8a6359ec51ccca0248885e6597bbbea5dedbf099f46d7a24c9c3a1f1a6"
+      "size": 12259,
+      "sha256": "ca4374dd88edf12ea9ff2b913b1967457d1694b5d1e770c5fe1e852c51f87122"
     },
     {
       "path": "adaptations/scripts/fingerprint_provenance.py",
@@ -1801,8 +1806,8 @@
     },
     {
       "path": "adaptations/scripts/model-identity.py",
-      "size": 13623,
-      "sha256": "f2f1c23d00792c3b6e6017c3691388cc5d38dd1d91c5d8bf0b67440e6e32b3f2"
+      "size": 13935,
+      "sha256": "3505a19b772600cedab73288d6818c3307c00beb29363eecca181f9f164dc58a"
     },
     {
       "path": "adaptations/scripts/prepare-current-inputs.py",
@@ -1815,14 +1820,19 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
+      "path": "adaptations/scripts/refresh-model-source-inventory.py",
+      "size": 3039,
+      "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
+    },
+    {
       "path": "adaptations/scripts/validate-fingerprint-native.py",
       "size": 6086,
       "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 52789,
-      "sha256": "682e156c85000081785a3217aa21edde4e37e413f5a5b105bac3644579078a15"
+      "size": 52844,
+      "sha256": "e050e53b157db3b68f616ece6d350e7e7e3774abc24ce1b1cf316356e40145a2"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1841,8 +1851,8 @@
     },
     {
       "path": "adaptations/tests/test_common_device_sources.py",
-      "size": 4820,
-      "sha256": "f87fb74d1cb0be94b89ed1bf6bfb4e626e3e9a61dc8aaf635b9f75b32740089c"
+      "size": 4839,
+      "sha256": "1685259401f90040500738131e5f81d7d1c3aa9e8aca737098cc98f0f483c7ed"
     },
     {
       "path": "adaptations/tests/test_fingerprint_overlay.py",
@@ -1851,8 +1861,8 @@
     },
     {
       "path": "adaptations/tests/test_index_models.py",
-      "size": 13466,
-      "sha256": "e32d1d4321234f92f7ef3c24b265bc0a816df89e604c22fff651c1f8cbef4828"
+      "size": 26894,
+      "sha256": "e344161dafce47ba6c4287f8fe651fa48e76b648ac9aaa3a5b0e861887dd267a"
     },
     {
       "path": "adaptations/tests/test_model_identity.py",
@@ -1951,8 +1961,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 70360,
-      "sha256": "7f8c239d56777044134e7881f0089820d2c2d9597121ff5b3ac378213dc826a5"
+      "size": 70723,
+      "sha256": "86db96d4d95c5d5d377abcfb1064c3cf2f66c28275bce11226cec361ce51d3c3"
     }
   ]
 }
