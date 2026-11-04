@@ -81,7 +81,13 @@ def runtime_record(value):
             or value['guide_id']!='guide:'+value['id'].split(':',1)[1]):
         raise ProtocolError('Invalid runtime model identity')
     path=model_path(value['manifest'])
-    if path.split('/')[2]!=value['id'].split(':',1)[1]:
+    _, brand, model, _ = path.split('/')
+    branded = 'device:' + brand + '-' + model
+    legacy = {
+        'brands/onexplayer/oxp3/manifest.json': 'device:oxp3',
+        'brands/onexplayer/x2-mini/manifest.json': 'device:x2-mini',
+    }
+    if value['id'] != branded and value['id'] != legacy.get(path):
         raise ProtocolError('Runtime identity and model path differ')
     if not isinstance(value['name'],dict) or set(value['name'])!={'en','zh'} or not all(_display_text(v) for v in value['name'].values()):
         raise ProtocolError('Invalid bilingual model display name')
