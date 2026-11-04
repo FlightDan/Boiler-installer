@@ -62,12 +62,16 @@ def catalog(*, runtime_root=ROOT, online=True):
     return load_models(root=runtime_root, online=online, include_bundles=False)
 
 
+def _retained_package_pointer(engine, identity):
+    return engine.state_dir/'models'/('package-' + identity.removeprefix('device:') + '.json')
+
+
 def _package(identity, engine, runtime_root, *, trust_local_test):
     if not trust_local_test:
         raise MaintenanceError('Explicit session trust is required for the local test model package')
     if identity not in MODELS:
         raise MaintenanceError('Unknown model identity')
-    pointer = engine.state_dir/'models'/('package-' + identity.removeprefix('device:') + '.json')
+    pointer = _retained_package_pointer(engine, identity)
     if os.path.lexists(pointer):
         saved = _private_json(pointer)
         digest = saved.get('manifest_sha256', '')
@@ -383,6 +387,9 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
     view = dict(model=model, capabilities=[], current=None, executable=False,
                 reasons=[], source=data['source'], offline=data['offline'], scope=SCOPE)
     if trust_local_test is not True:
+        if identity == 'device:x2-mini':
+            engine = Engine(root, state_dir, read_only=True)
+            view['retained_local_test_available'] = os.path.lexists(_retained_package_pointer(engine, identity))
         view['reasons'] = ['Select and explicitly trust a model package to inspect executable maintenance.']
         return view
     engine = Engine(root, state_dir, read_only=True)

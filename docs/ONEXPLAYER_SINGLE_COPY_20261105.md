@@ -1,6 +1,6 @@
 # ONEXPLAYER single-copy installer
 
-Local candidate 0.2.0-preview.20261105.5 embeds the ONEXPLAYER brand ZIP built from
+Local candidate 0.2.0-preview.20261105.6 embeds the ONEXPLAYER brand ZIP built from
 FlightDan/Boiler-adaptations at `8d5053462aac703866866ca18b8f8635c5d0c007`.
 The model TOON guides select the files included in the brand ZIP. Both guides use
 the same bundled BE201 resource.

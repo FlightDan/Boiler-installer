@@ -478,7 +478,14 @@ class ModelUI:
             if choice == 'guide':
                 self.guide(model)
                 continue
-            needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] in ('device:oxp3','device:x2-mini')
+            command = {'shared':'shared-options','keyboard':'keyboard-options'}.get(choice,'options')
+            needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] == 'device:oxp3'
+            if not needs_trust and model['id'] == 'device:x2-mini':
+                options = self.backend.call(command, model['id'])
+                if not options.get('retained_local_test_available'):
+                    self.actions(model, options)
+                    continue
+                needs_trust = True
             if needs_trust and not self.trusted:
                 if not self.dialog.confirm(self.tr(
                         '此包为本地测试包，尚未公开发布，也不代表实机运行验收通过。\n仅在本次会话信任该包并读取本机维护状态？',
@@ -488,7 +495,7 @@ class ModelUI:
                     return
                 self.trusted = True
             flags = ['--trust-local-test'] if needs_trust and self.trusted else []
-            options = self.backend.call({'shared':'shared-options','keyboard':'keyboard-options'}.get(choice,'options'), model['id'], *flags)
+            options = self.backend.call(command, model['id'], *flags)
             self.actions(model, options)
 
     def unavailable(self, options, model):

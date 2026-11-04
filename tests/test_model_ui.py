@@ -283,6 +283,19 @@ class ModelUITests(unittest.TestCase):
         self.assertFalse(dialog.confirm_texts)
         self.assertIn('PL4 pending', '\n'.join(dialog.detail_texts))
 
+    def test_x2_retained_package_requires_consent_before_inspection(self):
+        for approved in (False, True):
+            backend = FakeBackend(dict(OPTIONS, executable=False, retained_local_test_available=True))
+            menus = ['device:x2-mini', 'options'] + (['back'] if approved else [])
+            dialog = Dialog(menus, confirms=[approved])
+            ui, _ = self.ui(dialog, backend)
+            self.assertEqual(ui.run(), 0)
+            calls = [('list', '--offline'), ('options', 'device:x2-mini')]
+            if approved:
+                calls.append(('options', 'device:x2-mini', '--trust-local-test'))
+            self.assertEqual(backend.calls, calls)
+            self.assertEqual(len(dialog.confirm_texts), 1)
+
     def test_unmapped_guide_entry_stays_visible(self):
         dialog = Dialog()
         ui, _ = self.ui(dialog)
