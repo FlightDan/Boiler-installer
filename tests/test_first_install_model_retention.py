@@ -99,8 +99,10 @@ class FirstInstallModelRetention(unittest.TestCase):
             shutil.copyfile(source, destination)
             self.manifest['files'].append(row)
         self.manifest['resources'] = [{'id': IDENTITY, 'path': 'common/network/intel/be201/resource.toon'}]
-        # The fixture firmware is compatible with this synthetic image kernel.
+        # Both the package and the resource target the image's only kernel.
+        (self.root/'usr/lib/modules/kernel-fixture').rmdir()
         (self.root/'usr/lib/modules/fixture-kernel').mkdir()
+        self.manifest['compatibility']['kernels'] = ['fixture-kernel']
         self.save_manifest()
         options = dict(self.options, device_components=[IDENTITY], device_manifest_sha256=self.anchor)
         target = next(path for path, missing in TARGETS.items() if not missing)
@@ -119,8 +121,7 @@ class FirstInstallModelRetention(unittest.TestCase):
         self.save_manifest()
         second = self.work/'root-B'; second.mkdir()
         (second/'etc').mkdir(); (second/'etc/os-release').write_text('ID=steamos\nVERSION_ID=3.10\nBUILD_ID=fixture\n')
-        (second/'usr/lib/modules/kernel-fixture').mkdir(parents=True)
-        (second/'usr/lib/modules/fixture-kernel').mkdir()
+        (second/'usr/lib/modules/fixture-kernel').mkdir(parents=True)
         (second/'usr/bin').mkdir(parents=True); shutil.copyfile(self.root/'usr/bin/env', second/'usr/bin/env')
         options['device_manifest_sha256'] = self.anchor
         result = stage(second, self.payload, options, 'B')
