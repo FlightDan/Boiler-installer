@@ -22,6 +22,11 @@ from . import ssd_boot as boot
 
 STATE = 'home/.boiler/boot-ownership-v1'
 HASH = re.compile(r'[0-9a-f]{64}\Z')
+# Shared-home journals and their adapter evidence embed installed payload bytes. A default model
+# selection includes components whose journal exceeds a small metadata bound; the slot group and
+# all other evidence stay under the narrower limit below.
+LEGACY_SHARED_LIMIT = 512 * 1024 * 1024
+LEGACY_SLOT_LIMIT = 128 * 1024 * 1024
 SPLIT_LOCK_SHA256 = '1eb270c5ac1151422b26d0233ee68b52155042b316c26a6e932bcbd4e8abc694'
 LICENSE_SHA256 = '1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a'
 DROPIN = 'etc/default/grub.d/oxp3-splitlock.cfg'
@@ -302,7 +307,7 @@ def _verify_adapter_proof(root,source,slot='A', *, model_record_path=None):
         if (not isinstance(item,dict) or set(item) != {'path','sha256','size'}
                 or not isinstance(item['path'],str) or item['path'] in seen
                 or not isinstance(item['sha256'],str) or not HASH.fullmatch(item['sha256'])
-                or type(item['size']) is not int or not 0 <= item['size'] <= 128*1024*1024):
+                or type(item['size']) is not int or not 0 <= item['size'] <= LEGACY_SHARED_LIMIT):
             raise MaintenanceError('Invalid fresh sibling evidence')
         relative=boot.relative_path(item['path'])
         if not (relative.startswith('home/.oxp3-installer/integration/') or relative.startswith('opt/')
@@ -762,10 +767,14 @@ class ModelEFI:
                         if entry.name not in allowed or entry.name in ('split-lock','gm7-resume'):
                             raise MaintenanceError('Unknown current legacy component journal')
                         journal=group/entry.name/'state.json'
+                        # Shared-home journals embed the installed payload bytes so the bridge can
+                        # restore them; a default selection includes components whose payload
+                        # exceeds a narrow metadata limit. Slot journals keep the small bound.
+                        limit=LEGACY_SHARED_LIMIT if shared else LEGACY_SLOT_LIMIT
                         with boot._file(journal,private=True) as (stream,info):
-                            if info.st_size > 128*1024*1024:
+                            if info.st_size > limit:
                                 raise MaintenanceError('Current legacy journal exceeds limit')
-                            value=boot._decode_json(stream.read(128*1024*1024+1))
+                            value=boot._decode_json(stream.read(limit+1))
                         paths=value.get('allowed') if isinstance(value,dict) else None
                         if (not isinstance(paths,list) or not paths or any(not isinstance(path,str) for path in paths)
                                 or len(paths) != len(set(paths)) or value.get('phase') != 'installed'

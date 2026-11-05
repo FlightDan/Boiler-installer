@@ -187,22 +187,13 @@ internal static class BoilerImageBuildChecks
             if (package.TryGetProperty("selection_contract", out var contract)
                 && contract.GetProperty("kind").GetString() == "oxp3-legacy-options-v1")
             {
-                var defaults = package.GetProperty("legacy_capabilities").EnumerateArray()
-                    .Where(item => item.GetProperty("available").GetBoolean() && item.GetProperty("default").GetBoolean()).ToArray();
-                string[] Selected(string category) => defaults.Where(item => item.GetProperty("category").GetString() == category)
+                // A new model selects every installable legacy capability, exactly like the wizard;
+                // the descriptive per-item "default" flags are not the submitted policy.
+                var defaultLegacy = MainWindow.DefaultLegacyCapabilities(package);
+                string[] Selected(string category) => package.GetProperty("legacy_capabilities").EnumerateArray()
+                    .Where(item => item.GetProperty("category").GetString() == category && defaultLegacy.Contains(item.GetProperty("id").GetString()!))
                     .Select(item => item.GetProperty("id").GetString()!).ToArray();
-                var legacyRepairs = Selected("repairs");
-                var legacyPlugins = Selected("plugins").ToList();
-                // The UI switches the package Decky provider on for static Decky consumers; this
-                // packaged provider is available for both models and is what the wizard submits.
-                if (!legacyPlugins.Contains("oxp3:decky")
-                    && package.GetProperty("legacy_capabilities").EnumerateArray().Any(item =>
-                        item.GetProperty("id").GetString() == "oxp3:decky" && item.GetProperty("category").GetString() == "plugins"
-                        && item.GetProperty("available").GetBoolean()))
-                    legacyPlugins.Add("oxp3:decky");
-                // This explicit disposable-image QA invocation accepts the package's
-                // recorded policy, while the interactive UI requires user consent.
-                legacySelection = new(1, legacyRepairs, legacyPlugins.ToArray(), true);
+                legacySelection = new(1, Selected("repairs"), Selected("plugins"), true);
             }
             // Use the same default component policy as a freshly selected model, including
             // developer-session resources such as the BE201 firmware. Selecting only the

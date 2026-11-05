@@ -465,7 +465,10 @@ public static class Backend
         var scratch = Path.Combine(work, "scratch.raw");
         using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task is "home-copy-plan-checks" or "integration-check" or "integration-delta-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
-        var arguments = new List<string> { "-accel", "tcg", "-m", "1024", "-smp", "2", "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
+        // Legacy component journals embed installed payload bytes; a default model selection
+        // includes a component whose journal needs more than the base guest allowance.
+        var memory = task is "integration" or "integration-verify" ? "4096" : "1024";
+        var arguments = new List<string> { "-accel", "tcg", "-m", memory, "-smp", "2", "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
             "-kernel", Path.Combine(Root, "runtime/alpine/boot/vmlinuz-virt"), "-initrd", Path.Combine(Root, "runtime/alpine/boot/initramfs-virt"),
             "-append", "console=ttyS0,115200 modules=loop,squashfs,sd-mod,virtio_pci,virtio_blk,vfat alpine_dev=cdrom:iso9660",
             "-drive", $"file={Option(Path.Combine(Root, "cache/alpine-virt-3.23.6-x86_64.iso"))},format=raw,media=cdrom,readonly=on",

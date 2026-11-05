@@ -109,6 +109,25 @@ public partial class MainWindow
     private static IEnumerable<string> LegacyDependencies(CheckBox box) => box.Tag is JsonElement item
         && item.TryGetProperty("dependencies", out var dependencies) ? dependencies.EnumerateArray().Select(value => value.GetString()!) : [];
 
+    // A newly selected model selects every legacy capability whose own availability and dependency
+    // closure are installable, independent of the descriptive "default" flags. QA harnesses use this
+    // so the submitted selection matches the wizard instead of a reduced subset.
+    internal static string[] DefaultLegacyCapabilities(JsonElement package)
+    {
+        if (!package.TryGetProperty("legacy_capabilities", out var capabilities) || capabilities.ValueKind != JsonValueKind.Array) return [];
+        var rows = capabilities.EnumerateArray().ToDictionary(row => row.GetProperty("id").GetString()!);
+        static string[] Dependencies(JsonElement row) => row.TryGetProperty("dependencies", out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.EnumerateArray().Select(item => item.GetString()!).ToArray() : [];
+        static bool Installed(JsonElement row) => row.TryGetProperty("available", out var available) && available.ValueKind == JsonValueKind.True;
+        bool Available(string id, HashSet<string> seen)
+        {
+            if (!rows.TryGetValue(id, out var row) || !Installed(row)) return false;
+            if (!seen.Add(id)) return true;
+            return Dependencies(row).All(dependency => Available(dependency, seen));
+        }
+        return rows.Where(pair => Available(pair.Key, new())).Select(pair => pair.Key).ToArray();
+    }
+
     private void SetLegacyClosure(string id, bool selected, HashSet<string> seen)
     {
         if (!seen.Add(id) || !deviceLegacyChoices.TryGetValue(id, out var box)) return;

@@ -70,23 +70,49 @@ but not `adaptations/toon-parser-lock.json` and `adaptations/vendor/`, so the
 pinned TOON decoder could not authenticate `resource:intel-be201-firmware`.
 
 The guest payload now includes the parser lock and vendored parser whenever the
-protocol is staged, and both model packages pass a real QEMU image run with the
-wizard's default selection.
+protocol is staged.
 
 The model image QA harness no longer selects only `oxp3:legacy-adaptation`. It
-now derives the same default set a freshly selected model submits: every
-available non-owner component, developer resources whose default is not opt-in,
-the package Decky provider for static Decky consumers, and the legacy default
-repairs (including `oxp3:split-lock`). It also applies the Windows split-lock EFI
-gate and validates component outcomes with the installation gate. The previous
-narrow selection is why `.6`–`.8` host and guest gaps escaped VM testing.
+starts from the same component and resource defaults a freshly selected model
+submits, including the package Decky provider for static Decky consumers, and it
+applies the Windows split-lock EFI gate and the installation component gate. The
+previous adaptation-only selection is why `.6`–`.8` host and guest gaps escaped
+VM testing. This build still derived legacy repairs from the descriptive
+`default` flags, which `.10` replaces.
 
-VM evidence for this build: OXP3 and X2 Mini both passed the disposable-image
-model integration, read-only verification (119 adaptation files and 16 journal
-entries per slot for OXP3), and physical-readiness probe with
+VM evidence for `.9`: OXP3 and X2 Mini both passed the disposable-image model
+integration, read-only verification (119 adaptation files and 16 journal entries
+per slot for OXP3), and physical-readiness probe with
 `oxp3-full-split-lock-efi-v1` / `x2-split-lock-efi-v1`. The GM7 SSD provider is
 excluded from the VM set because it requires a reviewed physical target; that
 transaction still needs hardware acceptance.
+
+## 0.2.0-preview.20261105.10 — full wizard selection QA and legacy journal bounds
+
+Preview `.9` still ran the disposable-image QA with legacy repairs taken from
+the descriptive `default` flags. A wizard submit selects every installable
+legacy capability, and that gap is exactly how surrounding bugs stayed invisible
+to the VM suite.
+
+The model QA now derives legacy selections from the availability and dependency
+closure (`MainWindow.DefaultLegacyCapabilities`) like a fresh model selection,
+so the VM run covers `split-lock`, `opti2xmx`, Decky, the fan and CPU controls,
+Waydroid, and the default components and BE201 resource together.
+
+Running the full selection found a real install stop: shared-home component
+journals embed the installed payload bytes for restore, and `opti2xmx` needs
+several hundred megabytes, exceeding the installer's 128 MiB metadata bound in
+the fresh-slot check and the adapter-proof evidence cap. Shared journals and
+their proof evidence now use a 512 MiB bound while slot journals keep 128 MiB,
+and the integration guest runs with 4 GiB instead of 1 GiB because that check
+legitimately loads a large journal.
+
+VM evidence for `.10` (fresh disposable SteamOS 3.10 image, both slots):
+OXP3 and X2 Mini passed model integration, read-only verification
+(`oxp3:legacy-adaptation` 119 files / 16 journals per slot), and the physical
+readiness probe with `oxp3-full-split-lock-efi-v1` / `x2-split-lock-efi-v1`.
+Physical GM7 SSD handoff and first boot remain hardware gates.
+
 
 
 
