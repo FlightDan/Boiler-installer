@@ -24,7 +24,7 @@ class ProjectResourceBuildTests(unittest.TestCase):
         paths={row['legacy']:row['canonical'] for row in mapping['files']}
         for row in lock['files']:
             if row['path']==omit: continue
-            name=paths.get(row['path'],row['path']); target=project/name
+            name=paths.get(row['path'],builder.model_source.locked_input_path(row['path'],model_source_names())); target=project/name
             target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
         name=builder.build_wifi_pool.INPUT_MAP;target=project/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
         target=project/builder.LOCK;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(lock))

@@ -19,6 +19,16 @@ def onexplayer_source(names, model):
     current = 'devices/onexplayer/' + model + '.toon'
     return current if current in names else 'brands/onexplayer/' + model + '/' + model + '.toon'
 
+def locked_input_path(name, verified_guides):
+    """Resolve an old lock's guide path only through verified snapshot members."""
+    legacy = PATTERN.fullmatch(name)
+    if legacy is None:
+        return name
+    brand, model = legacy.groups()
+    relocated = f'adaptations/devices/{brand}/{model}.toon'
+    return relocated if relocated in verified_guides else name
+
+
 SNAPSHOT = 'adaptations/canonical-model-snapshot.json'
 def sha(data): return hashlib.sha256(data).hexdigest()
 
