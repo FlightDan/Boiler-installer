@@ -12,7 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT/'scripts')]
 def model_source_names():
-    return ['adaptations/brands/onexplayer/oxp3/oxp3.toon','adaptations/brands/onexplayer/x2-mini/x2-mini.toon']
+    return ['adaptations/devices/onexplayer/oxp3.toon','adaptations/devices/onexplayer/x2-mini.toon']
 
 spec = importlib.util.spec_from_file_location('project_resource_build', ROOT/'scripts/prepare-resource-pool.py')
 builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)

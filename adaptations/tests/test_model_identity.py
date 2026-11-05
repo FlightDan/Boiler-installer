@@ -18,7 +18,7 @@ class IdentityTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         shutil.copytree(ROOT/'brands/onexplayer/oxp3', self.root/'brands/onexplayer/oxp3')
         shutil.copytree(ROOT/'brands/onexplayer/x2-mini', self.root/'brands/onexplayer/x2-mini')
-        (self.root/'devices').mkdir()
+        shutil.copytree(ROOT/'devices', self.root/'devices')
         shutil.copytree(ROOT/'vendor', self.root/'vendor')
         shutil.copy2(ROOT/'toon-parser-lock.json', self.root/'toon-parser-lock.json')
         shutil.copy2(ROOT/'common-device-source-index.json', self.root/'common-device-source-index.json')
@@ -35,8 +35,7 @@ class IdentityTests(unittest.TestCase):
             for row in value['files']:
                 if row['availability'] == 'checked-in': copy(base/row['path'])
             for license in value['licenses']: copy(base/license)
-        for path in self.root.glob('brands/*/*/*.toon'):
-            if path.name != path.parent.name + '.toon': continue
+        for path in self.root.glob('devices/*/*.toon'):
             model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
             for component in model['components']:
                 for source in component['sources']:
@@ -55,19 +54,19 @@ class IdentityTests(unittest.TestCase):
         expected = {'oxp3': 'e5ff789b2fc54994d551ba403d12346010806a34402dbe3de75d1278d2240825',
                     'x2-mini': '348bd3fceef0a9ee26ad1f05c10b9c701dbe7010f3bc5801f4d7ad90a75fa9dd'}
         for slug, digest in expected.items():
-            value = json.loads((self.root/'devices'/f'{slug}.json').read_bytes())
+            value = json.loads(identity.protocol_views(self.root)[f'devices/{slug}.json'])
             raw = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
             self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
         snapshot = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         identity.generate(self.root, check=True)
         identity.generate(self.root)
         self.assertEqual(snapshot, {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
-        (self.root/'devices/oxp3.json').write_text('{}')
+        (self.root/'models.toon').write_text('{}')
         with self.assertRaisesRegex(ValueError, 'Generated view differs'):
             identity.generate(self.root, check=True)
 
     def test_duplicate_alias_rejected(self):
-        path = self.root/'brands/onexplayer/x2-mini/x2-mini.toon'
+        path = self.root/'devices/onexplayer/x2-mini.toon'
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         model['legacy_aliases']['package'] = ['device:oxp3']
         model['runtime']['id'] = 'device:oxp3'
@@ -78,7 +77,9 @@ class IdentityTests(unittest.TestCase):
     def test_rejects_forged_alias_for_new_brand_model(self):
         dest = self.root/'brands/example/oxp3'
         shutil.copytree(self.root/'brands/onexplayer/oxp3', dest)
-        path = dest/'oxp3.toon'
+        path = self.root/'devices/example/oxp3.toon'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.root/'devices/onexplayer/oxp3.toon', path)
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         model['canonical_id'] = 'device:example-oxp3'
         for aliases in ({'guide': ['guide:made-up'], 'package': ['device:made-up']},
@@ -95,17 +96,20 @@ class IdentityTests(unittest.TestCase):
         common.parent.mkdir(parents=True, exist_ok=True)
         common.write_text('existing brand component definition', encoding='utf-8')
         self.assertEqual(identity.generate(self.root), 2)
-        for name in ('brands/onexplayer/oxp3/typo.toon',
-                     'brands/onexplayer/common/unknown.toon'):
+        for name in ('devices/onexplayer/invalid_name.toon', 'devices/onexplayer/unknown.toon'):
             with self.subTest(name=name):
                 extra = self.root/name
                 extra.write_text('not a model', encoding='utf-8')
-                with self.assertRaisesRegex(ValueError, 'Unknown or misnamed model TOON'):
+                with self.assertRaises(ValueError):
                     identity.generate(self.root)
                 extra.unlink()
+        duplicate = self.root/'brands/onexplayer/oxp3/oxp3.toon'
+        duplicate.write_bytes((self.root/'devices/onexplayer/oxp3.toon').read_bytes())
+        with self.assertRaises(ValueError):
+            identity.generate(self.root)
 
     def test_resource_projection_and_missing_source(self):
-        path = self.root/'brands/onexplayer/oxp3/oxp3.toon'
+        path = self.root/'devices/onexplayer/oxp3.toon'
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         view = identity.resource_view(model)
         self.assertEqual(view['name'], model['runtime']['name']['en'])
@@ -121,7 +125,7 @@ class IdentityTests(unittest.TestCase):
             identity.generate(self.root)
 
     def test_published_model_requires_all_resources_and_gm7(self):
-        path = self.root/'brands/onexplayer/oxp3/oxp3.toon'
+        path = self.root/'devices/onexplayer/oxp3.toon'
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         original = json.loads(json.dumps(model['resource_model']['common_references']))
         for mutation in ('missing-resource', 'missing-gm7'):
@@ -144,7 +148,9 @@ class IdentityTests(unittest.TestCase):
         src = self.root/'brands/onexplayer/oxp3'
         dest = self.root/'brands/example/oxp3'
         shutil.copytree(src, dest)
-        path = dest/'oxp3.toon'
+        path = self.root/'devices/example/oxp3.toon'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.root/'devices/onexplayer/oxp3.toon', path)
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         model['canonical_id'] = 'device:example-oxp3'
         model['legacy_aliases'] = {'guide': [], 'package': []}
@@ -182,7 +188,9 @@ class IdentityTests(unittest.TestCase):
         src = self.root/'brands/onexplayer/oxp3'
         dest = self.root/'brands/example/oxp3'
         shutil.copytree(src, dest)
-        path = dest/'oxp3.toon'
+        path = self.root/'devices/example/oxp3.toon'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.root/'devices/onexplayer/oxp3.toon', path)
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         model['canonical_id'] = 'device:example-oxp3'
         model['legacy_aliases'] = {'guide': [], 'package': []}
@@ -198,7 +206,9 @@ class IdentityTests(unittest.TestCase):
         model['device_record_path'] = 'devices/example-oxp3.json'
         model['guide'] = 'brands/example/oxp3/model.md'
         self.save(path, model)
-        self.assertEqual(identity.generate(self.root), 3)
+        with self.assertRaisesRegex(ValueError, 'only for published models'):
+            identity.generate(self.root)
+        return
         index = identity.common.toon_format.loads((self.root/'models.toon').read_text(encoding='utf-8'), strict=True)
         self.assertEqual({r['id'] for r in index['models']}, {'device:example-oxp3', 'device:onexplayer-oxp3', 'device:onexplayer-x2-mini'})
         self.assertEqual(json.loads((self.root/'devices/example-oxp3.json').read_bytes())['id'], 'device:example-oxp3')

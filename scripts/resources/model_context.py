@@ -3,13 +3,18 @@ import hashlib
 from pathlib import Path
 
 from protocol.resource_pool import decoder, local
+from .model_source import onexplayer_source
 
 
 def models(project):
-    project = Path(project); toon = decoder(project/'adaptations'); result = []
+    adaptations = Path(project)/'adaptations'
+    toon = decoder(adaptations)
+    index = toon.loads(local(adaptations, 'models.toon').read_text(encoding='utf-8'), strict=True)
+    names = {row['source'] for row in index['models']}
+    result = []
     for name in ('oxp3', 'x2-mini'):
-        path = 'brands/onexplayer/'+name+'/'+name+'.toon'
-        raw = local(project/'adaptations', path).read_bytes(); guide = toon.loads(raw.decode(), strict=True)
+        path = onexplayer_source(names, name)
+        raw = local(adaptations, path).read_bytes(); guide = toon.loads(raw.decode(), strict=True)
         completed = {'microphone', 'speaker-route', 'xevmafix'} if name == 'oxp3' else {'microphone', 'battery'}
         pending = [dict(component=c['id'], status='pending-lifecycle-extraction', source_status=c['status'], sources=c.get('sources', []),
             reason='Requires isolated install/verify/restore and dependency closure; legacy bridge is not a resource') for c in guide['components'] if c['id'] not in completed]

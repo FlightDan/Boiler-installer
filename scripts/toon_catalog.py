@@ -31,18 +31,22 @@ ADAPTERS = {
          'optiscaler_079':'--optiscaler-079','optiscaler_nightly':'--optiscaler-nightly'}),
 }
 
-# v2 uses separately recorded canonical bridge entries; historical snapshots
-# continue to use their original, byte-locked scripts.
-V2_ADAPTER_PATHS = {
-    'x2-current-v1': 'adaptations/brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py',
-    'x2-complete-v1': 'adaptations/scripts/build-x2-complete-installer-catalog.py',
-}
-
 def adapter(model):
-    path, arguments = ADAPTERS[model['build']['adapter']]
-    if 'canonical_id' in model:
-        path = V2_ADAPTER_PATHS.get(model['build']['adapter'], path)
-    return path, arguments
+    return ADAPTERS[model['build']['adapter']]
+
+
+def catalog_module(name):
+    """Load the single implementation from the installer's pinned source snapshot."""
+    path = local(ADAPTATIONS, 'scripts/' + name + '.py')
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def device_sources(adaptations):
+    return sorted(Path(adaptations).glob('devices/*/*.toon'))
+
 
 OXP_CURRENT_VERSION='0.1.0-localtest.20261030.4'
 OXP_CURRENT_ANCHOR='a56006b425522d1c753254d3e0b9d11f7e79aea21c221a4a481830508c410393'
@@ -53,9 +57,6 @@ HISTORICAL_INPUT_LOCK_SHA256='f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bac
 OXP_SHARED_ANCHOR='c80efd9cce07d35c5f8828d17b5fab8c15fbc177a10476754cfac04db3f27485'
 OXP_FULL_ANCHOR='cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684'
 LEVELS = {'required','recommended','optional','conditional','pending','excluded'}
-LEVEL_LABELS = {'required':'必装','recommended':'推荐','optional':'可选','conditional':'条件适用','pending':'待补实现','excluded':'排除'}
-
-
 class CatalogError(ValueError):
     pass
 
@@ -212,8 +213,9 @@ def expand_package(model, adaptations):
 
 def definition_sources(adaptations=ADAPTATIONS):
     names=set()
-    for path in (Path(adaptations)/'brands').glob('*/*/*.toon'):
-        if path.name != path.parent.name+'.toon': continue
+    paths = device_sources(adaptations) or [path for path in (Path(adaptations)/'brands').glob('*/*/*.toon')
+                                            if path.name == path.parent.name+'.toon']
+    for path in paths:
         model=load(path,adaptations); package=model.get('package',{})
         if package.get('kind')=='BoilerPackageAssembly':
             for row in package.get('components',[]): names.add(relative(row['definition']))
@@ -239,31 +241,6 @@ def runtime_metadata(model, manifest):
     return dict(value,guide_id=model['id'],manifest=manifest)
 
 
-def guide_text(model, existing=None):
-    """Keep existing prose and regenerate only TOON-derived marked sections."""
-    begin='<!-- BEGIN GENERATED INSTALL LIST -->'; end='<!-- END GENERATED INSTALL LIST -->'
-    source_begin='<!-- BEGIN GENERATED SOURCE -->'; source_end='<!-- END GENERATED SOURCE -->'
-    if existing is None:
-        existing=('# '+model['name']+' 机型安装清单\n\n'
-            '本页由机型 TOON 生成。源码指南不授权自动安装；构建完整度、公开发布与实机验收分别核验。\n\n'
-            '## 安装清单\n\n'+begin+'\n'+end+'\n\n## 源码来源\n\n'+source_begin+'\n'+source_end+'\n')
-    require(existing.count(begin)==1 and existing.count(end)==1 and existing.count(source_begin)==1 and existing.count(source_end)==1,
-        'Missing unique generated guide markers: '+model['guide'])
-    rows=['| 组件 ID | 适配项目 | 建议 | 验证与适用边界 |','| --- | --- | --- | --- |']
-    for item in model['components']:
-        dependency='；依赖：'+'、'.join(item['dependencies']) if item['dependencies'] else ''
-        notes=item['notes'].rstrip('。') if dependency else item['notes']
-        cells=(item['id'],item['name'],LEVEL_LABELS[item['recommendation']],notes+dependency)
-        rows.append('| '+' | '.join(cell.replace('|','\\|').replace('\n',' ') for cell in cells)+' |')
-    before,rest=existing.split(begin); _,after=rest.split(end)
-    value=before+begin+'\n'+'\n'.join(rows)+'\n'+end+after
-    revision=model['source_revision']
-    source=('适配源码来源：`'+revision['repository']+'`，固定提交 `'+revision['commit']
-        +'`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../source-lock.json)。')
-    before,rest=value.split(source_begin); _,after=rest.split(source_end)
-    return before+source_begin+'\n'+source+'\n'+source_end+after
-
-
 def validate_model(model, path):
     required = {'schema_version','kind','id','name','installable','guide','source_inventory','source_revision','components','package','build','runtime'}
     v2 = 'canonical_id' in model
@@ -283,7 +260,10 @@ def validate_model(model, path):
         and model['installable'] is False,'Source guide must remain non-installable')
     require(isinstance(model['id'],str) and re.fullmatch('guide:[a-z0-9][a-z0-9-]*',model['id']),'Invalid model ID')
     parts = path.parts
-    require(len(parts)==4 and parts[0]=='brands' and parts[3]==parts[2]+'.toon','Expected brands/vendor/model/model.toon named after its model')
+    if len(parts) == 3 and parts[0] == 'devices' and path.suffix == '.toon':
+        require(v2, 'Device model source must declare a branded identity')
+        parts = ('brands', parts[1], path.stem, path.name)
+    require(len(parts)==4 and parts[0]=='brands' and parts[3]==parts[2]+'.toon','Expected devices/vendor/model.toon or a historical model path')
     require(all(re.fullmatch('[a-z][a-z0-9-]*',part) for part in parts[1:3]),'Invalid vendor/model directory')
     if v2:
         canonical='device:'+parts[1]+'-'+parts[2]
@@ -295,7 +275,7 @@ def validate_model(model, path):
         require(model['runtime']['id']==(legacy[1] if legacy else canonical),'Runtime identity differs')
     else: expected_guide='guide:'+parts[2]
     require(model['id']==expected_guide and model['guide']=='/'.join(parts[:3])+'/model.md','Model identity/path mismatch')
-    runtime_metadata(model,Path(path).with_name('manifest.json').as_posix())
+    runtime_metadata(model,Path(model['guide']).with_name('manifest.json').as_posix())
     relative(model['source_inventory']); relative(model['guide'])
     source=model['source_revision']
     require(isinstance(source,dict) and source.get('kind')=='github' and isinstance(source.get('repository'),str)
@@ -449,6 +429,28 @@ def validate_resource_model_source(value, path):
 def models(adaptations=ADAPTATIONS):
     adaptations=Path(adaptations); result=[]; seen=set(); resource_seen=set()
     root=adaptations/'brands'
+    current=device_sources(adaptations)
+    if current:
+        for path in current:
+            name=path.relative_to(adaptations)
+            local(adaptations,name.as_posix())
+            model=validate_model(expand_package(load(path,adaptations),adaptations),name)
+            reference=model['resource_model'].get('common_references')
+            reference_path=Path(model['guide']).with_name('common-device-sources.toon').as_posix()
+            if reference is not None:
+                require(load(local(adaptations,reference_path),adaptations)==reference,
+                        'Generated common references differ from model TOON')
+            ids={model['id'],model['canonical_id'],*model['legacy_aliases']['package']}
+            require(not ids.intersection(seen),'Conflicting canonical or package identity')
+            seen.update(ids)
+            result.append((name.as_posix(),model))
+        require(not any(p.name == p.parent.name+'.toon' for p in root.glob('*/*/*.toon')),
+                'Both current and historical model sources are present')
+        index=load(local(adaptations,'models.toon'),adaptations)
+        expected=[dict(id=model['canonical_id'],source=name) for name,model in result]
+        require(index==dict(schema_version=2,kind='BoilerModelSourceIndex',generated=True,models=expected),
+                'Model TOON index differs from device sources')
+        return result
     # A differently nested/renamed model TOON must fail visibly, rather than silently
     # disappearing from the generated catalog.
     for path in sorted(root.rglob('*.toon')):
@@ -546,38 +548,7 @@ def check_sources(root, model, adaptations=None):
 
 
 def views(adaptations=ADAPTATIONS):
-    records=models(adaptations); outputs={}; index=[]; runtime=[]
-    for name,model in records:
-        guide={k:v for k,v in model.items() if k not in ('build','package','runtime','resource_model','canonical_id','legacy_aliases','device_record','device_record_path')}
-        destination=Path(name).with_name('manifest.json').as_posix()
-        runtime.append(runtime_metadata(model,destination))
-        outputs[destination]=json_bytes(guide)
-        documentation=local(adaptations,model['guide'])
-        outputs[model['guide']]=guide_text(model,documentation.read_text(encoding='utf-8') if documentation.exists() else None).encode('utf-8')
-        index.append(dict(id=model['id'],name=model['name'],source=name,manifest=destination,
-            source_sha256=sha(Path(adaptations)/name),components=len(model['components']),
-            complete=model['build']['complete'],missing=model['build']['missing']))
-    outputs['adaptations.json']=json_bytes(dict(schema_version=1,kind='AdaptationSourceCatalog',version='0.1.0-layout.1',
-        installable=False,documentation='ADAPTATIONS.md',models=[row['manifest'] for row in index],runtime_models=runtime))
-    outputs['model-index.json']=json_bytes(dict(schema_version=1,kind='BoilerModelSourceIndex',generated=True,models=index))
-    v2=all('canonical_id' in model for _,model in records)
-    require(v2 or all('canonical_id' not in model for _,model in records),'Mixed model identity schemas')
-    if v2:
-        concise=[dict(id=model['canonical_id'],source=name) for name,model in records]
-        outputs['models.toon']=(decoder(adaptations).dumps(dict(schema_version=2,kind='BoilerModelSourceIndex',generated=True,models=concise))+'\n').encode('utf-8')
-        for name,model in records:
-            record=model['device_record']; runtime=model['runtime']; destination=model['device_record_path']
-            require(isinstance(record,dict) and {'schema_version','repository','package_status','notes','compatibility_records','known_issues'}<=set(record) and not set(record)&{'id','name','hardware_matching'},'Invalid device record')
-            parts=Path(name).parts
-            require(isinstance(destination,str) and re.fullmatch(r'devices/[a-z0-9][a-z0-9-]*\.json',destination),'Invalid device record path')
-            if not model['legacy_aliases']['package']: require(destination=='devices/'+parts[1]+'-'+parts[2]+'.json','Invalid branded device path')
-            require(destination not in outputs,'Duplicate device record path')
-            device=dict(schema_version=record['schema_version'],id=runtime['id'],name=runtime['name'])
-            device.update((k,v) for k,v in record.items() if k!='schema_version');device['hardware_matching']=runtime['hardware_matching']
-            outputs[destination]=json_bytes(device)
-    else:
-        outputs['models.toon']=decoder(adaptations).dumps(dict(schema_version=1,kind='BoilerModelSourceIndex',generated=True,models=index)).encode('utf-8')
-    return outputs
+    return catalog_module('model-identity').views(adaptations)
 
 
 def generate(adaptations=ADAPTATIONS,check=False):
@@ -797,8 +768,10 @@ def canonical_build(root, model, output, input_paths, base_manifest_sha256, vers
 
 
 def main():
+    if sys.argv[1:2] == ['index-candidate']:
+        return catalog_module('build-index').main(sys.argv[2:])
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=('generate','check','preflight','build','canonical-build'))
+    parser.add_argument('action',choices=('generate','check','legacy-json','index-candidate','preflight','build','canonical-build'))
     parser.add_argument('--root',type=Path,default=ROOT)
     parser.add_argument('--catalog-root',type=Path,default=ADAPTATIONS)
     parser.add_argument('--model',help='Canonical device ID or declared historical guide/package ID')
@@ -815,10 +788,21 @@ def main():
         name,path=item.split('=',1)
         require(name and path and name not in input_paths,'Empty/duplicate explicit input mapping')
         input_paths[name]=path
-    if args.action in ('generate','check'):
+    if args.action == 'legacy-json':
+        require(args.output is not None,'Legacy JSON generation requires --output')
+        output=artifact_path(args.output)
+        require(not output.exists(),'Use a fresh legacy output directory')
+        result=catalog_module('model-identity').protocol_views(args.catalog_root)
+        output.mkdir(parents=True)
+        for name, raw in result.items():
+            path=local(output,name)
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_bytes(raw)
+        result={'generated':sorted(result)}
+    elif args.action in ('generate','check'):
         result=generate(args.catalog_root,check=args.action=='check')
         if args.action=='check':
-            for _,model in models(args.catalog_root): check_sources(args.root,model)
+            for _,model in models(args.catalog_root): check_sources(args.root,model,args.catalog_root)
     else:
         selected=[]
         for name,model in models(args.catalog_root):

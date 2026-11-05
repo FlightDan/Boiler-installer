@@ -27,7 +27,7 @@ class AdaptationCollectionTests(unittest.TestCase):
 
     def update_model(self, root, transform):
         identity = self.identity()
-        path = root/'brands/onexplayer/x2-mini/x2-mini.toon'
+        path = root/'devices/onexplayer/x2-mini.toon'
         model = identity.common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
         transform(model)
         path.write_text(identity.common.toon_format.dumps(model)+'\n', encoding='utf-8')
@@ -192,7 +192,7 @@ class AdaptationCollectionTests(unittest.TestCase):
                 guide = 'brands/onexplayer/test-model/model.md'
                 reference_path = 'brands/onexplayer/test-model/common-device-sources.toon'
                 shutil.copyfile(root/'brands/onexplayer/x2-mini/model.md', root/guide)
-                original = root/'brands/onexplayer/x2-mini/x2-mini.toon'
+                original = root/'devices/onexplayer/x2-mini.toon'
                 model = identity.common.toon_format.loads(original.read_text(encoding='utf-8'), strict=True)
                 model['canonical_id'] = 'device:onexplayer-test-model'
                 model['legacy_aliases'] = {'guide': [], 'package': []}
@@ -223,12 +223,14 @@ class AdaptationCollectionTests(unittest.TestCase):
                 (root/reference_path).write_text(identity.common.toon_format.dumps(model['resource_model']['common_references'])+'\n', encoding='utf-8')
                 if case == 'other-gyro-uninventoried':
                     (root/'unreviewed-gyro.py').write_text('unreviewed')
-                (directory/'test-model.toon').write_text(identity.common.toon_format.dumps(model)+'\n', encoding='utf-8')
-                if case in ('wrong', 'duplicate', 'identity', 'source-only'):
-                    with self.assertRaises(ValueError):
-                        identity.generate(root)
-                    continue
-                identity.generate(root)
+                keys = ('schema_version', 'kind', 'id', 'name', 'installable', 'guide', 'source_inventory', 'source_revision', 'components')
+                manifest = {key: model[key] for key in keys}
+                name = 'brands/onexplayer/test-model/manifest.json'
+                (root/name).write_text(json.dumps(manifest, ensure_ascii=False), encoding='utf-8')
+                catalog = json.loads((root/'adaptations.json').read_bytes())
+                catalog['models'].append(name)
+                (root/'adaptations.json').write_text(json.dumps(catalog, ensure_ascii=False), encoding='utf-8')
+                collection.guide(root, manifest, write=True)
                 if case == 'missing':
                     (root/reference_path).unlink()
                 if case in ('valid', 'no-gyro', 'other-gyro'):

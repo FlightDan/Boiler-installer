@@ -88,6 +88,6 @@ python -B scripts/build-device-package.py "$Package" --output "$Zip"
 
 机型包和安装器是不同产物。构建安装器时，在 Boiler Installer 的 Windows x64 独立检出中准备锁定依赖、构建应用，再准备集成内容并运行打包脚本。入口见 [Boiler Installer 构建说明](https://github.com/FlightDan/Boiler-installer/blob/04dce422d0c4831ced6d2b9efdbd852e7b02a724/README.md#build-from-an-independent-checkout)和[依赖准备文档](https://github.com/FlightDan/Boiler-installer/blob/04dce422d0c4831ced6d2b9efdbd852e7b02a724/docs/DEPENDENCY_BOOTSTRAP.md)。
 
-已有机型包需要加入设备目录时，在 **Boiler-adaptations** 仓库根目录使用[设备索引流程](REGISTRY.md)；`scripts/build-index.py` 接受已生成的包，不负责构建包本身。
+已有机型包需要加入设备目录时，在 **Boiler Installer** 仓库根目录使用[设备索引流程](REGISTRY.md)中的 `scripts/toon_catalog.py index-candidate`。
 
-上述命令固定对应本页注明的历史安装器提交。迁移后的安装器工具入口为 `scripts/toon_catalog.py`；新 X2 桥接入口使用显式 `--project-root` 指向该工具，历史桥接文件及来源记录保持不变。实际使用须先取得包含这些更改的精确提交并核验对应快照。
+上述命令固定对应本页注明的历史安装器提交。当前版本统一使用 `scripts/toon_catalog.py`，包括 X2 Mini 的构建。历史构建工具可在上文固定的提交中查看。实际使用须先取得包含这些更改的精确提交并核验对应快照。

@@ -38,9 +38,11 @@ class RegistryTests(unittest.TestCase):
         manifest = json.loads((package/'manifest.json').read_text())
         manifest.update(id='device:oxp3', source={'kind':'github','repository':'FlightDan/OneXPlayer3-SteamOS','commit':'a'*40})
         (package/'manifest.json').write_text(json.dumps(manifest))
-        registry.mkdir(); (registry/'devices').mkdir()
-        for name in ('.gitattributes','device-index.json','devices/oxp3.json'):
-            shutil.copyfile(ROOT/name, registry/name)
+        registry.mkdir()
+        inventory=json.loads((ROOT/'model-source-files.json').read_bytes())
+        for name in ['model-source-files.json']+[row['path'] for row in inventory['files']]:
+            target=registry/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(ROOT/name,target)
+        shutil.copyfile(ROOT/'.gitattributes',registry/'.gitattributes')
         def git(*args):
             return subprocess.check_output(['git','-C',str(registry),*args],stderr=subprocess.PIPE)
         git('init','-q'); git('config','core.autocrlf','false')
@@ -63,10 +65,10 @@ class RegistryTests(unittest.TestCase):
             return builder.build(package,output,**values)
 
     def test_production_draft_advertises_no_unsigned_package(self):
-        index = json.loads((ROOT/'device-index.json').read_text())
+        index = builder.protocol_records()['device-index.json']
         self.assertEqual(index['packages'], [])
         self.assertEqual(index['sequence'], 0)
-        device = json.loads((ROOT/'devices/oxp3.json').read_text())
+        device = builder.protocol_records()['devices/oxp3.json']
         self.assertEqual({item['status'] for item in device['compatibility_records']}, {'supported', 'experimental', 'blocked'})
         self.assertTrue(all(item['evidence'] and item['note'] for item in device['compatibility_records']))
 
@@ -138,12 +140,13 @@ class RegistryTests(unittest.TestCase):
                         'https://github.com/FlightDan/OneXPlayer3-SteamOS/releases/download/tag/model name.zip'):
                 with self.subTest(url=url), self.assertRaises(ValueError):
                     self.candidate(package,registry,archive,work/'candidate.json',asset_url=url)
-            previous = json.loads((registry/'device-index.json').read_text()); previous['sequence']=3
+            previous = builder.protocol_records()['device-index.json']; previous['sequence']=3
             (work/'previous.json').write_text(json.dumps(previous))
             for sequence in (0,1,3):
                 with self.subTest(sequence=sequence), self.assertRaises(ValueError):
                     self.candidate(package,registry,archive,work/'candidate.json',sequence=sequence,previous_index=work/'previous.json')
-            (registry/'devices/oxp3.json').write_text('{}')
+            model_path = registry/'devices/onexplayer/oxp3.toon'
+            model_path.write_bytes(model_path.read_bytes() + b'\n')
             with self.assertRaisesRegex(ValueError,'committed bytes'):
                 self.candidate(package,registry,archive,work/'candidate.json')
 
@@ -202,7 +205,7 @@ class RegistryTests(unittest.TestCase):
             with mock.patch.object(builder.subprocess,'check_output',side_effect=capture):
                 self.candidate(package,registry,archive,work/'candidate.json')
             shows=[command[-1] for command in commands if 'show' in command]
-            self.assertEqual(len(shows),2)
+            self.assertEqual(len(shows),3)
             self.assertEqual(len({value.split(':',1)[0] for value in shows}),1)
             self.assertTrue(all(len(value.split(':',1)[0])==40 for value in shows))
 

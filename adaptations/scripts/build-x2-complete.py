@@ -85,7 +85,7 @@ def inventory(root):
     return result
 
 def load_recipe(root, adaptations):
-    path = regular(root, 'adaptations/scripts/toon_catalog.py')
+    path = regular(root, 'scripts/toon_catalog.py')
     spec = importlib.util.spec_from_file_location('boiler_x2_full_catalog', path)
     catalog = importlib.util.module_from_spec(spec); spec.loader.exec_module(catalog)
     matches = [value for _, value in catalog.models(adaptations) if value['id'] == MODEL]
@@ -245,7 +245,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     metadata['components'][0]['name'] = {'zh':'X2 Mini 完整共用适配','en':'X2 Mini complete shared adaptations'}
     metadata['hardware_matching'] = {'mode':'manual','automatic_selection':False,
         'note':'Model-name mismatch is advisory; actual component interfaces and dependencies retain their checks.'}
-    metadata['source'] = {'kind':'local','path':'adaptations/brands/onexplayer/x2-mini/x2-mini.toon',
+    metadata['source'] = {'kind':'local','path':'adaptations/devices/onexplayer/x2-mini.toon',
         'base_manifest_sha256':BASE_ANCHOR,'bridge_overlay_sha256':inputs['bridge_overlay']['sha256'],
         'hdr_overlay_sha256':inputs['hdr_overlay']['sha256']}
     metadata['complete_reuse'] = {'kind':'boiler-x2-complete-reuse-v1','base_manifest_sha256':BASE_ANCHOR,

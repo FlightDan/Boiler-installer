@@ -6,22 +6,23 @@ The device index tells the installer which model packages are available, where t
 
 ## Two indexes
 
-- [device-index.json](../device-index.json) in the repository root is an unsigned development baseline. Its current sequence is 0 and its package list is empty.
+- The unsigned development baseline is generated from TOON; its sequence is 0 and package list is empty.
 - [catalog-v0.1.0-preview.1](https://github.com/FlightDan/Boiler-adaptations/releases/tag/catalog-v0.1.0-preview.1) provides a signed `index.json` and `index.sig`. This historical catalog has sequence 1 and lists the OXP3 experimental package; its bound source commit differs from the current model TOON snapshot.
 
 The maintainer holds the signing private key. The installer verifies the index with a trusted public key, then checks the packages bound by the index. Contributors do not need the private key to open a PR.
 
 ## Prepare an index
 
-[scripts/build-index.py](../scripts/build-index.py) accepts an existing device-package directory and checks its manifest and file inventory. Run this command from the Boiler-adaptations repository root to create a local development index; replace both paths with your own and use a new output file:
+[scripts/build-index.py](../scripts/build-index.py) accepts an existing device-package directory and checks its manifest and file inventory. Run this command from the Boiler Installer source root to create a local development index; replace both paths with your own and use a new output file:
 
 ```powershell
+$AdaptationCheckout = "ABSOLUTE_PATH_TO_ADAPTATION_CHECKOUT"
 $Package = "PATH_TO_DEVICE_PACKAGE"
 $Output = "PATH_TO_NEW_DEVELOPMENT_INDEX.json"
-python -B scripts/build-index.py --package "$Package" --output "$Output"
+python -B scripts/toon_catalog.py index-candidate --source-checkout "$AdaptationCheckout" --package "$Package" --output "$Output"
 ```
 
-For a release candidate, also provide the actual ZIP, a fixed release asset URL, and an increasing `--sequence`. The script checks the ZIP, manifest, and hashes, and requires the package to name an exact public source commit. The single-package release-candidate path accepts the registered experimental OXP3 package. The model candidate mode accepts one or more `--model PACKAGE ZIP URL` inputs and resolves models from the committed `models.toon`, model TOONs, and generated device records. For a new model, first author its TOON under its brand and model directory, run `python -B scripts/model-identity.py write`, and verify the views with `check`. The adaptation checkout must be clean and its source inventory and generated views must match the commit. The tool compares the actual inventory, model, and device-record bytes against the specified commit’s Git objects. OXP3 and X2 Mini always receive their existing fingerprint and legacy-bridge checks, whether selected alone or together; new models cannot claim their historical identities or OXP3 or X2 Mini model-specific components. This mode also requires the independently signature-verified previous index and its SHA-256, an increasing sequence, an exact adaptation repository commit and version, and an installer checkout and commit. A candidate does not establish hardware, installation, maintenance, or recovery acceptance. Run `python -B scripts/build-index.py --help` for the full arguments.
+The two-model candidate requires one `--model PACKAGE ZIP URL` each for OXP3 and X2 Mini, a separately signature-verified previous index and SHA-256, increasing sequence, exact adaptation and installer commits, and version. Single-package release candidates support OXP3. Package, fingerprint, ZIP, and index checks remain in force; a candidate does not establish hardware, installation, maintenance, or recovery acceptance. Run `python -B scripts/toon_catalog.py index-candidate --help` from the installer source root for options.
 
 For subsequent releases, independently verify the previous signed index before passing it with `--previous-index`; the script does not verify that file's signature for the operator. The sequence must increase and prior revocations must be retained. `verified_at` records when the local artifact inventory was checked.
 

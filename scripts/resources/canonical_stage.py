@@ -9,7 +9,6 @@ PREFIXES=('common/gpu/intel/xe/xevmafix-724/','common/network/intel/be201/',
           'common/ssd/acer/gm7/')
 RECORDS=('common-device-source-index.json','brands/onexplayer/oxp3/common-device-sources.toon',
          'brands/onexplayer/x2-mini/common-device-sources.toon',
-         'brands/onexplayer/oxp3/oxp3.toon','brands/onexplayer/x2-mini/x2-mini.toon',
          'records/migrations/common-device-resource-ownership-20261103.json',
          'records/migrations/common-bmi260-inputplumber-20261103.json')
 GYRO={
@@ -17,6 +16,10 @@ GYRO={
  'payload-inputs/bmi260/gyro/001.bin':(10727640,'1107d95c34863c7865cac64183673135098d77265a32763c22fc7efbc1893aa3'),
  'payload-inputs/bmi260/sources/gyro/inputplumber-0.78.0-oxp3-gyro.patch':(31057,'e1fd31a17aaacb4bb35b1158dae4471f0ea74f21861ef581ac9985bba9d1bc2d'),
  'payload-inputs/bmi260/sources/gyro/InputPlumber-LICENSE':(35151,'7fe14716ed31cc71fc3bf9af293c368d464a853a70ea86e9995388f6b9e929e5')}
+
+def model_records(names):
+    return {*RECORDS, *(model_source.onexplayer_source(names, model) for model in ('oxp3','x2-mini'))}
+
 
 def sha(raw): return hashlib.sha256(raw).hexdigest()
 
@@ -35,7 +38,7 @@ def verify(stage, project):
     if proof.get('gyro_public_input')!={'size':555684389,'sha256':'d8bee8bad14f4cd136c814ebcaa3299fa59202b6cdc6d26ec9c52af0e055f4d4'}:
         raise ValueError('Canonical stage public gyro archive identity differs')
     source={row['path'].removeprefix('adaptations/'):row for row in lock['files']}
-    names={n for n in source if n.startswith(PREFIXES)}|set(RECORDS)
+    names={n for n in source if n.startswith(PREFIXES)}|model_records(source)
     if not names<=set(source): raise ValueError('Canonical stage source closure is incomplete')
     rows=proof.get('files'); content={}
     if not isinstance(rows,list):raise ValueError('Missing canonical stage inventory')

@@ -8,6 +8,17 @@ from protocol.resource_pool import decoder, local, json_document
 from protocol.hdr_contract import IDENTITY as HDR, PROFILES
 
 PATTERN = re.compile(r'adaptations/brands/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)/\2\.toon')
+DEVICE_PATTERN = re.compile(r'adaptations/devices/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)\.toon')
+
+
+def model_path(name):
+    return DEVICE_PATTERN.fullmatch(name) or PATTERN.fullmatch(name)
+
+
+def onexplayer_source(names, model):
+    current = 'devices/onexplayer/' + model + '.toon'
+    return current if current in names else 'brands/onexplayer/' + model + '/' + model + '.toon'
+
 SNAPSHOT = 'adaptations/canonical-model-snapshot.json'
 def sha(data): return hashlib.sha256(data).hexdigest()
 
@@ -16,7 +27,9 @@ def validate_model_index(contents, toon):
 
     A missing index is accepted only for historical, pre-index snapshots.
     """
-    names=sorted(name for name in contents if PATTERN.fullmatch('adaptations/'+name))
+    names=sorted(name for name in contents if model_path('adaptations/'+name))
+    if any(name.startswith('devices/') for name in names) and any(name.startswith('brands/') for name in names):
+        raise ValueError('Canonical snapshot contains both model source layouts')
     guides={}
     for name in names:
         raw=contents[name]
@@ -47,7 +60,7 @@ def validate_model_index(contents, toon):
         raise ValueError('Invalid canonical model index')
     expected=[]; claimed=set()
     for name,guide in guides.items():
-        match=PATTERN.fullmatch('adaptations/'+name);brand,model=match.groups()
+        match=model_path('adaptations/'+name);brand,model=match.groups()
         canonical='device:'+brand+'-'+model
         aliases=guide.get('legacy_aliases')
         if (guide.get('canonical_id')!=canonical or not isinstance(aliases,dict)
@@ -57,9 +70,9 @@ def validate_model_index(contents, toon):
                 or len(aliases['guide'])>1 or len(aliases['package'])>1):
             raise ValueError('Invalid canonical model identity: '+name)
         legacy={
-            'brands/onexplayer/oxp3/oxp3.toon': ('guide:oxp3','device:oxp3'),
-            'brands/onexplayer/x2-mini/x2-mini.toon': ('guide:x2-mini','device:x2-mini'),
-        }.get(name)
+            ('onexplayer','oxp3'): ('guide:oxp3','device:oxp3'),
+            ('onexplayer','x2-mini'): ('guide:x2-mini','device:x2-mini'),
+        }.get((brand,model))
         if (aliases['guide'] or aliases['package']) and (legacy is None or aliases != {'guide':[legacy[0]],'package':[legacy[1]]}):
             raise ValueError('Unrecognized legacy model alias: '+name)
         package=aliases['package'][0] if aliases['package'] else canonical
@@ -98,7 +111,7 @@ def sources(project):
         if type(row['size']) is not int or len(raw)!=row['size'] or sha(raw)!=row['sha256']:
             raise ValueError('Canonical model snapshot differs: '+name)
         checked.add(name)
-        if PATTERN.fullmatch(name): found.append(name)
+        if model_path(name): found.append(name)
     index_name='adaptations/model-source-files.json'
     if index_name not in checked: raise ValueError('Canonical source inventory is not snapshot-bound')
     index=json_document(local(project,index_name).read_bytes())
@@ -112,9 +125,11 @@ def sources(project):
     actual=[row for row in rows if row['path']!=index_name]
     if sorted(actual,key=lambda row:row['path'])!=sorted(expected,key=lambda row:row['path']):
         raise ValueError('Canonical source snapshot differs from inventory')
-    candidates=sorted(n for n in names if isinstance(n,str) and PATTERN.fullmatch(n))
-    discovered=sorted('adaptations/'+p.relative_to(project/'adaptations').as_posix() for p in (project/'adaptations/brands').rglob('*.toon')
-        if PATTERN.fullmatch('adaptations/'+p.relative_to(project/'adaptations').as_posix()))
+    candidates=sorted(n for n in names if isinstance(n,str) and model_path(n))
+    adaptations=project/'adaptations'
+    discovered=sorted('adaptations/'+p.relative_to(adaptations).as_posix()
+        for folder in ('brands','devices') for p in (adaptations/folder).rglob('*.toon')
+        if model_path('adaptations/'+p.relative_to(adaptations).as_posix()))
     if sorted(found)!=candidates or sorted(found)!=discovered: raise ValueError('Canonical model snapshot differs from whitelist')
     validate_model_index({name.removeprefix('adaptations/'):local(project,name).read_bytes() for name in checked if name != index_name}, decoder(project/'adaptations'))
     return sorted(found)

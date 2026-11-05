@@ -30,26 +30,14 @@ bundles=module('runtime_bundle_preparer',ROOT/'scripts/prepare-model-bundles.py'
 
 class ToonRuntimeCatalogTests(unittest.TestCase):
     def source_fixture(self,root):
-        adaptations=root/'source/adaptations'; adaptations.mkdir(parents=True)
-        for folder in ('brands','vendor'):
-            shutil.copytree(ROOT/'adaptations'/folder,adaptations/folder)
-        shutil.copyfile(ROOT/'adaptations/toon-parser-lock.json',adaptations/'toon-parser-lock.json')
+        adaptations=root/'source/adaptations'
+        shutil.copytree(ROOT/'adaptations', adaptations)
         parser=catalog.decoder(adaptations)
-        # Migrate the two historical fixture guides and add a brand-qualified model.
-        for slug in ('oxp3','x2-mini'):
-            path=adaptations/f'brands/onexplayer/{slug}/{slug}.toon'
-            existing=parser.loads(path.read_bytes())
-            existing.update(canonical_id='device:onexplayer-'+slug,
-                legacy_aliases=dict(guide=['guide:'+slug],package=['device:'+slug]),
-                device_record_path='devices/'+slug+'.json',
-                device_record=dict(schema_version=1,repository='fixture',package_status='fixture',notes=[],compatibility_records=[],known_issues=[]))
-            existing['resource_model'].pop('name',None);existing['resource_model'].pop('hardware_matching',None)
-            path.write_text(parser.dumps(existing),encoding='utf-8')
-        original=adaptations/'brands/onexplayer/oxp3/oxp3.toon'
+        original=adaptations/'devices/onexplayer/oxp3.toon'
         model=parser.loads(original.read_bytes())
         model.update(id='guide:example-future',canonical_id='device:example-future',legacy_aliases=dict(guide=[],package=[]),device_record_path='devices/example-future.json',name='未来机型',guide='brands/example/future/model.md')
         model['resource_model']['id']='device:example-future'
-        model['resource_model']['common_references']['model_id']='device:example-future'
+        model['resource_model'].pop('common_references', None)
         model['runtime']=dict(id='device:example-future',name={'en':'Future Demo','zh':'未来机型'},
             hardware_matching=dict(mode='advisory-exact-dmi-v1',pairs=[dict(manufacturer='EXAMPLE INC',model='FUTURE 1')]))
         model['components']=[dict(id='base-system',name='未来机型说明',recommendation='pending',default=False,
@@ -59,7 +47,9 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             source=dict(kind='local',path='synthetic-test-only'),components=[dict(schema_version=1,kind='ComponentManifest',
                 id='future:fixture',version='0.1.0',default=False,files=[dict(source='payload/data',target='etc/future-test.conf',
                     size=8,sha256=hashlib.sha256(b'fixture\n').hexdigest(),mode=420)])])
-        path=adaptations/'brands/example/future/future.toon'; path.parent.mkdir(parents=True)
+        guide=adaptations/model['guide']; guide.parent.mkdir(parents=True)
+        shutil.copyfile(adaptations/'brands/onexplayer/oxp3/model.md',guide)
+        path=adaptations/'devices/example/future.toon'; path.parent.mkdir(parents=True)
         path.write_text(parser.dumps(model),encoding='utf-8')
         catalog.generate(adaptations)
         index=parser.loads((adaptations/'models.toon').read_bytes())
@@ -130,16 +120,16 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
     def test_other_brand_x2_mini_does_not_inherit_onexplayer_builder_rules(self):
         with tempfile.TemporaryDirectory() as temporary:
             source=self.source_fixture(Path(temporary)); parser=catalog.decoder(source)
-            model=parser.loads((source/'brands/example/future/future.toon').read_bytes())
+            model=parser.loads((source/'devices/example/future.toon').read_bytes())
             model.update(id='guide:example-x2-mini',canonical_id='device:example-x2-mini',
                 guide='brands/example/x2-mini/model.md',device_record_path='devices/example-x2-mini.json')
             model['runtime']['id']='device:example-x2-mini';model['resource_model']['id']='device:example-x2-mini'
             model['package']['id']='device:example-x2-mini';model['package']['components'][0]['id']='x2-mini:fixture'
-            catalog.validate_model(model,Path('brands/example/x2-mini/x2-mini.toon'))
-            onex=parser.loads((source/'brands/onexplayer/x2-mini/x2-mini.toon').read_bytes())
+            catalog.validate_model(model,Path('devices/example/x2-mini.toon'))
+            onex=parser.loads((source/'devices/onexplayer/x2-mini.toon').read_bytes())
             model['build']=onex['build'];model['package']=onex['package']
             with self.assertRaisesRegex(catalog.CatalogError,'X2 adapter requires the ONEXPLAYER X2 Mini model'):
-                catalog.validate_model(model,Path('brands/example/x2-mini/x2-mini.toon'))
+                catalog.validate_model(model,Path('devices/example/x2-mini.toon'))
 
     def test_cli_preflight_resolves_canonical_and_declared_legacy_ids(self):
         with tempfile.TemporaryDirectory() as temporary:

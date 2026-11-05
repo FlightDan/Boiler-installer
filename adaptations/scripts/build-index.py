@@ -172,14 +172,25 @@ def committed_records():
                       'git@github.com:FlightDan/Boiler-adaptations.git'):
         raise ValueError('Unexpected public registry origin')
     commit = git('rev-parse', 'HEAD').decode().strip()
-    records = []
-    for name in ('device-index.json', 'devices/oxp3.json'):
-        raw = git('show', commit+':'+name)
-        path = ROOT/name
-        if path.is_symlink() or path.read_bytes() != raw:
-            raise ValueError('Registry release metadata differs from committed bytes')
-        records.append(document(raw))
-    return records
+    records = protocol_records(commit)
+    return [records['device-index.json'], records['devices/oxp3.json']]
+
+
+def protocol_records(source_commit=None):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('index_model_identity', Path(__file__).with_name('model-identity.py'))
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    identity.generate(ROOT, check=True)
+    if source_commit is not None:
+        names = ['models.toon', 'devices/onexplayer/oxp3.toon', 'devices/onexplayer/x2-mini.toon']
+        for name in names:
+            path = ROOT/name
+            raw = subprocess.check_output(['git', '-C', str(ROOT), 'show', source_commit+':'+name], stderr=subprocess.PIPE)
+            if path.is_symlink() or path.read_bytes() != raw:
+                raise ValueError('Registry metadata differs from committed bytes: '+name)
+    return {name: document(raw) for name, raw in identity.protocol_views(ROOT).items()}
+
 
 
 def asset_source(url, repository):
@@ -302,7 +313,7 @@ def build(package, output, *, archive=None, asset_url=None, sequence=None, previ
         index['trust'] = {'status':'index-signature-required', 'official_release':False}
         index['note'] = 'Unsigned release candidate; authenticate these exact bytes only after asset publication and required acceptance gates.'
     else:
-        index = document((ROOT/'device-index.json').read_bytes())
+        index = protocol_records()['device-index.json']
     index['generated_at'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     index['packages'] = [{
         'id': manifest['id'], 'version': manifest['version'],
@@ -362,106 +373,6 @@ def validate_fingerprint_release(manifest):
         raise ValueError('Decky, legacy and maintenance contracts required')
 
 
-def committed_model_catalog(source_commit):
-    """Verify the exact committed authority catalog and generated model views."""
-    import importlib.util
-    def git(*args):
-        return subprocess.check_output(['git', '-C', str(ROOT), *args], stderr=subprocess.PIPE)
-    if git('status', '--porcelain', '--untracked-files=all').strip():
-        raise ValueError('Authority checkout must have no uncommitted source changes')
-    tree = {}
-    for entry in git('ls-tree', '-r', '-z', source_commit).split(b'\0'):
-        if not entry: continue
-        metadata, name = entry.split(b'\t', 1)
-        mode, kind, object_id = metadata.split(b' ')
-        tree[name.decode('utf-8')] = (mode, kind, object_id.decode('ascii'))
-    object_format = git('rev-parse', '--show-object-format').decode('ascii').strip()
-    if object_format not in ('sha1', 'sha256'):
-        raise ValueError('Unsupported Git object format')
-    def committed_file(name):
-        relative(name)
-        entry = tree.get(name)
-        if entry is None or entry[0] not in (b'100644', b'100755') or entry[1] != b'blob':
-            raise ValueError('Missing committed regular source: '+name)
-        raw = (ROOT/name).read_bytes()
-        checksum = hashlib.new(object_format)
-        checksum.update(b'blob '+str(len(raw)).encode('ascii')+b'\0'); checksum.update(raw)
-        if checksum.hexdigest() != entry[2]:
-            raise ValueError('Authority file differs from committed Git blob: '+name)
-        return raw
-    tracked = set(tree)
-    required = {'model-source-files.json', 'models.toon', 'device-index.json',
-                'scripts/build-index.py', 'scripts/model-identity.py', 'scripts/common-device-sources.py',
-                'scripts/adaptations.py', 'toon-parser-lock.json'}
-    if not required <= tracked: raise ValueError('Committed authority catalog is incomplete')
-    for name in required: committed_file(name)
-    source_inventory = document(committed_file('model-source-files.json'))
-    if (source_inventory.get('kind') != 'CanonicalAdaptationSourceFiles'
-            or not isinstance(source_inventory.get('files'), list)):
-        raise ValueError('Invalid committed source inventory')
-    names = [r['path'] for r in source_inventory['files']]
-    if len(names) != len(set(names)) or not set(names) <= tracked:
-        raise ValueError('Committed source inventory contains missing or duplicate paths')
-    for row in source_inventory['files']:
-        name = relative(row['path'])
-        raw = committed_file(name)
-        if len(raw) != row.get('size') or hashlib.sha256(raw).hexdigest() != row.get('sha256'):
-            raise ValueError('Committed source inventory differs: '+name)
-    tool_names = ('scripts/model-identity.py', 'scripts/common-device-sources.py', 'scripts/adaptations.py')
-    tool_sources = {str((ROOT/name).resolve()): committed_file(name) for name in tool_names}
-    spec = importlib.util.spec_from_file_location('release_model_identity', ROOT/'scripts/model-identity.py')
-    identity_tool = importlib.util.module_from_spec(spec)
-    identity_tool._VERIFIED_TOOL_SOURCES = tool_sources
-    exec(compile(tool_sources[str((ROOT/'scripts/model-identity.py').resolve())], str(ROOT/'scripts/model-identity.py'),
-                 'exec', dont_inherit=True), identity_tool.__dict__)
-    identity_tool.generate(ROOT, check=True)
-    index = identity_tool.common.toon_format.loads(committed_file('models.toon').decode('utf-8'), strict=True)
-    if (not isinstance(index, dict) or set(index) != {'schema_version','kind','generated','models'}
-            or index['schema_version'] != 2 or index['kind'] != 'BoilerModelSourceIndex'
-            or index['generated'] is not True or not isinstance(index['models'],list)):
-        raise ValueError('Invalid committed model index')
-    records = {}
-    for row in index['models']:
-        if not isinstance(row,dict) or set(row) != {'id','source'}:
-            raise ValueError('Invalid committed model index entry')
-        source = relative(row['source'])
-        if source not in tracked or source not in names: raise ValueError('Model TOON is not committed and inventoried')
-        model = identity_tool.common.toon_format.loads(committed_file(source).decode('utf-8'), strict=True)
-        if row['id'] != model['canonical_id']: raise ValueError('Model canonical identity differs')
-        path = relative(model['device_record_path'])
-        if path not in tracked: raise ValueError('Device metadata is not committed')
-        device = document(committed_file(path))
-        package_id = model['runtime']['id']
-        if device.get('id') != package_id or package_id in records:
-            raise ValueError('Duplicate or mismatched model package identity')
-        records[package_id] = (device,path,source)
-    return document(committed_file('device-index.json')), records
-
-def validate_generic_release(manifest):
-    if manifest.get('purpose') == 'maintenance' or manifest.get('trust') != {'status':'index-signature-required','official_release':False}:
-        raise ValueError('Expected index-authenticated model installation package')
-    if manifest.get('id') in ('device:oxp3','device:x2-mini','device:onexplayer-oxp3','device:onexplayer-x2-mini'):
-        raise ValueError('Historical model cannot use generic validation')
-    def reserved_id(value): return isinstance(value,str) and value.lower().startswith(('oxp3:', 'x2-mini:'))
-    def historical_device(value):
-        return isinstance(value, dict) and any(v in ('oxp3', 'x2-mini') for v in value.get('device_ids', []))
-    if historical_device(manifest.get('compatibility', {})):
-        raise ValueError('Generic model cannot claim historical device IDs')
-    for component in manifest.get('components', []):
-        if (reserved_id(component.get('id')) or any(reserved_id(v) for key in ('requires','conflicts') for v in component.get(key, []))
-                or historical_device(component.get('compatibility', {}))):
-            raise ValueError('Generic model cannot use reserved model components or historical device IDs')
-    if any(reserved_id(row.get('id')) for row in manifest.get('legacy_capabilities', [])):
-        raise ValueError('Generic model cannot use reserved model legacy capabilities')
-    shared = manifest.get('shared_adaptations', {})
-    if isinstance(shared,dict) and any(reserved_id(v) for v in shared.get('components', [])):
-        raise ValueError('Generic model cannot use reserved model shared components')
-    contract = manifest.get('selection_contract', {})
-    if (contract and not isinstance(contract,dict)) or (isinstance(contract,dict) and
-            (str(contract.get('kind','')).lower().startswith(('oxp3-', 'x2-mini-')) or reserved_id(contract.get('kind')) or reserved_id(contract.get('component')))):
-        raise ValueError('Generic model cannot use reserved model selection contract')
-
-
 def build_models(models, output, *, previous_index, previous_sha256, sequence, source_commit, version, installer_root, installer_commit):
     """Append to an independently signature-verified index. A SHA-256 is not signature verification; the caller must verify the exact historical bytes and supply their digest. Output is never signed."""
     import sys
@@ -473,14 +384,14 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
     if Path(git('rev-parse','--show-toplevel')).resolve()!=ROOT.resolve(): raise ValueError('Independent authority checkout required')
     if git('remote','get-url','origin') not in ('https://github.com/FlightDan/Boiler-adaptations.git','https://github.com/FlightDan/Boiler-adaptations','git@github.com:FlightDan/Boiler-adaptations.git'): raise ValueError('Unexpected authority origin')
     if git('rev-parse','HEAD')!=source_commit: raise ValueError('Authority commit must equal HEAD')
-    baseline, records = committed_model_catalog(source_commit)
+    records = protocol_records(source_commit)
     raw_previous=Path(previous_index).read_bytes()
     if not isinstance(previous_sha256,str) or not re.fullmatch(r'[0-9a-f]{64}',previous_sha256) or hashlib.sha256(raw_previous).hexdigest()!=previous_sha256: raise ValueError('Previous index differs from verified SHA-256')
-    previous=document(raw_previous)
+    previous=document(raw_previous); baseline=records['device-index.json']
     if (previous.get('kind')!='DeviceIndex' or previous.get('id')!=baseline['id'] or type(previous.get('sequence')) is not int
             or previous['sequence']<max(1,baseline['sequence']) or type(sequence) is not int or sequence<=previous['sequence']): raise ValueError('Invalid previous index or nonmonotonic sequence')
     if not set(baseline.get('revocations',[])).issubset(previous.get('revocations',[])): raise ValueError('Previous index omits committed revocations')
-    if not models: raise ValueError('At least one model package required')
+    if len(models)!=2: raise ValueError('Exactly two model packages required')
     installer_root=Path(installer_root).resolve(strict=True)
     if not re.fullmatch(r'[0-9a-f]{40}', installer_commit or ''): raise ValueError('Exact installer commit required')
     def installer_git(*args): return subprocess.check_output(['git','-C',str(installer_root),*args],stderr=subprocess.PIPE)
@@ -514,6 +425,8 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
             if not isinstance(name,str) or not name.startswith('devices/') or not name.endswith('.json'): raise ValueError('Invalid device registry path')
             relative(name)
         result['devices']=list(dict.fromkeys(devices))
+        for name in ('devices/oxp3.json','devices/x2-mini.json'):
+            if name not in result['devices']: result['devices'].append(name)
         for old in result['packages']:
             src=old.get('source',{})
             if src.get('kind')=='https':
@@ -526,23 +439,19 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
             manifest=document(raw); inventory=validate_contract(manifest); sha=hashlib.sha256(raw).hexdigest()
             validate_package(package,expected_manifest_sha256=sha)
             identity=manifest['id']
-            if identity not in records or identity in seen: raise ValueError('Unknown or duplicate model package identity')
-            seen.add(identity); record, record_path, model_source = records[identity]
-            if record_path not in result['devices']: result['devices'].append(record_path)
+            if identity not in ('device:oxp3','device:x2-mini') or identity in seen: raise ValueError('Expected one OXP3 and one X2 mini package')
+            seen.add(identity); record=records['devices/oxp3.json' if identity=='device:oxp3' else 'devices/x2-mini.json']
             if record.get('id')!=identity or record.get('package_status')!='experimental': raise ValueError('Invalid model record')
             if manifest['version']!=version or manifest.get('source')!={'kind':'github','repository':'FlightDan/Boiler-adaptations','commit':source_commit}: raise ValueError('Package version or authority source differs')
             minimum=manifest.get('minimum_engine_version')
             if minimum is None or tuple(map(int,minimum.split('.')))<(0,1,5): raise ValueError('Minimum engine version must be at least 0.1.5')
             if (identity,version) in existing or sha in result['revocations']: raise ValueError('Duplicate or revoked package')
-            if identity in ('device:oxp3','device:x2-mini'):
-                validate_fingerprint_release(manifest)
-            else:
-                validate_generic_release(manifest)
+            validate_fingerprint_release(manifest)
             transport=asset_source(url,'FlightDan/Boiler-adaptations'); transport.update(archive_record(Path(archive),raw,inventory))
             binding=(transport['sha256'],transport['size'])
             if url in asset_bindings and asset_bindings[url]!=binding: raise ValueError('Fixed URL has conflicting archive bytes')
             asset_bindings[url]=binding
-            entry={'id':identity,'version':version,'source':transport,'sha256':sha,'size':len(raw),'compatibility':manifest['compatibility'], 'minimum_engine_version':minimum,'status':'experimental','name':record['name'],'known_issues':record.get('known_issues',[]),'compatibility_records':record.get('compatibility_records',[]),'notes':record.get('notes',[])+['Unsigned candidate; physical hardware and live maintenance acceptance remain pending.'],'verification_scope':'local-manifest-and-archive-inventory','source_url':'https://github.com/FlightDan/Boiler-adaptations/tree/'+source_commit+'/'+str(Path(model_source).parent).replace('\\','/'),'declared_source':manifest['source']}
+            entry={'id':identity,'version':version,'source':transport,'sha256':sha,'size':len(raw),'compatibility':manifest['compatibility'], 'minimum_engine_version':minimum,'status':'experimental','name':record['name'],'known_issues':record.get('known_issues',[]),'compatibility_records':record.get('compatibility_records',[]),'notes':record.get('notes',[])+['Unsigned candidate; physical hardware and live maintenance acceptance remain pending.'],'verification_scope':'local-manifest-and-archive-inventory','source_url':'https://github.com/FlightDan/Boiler-adaptations/tree/'+source_commit+'/brands/onexplayer/'+('oxp3' if identity=='device:oxp3' else 'x2-mini'),'declared_source':manifest['source']}
             if 'hardware_matching' in record: entry['hardware_matching']=hardware_advice(record['hardware_matching'])
             result['packages'].append(entry)
         result['sequence']=sequence; result['generated_at']=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -556,8 +465,10 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
     with output.open('x',encoding='utf-8',newline='\n') as stream: stream.write(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     return result
 
-if __name__ == '__main__':
+def main(argv=None):
+    global ROOT
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--source-checkout', type=Path, help='Explicit adaptation source checkout')
     parser.add_argument('--package', type=Path)
     parser.add_argument('--model', nargs=3, action='append', metavar=('PACKAGE','ZIP','URL'))
     parser.add_argument('--previous-sha256', help='SHA-256 of independently signature-verified previous index bytes; a digest alone is not signature verification')
@@ -570,10 +481,13 @@ if __name__ == '__main__':
     parser.add_argument('--asset-url', help='Fixed credential-free GitHub model release asset URL')
     parser.add_argument('--sequence', type=int, help='Explicit positive sequence greater than the last verified index')
     parser.add_argument('--previous-index', type=Path, help='Optional previously verified public index; release operator verifies its signature separately')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.source_checkout is not None:
+        if not args.source_checkout.is_absolute(): parser.error("--source-checkout must be absolute")
+        ROOT = args.source_checkout.resolve(strict=True)
     if args.model:
         if args.package or args.archive or args.asset_url or not all((args.previous_index,args.previous_sha256,args.source_commit,args.version,args.installer_root,args.installer_commit)):
-            parser.error('Model mode requires previous index and independently verified SHA-256, source commit, version, installer root and installer commit')
+            parser.error('Two-model mode requires previous index and independently verified SHA-256, source commit, version, installer root and installer commit')
         value=build_models(args.model,args.output,previous_index=args.previous_index,previous_sha256=args.previous_sha256,sequence=args.sequence,source_commit=args.source_commit,version=args.version,installer_root=args.installer_root,installer_commit=args.installer_commit)
     else:
         if not args.package: parser.error('--package required')
