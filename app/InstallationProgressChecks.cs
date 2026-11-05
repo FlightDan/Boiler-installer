@@ -10,6 +10,31 @@ internal static class InstallationProgressChecks
         var checks = new List<string>();
         void Require(bool value, string label) { if (!value) throw new IOException(label); checks.Add(label); }
         void Near(double actual, double expected, string label) => Require(Math.Abs(actual - expected) < .000001, label);
+        var wallClock = new DateTime(2026, 11, 4, 4, 0, 0, DateTimeKind.Utc);
+        long monotonicTimestamp = 1000;
+        using (var serialized = new StringWriter())
+        {
+            var journal = new InstallationProgressJournal(serialized, () => wallClock, () => monotonicTimestamp, 1000);
+            journal.Write(new("preparing", "Starting", 12.5, "01.01"));
+            wallClock = wallClock.AddHours(8);
+            monotonicTimestamp += 2500;
+            journal.Write(new("components", "Configuring", 42, "02.01"));
+            var lines = serialized.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+            using var firstEvent = JsonDocument.Parse(lines[0]);
+            using var secondEvent = JsonDocument.Parse(lines[1]);
+            var firstUtc = firstEvent.RootElement.GetProperty("utc").GetDateTime();
+            var secondUtc = secondEvent.RootElement.GetProperty("utc").GetDateTime();
+            Require(firstUtc.Kind == DateTimeKind.Utc && secondUtc.Kind == DateTimeKind.Utc
+                && secondUtc - firstUtc == TimeSpan.FromHours(8)
+                && firstEvent.RootElement.GetProperty("Stage").GetString() == "preparing"
+                && firstEvent.RootElement.GetProperty("Step").GetString() == "01.01"
+                && firstEvent.RootElement.GetProperty("Percent").GetDouble() == 12.5
+                && firstEvent.RootElement.GetProperty("Message").GetString() == "Starting",
+                "progress-jsonl-preserves-utc-and-existing-reader-fields-across-wall-clock-jump");
+            Require(firstEvent.RootElement.GetProperty("elapsedMs").GetInt64() == 0
+                && secondEvent.RootElement.GetProperty("elapsedMs").GetInt64() == 2500,
+                "progress-jsonl-elapsed-ms-uses-monotonic-time-across-eight-hour-wall-clock-jump");
+        }
         var progress = new InstallationProgressTracker();
         Near(progress.Advance("preparing", 1), 32, "preparation-boundary");
         Near(progress.Advance("components", 1), 75, "components-boundary");

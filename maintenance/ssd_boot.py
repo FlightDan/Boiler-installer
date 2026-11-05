@@ -214,7 +214,8 @@ def _dropin(root):
                 raise MaintenanceError('NVMe drop-in exceeds size limit')
             return dict(data=_encode(data), mode=stat.S_IMODE(info.st_mode), uid=info.st_uid, gid=info.st_gid)
     except FileNotFoundError:
-        with _directory(path.parent):
+        # A clean image may not have grub.d yet. Require its stock parent.
+        with _directory(path.parent.parent):
             pass
         return None
 
@@ -267,6 +268,15 @@ def _replace_efi(root, before, after, bound):
 
 def _replace_dropin(root, before, after):
     path = Path(root)/DROPIN
+    _valid_dropin(after)
+    if before is None and after is not None:
+        with _directory(path.parent.parent) as parent:
+            try:
+                os.mkdir(path.parent.name, mode=0o755, dir_fd=parent)
+            except FileExistsError:
+                pass
+            else:
+                os.fsync(parent)
     with _directory(path.parent) as directory:
         if _dropin(root) != before:
             raise MaintenanceError('NVMe drop-in changed before replacement')
@@ -274,7 +284,6 @@ def _replace_dropin(root, before, after):
             os.unlink(path.name, dir_fd=directory)
             os.fsync(directory)
             return
-        _valid_dropin(after)
         temporary = '.boiler-' + uuid.uuid4().hex
         try:
             fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)

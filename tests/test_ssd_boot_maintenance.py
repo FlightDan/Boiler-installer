@@ -366,6 +366,44 @@ class SSDTests(unittest.TestCase):
             changed['review_sha256']=s.digest(changed)
             with self.assertRaises(MaintenanceError): s.installer_preflight_model_ssd('fixture',CONTEXT,changed)
 
+    @unittest.skipUnless(os.name == 'posix' and os.geteuid() == 0, 'requires real Linux root-owned paths')
+    def test_model_ssd_preflight_and_recovery_with_missing_grub_dropin_directory(self):
+        from maintenance import model_efi as model
+        bound = get_binding(topology())
+        expected = model._render(CONFIG)
+        body = dict(kind='ReviewedModelEfiPlan', version=2, action='apply', target=bound,
+                    source={'package_id': 'device:oxp3'}, current_sha256=__import__('hashlib').sha256(CONFIG).hexdigest(),
+                    expected_efi=s._encode(expected), expected_efi_sha256=__import__('hashlib').sha256(expected).hexdigest())
+        plan = dict(body, review_sha256=s.digest(body))
+        with tempfile.TemporaryDirectory(dir=os.environ.get('BOILER_SSD_TEST_TMP')) as directory:
+            root = Path(directory)
+            dropin = root / s.DROPIN
+            dropin.parent.parent.mkdir(parents=True)
+            with mock.patch.object(s, 'binding', return_value=bound), mock.patch.object(s, '_target', return_value=CONFIG), \
+                 mock.patch.object(s, 'Engine'), mock.patch.object(s, '_legacy_conflicts'):
+                preview = s.installer_preflight_model_ssd(root, CONTEXT, plan)
+                self.assertEqual(preview['dropin_before_sha256'], s.digest(None))
+                self.assertFalse(dropin.parent.exists())
+                desired = s._desired(s._snapshot(root, bound))['dropin']
+                s._replace_dropin(root, None, desired)
+                self.assertEqual(s._dropin(root), desired)
+                s._replace_dropin(root, desired, None)
+                self.assertIsNone(s._dropin(root))
+                self.assertEqual(list(dropin.parent.iterdir()), [])
+
+    @unittest.skipUnless(os.name == 'posix' and os.geteuid() == 0, 'requires real Linux root-owned paths')
+    def test_dropin_does_not_accept_missing_higher_parent_or_symlink_directory(self):
+        with tempfile.TemporaryDirectory(dir=os.environ.get('BOILER_SSD_TEST_TMP')) as directory:
+            root = Path(directory)
+            dropin = root / s.DROPIN
+            with self.assertRaises(FileNotFoundError):
+                s._dropin(root)
+            dropin.parent.parent.mkdir(parents=True)
+            dropin.parent.symlink_to(root / 'missing')
+            with self.assertRaises(OSError) as error:
+                s._dropin(root)
+            self.assertNotIsInstance(error.exception, FileNotFoundError)
+
     def test_installer_requires_both_distinct_slot_plans(self):
         a = {'target':dict(slot='A',disk='/dev/vdc',home_uuid='home',root_partuuid='a',esp_partuuid='x')}
         b = {'target':dict(slot='B',disk='/dev/vdc',home_uuid='home',root_partuuid='b',esp_partuuid='y')}

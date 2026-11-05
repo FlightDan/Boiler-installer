@@ -16,6 +16,38 @@ public sealed record InstallationSession(int Schema, string Id, InstallationTarg
 public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null, string? RecoveryDigest = null);
 public sealed record PartitionJobResult(string Status, string? Error);
 
+internal sealed class InstallationProgressJournal
+{
+    private readonly TextWriter writer;
+    private readonly Func<DateTime> utcNow;
+    private readonly Func<long> timestamp;
+    private readonly long timestampFrequency;
+    private readonly long startedAt;
+
+    internal InstallationProgressJournal(TextWriter writer, Func<DateTime>? utcNow = null,
+        Func<long>? timestamp = null, long? timestampFrequency = null)
+    {
+        this.writer = writer;
+        this.utcNow = utcNow ?? (() => DateTime.UtcNow);
+        this.timestamp = timestamp ?? Stopwatch.GetTimestamp;
+        this.timestampFrequency = timestampFrequency ?? Stopwatch.Frequency;
+        if (this.timestampFrequency <= 0) throw new ArgumentOutOfRangeException(nameof(timestampFrequency));
+        startedAt = this.timestamp();
+    }
+
+    internal void Write(InstallationProgress value)
+    {
+        lock (writer)
+        {
+            var elapsedMs = (long)((timestamp() - startedAt) * 1000d / timestampFrequency);
+            writer.WriteLine(JsonSerializer.Serialize(new
+            {
+                utc = utcNow(), value.Stage, value.Step, value.Percent, value.Message, elapsedMs
+            }));
+        }
+    }
+}
+
 public static partial class InstallationController
 {
     public const long Capacity = 80L * 1024 * 1024 * 1024;
@@ -165,11 +197,12 @@ public static partial class InstallationController
         Save(journal, state); created?.Invoke(state);
         var progress = new InstallationProgressTracker();
         using var progressLog = new StreamWriter(new FileStream(Path.Combine(directory, "progress.jsonl"), FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
+        var progressJournal = new InstallationProgressJournal(progressLog);
         var publish = report; var step = "01.01";
         report = value =>
         {
             value = value with { Percent = value.Percent ?? progress.Percent, Step = value.Step ?? step };
-            lock (progressLog) progressLog.WriteLine(JsonSerializer.Serialize(new { utc = DateTime.UtcNow, value.Stage, value.Step, value.Percent, value.Message }));
+            progressJournal.Write(value);
             publish(value);
         };
         void Phase(string phase, string text, string code)
