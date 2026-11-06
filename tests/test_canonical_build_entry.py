@@ -8,9 +8,9 @@ from resources import model_source
 import protocol.manifest
 
 class CanonicalBuildEntryTests(unittest.TestCase):
- def test_v2_x2_uses_fixed_new_entries_and_legacy_keeps_old_paths(self):
-  for name,expected in (('x2-current-v1','adaptations/brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py'),
-                        ('x2-complete-v1','adaptations/scripts/build-x2-complete-installer-catalog.py')):
+ def test_x2_uses_one_builder_per_adapter_for_both_catalog_layouts(self):
+  for name,expected in (('x2-current-v1','adaptations/brands/onexplayer/x2-mini/bridge/scripts/build.py'),
+                        ('x2-complete-v1','adaptations/scripts/build-x2-complete.py')):
    model=dict(canonical_id='device:onexplayer-x2-mini',build=dict(adapter=name))
    self.assertEqual(catalog.adapter(model)[0],expected)
    old=dict(build=dict(adapter=name));self.assertEqual(catalog.adapter(old),catalog.ADAPTERS[name])

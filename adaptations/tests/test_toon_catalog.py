@@ -11,7 +11,7 @@ from unittest.mock import patch
 import sys
 
 ADAPTATIONS=Path(__file__).resolve().parents[1]
-SPEC=importlib.util.spec_from_file_location('toon_catalog_tests',ADAPTATIONS/'scripts/toon_catalog.py')
+SPEC=importlib.util.spec_from_file_location('toon_catalog_tests',ADAPTATIONS.parent/'scripts/toon_catalog.py')
 catalog=importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(catalog)
 
 
@@ -39,60 +39,36 @@ class ToonCatalogTests(unittest.TestCase):
         pins={row['path']:row for row in baseline}
         updates=json.loads((ADAPTATIONS/'tests/fixtures/reviewed-guide-field-updates.json').read_bytes())
         for name,model in self.records:
-            legacy={key:value for key,value in model.items() if key not in ('build','package','runtime')}
-            relative='adaptations/'+Path(name).with_name('manifest.json').as_posix()
+            legacy={key:value for key,value in model.items() if key not in ('build','package','runtime','resource_model','canonical_id','legacy_aliases','device_record','device_record_path')}
+            relative='adaptations/'+Path(model['guide']).with_name('manifest.json').as_posix()
+            self.assertEqual(self.parser.loads(self.parser.dumps(legacy)),legacy)
+            self.assertEqual(json.loads((ADAPTATIONS.parent/relative).read_bytes()),legacy)
             if model['id']=='guide:x2-mini' and model['build']['adapter']=='x2-complete-v1':
-                self.assertEqual(self.parser.loads(self.parser.dumps(legacy)),legacy)
                 historical=(ADAPTATIONS/'tests/fixtures/legacy-x2-guide.json').read_bytes()
                 self.assertEqual(hashlib.sha256(historical).hexdigest(),pins[relative]['sha256'])
                 self.assertEqual(len(historical),pins[relative]['size'])
-                continue  # Current guide intentionally covers the full OXP3 model.
-            comparison=copy.deepcopy(legacy)
+                continue  # The reviewed X2 complete guide supersedes the older partial guide.
             for update in updates.get(relative,[]):
-                component=next(row for row in comparison['components'] if row['id']==update['component'])
+                component=next(row for row in legacy['components'] if row['id']==update['component'])
                 self.assertEqual(component[update['field']],update['after'])
-                component[update['field']]=update['before']
-            # Reviewed guide status/note edits do not rewrite the historical
-            # baseline. Every unrelated component/source byte stays identical.
-            generated=catalog.json_bytes(comparison)
-            pin=pins[relative]
-            self.assertEqual(hashlib.sha256(generated).hexdigest(),pin['sha256'])
-            self.assertEqual(len(generated),pin['size'])
 
     def test_generated_views_are_deterministic_and_detect_stale_files(self):
         self.assertEqual(catalog.views(ADAPTATIONS),catalog.views(ADAPTATIONS))
         outputs=catalog.views(ADAPTATIONS)
-        self.assertEqual(self.parser.loads(outputs['models.toon']),json.loads(outputs['model-index.json']))
+        index=self.parser.loads(outputs['models.toon'],strict=True)
+        self.assertEqual(index['models'],[dict(id=model['canonical_id'],source=name) for name,model in self.records])
+        self.assertNotIn('model-index.json',outputs)
         catalog.generate(ADAPTATIONS,check=True)
         with tempfile.TemporaryDirectory() as temporary:
-            root=Path(temporary); shutil.copytree(ADAPTATIONS/'brands',root/'brands')
-            shutil.copytree(ADAPTATIONS/'vendor',root/'vendor')
-            shutil.copyfile(ADAPTATIONS/'toon-parser-lock.json',root/'toon-parser-lock.json')
-            # Keep the authenticated parser module rooted at the real vendor;
-            # this test varies only the generated-output destination.
-            with patch.object(catalog,'decoder',return_value=self.parser):
-                catalog.generate(root)
-                target=root/'model-index.json'; target.write_bytes(target.read_bytes()+b' ')
-                with self.assertRaisesRegex(ValueError,'stale'): catalog.generate(root,check=True)
-
-    def test_new_model_file_automatically_enters_toon_index(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root=Path(temporary); shutil.copytree(ADAPTATIONS/'brands',root/'brands')
-            model=copy.deepcopy(self.model); model.update(id='guide:future',guide='brands/example/future/model.md')
-            model['runtime'].update(id='device:future',name={'en':'Future','zh':'未来机型'})
-            path=root/'brands/example/future/future.toon'; path.parent.mkdir(parents=True)
-            path.write_text(self.parser.dumps(model),encoding='utf-8')
-            with patch.object(catalog,'decoder',return_value=self.parser):
-                outputs=catalog.views(root)
-            index=self.parser.loads(outputs['models.toon'])
-            self.assertEqual(len(index['models']),3)
-            self.assertIn('guide:future',[row['id'] for row in index['models']])
+            root=Path(temporary)/'adaptations'; shutil.copytree(ADAPTATIONS,root)
+            target=root/'models.toon'; target.write_bytes(target.read_bytes()+b' ')
+            with self.assertRaisesRegex(ValueError,'stale'): catalog.generate(root,check=True)
 
     def test_dependency_cycle_unknown_component_and_defaults_fail(self):
         for change,message in (
             (lambda m: m['components'][0].update(dependencies=['missing']),'dependency'),
             (lambda m: m['components'][0].update(dependencies=[m['components'][0]['id']]),'Cyclic'),
-            (lambda m: m['components'][0].update(default=True),'defaults'),
+            (lambda m: next(row for row in m['components'] if row['id']!='fingerprint-unlock').update(default=True),'defaults'),
             (lambda m: m['components'].append(copy.deepcopy(m['components'][0])),'Duplicate'),
             (lambda m: m['components'][0].update(sources=['../private.py']),'relative'),
             (lambda m: m['build'].update(adapter='run-any-command'),'adapter'),

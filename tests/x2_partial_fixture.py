@@ -7,7 +7,7 @@ FIXTURE=Path(__file__).resolve().parent/'fixtures/x2/partial-shared.4'
 FIXTURE_LOCK_SHA256='b54e4a387314a2b4f086453c559bb63d7c76dc9de657733b5a33217af2316538'
 
 
-def copy_toon_sources(parser_source, destination):
+def copy_toon_sources(parser_source, destination, *, catalog=None):
     """Use current authenticated parser code with exact historical model data.
 
     No current model TOON, installed user state, old bundle or product migration
@@ -24,10 +24,14 @@ def copy_toon_sources(parser_source, destination):
             raise ValueError('Historical partial test fixture bytes changed: '+row['path'])
         rows.append((row['path'],raw))
     parser_source,destination=Path(parser_source),Path(destination)
-    names={'scripts/toon_catalog.py','toon-parser-lock.json'}
+    names={'toon-parser-lock.json'}
     parser_lock=json.loads((parser_source/'toon-parser-lock.json').read_bytes())
     names.update('vendor/'+row['path'] for row in parser_lock['files'])
     rows.extend((name,(parser_source/name).read_bytes()) for name in sorted(names))
     for name,raw in rows:
         target=destination/name;target.parent.mkdir(parents=True,exist_ok=True)
         target.write_bytes(raw)
+    if catalog is not None:
+        target=destination.parent/'scripts/toon_catalog.py'
+        target.parent.mkdir(parents=True,exist_ok=True)
+        target.write_bytes(Path(catalog).read_bytes())

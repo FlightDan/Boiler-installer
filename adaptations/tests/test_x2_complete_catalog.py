@@ -5,16 +5,16 @@ from pathlib import Path
 import unittest
 
 ADAPTATIONS = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('x2_full_toon_catalog', ADAPTATIONS/'scripts/toon_catalog.py')
+spec = importlib.util.spec_from_file_location('x2_full_toon_catalog', ADAPTATIONS.parent/'scripts/toon_catalog.py')
 catalog = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(catalog)
 
 
 class CompleteX2Catalog(unittest.TestCase):
     def setUp(self):
-        self.x2 = catalog.load(ADAPTATIONS/'brands/onexplayer/x2-mini/x2-mini.toon', ADAPTATIONS)
-        self.oxp = catalog.load(ADAPTATIONS/'brands/onexplayer/oxp3/oxp3.toon', ADAPTATIONS)
-        self.path = Path('brands/onexplayer/x2-mini/x2-mini.toon')
+        self.x2 = catalog.load(ADAPTATIONS/'devices/onexplayer/x2-mini.toon', ADAPTATIONS)
+        self.oxp = catalog.load(ADAPTATIONS/'devices/onexplayer/oxp3.toon', ADAPTATIONS)
+        self.path = Path('devices/onexplayer/x2-mini.toon')
 
     def test_all_oxp_guide_capabilities_are_declared_and_hdr_is_x2(self):
         by_id = {row['id']: row for row in self.x2['components']}

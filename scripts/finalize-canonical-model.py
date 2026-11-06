@@ -70,7 +70,9 @@ def stage_snapshot(stage):
 def stage_reference(content, identity):
     toon = decoder(ROOT/'adaptations')
     reference = toon.loads(content['source/'+MODEL_REFS[identity]].decode('utf-8'), strict=True)
-    guide_name='source/brands/onexplayer/'+identity.split(':',1)[1]+'/'+identity.split(':',1)[1]+'.toon'
+    from scripts.resources.model_source import onexplayer_source
+    names={name.removeprefix('source/') for name in content if name.startswith('source/')}
+    guide_name='source/'+onexplayer_source(names, identity.split(':',1)[1])
     if guide_name in content:
         guide=toon.loads(content[guide_name].decode('utf-8'),strict=True)
         if guide.get('resource_model',{}).get('common_references')!=reference:

@@ -104,6 +104,39 @@ class BrandBundleImportTests(unittest.TestCase):
             self.assertEqual((target / "payload/test").read_bytes(), b"ok")
             validate_package(target, expected_manifest_sha256=row["manifest_sha256"])
 
+    def test_current_guides_are_model_bound_and_can_be_payload_members(self):
+        for row in self.models:
+            model = row["id"].split(":")[1]
+            row["guide"] = f"devices/onexplayer/{model}.toon"
+        row = self.models[0]
+        row["files"][0]["member"] = row["guide"]
+        manifest = json.loads(self.manifests[row["manifest"]])
+        guide_data = b"schema_version: 1\n"
+        digest = hashlib.sha256(guide_data).hexdigest()
+        manifest["files"][0].update(size=len(guide_data), sha256=digest)
+        manifest["components"][0]["files"][0].update(size=len(guide_data), sha256=digest)
+        self.manifests[row["manifest"]] = json.dumps(manifest).encode()
+        self.write_bundle()
+        staged = self.stage()
+        selected = staged["models"][0]
+        result = import_brand(staged["directory"], self.root / "guide-output", selected["id"],
+                              selected["manifest_sha256"], developer=True)
+        self.assertEqual((Path(result["directory"]) / "payload/test").read_bytes(), guide_data)
+
+    def test_unrelated_device_guides_and_payloads_are_rejected(self):
+        for path in ("devices/onexplayer/x2-mini.toon", "devices/onexplayer/other.toon",
+                     "devices/other/oxp3.toon"):
+            with self.subTest(path=path):
+                self.models[0]["guide"] = path
+                self.write_bundle()
+                with self.assertRaises(ProtocolError):
+                    self.stage()
+        self.models[0]["guide"] = "devices/onexplayer/oxp3.toon"
+        self.models[0]["files"][0]["member"] = "devices/onexplayer/other.toon"
+        self.write_bundle()
+        with self.assertRaises(ProtocolError):
+            self.stage()
+
     def test_review_binding_and_payload_integrity(self):
         result = self.stage()
         chosen = result["models"][0]

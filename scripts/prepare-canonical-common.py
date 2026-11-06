@@ -179,14 +179,14 @@ def prepare_snapshot(project, gyro_archive_path, output):
     model_source.sources(project)
     snapshot_raw=local(project,model_source.SNAPSHOT).read_bytes();snapshot=json.loads(snapshot_raw)
     rows={row['path'].removeprefix('adaptations/'):row for row in snapshot['files']}
-    names={n for n in rows if n.startswith(canonical_stage.PREFIXES)}|set(canonical_stage.RECORDS)
+    names={n for n in rows if n.startswith(canonical_stage.PREFIXES)}|canonical_stage.model_records(rows)
     if not names<=set(rows):raise ValueError('Canonical common snapshot closure is incomplete')
     contents={name:local(project,'adaptations/'+name).read_bytes() for name in names}
     toon=decoder(project/'adaptations')
     expected_ids={'resource:intel-xevmafix-724','resource:intel-be201-firmware','resource:oxp3-speaker-route','resource:bmi260-gyro'}
     for model in ('oxp3','x2-mini'):
         base='brands/onexplayer/'+model+'/'
-        guide=toon.loads(contents[base+model+'.toon'].decode('utf-8'),strict=True)
+        guide=toon.loads(contents[model_source.onexplayer_source(contents, model)].decode('utf-8'),strict=True)
         reference=toon.loads(contents[base+'common-device-sources.toon'].decode('utf-8'),strict=True)
         if (guide.get('resource_model',{}).get('common_references')!=reference or reference.get('model_id')!='device:'+model
                 or {item['id'] for item in reference.get('resources',[])}!=expected_ids

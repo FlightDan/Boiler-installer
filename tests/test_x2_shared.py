@@ -472,7 +472,7 @@ class CandidateLifecycle(CandidateFixture):
     def test_public_builder_uses_only_locked_source_inputs_and_is_reproducible(self):
         lock=json.loads((builder.BRIDGE/'source-lock.json').read_bytes())
         isolated=self.work/'source-only';isolated.mkdir()
-        copy_toon_sources(ADAPTATIONS,isolated/'adaptations')
+        copy_toon_sources(ADAPTATIONS,isolated/'adaptations',catalog=ROOT/'scripts/toon_catalog.py')
         for row in lock['inputs']:
             if row['location'] != 'project': continue
             path=isolated/row['source'];path.parent.mkdir(parents=True,exist_ok=True)
@@ -489,7 +489,7 @@ class CandidateLifecycle(CandidateFixture):
     def test_public_builder_rejects_changed_locked_source_before_output(self):
         lock=json.loads((builder.BRIDGE/'source-lock.json').read_bytes())
         isolated=self.work/'source-only';isolated.mkdir()
-        copy_toon_sources(ADAPTATIONS,isolated/'adaptations')
+        copy_toon_sources(ADAPTATIONS,isolated/'adaptations',catalog=ROOT/'scripts/toon_catalog.py')
         for row in lock['inputs']:
             if row['location'] != 'project': continue
             path=isolated/row['source'];path.parent.mkdir(parents=True,exist_ok=True)

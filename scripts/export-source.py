@@ -72,6 +72,8 @@ def verify_model_catalog(root, files):
     adaptations = root/'adaptations'
     catalog.generate(adaptations, check=True)
     required = {'scripts/toon_catalog.py', 'adaptations/toon-parser-lock.json'}
+    if catalog.device_sources(adaptations):
+        required.add('adaptations/scripts/model-identity.py')
     required.update('adaptations/'+name for name in catalog.views(adaptations))
     required.update('adaptations/'+name for name in catalog.definition_sources(adaptations))
     for name,model in catalog.models(adaptations):

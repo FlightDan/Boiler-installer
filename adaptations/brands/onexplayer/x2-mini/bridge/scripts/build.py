@@ -32,7 +32,7 @@ def build(project_root, output, adaptations_root=None):
     if lock.get('delivery_scope') != 'partial-shared-adaptations':
         raise ValueError('This builder does not implement the full X2 adaptation list')
     adaptations = Path(adaptations_root).resolve() if adaptations_root else project_root/'adaptations'
-    parser_path = confined(adaptations, 'scripts/toon_catalog.py')
+    parser_path = confined(project_root, 'scripts/toon_catalog.py')
     spec = importlib.util.spec_from_file_location('boiler_x2_toon_catalog', parser_path)
     catalog = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(catalog)

@@ -22,10 +22,8 @@ from maintenance.updates import _version_key
 from protocol.resource_pool import decoder, json_document, validate_pool
 from resources import model_source
 
-GUIDES = (
-    ('device:oxp3', 'brands/onexplayer/oxp3/oxp3.toon'),
-    ('device:x2-mini', 'brands/onexplayer/x2-mini/x2-mini.toon'),
-)
+MODELS = (('device:oxp3', 'oxp3'), ('device:x2-mini', 'x2-mini'))
+CURRENT_GUIDES = {f'devices/onexplayer/{model}.toon' for _, model in MODELS}
 
 
 def collect_sources(snapshot, guide, guide_path, toon, inventory):
@@ -63,7 +61,7 @@ def collect_sources(snapshot, guide, guide_path, toon, inventory):
     for policy in common.get('boot_policies', []):
         selected.add(policy['source'])
     for path in sorted(selected):
-        if not path.startswith(('common/', 'brands/onexplayer/')):
+        if path not in CURRENT_GUIDES and not path.startswith(('common/', 'brands/onexplayer/')):
             raise ValueError('Selected source outside canonical brand or common directory: ' + path)
         if not confined(snapshot, path).is_file():
             unresolved.append({'model': guide['id'], 'path': path, 'reason': 'canonical source absent'})
@@ -85,7 +83,7 @@ def selected_components(guide, manifest):
     return components, missing
 
 
-def load_resource_pool(root, snapshot_inventory):
+def load_resource_pool(root, snapshot_inventory, expected):
     if root is None:
         return None
     root = Path(root).resolve()
@@ -93,7 +91,6 @@ def load_resource_pool(root, snapshot_inventory):
     proof = json_document(confined(root, 'provenance/model-resource-sources.json').read_bytes())
     if proof.get('kind') != 'ModelResourceSources':
         raise ValueError('Resource pool lacks canonical model source records')
-    expected = {path for _, path in GUIDES}
     rows = proof.get('files', [])
     if {row.get('path', '').removeprefix('adaptations/') for row in rows} != expected:
         raise ValueError('Resource pool model set differs from TOONs')
@@ -413,20 +410,23 @@ class SingleVersion(argparse.Action):
 
 def prepare_models(project, packages, *, version, resource_pool=None, allow_incomplete=False):
     project = Path(project).resolve()
-    model_source.sources(project)
+    verified = {path.removeprefix('adaptations/') for path in model_source.sources(project)}
+    guides = [(identity, model_source.onexplayer_source(verified, model)) for identity, model in MODELS]
+    if any(path not in verified for _, path in guides):
+        raise ValueError('Canonical ONEXPLAYER model guide missing')
     snapshot = project / 'adaptations'
     lock = json_document((snapshot / 'canonical-model-snapshot.json').read_bytes())
     inventory = {row['path']: row for row in lock['files']}
-    pool = load_resource_pool(resource_pool, inventory)
+    pool = load_resource_pool(resource_pool, inventory, {path for _, path in guides})
     pool_resources = {row['id']: row for row in pool['resources']} if pool else {}
     pool_models = {row['id']: row for row in pool['models']} if pool else {}
     pool_refs = {row['id']: row for row in pool['resource_refs']} if pool else {}
     pool_inventory = {row['path']: row for row in pool['files']} if pool else {}
     toon = decoder(snapshot)
-    oxp_guide = toon.loads(confined(snapshot, GUIDES[0][1]).read_text(encoding='utf-8'), strict=True)
+    oxp_guide = toon.loads(confined(snapshot, guides[0][1]).read_text(encoding='utf-8'), strict=True)
     opti_plugin_pin = oxp_guide['build']['plugin_pins']['sha256']
     source_files, models, unresolved, pending = set(), [], [], []
-    for identity, guide_path in GUIDES:
+    for identity, guide_path in guides:
         guide = toon.loads(confined(snapshot, guide_path).read_text(encoding='utf-8'), strict=True)
         if guide['runtime']['id'] != identity:
             raise ValueError('Model guide identity differs: ' + guide_path)

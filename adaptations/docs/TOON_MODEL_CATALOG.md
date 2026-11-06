@@ -1,10 +1,11 @@
 # TOON model sources and generated catalog
 
-Maintain each model in `adaptations/brands/<vendor>/<model>/<model>.toon`. The
+Maintain each model in `adaptations/devices/<vendor>/<model>.toon`. The
 official TOON parser reads these files directly. The model's component IDs,
 recommendations, dependencies, source paths, provenance and build input records
 have one maintained source. `models.toon` is the automatically generated total
-catalog; do not edit it or the JSON compatibility views by hand.
+catalog; do not edit it or the JSON compatibility views by hand. Use `python -B scripts/toon_catalog.py legacy-json --output <fresh-directory>`
+for the legacy registry JSON when building an index.
 
 The decoder is the official `toon-format` Python release **1.2.0**, implementing
 TOON specification **4.4**, with `strict=True`. It is MIT licensed, requires
@@ -29,12 +30,12 @@ for ordinary catalog/build use. Retain the MIT license and release metadata.
 Run with the project's existing Python runtime from any current directory:
 
 ```text
-python -B adaptations/scripts/toon_catalog.py generate
-python -B adaptations/scripts/toon_catalog.py check
-python -B adaptations/scripts/toon_catalog.py preflight --model guide:oxp3 --input base=<reviewed-base-2-directory> --input plugin_zip=<reviewed-plugin.zip> --input plugin_lock=<reviewed-plugin-lock.json> --input decky=<prepared-decky-3.3.1> --input xevma=<exact-xevma-directory> --input historical_plugin_zip=<opti2xmx-0.3.1.zip> --input optiscaler_094=<original-0.9.4.7z> --input optiscaler_079=<original-0.7.9.7z> --input optiscaler_nightly=<original-nightly.7z>
-python -B adaptations/scripts/toon_catalog.py build --model guide:oxp3 --input base=<reviewed-base-2-directory> --input plugin_zip=<reviewed-plugin.zip> --input plugin_lock=<reviewed-plugin-lock.json> --input decky=<prepared-decky-3.3.1> --input xevma=<exact-xevma-directory> --input historical_plugin_zip=<opti2xmx-0.3.1.zip> --input optiscaler_094=<original-0.9.4.7z> --input optiscaler_079=<original-0.7.9.7z> --input optiscaler_nightly=<original-nightly.7z> --output <new-directory>
-python -B adaptations/scripts/toon_catalog.py preflight --model guide:x2-mini --input base=<complete-oxp3-package> --input bridge_overlay=<reviewed-bridge-overlay> --input hdr_overlay=<reviewed-hdr-overlay>
-python -B adaptations/scripts/toon_catalog.py build --model guide:x2-mini --input base=<complete-oxp3-package> --input bridge_overlay=<reviewed-bridge-overlay> --input hdr_overlay=<reviewed-hdr-overlay> --output <new-directory>
+python -B scripts/toon_catalog.py generate
+python -B scripts/toon_catalog.py check
+python -B scripts/toon_catalog.py preflight --model guide:oxp3 --input base=<reviewed-base-2-directory> --input plugin_zip=<reviewed-plugin.zip> --input plugin_lock=<reviewed-plugin-lock.json> --input decky=<prepared-decky-3.3.1> --input xevma=<exact-xevma-directory> --input historical_plugin_zip=<opti2xmx-0.3.1.zip> --input optiscaler_094=<original-0.9.4.7z> --input optiscaler_079=<original-0.7.9.7z> --input optiscaler_nightly=<original-nightly.7z>
+python -B scripts/toon_catalog.py build --model guide:oxp3 --input base=<reviewed-base-2-directory> --input plugin_zip=<reviewed-plugin.zip> --input plugin_lock=<reviewed-plugin-lock.json> --input decky=<prepared-decky-3.3.1> --input xevma=<exact-xevma-directory> --input historical_plugin_zip=<opti2xmx-0.3.1.zip> --input optiscaler_094=<original-0.9.4.7z> --input optiscaler_079=<original-0.7.9.7z> --input optiscaler_nightly=<original-nightly.7z> --output <new-directory>
+python -B scripts/toon_catalog.py preflight --model guide:x2-mini --input base=<complete-oxp3-package> --input bridge_overlay=<reviewed-bridge-overlay> --input hdr_overlay=<reviewed-hdr-overlay>
+python -B scripts/toon_catalog.py build --model guide:x2-mini --input base=<complete-oxp3-package> --input bridge_overlay=<reviewed-bridge-overlay> --input hdr_overlay=<reviewed-hdr-overlay> --output <new-directory>
 python -B -m unittest discover -s adaptations/tests -p test_toon_catalog.py -v
 ```
 
@@ -48,8 +49,7 @@ The generator discovers model files and rejects a wrong hierarchy, duplicate
 identity, malformed component data, missing/excluded/cyclic dependencies,
 installation defaults, traversal, reserved names and linked paths. It generates:
 
-- `adaptations/models.toon`: total TOON model catalog with per-model source hash;
-- `adaptations/model-index.json`: an equivalent optional JSON catalog view;
+- `adaptations/models.toon`: total TOON model catalog with brand-qualified IDs and source paths;
 - `adaptations/adaptations.json`: the existing non-installable source catalog;
 - each model's `manifest.json`: the existing `ModelInstallGuide` JSON view;
 - each model's `model.md`: generated marked sections, preserving existing prose

@@ -49,7 +49,7 @@ def check_inputs(project):
     if lock.get('public_baseline') != '72f864e0498c10366493c74608c5ffed62cc99ca': raise ValueError('Public research exclusion baseline changed')
     names = set()
     for row in lock['files']:
-        name = row['path']
+        name = model_source.locked_input_path(row['path'], guide_sources)
         if name in names: raise ValueError('Duplicate resource build input')
         names.add(name)
         if name.startswith('adaptations/common/resource-inputs/intel-be201/'):

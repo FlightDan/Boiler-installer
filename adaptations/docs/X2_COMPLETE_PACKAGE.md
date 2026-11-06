@@ -13,7 +13,7 @@ locks. The builder accepts three explicit inputs and never scans a model cache
 or a sibling project:
 
 ```text
-python -B adaptations/scripts/build-x2-complete.py --project-root . --base <complete-oxp3-package> --bridge-overlay <reviewed-bridge-overlay> --hdr-overlay <reviewed-hdr-overlay> --output <fresh-directory>
+python -B scripts/toon_catalog.py build --model device:onexplayer-x2-mini --input base=<complete-oxp3-package> --input bridge_overlay=<reviewed-bridge-overlay> --input hdr_overlay=<reviewed-hdr-overlay> --output <fresh-directory>
 ```
 
 Normal callers should use `toon_catalog.py build --model guide:x2-mini` with

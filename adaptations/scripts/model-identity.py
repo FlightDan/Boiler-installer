@@ -1,6 +1,4 @@
 """Generate source views from branded model TOON records; no signed bytes are changed."""
-import argparse
-import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -11,11 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     result = importlib.util.module_from_spec(spec)
-    source = Path(path).read_bytes()
-    verified = globals().get('_VERIFIED_TOOL_SOURCES')
-    if verified is not None and verified.get(str(Path(path).resolve())) != source:
-        raise ValueError('Tool source differs from verified committed bytes: ' + str(path))
-    exec(compile(source, str(path), 'exec', dont_inherit=True), result.__dict__)
+    spec.loader.exec_module(result)
     return result
 
 common = module('common_device_sources', ROOT / 'scripts/common-device-sources.py')
@@ -76,29 +70,32 @@ def common_reference_view(root, model, canonical, package_id):
         common.ROOT, common.VENDOR = previous_root, previous_vendor
     return reference
 
-def generate(root=ROOT, check=False):
+def _project(root=ROOT):
     root = Path(root)
-    outputs, index, runtime, concise = {}, [], [], []
+    outputs, protocol, index, runtime, concise, found = {}, {}, [], [], [], []
     seen, paths = {}, set()
     sources = []
-    for path in sorted((root / 'brands').glob('*/*/*.toon')):
-        if path.parent.name == 'common' and path.name == 'components.toon':
-            continue
-        if path.parent.name != 'common' and path.name == 'common-device-sources.toon':
-            continue
-        if path.parent.name == 'common' or path.name != path.parent.name + '.toon':
-            raise ValueError('Unknown or misnamed model TOON: ' + path.relative_to(root).as_posix())
+    for old in (root/'brands').glob('*/*/*.toon'):
+        if old.name == old.parent.name + '.toon':
+            raise ValueError('Obsolete model TOON duplicates authority: ' + old.relative_to(root).as_posix())
+    for path in sorted((root / 'devices').glob('*/*.toon')):
+        if not re.fullmatch(r'[a-z][a-z0-9-]*', path.parent.name) or not re.fullmatch(r'[a-z][a-z0-9-]*\.toon', path.name):
+            raise ValueError('Invalid model TOON path: ' + str(path))
         sources.append(path)
     if not sources:
         raise ValueError('No model TOON sources found')
     for path in sources:
         name = path.relative_to(root).as_posix()
-        parts = name.split('/')
+        source_parts = name.split('/')
+        parts = ['brands', source_parts[1], path.stem]
         if any(not re.fullmatch(r'[a-z][a-z0-9-]*', p) for p in parts[1:3]):
             raise ValueError('Invalid brand/model directory: ' + name)
         if adaptations.local(root, name) != path or not path.is_file():
             raise ValueError('Invalid source path: ' + name)
         model = common.toon_format.loads(path.read_text(encoding='utf-8'), strict=True)
+        if not isinstance(model, dict):
+            raise ValueError('Invalid model TOON: ' + name)
+        found.append((name, model))
         canonical = 'device:' + parts[1] + '-' + parts[2]
         if model.get('canonical_id') != canonical:
             raise ValueError('Canonical ID differs from model path: ' + name)
@@ -152,8 +149,10 @@ def generate(root=ROOT, check=False):
         if reference is None:
             if adaptations.local(root, reference_path).exists():
                 raise ValueError('Undeclared common reference view: ' + reference_path)
-        else:
+        elif canonical in ('device:onexplayer-oxp3', 'device:onexplayer-x2-mini'):
             outputs[reference_path] = (common.toon_format.dumps(reference) + '\n').encode('utf-8')
+        else:
+            raise ValueError('Common references are supported only for published models: ' + canonical)
         for component in model['components']:
             for source in component['sources']:
                 if source == reference_path and reference is not None:
@@ -177,8 +176,8 @@ def generate(root=ROOT, check=False):
         device = dict(schema_version=record['schema_version'], id=legacy_package, name=rt['name'])
         device.update((k, v) for k, v in record.items() if k != 'schema_version')
         device['hardware_matching'] = rt['hardware_matching']
-        outputs[destination] = json_bytes(device)
-        manifest = str(Path(name).with_name('manifest.json')).replace('\\', '/')
+        protocol[destination] = json_bytes(device)
+        manifest = '/'.join(parts[:3]) + '/manifest.json'
         if model.get('guide') != '/'.join(parts[:3]) + '/model.md':
             raise ValueError('Guide path differs from model: ' + name)
         guide_keys = ('schema_version', 'kind', 'id', 'name', 'installable', 'guide', 'source_inventory', 'source_revision', 'components')
@@ -198,15 +197,33 @@ def generate(root=ROOT, check=False):
                   + '`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../source-lock.json)。')
         before, rest = value.split(sb); _, after = rest.split(se)
         outputs[model['guide']] = (before + sb + '\n' + source + '\n' + se + after).encode('utf-8')
-        index.append(dict(id=guide['id'], name=guide['name'], source=name, manifest=manifest,
-                          source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-                          components=len(guide['components']), complete=model['build']['complete'],
-                          missing=model['build']['missing']))
+        index.append(manifest)
         runtime.append(dict(rt, guide_id=guide['id'], manifest=manifest))
         concise.append(dict(id=canonical, source=name))
     outputs['models.toon'] = (common.toon_format.dumps(dict(schema_version=2, kind='BoilerModelSourceIndex', generated=True, models=concise)) + '\n').encode('utf-8')
-    outputs['model-index.json'] = json_bytes(dict(schema_version=1, kind='BoilerModelSourceIndex', generated=True, models=index))
-    outputs['adaptations.json'] = json_bytes(dict(schema_version=1, kind='AdaptationSourceCatalog', version='0.1.0-layout.1', installable=False, documentation='ADAPTATIONS.md', models=[r['manifest'] for r in index], runtime_models=runtime))
+    outputs['adaptations.json'] = json_bytes(dict(schema_version=1, kind='AdaptationSourceCatalog', version='0.1.0-layout.1', installable=False, documentation='ADAPTATIONS.md', models=index, runtime_models=runtime))
+    protocol['device-index.json'] = json_bytes(dict(schema_version=1, kind='DeviceIndex', id='registry:boiler-devices',
+        version='0.1.0-preview.1', sequence=0, generated_at='2026-10-22T00:00:00Z',
+        trust={'status':'unsigned-development', 'official_release':False}, revocations=[], packages=[],
+        devices=['devices/oxp3.json'], note='No production package is advertised before formal signing, publication and new-stack acceptance.'))
+    return found, outputs, protocol
+
+
+def models(root=ROOT):
+    return _project(root)[0]
+
+
+def views(root=ROOT):
+    return _project(root)[1]
+
+
+def protocol_views(root=ROOT):
+    return _project(root)[2]
+
+
+def generate(root=ROOT, check=False):
+    root = Path(root)
+    found, outputs, _ = _project(root)
     for name, raw in outputs.items():
         path = adaptations.local(root, name)
         if check:
@@ -215,10 +232,4 @@ def generate(root=ROOT, check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(raw)
-    return len(sources)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('write', 'check'))
-    args = parser.parse_args()
-    print('Models:', generate(check=args.action == 'check'))
+    return len(found)

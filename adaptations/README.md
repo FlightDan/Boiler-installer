@@ -30,6 +30,6 @@ This repository uses [AGPL-3.0](LICENSE). Some sources and resources use other l
 <details>
 <summary>Signatures and trust</summary>
 
-The author keeps and controls the signing private key locally. The installer verifies a signed device index with a trusted public key, then uses that index to check packages. The [published signed catalog](https://github.com/FlightDan/Boiler-adaptations/releases/tag/catalog-v0.1.0-preview.1) and the development index in the repository root are maintained separately; see [Device index and signatures](docs/REGISTRY.en.md).
+The author keeps and controls the signing private key locally. The installer verifies a signed device index with a trusted public key, then uses that index to check packages. The [published signed catalog](https://github.com/FlightDan/Boiler-adaptations/releases/tag/catalog-v0.1.0-preview.1) and the generated development index are maintained separately; see [Device index and signatures](docs/REGISTRY.en.md).
 
 </details>

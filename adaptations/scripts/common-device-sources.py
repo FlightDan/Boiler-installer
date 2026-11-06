@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.machinery
-import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import sys
@@ -54,7 +52,7 @@ def load(name: str) -> dict:
     return value
 
 
-def _authenticated_codec_sources() -> dict[str, bytes]:
+def validate_codec() -> None:
     """Accept exactly the pinned TOON decoder source, not local bytecode."""
     lock_path = VENDOR / 'toon-parser-lock.json'
     lock = json.loads(lock_path.read_text(encoding='utf-8'))
@@ -67,55 +65,15 @@ def _authenticated_codec_sources() -> dict[str, bytes]:
               if path.is_file() and '__pycache__' not in path.parts and path.name != 'toon-parser-lock.json'}
     if actual != set(expected):
         raise ValueError('TOON codec file set differs from lock')
-    authenticated = {}
     for name, row in expected.items():
         path = VENDOR.joinpath(*PurePosixPath(name).parts)
-        if path.is_symlink():
+        if path.is_symlink() or path.stat().st_size != row['size'] or digest(path) != row['sha256']:
             raise ValueError('TOON codec bytes differ from lock: ' + name)
-        raw = path.read_bytes()
-        if len(raw) != row['size'] or hashlib.sha256(raw).hexdigest() != row['sha256']:
-            raise ValueError('TOON codec bytes differ from lock: ' + name)
-        if path.suffix == '.py':
-            authenticated[str(path)] = raw
-    return authenticated
 
 
-def validate_codec() -> None:
-    _authenticated_codec_sources()
-
-
-def load_verified_codec():
-    # Compile the exact authenticated bytes, never cached bytecode or a
-    # previously imported module with the same package name.
-    sources = _authenticated_codec_sources()
-    class VerifiedLoader(importlib.machinery.SourceFileLoader):
-        def get_code(self, fullname):
-            return compile(sources[self.path], self.path, 'exec', dont_inherit=True)
-    class VerifiedFinder:
-        def find_spec(self, fullname, path=None, target=None):
-            if fullname != 'toon_format' and not fullname.startswith('toon_format.'):
-                return None
-            member = VENDOR.joinpath(*fullname.split('.'))
-            source = member/'__init__.py' if member.is_dir() else member.with_suffix('.py')
-            if str(source) not in sources:
-                raise ValueError('Uninventoried TOON import: ' + fullname)
-            return importlib.util.spec_from_file_location(fullname, source,
-                loader=VerifiedLoader(fullname, str(source)))
-    for name in list(sys.modules):
-        if name == 'toon_format' or name.startswith('toon_format.'):
-            del sys.modules[name]
-    finder = VerifiedFinder()
-    sys.meta_path.insert(0, finder)
-    try:
-        import toon_format as codec
-    finally:
-        sys.meta_path.remove(finder)
-    if codec.__version__ != '1.2.0' or codec.__toon_spec__ != '4.4':
-        raise ValueError('Unexpected TOON implementation')
-    return codec
-
-
-toon_format = load_verified_codec()
+# Authenticate vendored parser bytes before importing executable parser code.
+validate_codec()
+import toon_format  # noqa: E402
 
 
 def checked_file(row: dict, source: str) -> None:
@@ -192,7 +150,7 @@ def gm7() -> dict:
 
 
 def model(model_id: str, source: str, policy: dict) -> dict:
-    guide_path = str(PurePosixPath(source).parent / (model_id.split(':', 1)[1] + '.toon'))
+    guide_path = 'devices/onexplayer/' + model_id.split(':', 1)[1] + '.toon'
     guide = load(guide_path)
     value = guide.get('resource_model', {}).get('common_references')
     if not isinstance(value, dict) or load(source) != value:
@@ -225,11 +183,13 @@ def main() -> None:
     parser.add_argument('action', choices=('check', 'write'))
     action = parser.parse_args().action
     if action == 'write':
-        for model_id, source in MODELS.items():
-            guide_path = str(PurePosixPath(source).parent / (model_id.split(':', 1)[1] + '.toon'))
-            value = load(guide_path).get('resource_model', {}).get('common_references')
-            if not isinstance(value, dict): raise ValueError('missing model common references')
-            relative(source).write_text(toon_format.dumps(value) + '\n', encoding='utf-8', newline='\n')
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('model_identity', Path(__file__).with_name('model-identity.py'))
+        identity = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(identity)
+        views = identity.views(ROOT)
+        for source in MODELS.values():
+            relative(source).write_bytes(views[source])
     output = json.dumps(build(), ensure_ascii=False, indent=2) + '\n'
     path = ROOT / INDEX
     if action == 'write':

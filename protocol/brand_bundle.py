@@ -58,10 +58,14 @@ def _read_brand(read_member, has_member):
         if not isinstance(identity, str) or not identity.startswith("device:") or identity in ids:
             raise ProtocolError("Duplicate or invalid brand model")
         ids.add(identity)
-        for path in (guide, manifest_name):
-            relative_path(path)
-            if not path.startswith("brands/onexplayer/"):
-                raise ProtocolError("Brand metadata path outside brand")
+        relative_path(guide)
+        relative_path(manifest_name)
+        current_guides = {"device:oxp3": "devices/onexplayer/oxp3.toon",
+                          "device:x2-mini": "devices/onexplayer/x2-mini.toon"}
+        if not (guide.startswith("brands/onexplayer/") or guide == current_guides.get(identity)):
+            raise ProtocolError("Brand metadata path outside brand")
+        if not manifest_name.startswith("brands/onexplayer/"):
+            raise ProtocolError("Brand metadata path outside brand")
         if not has_member(guide):
             raise ProtocolError("Brand model guide is missing")
         manifest_raw = read_member(manifest_name, MAX_MANIFEST)
@@ -77,7 +81,7 @@ def _read_brand(read_member, has_member):
                 raise ProtocolError("Invalid brand file mapping")
             logical = relative_path(item.get("path"))
             member = relative_path(item.get("member"))
-            if not member.startswith(("common/", "brands/onexplayer/")):
+            if member != guide and not member.startswith(("common/", "brands/onexplayer/")):
                 raise ProtocolError("Brand payload outside permitted directories")
             if logical.casefold() in paths:
                 raise ProtocolError("Duplicate brand package path")

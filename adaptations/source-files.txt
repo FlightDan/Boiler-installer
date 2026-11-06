@@ -83,7 +83,6 @@ brands/onexplayer/oxp3/current/xevma-20261029/module-lock.json
 brands/onexplayer/oxp3/current/xevma-20261029/xevmafix.c
 brands/onexplayer/oxp3/manifest.json
 brands/onexplayer/oxp3/model.md
-brands/onexplayer/oxp3/oxp3.toon
 brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt
 brands/onexplayer/oxp3/scripts/autoflatpaks-compat/poll-battery-state.js
 brands/onexplayer/oxp3/scripts/boot_repairs.py
@@ -139,7 +138,6 @@ brands/onexplayer/oxp3/scripts/x2mini_hdr_device.py
 brands/onexplayer/x2-mini/bridge/README.md
 brands/onexplayer/x2-mini/bridge/assets/90-oxp3-desktop-env-isolation.conf
 brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py
-brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py
 brands/onexplayer/x2-mini/bridge/scripts/build.py
 brands/onexplayer/x2-mini/bridge/source-lock.json
 brands/onexplayer/x2-mini/common-device-sources.toon
@@ -151,7 +149,6 @@ brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py
 brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh
 brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh
 brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py
-brands/onexplayer/x2-mini/x2-mini.toon
 common-device-source-index.json
 common/audio/realtek/alc245/speaker-route/final/speaker_route.py
 common/audio/realtek/alc245/speaker-route/licenses/AGPL-3.0.txt
@@ -285,9 +282,8 @@ common/ssd/acer/gm7/GM7_POLICY.md
 common/ssd/acer/gm7/components.toon
 common/xevma/kmod_transform.py
 current-source-lock.json
-device-index.json
-devices/oxp3.json
-devices/x2-mini.json
+devices/onexplayer/oxp3.toon
+devices/onexplayer/x2-mini.toon
 docs/ADAPTATIONS.md
 docs/BUILD.en.md
 docs/BUILD.md
@@ -301,7 +297,6 @@ docs/TOON.md
 fingerprint-source-lock.json
 licenses/GPL-2.0.txt
 licenses/license-inventory.json
-model-index.json
 model-source-files.json
 models.toon
 records/adaptations-consolidation-20261104-inventory.json
@@ -671,7 +666,6 @@ scripts/build-index.py
 scripts/build-keyboard-runtime.py
 scripts/build-shared-base.py
 scripts/build-upstream-repairs.py
-scripts/build-x2-complete-installer-catalog.py
 scripts/build-x2-complete.py
 scripts/build-x2-hdr-overlay.py
 scripts/check-consolidation.py

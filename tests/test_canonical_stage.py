@@ -14,7 +14,8 @@ class CanonicalStageTests(unittest.TestCase):
     p=base/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(raw)
    source={'common/fixture/source.toon':b'fixture-source','common/gpu/intel/xe/xevmafix-724/final/load.py':b'xe',
            'common/audio/realtek/alc245/speaker-route/final/speaker_route.py':b'speaker',
-           'common/network/intel/be201/source.toon':b'firmware-record'}
+           'common/network/intel/be201/source.toon':b'firmware-record',
+           'devices/onexplayer/oxp3.toon':b'oxp3-guide','devices/onexplayer/x2-mini.toon':b'x2-guide'}
    rows=[dict(path='adaptations/'+n,size=len(b),sha256=digest(b)) for n,b in source.items()]
    lock=json.dumps(dict(commit='a'*40,files=rows)).encode();write(project,model_source.SNAPSHOT,lock)
    write(project,'adaptations/resource-build-inputs.json',json.dumps(dict(xevma_module='module')).encode());write(project,'module',b'module')
@@ -32,7 +33,7 @@ class CanonicalStageTests(unittest.TestCase):
      original=proof[key];proof[key]=bad;write(stage,'preparation.json',json.dumps(proof).encode())
      with self.subTest(field=key),self.assertRaises(ValueError):canonical_stage.verify(stage,project)
      proof[key]=original;write(stage,'preparation.json',json.dumps(proof).encode())
-    for name in ('source/common/fixture/source.toon','payload-inputs/bmi260/gyro/000.bin'):
+    for name in ('source/common/fixture/source.toon','source/devices/onexplayer/x2-mini.toon','payload-inputs/bmi260/gyro/000.bin'):
      original=(stage/name).read_bytes();changed=original+b'!';(stage/name).write_bytes(changed)
      row=next(row for row in proof['files'] if row['path']==name);row.update(size=len(changed),sha256=digest(changed));write(stage,'preparation.json',json.dumps(proof).encode())
      with self.subTest(name=name),self.assertRaises(ValueError):canonical_stage.verify(stage,project)

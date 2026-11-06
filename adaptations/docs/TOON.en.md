@@ -6,10 +6,10 @@ TOON is structured text. Here, each model's TOON is a checklist describing compo
 
 ## Start with the model files
 
-- [ONEXPLAYER 3: oxp3.toon](../brands/onexplayer/oxp3/oxp3.toon)
-- [X2 Mini / Mini PRO: x2-mini.toon](../brands/onexplayer/x2-mini/x2-mini.toon)
+- [ONEXPLAYER 3: oxp3.toon](../devices/onexplayer/oxp3.toon)
+- [X2 Mini / Mini PRO: x2-mini.toon](../devices/onexplayer/x2-mini.toon)
 
-These are the maintained model files. `models.toon`, `model-index.json`, and `common-device-sources.toon` are generated catalogs or views. The installer source snapshot generates each model's `manifest.json` from TOON; the adaptation repository's existing checker also reads that manifest to check the model guide. Change the model TOON first, then use the relevant tools to synchronize and check these views.
+These are the maintained model files. `models.toon` and `common-device-sources.toon` are generated catalogs or views. The installer source snapshot generates each model's `manifest.json` from TOON; the adaptation repository's existing checker also reads that manifest to check the model guide. Change the model TOON first, then use the relevant tools to synchronize and check these views.
 
 `complete` in the generated catalog describes the model's build-data status. Consult the separate records for installation, maintenance, recovery, and hardware tests.
 
@@ -42,10 +42,10 @@ In TOON, `resources[4]{id,source}` means four rows, each containing a resource I
 3. Record the actual hardware, system, and tests; maintain source inventories and locks, then run the repository checks. Generate derived files with the tools rather than entering hashes by hand.
 4. Use Boiler Installer's snapshot and build tools for the required inputs; the [build guide](BUILD.en.md) lists the current commands.
 
-In the adaptations repository, `python -B scripts/common-device-sources.py write` updates the shared-reference views and index from the model TOONs; use the same script's `check` action to verify them. In the installer, `python -B scripts/toon_catalog.py generate` updates model views in the selected catalog, and `check` verifies them.
+From the installer root, run `python -B scripts/toon_catalog.py generate --catalog-root <adaptation-checkout>` to update the model catalog and its shared-reference views. Use `check` through the same entrypoint to verify them.
 
 TOON describes what is needed; builders and components provide execution, maintenance, and recovery. When using two model TOONs as a shared shopping list, include a shared path once and retain each model's own files.
 
-`models.toon` schema 2 lists only branded `canonical_id` values and repository-relative `source` paths. Each model TOON declares `legacy_aliases` for existing guide and package identities and keeps the remaining device metadata in `device_record`; name and hardware matching come from `runtime`. The `devices/*.json` files are legacy protocol views and do not rewrite historical signatures. Run `python -B scripts/model-identity.py write` to update views and `check` to verify them. The resource view derives its name and hardware matching from `runtime` to avoid duplicate maintenance.
+`models.toon` schema 2 lists only branded `canonical_id` values and repository-relative `source` paths. Each model TOON declares `legacy_aliases` for existing guide and package identities and keeps the remaining device metadata in `device_record`; name and hardware matching come from `runtime`. The `devices/*.json` files are legacy protocol views and do not rewrite historical signatures. From the installer root, run `python -B scripts/toon_catalog.py generate --catalog-root <adaptation-checkout>` to update views and `check --catalog-root <adaptation-checkout>` to verify them. The resource view derives its name and hardware matching from `runtime` to avoid duplicate maintenance.
 
-When a new model declares `resource_model.common_references`, `model-identity.py` generates and checks its adjacent `common-device-sources.toon` and validates the declared common source locks. No reference view is generated when the field is absent, and GM7 is included only when explicitly referenced. `common-device-source-index.json` remains the legacy two-model compatibility view; it does not establish installation, maintenance, or recovery integration for new models.
+The shared-reference views for the two existing models are generated from their TOON records and validated against the common source locks. `common-device-source-index.json` remains the two-model compatibility view.

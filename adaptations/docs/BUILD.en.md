@@ -88,6 +88,6 @@ python -B scripts/build-device-package.py "$Package" --output "$Zip"
 
 The device package and installer are separate artifacts. In an independent Windows x64 checkout of Boiler Installer, prepare locked dependencies, build the application, prepare integration content, and run the packaging script. Start with the [Boiler Installer build instructions](https://github.com/FlightDan/Boiler-installer/blob/04dce422d0c4831ced6d2b9efdbd852e7b02a724/README.md#build-from-an-independent-checkout) and [dependency guide](https://github.com/FlightDan/Boiler-installer/blob/04dce422d0c4831ced6d2b9efdbd852e7b02a724/docs/DEPENDENCY_BOOTSTRAP.md).
 
-To include an existing device package in the directory, use the [device-index workflow](REGISTRY.en.md) from the **Boiler-adaptations** repository root. `scripts/build-index.py` accepts a built package; it does not build the package itself.
+To add a built model package to the device registry, run `scripts/toon_catalog.py index-candidate` from the **Boiler Installer** source root as described in the [registry workflow](REGISTRY.en.md).
 
-The commands above are pinned to the historical installer commit named on this page. After migration, the installer tool is `scripts/toon_catalog.py`; the new X2 bridge entrypoints use the explicitly supplied `--project-root` to find it. Historical bridge files and source records remain unchanged. Before use, obtain exact commits containing these changes and verify the corresponding snapshot.
+The examples above are pinned to the historical installer commit named on this page. Use `scripts/toon_catalog.py` as the single entrypoint in the current installer checkout, including for X2 Mini builds.

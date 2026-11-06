@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "8d5053462aac703866866ca18b8f8635c5d0c007",
+  "commit": "51e63c6a0d7808bfbca18fdca0abd3134ff042f9",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -26,8 +26,8 @@
     },
     {
       "path": "adaptations/README.md",
-      "size": 1967,
-      "sha256": "16a1a7d2c1a68582b208343a799d624ad0eae5eda093a0ac6955c510592ffe1f"
+      "size": 1954,
+      "sha256": "40a073343d34e740a3ce5ba8baf488373785ef9de63aac6f09d5c53c3f15b118"
     },
     {
       "path": "adaptations/THIRD_PARTY_NOTICES.md",
@@ -426,13 +426,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/model.md",
-      "size": 7096,
-      "sha256": "4ab0f35ba69697e2255c01261a604875d0910cc0f9970872b2309e68a80c4bf2"
-    },
-    {
-      "path": "adaptations/brands/onexplayer/oxp3/oxp3.toon",
-      "size": 20712,
-      "sha256": "001cda218934eb47a242355b969279c25ad6f4c983a9206b357ba6e1b96c35cf"
+      "size": 7103,
+      "sha256": "21054949179aae35090f2dc879885139cfd84420bdd6b1fb1f6dc184641b3d43"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -710,14 +705,9 @@
       "sha256": "44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856"
     },
     {
-      "path": "adaptations/brands/onexplayer/x2-mini/bridge/scripts/build-installer-catalog.py",
+      "path": "adaptations/brands/onexplayer/x2-mini/bridge/scripts/build.py",
       "size": 6237,
       "sha256": "4cf182707c825c5cca150364566aee0921f45cf428fbd2df137360d579cf91d2"
-    },
-    {
-      "path": "adaptations/brands/onexplayer/x2-mini/bridge/scripts/build.py",
-      "size": 6236,
-      "sha256": "cb94e3e0dc68d2a202b41a23053e7007d5cc4cfdd8bb8ec1a7c8325fe96037d5"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/bridge/source-lock.json",
@@ -768,11 +758,6 @@
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
       "size": 39391,
       "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
-    },
-    {
-      "path": "adaptations/brands/onexplayer/x2-mini/x2-mini.toon",
-      "size": 17327,
-      "sha256": "12f72f4b7bbe71ceb5141a2b85768d86db1f4c2575428d169cc3fb46bb733bf2"
     },
     {
       "path": "adaptations/common-device-source-index.json",
@@ -1440,19 +1425,14 @@
       "sha256": "d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827"
     },
     {
-      "path": "adaptations/device-index.json",
-      "size": 436,
-      "sha256": "afe9e79614fcea37447fe7279b316b658596bf5e702abd496c8792d60ee45921"
+      "path": "adaptations/devices/onexplayer/oxp3.toon",
+      "size": 20712,
+      "sha256": "001cda218934eb47a242355b969279c25ad6f4c983a9206b357ba6e1b96c35cf"
     },
     {
-      "path": "adaptations/devices/oxp3.json",
-      "size": 3996,
-      "sha256": "c14b43b80069c50846418287a61cf7d88f4d74d48e7c2f8b3c5aa2f476f4d651"
-    },
-    {
-      "path": "adaptations/devices/x2-mini.json",
-      "size": 724,
-      "sha256": "74ce19feec692f336ac67e66b7161fb268c523fc6845a6964039e2869258ba08"
+      "path": "adaptations/devices/onexplayer/x2-mini.toon",
+      "size": 17327,
+      "sha256": "12f72f4b7bbe71ceb5141a2b85768d86db1f4c2575428d169cc3fb46bb733bf2"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
@@ -1461,13 +1441,13 @@
     },
     {
       "path": "adaptations/docs/BUILD.en.md",
-      "size": 7863,
-      "sha256": "11306b2d9fd4476c48e5c8f58809ed42c26eb9a2d388a34d87015bb6aab02c3f"
+      "size": 7629,
+      "sha256": "681e1c478da77788c5859a7af659ac4bc50be83d21581741083bf932440f33d1"
     },
     {
       "path": "adaptations/docs/BUILD.md",
-      "size": 7310,
-      "sha256": "09fabce9d36d0b6502c8dea68ee7494c149ced3ae98903513f2ebe8f0000b51e"
+      "size": 7237,
+      "sha256": "b5bb2d957b18240fcee54d52d9f55cf79ec0c61b18db9cd872e2a69511f3e305"
     },
     {
       "path": "adaptations/docs/FINGERPRINT_OVERLAY_AUTHORITY_PREVIEW_20261104.md",
@@ -1481,13 +1461,13 @@
     },
     {
       "path": "adaptations/docs/REGISTRY.en.md",
-      "size": 3502,
-      "sha256": "e024e3d983116a46daa79790006e3aeb0b42e83f89567ab9477947375aa68c5f"
+      "size": 2627,
+      "sha256": "2f02ba2d2dfe5ee2f18be99cddafdd4319e40bb22cf3321834d4fcf4478096c6"
     },
     {
       "path": "adaptations/docs/REGISTRY.md",
-      "size": 2965,
-      "sha256": "f85b66820ce6df0e2adb6300f6c0bbd0010307f140fa832b8ebbfb4f5dd1e625"
+      "size": 2318,
+      "sha256": "337be32c219d3a3d18fe16f641547bd8879b1fac5de209c8b8ec119b1fe4e373"
     },
     {
       "path": "adaptations/docs/RELEASE_0.1.0-layout.1.md",
@@ -1496,13 +1476,13 @@
     },
     {
       "path": "adaptations/docs/TOON.en.md",
-      "size": 4788,
-      "sha256": "b028650e909a736cf71d4db6938cb8444dd9fa452d7d5fc3ac38d6eed04d0dab"
+      "size": 4487,
+      "sha256": "d0918a83de7c0172b0eb2ea850d6ae80c35f8c6a9812066f5a4a9cee75ffb8bf"
     },
     {
       "path": "adaptations/docs/TOON.md",
-      "size": 4312,
-      "sha256": "036224f91bd3614bdddb93c5afb3bdfea344ddd80ae654334b3c34b8642655b9"
+      "size": 4075,
+      "sha256": "c533985dab0472701dd509c628ae578ea1a906cf0ce14ae72e761230294ab956"
     },
     {
       "path": "adaptations/fingerprint-source-lock.json",
@@ -1520,14 +1500,9 @@
       "sha256": "01cfe8010a526d2ce899bca35e0b85f87dfb69ab828e8ccca784dada38ed4f0c"
     },
     {
-      "path": "adaptations/model-index.json",
-      "size": 806,
-      "sha256": "2fad26bfbedb21c584c517332d2e4297f2c5e4578439e121fef1b5acf923ffd0"
-    },
-    {
       "path": "adaptations/models.toon",
-      "size": 214,
-      "sha256": "fb4853caa0522cc8cab4a33c0e2540f88cd7fd53217cfcd0c4b2cf9388e25bab"
+      "size": 203,
+      "sha256": "8f6ea67aa5a9ea7d16a1fcf2b17db252afb356a6bbc30af9d33d6dbe4c0aa833"
     },
     {
       "path": "adaptations/records/migrations/bmi260-source-relocation-20261103.json",
@@ -1761,8 +1736,8 @@
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 41011,
-      "sha256": "d4604e3e4078a19cdccee834ca2e10c98b88b5e223a309fab84f66d46840c516"
+      "size": 35118,
+      "sha256": "00e262bd4b6b33c95c12392c66a04da00613053b82ba5f099e191e5e3f34bc8c"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
@@ -1780,14 +1755,9 @@
       "sha256": "439c1a87d42774dcb5593f2aaed37bce6fa7f9bce112db56ea4c45dbb155a90e"
     },
     {
-      "path": "adaptations/scripts/build-x2-complete-installer-catalog.py",
-      "size": 18339,
-      "sha256": "eaddb5758c5b70abbb4e8e69c9cdd2276a081da32976dce22c9597e1ca401002"
-    },
-    {
       "path": "adaptations/scripts/build-x2-complete.py",
-      "size": 18351,
-      "sha256": "246ca33f9f0b43ecd5d1c6ada168e2fb381223e1bec8f4b41aa1242fa65a9df5"
+      "size": 18332,
+      "sha256": "a92d4161170209898b5d23d1b3d1bbc953ee632617a5a4cc2f815b2e9879e360"
     },
     {
       "path": "adaptations/scripts/build-x2-hdr-overlay.py",
@@ -1796,8 +1766,8 @@
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
-      "size": 12259,
-      "sha256": "ca4374dd88edf12ea9ff2b913b1967457d1694b5d1e770c5fe1e852c51f87122"
+      "size": 10443,
+      "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
     },
     {
       "path": "adaptations/scripts/fingerprint_provenance.py",
@@ -1806,8 +1776,8 @@
     },
     {
       "path": "adaptations/scripts/model-identity.py",
-      "size": 13935,
-      "sha256": "3505a19b772600cedab73288d6818c3307c00beb29363eecca181f9f164dc58a"
+      "size": 14031,
+      "sha256": "4588883cff19bdf420451f52abf42252a8650d6929844cf041b9339a7ed4a673"
     },
     {
       "path": "adaptations/scripts/prepare-current-inputs.py",
@@ -1831,8 +1801,8 @@
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 52844,
-      "sha256": "e050e53b157db3b68f616ece6d350e7e7e3774abc24ce1b1cf316356e40145a2"
+      "size": 52644,
+      "sha256": "952b2134684106af6e34df0ab5a589c1baf8a49db0f06065b2d4c3cf2f58f9f4"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1846,8 +1816,8 @@
     },
     {
       "path": "adaptations/tests/test_adaptations.py",
-      "size": 19473,
-      "sha256": "aefff98cb8854358082ad4dce320cff4219aac1237900f8ab8a8b3ba4bb4348a"
+      "size": 19752,
+      "sha256": "b22849b1244b682d6de07444047c87f472505f3d7f249df2e5247f31569304a6"
     },
     {
       "path": "adaptations/tests/test_common_device_sources.py",
@@ -1861,23 +1831,23 @@
     },
     {
       "path": "adaptations/tests/test_index_models.py",
-      "size": 27692,
-      "sha256": "c7b0cc33c0a76b02ce1b9f7ab51992ac0fffbd50bf000dffd1f032df92461766"
+      "size": 14425,
+      "sha256": "8b852676ed6358e8dc7ec4a199a87e44b08ad5e6ac9c0f77f653861e6c834c41"
     },
     {
       "path": "adaptations/tests/test_model_identity.py",
-      "size": 12541,
-      "sha256": "791727776b66fd705f22136efdf42f7737e2274b887003e85ce937306fbdf1ad"
+      "size": 13172,
+      "sha256": "1efa704509a1fa0fe1cc0d7d560bc6b190ee65ec1985d2c57bcecc6a97c1a5a5"
     },
     {
       "path": "adaptations/tests/test_registry.py",
-      "size": 13088,
-      "sha256": "72086d6d9f0c00cebad46e8d06fc05bf230f9bb031acc8f8d4ae3974e1884dd5"
+      "size": 13343,
+      "sha256": "c5549e5eaa92baad23b4f38a649178e4291da4c6bcd0cd758651cf9a858986a5"
     },
     {
       "path": "adaptations/tests/test_x2_catalog_entrypoints.py",
-      "size": 3657,
-      "sha256": "3c99c4fe3f4df594c47dabfc34d2bb850a3114f146c3879f9a36eb8a52426316"
+      "size": 1741,
+      "sha256": "d698d0e43212bcd16487ffc5deb297459109a6395bd316ee8b4cdd7403ee9f7e"
     },
     {
       "path": "adaptations/toon-parser-lock.json",
@@ -1961,8 +1931,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 70723,
-      "sha256": "5023e97cdf8dc6124d538a88568879a7b99fe3d0492c51c5cffe1744e370dbd5"
+      "size": 69727,
+      "sha256": "e73314e61f625ac8effeedef3a2791cc31849d5c8b8f2f2a498c4b4e38b8cb97"
     }
   ]
 }

@@ -14,7 +14,7 @@ class ToonSourceExportTests(unittest.TestCase):
         files=set(exporter.reviewed_files(ROOT))
         exporter.verify_adaptation_snapshots(ROOT,files)
         self.assertIn('adaptations/models.toon',files)
-        self.assertIn('adaptations/brands/onexplayer/x2-mini/x2-mini.toon',files)
+        self.assertIn('adaptations/devices/onexplayer/x2-mini.toon',files)
         self.assertIn('adaptations/brands/onexplayer/common/components.toon',files)
 
     def test_export_refuses_omitted_toon_or_parser_even_when_json_is_present(self):
@@ -25,7 +25,7 @@ class ToonSourceExportTests(unittest.TestCase):
                      'adaptations/scripts/build-complete-bridge.py',
                      'adaptations/scripts/build-x2-hdr-overlay.py',
                      'adaptations/records/oxp3-shared-base/opti031-inputs.json',
-                     'adaptations/brands/onexplayer/x2-mini/x2-mini.toon'):
+                     'adaptations/devices/onexplayer/x2-mini.toon'):
             with self.subTest(name=name),self.assertRaisesRegex(ValueError,'omitted from whitelist'):
                 exporter.verify_model_catalog(ROOT,files-{name})
 
@@ -36,7 +36,7 @@ class ToonSourceExportTests(unittest.TestCase):
             names={row['path'] for row in report['files']}
             self.assertIn('adaptations/models.toon',names)
             for name in ('adaptations/models.toon','adaptations/brands/onexplayer/x2-mini/manifest.json',
-                         'adaptations/brands/onexplayer/x2-mini/x2-mini.toon'):
+                         'adaptations/devices/onexplayer/x2-mini.toon'):
                 self.assertEqual((destination/name).read_bytes(),(ROOT/name).read_bytes())
             self.assertFalse(any('.local' in Path(name).parts or name.startswith('adaptations/inputs/') for name in names))
 

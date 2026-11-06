@@ -2,5 +2,5 @@ schema_version: 2
 kind: BoilerModelSourceIndex
 generated: true
 models[2]{id,source}:
-  "device:onexplayer-oxp3",brands/onexplayer/oxp3/oxp3.toon
-  "device:onexplayer-x2-mini",brands/onexplayer/x2-mini/x2-mini.toon
+  "device:onexplayer-oxp3",devices/onexplayer/oxp3.toon
+  "device:onexplayer-x2-mini",devices/onexplayer/x2-mini.toon

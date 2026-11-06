@@ -91,6 +91,37 @@ class BrandBuilderTests(unittest.TestCase):
             self.assertEqual(unresolved, [])
             self.assertEqual(pending, [])
 
+    def test_current_guides_are_selected_without_opening_devices_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            guide_path = 'devices/onexplayer/oxp3.toon'
+            path = root / guide_path
+            path.parent.mkdir(parents=True)
+            path.write_text('guide')
+            guide = {'id': 'guide:oxp3', 'components': [], 'resource_model': {}}
+            selected, unresolved, pending = builder.collect_sources(root, guide, guide_path, None, {})
+            self.assertEqual(selected, {guide_path})
+            self.assertEqual((unresolved, pending), ([], []))
+            guide['components'] = [{'id': 'other', 'sources': ['devices/onexplayer/other.toon']}]
+            with self.assertRaisesRegex(ValueError, 'outside canonical'):
+                builder.collect_sources(root, guide, guide_path, None, {})
+
+    def test_guide_resolution_and_pool_proof_support_both_layouts(self):
+        for current in (False, True):
+            paths = {builder.model_source.onexplayer_source(
+                {f'devices/onexplayer/{model}.toon'} if current else set(), model)
+                for _, model in builder.MODELS}
+            rows = [dict(path='adaptations/' + path, size=1, sha256='a' * 64) for path in paths]
+            inventory = {row['path']: row for row in rows}
+            with self.subTest(current=current), tempfile.TemporaryDirectory() as tmp:
+                proof = Path(tmp) / 'provenance/model-resource-sources.json'
+                proof.parent.mkdir()
+                proof.write_text(json.dumps({'kind': 'ModelResourceSources', 'files': rows}))
+                with patch.object(builder, 'validate_pool', return_value={'ok': True}):
+                    self.assertEqual(builder.load_resource_pool(tmp, inventory, paths), {'ok': True})
+                    with self.assertRaisesRegex(ValueError, 'model set differs'):
+                        builder.load_resource_pool(tmp, inventory, {'devices/onexplayer/other.toon'})
+
     def test_common_fingerprint_profile_uses_canonical_physical_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -266,7 +297,7 @@ class BrandBuilderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             project = root / 'project'
-            guides = ('brands/onexplayer/oxp3/oxp3.toon', 'brands/onexplayer/x2-mini/x2-mini.toon')
+            guides = ('devices/onexplayer/oxp3.toon', 'devices/onexplayer/x2-mini.toon')
             for guide in guides:
                 path = project / 'adaptations' / guide
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -287,6 +318,8 @@ class BrandBuilderTests(unittest.TestCase):
                 info = builder.build(project, {}, out, version='0.1.0-localtest.20261104.toonbrand.1', allow_incomplete=True)
             with zipfile.ZipFile(out) as archive:
                 index = json.loads(archive.read('brand.toon'))
+                self.assertEqual([model['guide'] for model in index['models']], list(guides))
+                self.assertTrue(all(archive.read(guide) == b'model' for guide in guides))
                 first, second = (model['files'][0]['member'] for model in index['models'])
                 self.assertEqual(first, second)
                 self.assertEqual(archive.namelist().count(first), 1)
