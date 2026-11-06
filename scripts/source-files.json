@@ -1036,7 +1036,8 @@
     "tests/x2_partial_fixture.py",
     "docs/MERGED_FIXES_DELIVERY_20261105.md",
     "docs/INDEX.md",
-    "docs/doc-path-mapping-20261106.json"
+    "docs/doc-path-mapping-20261106.json",
+    "docs/CLEANUP_20261106.md"
   ],
   "excluded": [
     "BoilerInstaller.exe",
