@@ -20,6 +20,53 @@ internal static class BoilerChecks
         void Require(bool value, string name) { if (!value) throw new IOException(name); checks.Add(name); }
         async Task Reject(Func<Task> action, string name) { try { await action(); } catch (Exception e) when (e is IOException or InvalidOperationException or JsonException) { checks.Add(name); return; } throw new IOException("Expected rejection: " + name); }
         Require(File.Exists(Backend.AppAssemblyPath) && Path.GetFullPath(Backend.AppAssemblyPath) == Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "OxpInstaller.dll")), "helpers-bind-current-loaded-application-assembly");
+        GuestResourcesChecks.Run(Require);
+        // The packaged runtime must keep both the software path and WHPX, even
+        // when this particular host cannot enter the hypervisor.
+        {
+            var acceleratorHelp = await Backend.ProcessAsync(
+                Path.Combine(Backend.Root, "runtime/qemu-min/qemu-system-x86_64.exe"), ["-accel", "help"], _ => { }, CancellationToken.None);
+            Require(acceleratorHelp.Contains("whpx", StringComparison.Ordinal)
+                && acceleratorHelp.Contains("tcg", StringComparison.Ordinal), "qemu-runtime-advertises-whpx-and-tcg");
+        }
+        // The component payload is verified while it is copied, from one held read.
+        {
+            var catalogPath = Path.Combine(Backend.Root, "cache/integration/manifest.json");
+            using var catalog = JsonDocument.Parse(File.ReadAllBytes(catalogPath));
+            var smallest = catalog.RootElement.GetProperty("components").EnumerateObject()
+                .SelectMany(component => new[] { "files", "licenses", "notices" }.SelectMany(key =>
+                    component.Value.TryGetProperty(key, out var entries) ? entries.EnumerateArray().ToArray() : []))
+                .Where(entry => entry.GetProperty("size").GetInt64() > 0
+                    && File.Exists(Path.Combine(Backend.Root, "cache/integration", entry.GetProperty("source").GetString()!)))
+                .OrderBy(entry => entry.GetProperty("size").GetInt64()).First();
+            var relative = smallest.GetProperty("source").GetString()!;
+            string Stage(string root, bool tamper)
+            {
+                var source = Path.Combine(root, "integration");
+                var copy = Path.Combine(source, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+                File.Copy(Path.Combine(Backend.Root, "cache/integration", relative), copy);
+                File.Copy(catalogPath, Path.Combine(source, "manifest.json"));
+                if (tamper)
+                {
+                    var bytes = File.ReadAllBytes(copy); bytes[^1] ^= 0xff; File.WriteAllBytes(copy, bytes);
+                }
+                return copy;
+            }
+            var pristine = Path.Combine(directory, "payload-private"); Directory.CreateDirectory(pristine);
+            var expected = File.ReadAllBytes(Stage(pristine, tamper: false));
+            var published = Path.Combine(directory, "payload-published");
+            Backend.CopyIntegrationPayload(pristine, published);
+            Require(File.ReadAllBytes(Path.Combine(published, "integration", relative)).SequenceEqual(expected)
+                && File.Exists(Path.Combine(published, "integration", "manifest.json")), "component-payload-verified-and-published-in-one-read");
+            var tampered = Path.Combine(directory, "payload-tampered"); Directory.CreateDirectory(tampered);
+            Stage(tampered, tamper: true);
+            var refusedOutput = Path.Combine(directory, "payload-refused");
+            await Reject(() => Task.Run(() => Backend.CopyIntegrationPayload(tampered, refusedOutput)), "component-payload-hash-mismatch-refused");
+            Require(!File.Exists(Path.Combine(refusedOutput, "integration", relative))
+                && !Directory.EnumerateFiles(refusedOutput, "*", SearchOption.AllDirectories).Any(file => file.Contains(".partial-", StringComparison.Ordinal)),
+                "component-payload-mismatch-publishes-no-partial-or-verified-bytes");
+        }
         using (var advisory = JsonDocument.Parse("""{"hardware_matching":{"mode":"advisory-exact-dmi-v1","pairs":[{"manufacturer":"ONE-NETBOOK","model":"ONEXPLAYER 3"}]}}"""))
         {
             Require(BoilerHardware.Matches(advisory.RootElement, new(" one-netbook ", "onexplayer 3")), "hardware-advice-exact-pair-case-insensitive");
@@ -35,6 +82,8 @@ internal static class BoilerChecks
         Require(delivered.Length == 5 && delivered.Select(file => file.relative).Distinct().Count() == 5
             && delivered.All(file => File.ReadAllBytes(file.file).SequenceEqual(File.ReadAllBytes(Path.Combine(transport, file.relative)))), "payload-volumes-preserve-every-file-and-source");
         Require(PayloadVolumes.MountCommand(3).Contains("remount,ro") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-merge") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-2"), "payload-volumes-use-readonly-identified-mounts");
+        Require(PayloadVolumes.MountCommand(3).Contains("touch /var/cache/apk/.boiler-apk-prepared")
+            && !PayloadVolumes.MountCommand(1).Contains(".boiler-apk-prepared"), "payload-volumes-mark-packages-already-installed");
         foreach (var count in new[] { 1, 3, 8 })
         foreach (var secret in new[] { false, true })
         {
@@ -197,6 +246,9 @@ internal static class BoilerChecks
             if (!Capture(window, Path.Combine(directory, mode + ".png"))) visualFailures.Add(mode);
         }
         window.Close();
+        using (var replay = JsonDocument.Parse(InstallationSessionReplayChecks.Run()))
+            checks.Add(replay.RootElement.TryGetProperty("skipped", out _)
+                ? "install-session-fixtures-unavailable" : "real-install-session-fixtures-replayed");
         var result = new { passed = true, scope = "Synthetic image and WPF state checks; no physical disk write or real-device acceptance", visual_acceptance = visualFailures.Count == 0 ? "captures-produced-needs-review" : "blocked-empty-render", visualFailures, checks, directory };
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
         return JsonSerializer.Serialize(result);

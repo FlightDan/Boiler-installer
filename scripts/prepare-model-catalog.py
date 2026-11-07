@@ -9,11 +9,19 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from protocol.model_catalog import REPOSITORY, SOURCE_SUBTREE, MAX_CATALOG_BYTES, document, catalog_records, guide_model, source_member
-from protocol.manifest import relative_path
+from protocol.model_catalog import REPOSITORY, SOURCE_SUBTREE, MAX_CATALOG_BYTES, CATALOG_SOURCE, document, catalog_records, guide_model, source_member
+from protocol.manifest import confined, relative_path
 
 
-def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE):
+def _adaptations_root(output, adaptations):
+    if adaptations is not None:
+        return Path(adaptations)
+    if output.name == 'model-catalog' and output.parent.name == 'components':
+        return output.parents[1] / CATALOG_SOURCE
+    return output / CATALOG_SOURCE
+
+
+def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE, adaptations=None):
     if not re.fullmatch('[0-9a-f]{40}', commit):
         raise ValueError('Exact public catalog commit required')
     output = Path(output)
@@ -40,11 +48,17 @@ def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE):
         raise ValueError('Model catalog snapshot exceeds size limit')
     inventory = [dict(path=name, size=len(data), sha256=hashlib.sha256(data).hexdigest())
                  for name, data in contents.items()]
-    output.mkdir(parents=True)
+    adaptations_root = _adaptations_root(output, adaptations)
+    adaptations_root.mkdir(parents=True, exist_ok=True)
     for name, data in contents.items():
-        path = output/'snapshot'/name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
+        path = confined(adaptations_root, relative_path(name))
+        if path.exists():
+            if not path.is_file() or path.read_bytes() != data:
+                raise ValueError('Adaptation snapshot differs from the pinned commit: ' + name)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+    output.mkdir(parents=True, exist_ok=True)
     lock = dict(schema_version=1, kind='ModelCatalogLock', source=source, files=inventory)
     (output/'lock.json').write_text(json.dumps(lock, indent=2)+'\n', encoding='utf-8', newline='\n')
     return lock
@@ -56,7 +70,10 @@ if __name__ == '__main__':
     parser.add_argument('--source-commit', required=True)
     parser.add_argument('--source-subtree', default=SOURCE_SUBTREE,
                         help='Explicit catalog subtree (default: repository root)')
+    parser.add_argument('--adaptations', type=Path, default=None,
+                        help='Adaptation snapshot directory to verify or populate')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    result = prepare(args.source_checkout, args.source_commit, args.output, source_subtree=args.source_subtree)
+    result = prepare(args.source_checkout, args.source_commit, args.output,
+                     source_subtree=args.source_subtree, adaptations=args.adaptations)
     print(json.dumps({'source': result['source'], 'files': len(result['files'])}))

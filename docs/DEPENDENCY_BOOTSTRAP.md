@@ -65,9 +65,13 @@ managed file list. Tests run on disposable directory ESP fixtures:
 python -B -m unittest discover -s components/refind -p 'test_*.py' -v
 ```
 
-Byte reproduction from pinned binaries is supported. Rebuilding QEMU, third-party
-EFI binaries or the generated background from upstream source is a separate task;
-the original image-generation process is not deterministic. Preserve the bundled
-notices and audit the combined redistribution requirements before a new public
-release. Local preparation, version probes and directory fixtures do not certify
-physical disk installation, firmware controller input, suspend or WHPX behavior.
+Byte reproduction from pinned binaries is supported. The pinned QEMU 11.1.0 build
+already advertises `tcg` and `whpx` through `-accel help`, so selecting WHPX does
+not require rebuilding the runtime or changing the dependency lock. Rebuilding
+QEMU, third-party EFI binaries or the generated background from upstream source is
+a separate task; the original image-generation process is not deterministic.
+Preserve the bundled notices and audit the combined redistribution requirements
+before a new public release. Local preparation, version probes and directory
+fixtures do not certify physical disk installation, firmware controller input,
+suspend, or whether WHPX is usable on a given host; that requires a real
+accelerated start.

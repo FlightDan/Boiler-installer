@@ -163,7 +163,8 @@ public static class VirtualBoot
             WorkingDirectory = runtime, UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
         };
-        var arguments = new List<string> { "-accel", "tcg", "-machine", "q35", "-m", "2048", "-smp", "2", "-display", "none", "-monitor", "none", "-nic", "none", "-no-reboot",
+        var resources = GuestResourcesPolicy.ForHost("ui-install");
+        var arguments = new List<string> { "-accel", resources.Accel, "-machine", "q35", "-m", resources.MemoryMiB.ToString(), "-smp", resources.CpuCount.ToString(), "-display", "none", "-monitor", "none", "-nic", "none", "-no-reboot",
             "-vga", "none", "-device", "virtio-gpu-pci",
             "-serial", "file:" + Option(serialPath), "-qmp", "stdio",
             "-drive", $"if=pflash,format=raw,readonly=on,file={Option(Path.Combine(runtime, "share/edk2-x86_64-code.fd"))}",

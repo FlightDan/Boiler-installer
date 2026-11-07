@@ -3,17 +3,17 @@ import json
 from pathlib import Path
 from deployment import Deployment, InjectedFailure, run, table
 from layout import GIB
+from fixture_layout import validate, preserved_files, range_bytes
 
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU': raise RuntimeError('Not QEMU')
 if Path('/sys/block/vdd/size').read_text().strip() != '167772160': raise RuntimeError('Not 80 GiB fixture')
 target = table('/dev/vdd')
-if [p.get('name') for p in target['partitions']] != ['Windows EFI fixture', 'Windows data fixture',
-        'esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home']:
-    raise RuntimeError('Not the tool-created partition fixture')
+profile_name = validate('/dev/vdd')
 selection = (json.loads(Path('/tmp/session-deployment.json').read_text())
              if Path('/tmp/session-deployment.json').exists() else
              {'schema': 1, 'mode': 'virtual_install', 'source_table': table('/dev/vdc'),
-              'target_table': target, 'range': {'start': 12 * GIB, 'size': 64 * GIB}})
+              'target_table': target, 'range': {'start': range_bytes(profile_name)[0],
+                                                 'size': range_bytes(profile_name)[1]}})
 
 failed = False
 try:
@@ -63,14 +63,18 @@ if failed:
     print('OXP_DEPLOY_TEST=journal-retry-roots-and-home-preserved', flush=True)
 
 windows = Path('/mnt/fixture-check-windows')
-for node, filesystem, name, content in [
-    ('/dev/vdd1', 'vfat', 'preserved-efi.txt', 'Windows EFI fixture file must survive deployment.\n'),
-    ('/dev/vdd2', 'ntfs-3g', 'preserved.txt', 'Windows fixture data must survive partition append.\n')]:
+for part in preserved_files(profile_name):
+    node = '/dev/vdd%d' % part['number']
+    filesystem = 'vfat' if part['fs'] == 'vfat' else 'ntfs-3g'
     mount(node, windows, '-t', filesystem, '-o', 'ro')
     try:
-        if (windows / name).read_text() != content: raise RuntimeError('Protected Windows fixture file changed')
+        if (windows / part['sentinel']).read_text() != part['content']:
+            raise RuntimeError('Protected Windows fixture file changed: ' + part['name'])
     finally: run('umount', str(windows))
-print('OXP_DEPLOY_TEST=windows-efi-ntfs-files-and-metadata-preserved', flush=True)
+if preserved_files(profile_name):
+    print('OXP_DEPLOY_TEST=windows-efi-ntfs-files-and-metadata-preserved', flush=True)
+else:
+    print('OXP_DEPLOY_TEST=external-blank-fixture-no-preserved-partitions', flush=True)
 
 # A media source must not turn the installed system into the recovery preview.
 source = Path('/mnt/fixture-check-source')

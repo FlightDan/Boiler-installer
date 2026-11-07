@@ -16,6 +16,9 @@ SOURCE_SUBTREE = ''
 LEGACY_SOURCE = ('FlightDan/Boiler-installer', 'adaptations')
 MAX_MODELS = 128
 MAX_CATALOG_BYTES = 32 * 1024 * 1024
+# lock.json only records hashes; the guide bytes are the exact-commit files of the
+# generated adaptations snapshot, so no second copy is stored or shipped.
+CATALOG_SOURCE = 'adaptations'
 # Compatibility for immutable catalogs predating TOON runtime metadata only.
 # New catalogs are completely data-driven and never extend this legacy table.
 _LEGACY_MODELS = {
@@ -178,7 +181,7 @@ def read_lock(root):
                 or not isinstance(entry.get('sha256'),str) or not re.fullmatch('[0-9a-f]{64}', entry['sha256'])):
             raise ProtocolError('Invalid model source digest')
         if entry['path']!='adaptations.json': model_path(entry['path'])
-        confined(root/'components/model-catalog/snapshot', entry['path'])
+        confined(root/CATALOG_SOURCE, entry['path'])
     if sum(row['size'] for row in files)>MAX_CATALOG_BYTES:
         raise ProtocolError('Model catalog inventory exceeds total size limit')
     return value
@@ -238,7 +241,7 @@ def guide_model(value, path, source, metadata=None):
 
 
 def _snapshot_files(root, lock):
-    return {entry['path']:checked(confined(root/'components/model-catalog/snapshot',entry['path']).read_bytes(),entry)
+    return {entry['path']:checked(confined(root/CATALOG_SOURCE,entry['path']).read_bytes(),entry)
             for entry in lock['files']}
 
 

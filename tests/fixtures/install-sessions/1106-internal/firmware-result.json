@@ -1,0 +1,7 @@
+{
+ "status": "registered",
+ "name": "Boot6000",
+ "defaultPreserved": false,
+ "makeDefault": true,
+ "path": "\\EFI\\BOOT\\BOOTX64.EFI"
+}

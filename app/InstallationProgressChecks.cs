@@ -86,6 +86,10 @@ internal static class InstallationProgressChecks
         components.ObserveComponents("OXP_INTEGRATION_VERIFY={\"slot\":\"B\",\"readonly\":true}\n", 4, true);
         Near(components.Percent, 75, "slot-B-independent-verification");
         Require(components.ComponentStep == "02.04", "readonly-verification-has-distinct-code");
+        // A deferred slot-A SSD row can arrive after slot B; it must not move
+        // the visible step back from 02.04 to 02.01.
+        components.ObserveComponents("OXP_COMPONENT_RESULT={\"slot\":\"A\",\"id\":\"ssd\"}\n", 4, true);
+        Require(components.ComponentStep == "02.04", "late-slot-a-row-does-not-regress-verified-step");
         var empty = new InstallationProgressTracker();
         Require(!empty.ObserveComponents("OXP_COMPONENT_RESULT=broken\n", 0, true), "malformed-console-record-does-not-break-installation");
         Near(empty.Advance("components", 1), 75, "empty-selection-completes-on-success");

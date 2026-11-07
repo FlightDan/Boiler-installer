@@ -202,9 +202,9 @@ class FirmwareRuntimeTests(unittest.TestCase):
     def test_b_interrupted_write_rolls_back_and_partial_a_receipt_restores(self):
         c106 = next(r['target'] for r in self.rows if not r['missing_only']); original = self.put('B', c106, b'B-original')
         engine = self.session.engines['B']; put = engine._put_snapshot; calls = 0
-        def fail_once(target, snapshot):
+        def fail_once(target, snapshot, **kwargs):
             nonlocal calls
-            calls += 1; put(target, snapshot)
+            calls += 1; put(target, snapshot, **kwargs)
             if calls == 2: raise OSError('injected interrupted firmware write')
         with patch.object(engine, '_put_snapshot', side_effect=fail_once):
             with self.assertRaises(PartialInstall) as caught: self.install()

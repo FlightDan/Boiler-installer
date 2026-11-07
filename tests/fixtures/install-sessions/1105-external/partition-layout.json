@@ -1,0 +1,96 @@
+{
+ "schema": 1,
+ "kind": "external",
+ "disk": {
+  "number": 1,
+  "size": 1024209543168,
+  "sector_size": 512,
+  "bus": 7,
+  "serial": "SANITIZED_4A184F",
+  "model": "Realtek RTL9210 NVME",
+  "vendor": "Realtek",
+  "guid": "{38beef06-7455-473d-8faf-2544bf374d8b}"
+ },
+ "selection": {
+  "start": 1048576,
+  "size": 137438953472,
+  "align_right": true
+ },
+ "preserved": [],
+ "roles": [
+  {
+   "number": 1,
+   "name": "esp",
+   "offset": 886769188864,
+   "size": 268435456,
+   "type": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+   "id": "63d5cb71-7468-4198-a376-1ac176fda68a",
+   "attributes": 0
+  },
+  {
+   "number": 2,
+   "name": "efi-A",
+   "offset": 887037624320,
+   "size": 67108864,
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+   "id": "a9235a3c-393a-4bb0-bd83-4f94a9da65be",
+   "attributes": 0
+  },
+  {
+   "number": 3,
+   "name": "efi-B",
+   "offset": 887104733184,
+   "size": 67108864,
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+   "id": "11c5de13-99c1-4a78-a022-5a0a642f31e5",
+   "attributes": 0
+  },
+  {
+   "number": 4,
+   "name": "rootfs-A",
+   "offset": 887171842048,
+   "size": 11811160064,
+   "type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+   "id": "f25c7bcc-0c8e-41db-9173-be99e4d801c8",
+   "attributes": 0
+  },
+  {
+   "number": 5,
+   "name": "rootfs-B",
+   "offset": 898983002112,
+   "size": 11811160064,
+   "type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+   "id": "2fc9d3a0-e566-4a0d-ac91-8dcf1d2e877b",
+   "attributes": 0
+  },
+  {
+   "number": 6,
+   "name": "var-A",
+   "offset": 910794162176,
+   "size": 1073741824,
+   "type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+   "id": "e9cac278-bc5b-43b8-b0ac-f56ba2b6c07c",
+   "attributes": 0
+  },
+  {
+   "number": 7,
+   "name": "var-B",
+   "offset": 911867904000,
+   "size": 1073741824,
+   "type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+   "id": "e194b9ec-c786-4967-a263-cf4570dc0b73",
+   "attributes": 0
+  },
+  {
+   "number": 8,
+   "name": "home",
+   "offset": 912941645824,
+   "size": 111266496512,
+   "type": "933ac7e1-2eb4-4f13-b844-0e14e2aef915",
+   "id": "d34a9517-a938-454a-9dab-6fab38a63096",
+   "attributes": 0
+  }
+ ],
+ "home_used_bytes": 775274496,
+ "home_partition_size": 111266496512
+}

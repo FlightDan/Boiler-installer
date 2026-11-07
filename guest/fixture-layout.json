@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "disk_mib": 81920,
+  "roles": ["esp", "efi-A", "efi-B", "rootfs-A", "rootfs-B", "var-A", "var-B", "home"],
+  "profiles": {
+    "production": {
+      "range": {"start_mib": 1024, "size_mib": 65536},
+      "preserved": [
+        {"number": 1, "start_mib": 1, "size_mib": 100, "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "fs": "vfat", "name": "Windows EFI fixture", "sentinel": "preserved-efi.txt", "content": "Windows EFI fixture file must survive deployment.\n"},
+        {"number": 2, "start_mib": 101, "size_mib": 16, "type": "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", "fs": "", "name": "Windows MSR fixture"},
+        {"number": 3, "start_mib": 117, "size_mib": 64, "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "fs": "ntfs", "name": "Windows data fixture", "sentinel": "preserved.txt", "content": "Windows fixture data must survive partition append.\n"},
+        {"number": 4, "start_mib": 181, "size_mib": 64, "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "fs": "ntfs", "name": "Windows D fixture", "sentinel": "preserved-d.txt", "content": "Windows D fixture file must survive deployment.\n"},
+        {"number": 5, "start_mib": 245, "size_mib": 64, "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "fs": "ntfs", "name": "Windows RecoveryImages fixture", "sentinel": "preserved-recovery-images.txt", "content": "RecoveryImages fixture file must survive deployment.\n"},
+        {"number": 6, "start_mib": 309, "size_mib": 64, "type": "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC", "fs": "vfat", "name": "Windows RECOVERY fixture", "sentinel": "preserved-recovery.txt", "content": "RECOVERY fixture file must survive deployment.\n"}
+      ]
+    },
+    "seed": {
+      "range": null,
+      "preserved": [
+        {"number": 1, "start_mib": 1, "size_mib": 64, "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "fs": "vfat", "name": "Windows EFI fixture", "sentinel": "preserved-efi.txt", "content": "Windows EFI fixture file must survive deployment.\n"},
+        {"number": 2, "start_mib": 65, "size_mib": 10240, "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "fs": "ntfs", "name": "Windows data fixture", "sentinel": "preserved.txt", "content": "Windows fixture data must survive partition append.\n"}
+      ]
+    },
+    "legacy": {
+      "range": {"start_mib": 12288, "size_mib": 65536},
+      "preserved": [
+        {"number": 1, "start_mib": 1, "size_mib": 64, "type": "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "fs": "vfat", "name": "Windows EFI fixture", "sentinel": "preserved-efi.txt", "content": "Windows EFI fixture file must survive deployment.\n"},
+        {"number": 2, "start_mib": 65, "size_mib": 64, "type": "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "fs": "ntfs", "name": "Windows data fixture", "sentinel": "preserved.txt", "content": "Windows fixture data must survive partition append.\n"}
+      ]
+    },
+    "external": {
+      "range": {"start_mib": 1, "size_mib": 81918},
+      "preserved": []
+    }
+  }
+}

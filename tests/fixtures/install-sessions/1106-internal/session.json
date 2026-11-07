@@ -1,0 +1,81 @@
+{
+ "Schema": 1,
+ "Id": "29946b1cd3b269305b2e18ca19712c82",
+ "Kind": 0,
+ "Source": "C:\\fixture\\installer\\work\\install-session-29946b1cd3b269305b2e18ca19712c82\\source-b24c69a3f5b128400ad332372bea9cd4.img.zip",
+ "Prepared": false,
+ "Status": "awaiting-device-boot",
+ "Stage": "awaiting-device-boot",
+ "Deployment": "C:\\fixture\\installer\\work\\partition-deploy-ffc67eced6b2d64208e220634ea65557",
+ "Error": null,
+ "UpdatedUtc": "2026-11-06T10:01:50.3372938Z",
+ "Options": {
+  "Schema": 1,
+  "Repairs": [],
+  "Plugins": [
+   "core:maintenance"
+  ],
+  "InstallerLanguage": "zh-CN",
+  "KdeLanguage": "zh_CN",
+  "SetDeckPassword": false,
+  "EnableSsh": false,
+  "InstallMode": "custom",
+  "DevicePackage": "381dd40541f7fe7eb7c306ff",
+  "Wireless": null,
+  "DeviceManifestSha256": "381dd40541f7fe7eb7c306ff055663b23fa2e111d15b938274d9012f6cbe8f9d",
+  "DeviceTrust": "developer-session",
+  "DeviceComponents": [
+   "oxp3:legacy-adaptation",
+   "oxp3:microphone",
+   "oxp3:speaker-route",
+   "oxp3:xevmafix",
+   "x2-mini:ssd-gm7-boot-repair",
+   "oxp3:fingerprint-unlock",
+   "resource:intel-be201-firmware"
+  ],
+  "DeviceLegacyOptions": {
+   "SchemaVersion": 1,
+   "Repairs": [
+    "oxp3:slot-switch",
+    "oxp3:partition-mount",
+    "oxp3:opti2xmx",
+    "oxp3:gamescope-env",
+    "oxp3:flathub-ustc",
+    "oxp3:hdr",
+    "oxp3:desktop-hdr",
+    "oxp3:keyboard",
+    "oxp3:input",
+    "oxp3:multifunction",
+    "oxp3:gyro",
+    "oxp3:xe-dsb",
+    "oxp3:split-lock",
+    "oxp3:manager",
+    "oxp3:native-tdp",
+    "oxp3:overlay",
+    "oxp3:fan-driver",
+    "oxp3:oxp3-fan",
+    "oxp3:oxp3-cpu",
+    "oxp3:charging",
+    "oxp3:oxp3-light",
+    "oxp3:legacy-runtime"
+   ],
+   "Plugins": [
+    "oxp3:windows-reboot",
+    "oxp3:decky",
+    "oxp3:waydroid"
+   ],
+   "AcknowledgeLegacyUpdateHold": true
+  }
+ },
+ "Physical": true,
+ "Refind": {
+  "DefaultSystem": "SteamOS",
+  "Timeout": 2
+ },
+ "MakeDefaultBoot": true,
+ "DesktopRebootScript": "C:\\Users\\fixture\\Desktop\\重启到 SteamOS.bat",
+ "DesktopRebootWarning": null,
+ "CleanupTemporaryFiles": true,
+ "TemporaryFilesCleaned": true,
+ "CleanupWarning": null
+}

@@ -135,7 +135,7 @@ def model_catalog_package_files(root, source_files=None):
         source_files=set(policy.get('files',[]))
     snapshot_records(root)
     lock=read_lock(root)
-    names=['components/model-catalog/lock.json',*('components/model-catalog/snapshot/'+entry['path'] for entry in lock['files'])]
+    names=['components/model-catalog/lock.json',*('adaptations/'+entry['path'] for entry in lock['files'])]
     if not set(names)<=set(source_files):
         raise ValueError('Pinned model snapshot is outside the reviewed source whitelist')
     return {name:dict(path=name,size=confined(root,name).stat().st_size,sha256=digest(confined(root,name))) for name in names}

@@ -1,0 +1,75 @@
+{
+ "schema": 1,
+ "catalog_sha256": "bb690131b2a9418d386984900eb5e5dab78446bb286523b88f9a42b5f33d7924",
+ "selection": {
+  "schema": 1,
+  "repairs": [],
+  "plugins": [
+   "core:maintenance"
+  ],
+  "installer_language": "zh-CN",
+  "kde_language": "zh_CN",
+  "set_deck_password": false,
+  "enable_ssh": false,
+  "install_mode": "custom",
+  "device_package": "381dd40541f7fe7eb7c306ff",
+  "wireless": null,
+  "device_manifest_sha256": "381dd40541f7fe7eb7c306ff055663b23fa2e111d15b938274d9012f6cbe8f9d",
+  "device_trust": "developer-session",
+  "device_components": [
+   "oxp3:legacy-adaptation",
+   "oxp3:microphone",
+   "oxp3:speaker-route",
+   "oxp3:xevmafix",
+   "x2-mini:ssd-gm7-boot-repair",
+   "oxp3:fingerprint-unlock",
+   "resource:intel-be201-firmware"
+  ],
+  "device_legacy_options": {
+   "schema_version": 1,
+   "repairs": [
+    "oxp3:slot-switch",
+    "oxp3:partition-mount",
+    "oxp3:opti2xmx",
+    "oxp3:gamescope-env",
+    "oxp3:flathub-ustc",
+    "oxp3:hdr",
+    "oxp3:desktop-hdr",
+    "oxp3:keyboard",
+    "oxp3:input",
+    "oxp3:multifunction",
+    "oxp3:gyro",
+    "oxp3:xe-dsb",
+    "oxp3:split-lock",
+    "oxp3:manager",
+    "oxp3:native-tdp",
+    "oxp3:overlay",
+    "oxp3:fan-driver",
+    "oxp3:oxp3-fan",
+    "oxp3:oxp3-cpu",
+    "oxp3:charging",
+    "oxp3:oxp3-light",
+    "oxp3:legacy-runtime"
+   ],
+   "plugins": [
+    "oxp3:windows-reboot",
+    "oxp3:decky",
+    "oxp3:waydroid"
+   ],
+   "acknowledge_legacy_update_hold": true
+  },
+  "_target_disk": {
+   "model": "Predator SSD GM7 1TB",
+   "bus": "NVMe"
+  },
+  "_ssd_binding": {
+   "kind": "physical",
+   "bus": "NVMe",
+   "model": "Predator SSD GM7 1TB",
+   "serial": "SANITIZED_DC38B7D7DC43833E0BE9AB703DAF5A",
+   "disposition": "match"
+  },
+  "_ssd_component": "x2-mini:ssd-gm7-boot-repair"
+ },
+ "slots": {}
+}

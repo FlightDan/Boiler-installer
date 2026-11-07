@@ -95,7 +95,7 @@ def verify_model_catalog(root, files):
     from protocol.model_catalog import read_lock, snapshot_records
     snapshot_records(root)
     required.add('components/model-catalog/lock.json')
-    required.update('components/model-catalog/snapshot/'+row['path'] for row in read_lock(root)['files'])
+    required.update('adaptations/'+row['path'] for row in read_lock(root)['files'])
     if not required.issubset(files):
         raise ValueError('TOON source, generated view or parser omitted from whitelist: '+str(sorted(required-set(files))))
 

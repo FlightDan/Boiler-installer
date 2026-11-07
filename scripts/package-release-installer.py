@@ -162,7 +162,8 @@ def verify_slim_archive(archive_path: Path, *, source_commit: str | None = None)
                 or release.get('display_version') != info.get('display_version')
                 or not isinstance(maintenance_release.get('version'), str)):
             raise ValueError('Installer or generic maintenance release metadata differs from build-info')
-        catalog_files = [name for name in records if name.startswith('components/model-catalog/snapshot/')]
+        catalog_files = [name for name in records if name == 'adaptations/adaptations.json'
+                         or (name.startswith('adaptations/brands/') and name.endswith('/manifest.json'))]
         if not catalog_files:
             raise ValueError('Slim installer must retain its pinned model catalog display snapshot')
         integration = json.loads(bundle.read(items['cache/integration/manifest.json']))

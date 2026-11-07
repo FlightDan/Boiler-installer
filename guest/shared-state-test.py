@@ -6,15 +6,16 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-sys.path.insert(0, '/mnt/payload/components'); sys.path.insert(0, '/mnt/payload/components/hdr')
+sys.path.insert(0, '/mnt/payload/components'); sys.path.insert(0, '/mnt/payload/components/hdr'); sys.path.insert(0, '/mnt/payload/tasks')
 from file_transaction import atomic_write, snapshot
 from installer import ConfigurationFiles
 from generate import generate
+from fixture_layout import role_node
 
 first = Path('/mnt/target'); second = Path('/mnt/shared-second-root'); second.mkdir(exist_ok=True)
-subprocess.run(['mount', '-t', 'btrfs', '-o', 'ro,rescue=nologreplay', '/dev/vdd7', str(second)], check=True)
-subprocess.run(['mount', '/dev/vdd9', str(second / 'var')], check=True)
-subprocess.run(['mount', '/dev/vdd10', str(second / 'home')], check=True)
+subprocess.run(['mount', '-t', 'btrfs', '-o', 'ro,rescue=nologreplay', role_node('/dev/vdd', 'rootfs-B'), str(second)], check=True)
+subprocess.run(['mount', role_node('/dev/vdd', 'var-B'), str(second / 'var')], check=True)
+subprocess.run(['mount', role_node('/dev/vdd', 'home'), str(second / 'home')], check=True)
 try:
     a = ConfigurationFiles(first); b = ConfigurationFiles(second)
     if a.directory.stat().st_ino != b.directory.stat().st_ino or a.directory.stat().st_dev != b.directory.stat().st_dev: raise RuntimeError('A/B do not share one actual state inode/device')

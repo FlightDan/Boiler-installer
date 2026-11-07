@@ -52,6 +52,10 @@ class MaintenanceModelsTests(unittest.TestCase):
         (self.root/'usr/bin/env').write_bytes(binary)
         (self.root/'usr/lib/modules/kernel-fixture').mkdir(parents=True)
         shutil.copytree(ROOT/'components/model-catalog', self.runtime/'components/model-catalog')
+        for entry in json.loads((ROOT/'components/model-catalog/lock.json').read_bytes())['files']:
+            target = self.runtime/'adaptations'/entry['path']
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT/'adaptations'/entry['path'], target)
         self.package = self.runtime/'cache/model-bundles/packages/oxp3'
         (self.package/'scripts').mkdir(parents=True)
         (self.package/'scripts/maintenance.sh').write_bytes(b'#!/bin/bash\n# adapter fixture; never executed\n')

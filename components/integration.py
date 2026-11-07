@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
 from payload_lock import checked, relative
 from wireless import resolve as resolve_wireless, selected as selected_wireless, plan_required
 import graphics
@@ -440,12 +441,20 @@ def retained_model_preflight(engine, package_root, options):
     return item
 
 
+def _stage_mark(slot, phase, clock):
+    # Phase timing is plain log output; nothing below reads these values.
+    print('BOILER_TIMING=stage-%s:%s:%.3f' % (slot, phase, time.monotonic() - clock), flush=True)
+
+
 def stage(root, payload, options, slot, password_hash=None, target_disk=None, ssd_context=None, ssd_plan=None, ssd_identity=None, defer_ssd=False, model_review_path=None):
+    clock = time.monotonic()
     validate_options(options)
     if slot not in ('A', 'B'): raise ValueError('Unknown installation slot')
+    _stage_mark(slot, 'validated', clock)
     result = {'schema': 1, 'slot': slot, 'options': options, 'components': {}}
     if options.get('install_mode') == 'imported':
         result['status'] = 'preserved-imported-image'
+        _stage_mark(slot, 'preserved', clock)
         return result
     root, payload = Path(root), Path(payload)
     result['source'] = release(root)
@@ -488,6 +497,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         result['install_plan']['device_warnings'] = descriptor['device_warnings']
         for warning in descriptor['device_warnings']:
             print('BOILER_DEVICE_WARNING=' + json.dumps(warning), flush=True)
+    _stage_mark(slot, 'device-plan', clock)
     fixed_model = None
     if model_review_path is not None:
         if str(model_review_path) != '/run/boiler-oxp3-efi-' + slot + '.json':
@@ -515,6 +525,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     preset_component, preset_files = system_presets.prepare(root, options, password_hash)
     if not choices and not firmware_ids and not device_components and preset_component is None:
         result['status'] = 'no-components-selected'
+        _stage_mark(slot, 'no-components', clock)
         return result
     manifest = load_manifest(payload)
     if firmware_ids and any(manifest.get(identity, {}).get('delivery') == 'on-demand' for identity in firmware_ids):
@@ -588,6 +599,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                              early_boot='firmware-appended-original-preserved' if boot_writes
                              else 'existing-initramfs-coverage-verified')
         writes.update(boot_writes)
+    _stage_mark(slot, 'payload-hash', clock)
     licenses = {}
     for identity in firmware_ids:
         if not plans[identity]['files'] and identity != graphics_profile:
@@ -602,6 +614,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     if 'core:decky' in choices:
         from plugin_installer import validate_decky
         validate_decky(root, payload / 'integration', manifest['core:decky'])
+    _stage_mark(slot, 'validation', clock)
     engine = None
     if plans or device_components or 'core:maintenance' in choices or preset_component:
         Engine = maintenance_api(payload)
@@ -611,12 +624,14 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     # selected; the fixed handler can then be reviewed on the real target.
     if package_root and (device_components or descriptor.get('be201_firmware')) and 'core:maintenance' in choices:
         retained_item = retained_model_preflight(engine, package_root, options)
+    _stage_mark(slot, 'model-preflight', clock)
     if 'core:maintenance' in choices:
         component = manifest['core:maintenance']['component']
         operation = engine.apply(component, payload / 'integration')
         result['install_plan']['maintenance']['version'] = component['version']
         result['components']['core:maintenance'] = dict(status='files_installed', operation=operation)
         result['install_plan']['components'].append(component)
+    _stage_mark(slot, 'core-maintenance', clock)
     if plans:
         # This staging path is on the VM's ephemeral tmpfs, never the image.
         import tempfile
@@ -639,6 +654,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                 operation = engine.apply(component, staged)
                 result['components'][component_id] = dict(status='files_installed', operation=operation, **plan)
                 result['install_plan']['components'].append(component)
+    _stage_mark(slot, 'firmware', clock)
     for component in device_components:
         if component.get('ssd_boot_policy'): continue
         if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
@@ -659,21 +675,25 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                                  hook_environment=device_hook_environment(descriptor, component, model_review_path if fixed_model is not None else None))
         result['components'][component['id']] = dict(status='files_installed', runtime='not_validated', operation=operation)
         result['install_plan']['components'].append(component)
+    _stage_mark(slot, 'device-components', clock)
     if ssd_identity is not None and not defer_ssd:
         # Model hooks run first. A change to either preflighted boot file makes
         # installer_execute refuse instead of creating competing ownership.
         complete_ssd(root, result, ssd_context, ssd_plan, ssd_identity)
+    _stage_mark(slot, 'ssd', clock)
     if 'core:decky' in choices:
         from plugin_installer import PluginInstaller
         operation = PluginInstaller(root, payload / 'integration', slot=slot).apply('decky')
         result['components']['core:decky'] = dict(status='files_installed', runtime='not_validated', operation=operation)
         result['install_plan']['components'].append(decky_manifest(root, manifest['core:decky'], slot))
+    _stage_mark(slot, 'decky', clock)
     if preset_component:
         operation = system_presets.apply(engine, preset_component, preset_files)
         result['components'][system_presets.IDENTITY] = dict(status='files_installed', operation=operation,
             language=options.get('kde_language', 'system'), password_set=options.get('set_deck_password', False),
             ssh_enabled=options.get('enable_ssh', False), activation='next-boot')
         result['install_plan']['components'].append(preset_component)
+    _stage_mark(slot, 'presets', clock)
     if retained_item is not None:
         # Recheck the pointer and reviewed source after component writes, then
         # retain using the existing authenticated snapshot and Engine lock.
@@ -691,8 +711,10 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                 if models._private_json(pointer) != expected:
                     raise ValueError('Retained model package changed during installation')
             models._retain(engine, retained_item)
+    _stage_mark(slot, 'retained', clock)
     result['status'] = 'ssd-pending' if defer_ssd else 'files_installed'
     save_result(root, slot, result)
+    _stage_mark(slot, 'total', clock)
     return result
 
 

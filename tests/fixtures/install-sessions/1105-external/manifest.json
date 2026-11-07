@@ -1,0 +1,83 @@
+{
+ "schema": 1,
+ "kind": "BoilerInstallSessionFixture",
+ "source_export": "log1105",
+ "exported_utc": "2026-11-05T15:00:37.6168809Z",
+ "installer_version": "0.2.0-preview.20261105.11",
+ "sanitization": {
+  "version": 2,
+  "salt": "boiler-install-session-fixture-v1",
+  "rules": [
+   "canonical case/braces guid mapping",
+   "shape-preserving serial",
+   "user/profile and installer paths",
+   "32-hex nonce",
+   "binary GPT firmware identity",
+   "single-pass identity projections"
+  ]
+ },
+ "sampling": {
+  "progress": "step transitions + first/last per step + every 50th record",
+  "transcript": "all partition/physical marker lines"
+ },
+ "expectations": {
+  "kind": "external",
+  "preserved_count": 0,
+  "role_numbers": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8
+  ],
+  "role_names": [
+   "esp",
+   "efi-A",
+   "efi-B",
+   "rootfs-A",
+   "rootfs-B",
+   "var-A",
+   "var-B",
+   "home"
+  ],
+  "home_used_bytes": 775274496,
+  "historical_max_component_gap_ms": 0
+ },
+ "files": {
+  "disk-snapshots.json": {
+   "size": 5593,
+   "sha256": "67cb6279eba32b1ebf95c592530c00170781047b7b8a30d14910c8569381213d"
+  },
+  "full-transcript.log": {
+   "size": 871925,
+   "sha256": "c3a52e92d76e412d622a65320ec8fdae4e8c46420507e9512d0de400b98dd833"
+  },
+  "partition-layout.json": {
+   "size": 2266,
+   "sha256": "38bfa56b4ae4969c2799dff4ab3e98debabd77610afacfe2d1c79b8b6fcb3aa9"
+  },
+  "partition-plan.json": {
+   "size": 6075,
+   "sha256": "e9116cba9f4924eba67d4617cc7c87b6f764701cd6aaa16fdd47655ce383ce70"
+  },
+  "physical-state.json": {
+   "size": 9718,
+   "sha256": "aa22ef1059ccdb795a8d0ba27626410eaae06933412db07fb37caad99d866ab5"
+  },
+  "progress.jsonl": {
+   "size": 50784,
+   "sha256": "db7047907f0a81e92c94572031843d9c665662930882cac6de449f04aeff4cad"
+  },
+  "session.json": {
+   "size": 1092,
+   "sha256": "fd8d429e1ce457a6e07a9f208576b8e9304278120946f8f761068b6a779a41d8"
+  },
+  "verify-markers.log": {
+   "size": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "schema": 1,
+ "kind": "BoilerInstallSessionFixture",
+ "source_export": "log1106",
+ "exported_utc": "2026-11-06T10:02:21.8002201Z",
+ "installer_version": "0.2.0-preview.20261105.11",
+ "sanitization": {
+  "version": 2,
+  "salt": "boiler-install-session-fixture-v1",
+  "rules": [
+   "canonical case/braces guid mapping",
+   "shape-preserving serial",
+   "user/profile and installer paths",
+   "32-hex nonce",
+   "binary GPT firmware identity",
+   "single-pass identity projections"
+  ]
+ },
+ "sampling": {
+  "progress": "step transitions + first/last per step + every 50th record",
+  "transcript": "all partition/physical marker lines"
+ },
+ "expectations": {
+  "kind": "internal",
+  "preserved_count": 6,
+  "role_numbers": [
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14
+  ],
+  "role_names": [
+   "esp",
+   "efi-A",
+   "efi-B",
+   "rootfs-A",
+   "rootfs-B",
+   "var-A",
+   "var-B",
+   "home"
+  ],
+  "home_used_bytes": 2409873408,
+  "historical_max_component_gap_ms": 1242259
+ },
+ "files": {
+  "components.json": {
+   "size": 7895,
+   "sha256": "e05112ae87842bac40853ea7c9ddc4801d9b88e3bb7592e584687fd18c4cea86"
+  },
+  "disk-snapshots.json": {
+   "size": 4809,
+   "sha256": "c6e85f272841fddfa39b37fe5a647f23d645ede0114b6a1e265e13c7e7cc0ca7"
+  },
+  "firmware-before.json": {
+   "size": 329,
+   "sha256": "0941c9c47fffebb6fc01cdf693366b76966388997cbab37642abdbb90a0bee52"
+  },
+  "firmware-plan.json": {
+   "size": 1864,
+   "sha256": "5bca197337f199f606225ac4e1ad19b5631a9a1db137f3d125b616f06167286f"
+  },
+  "firmware-result.json": {
+   "size": 143,
+   "sha256": "222295d56a53ce2296d1feb6ae15ee46f756f01def4c750901ad829f3da44b58"
+  },
+  "full-transcript.log": {
+   "size": 937437,
+   "sha256": "3df375734cf7cf8b32a236c0b791bda9523c55dbaad8229210c94a4e2602e7d0"
+  },
+  "install-plan-A.json": {
+   "size": 56296,
+   "sha256": "45af06ca69607ce89b002dc2c3f00d5095ac6a7e1546d647369fe8a31b35798b"
+  },
+  "install-plan-B.json": {
+   "size": 56296,
+   "sha256": "cbfee2276aefb95c13411550d588015e25aac339bf83034fbab599f3c2a252aa"
+  },
+  "partition-layout.json": {
+   "size": 3376,
+   "sha256": "2fb92f167b38ef515f0d4ab1d617f7e3b6cd18185311f900aa0fcd0b5aeb2f00"
+  },
+  "partition-plan.json": {
+   "size": 6083,
+   "sha256": "aa56f9789a93154cd22b5832f8b18649e30e3327ed6b3091c617794f70cb8e0c"
+  },
+  "physical-state.json": {
+   "size": 10420,
+   "sha256": "f61f1684523dd61c07e1b22cc01d37ee8f64b4feece2f4568e5c53e1a1324ba3"
+  },
+  "progress.jsonl": {
+   "size": 56532,
+   "sha256": "2459d5ae53293aafc7e2623ba0cde0962c35e16d895c2a0f0c452055dad8eaa2"
+  },
+  "session.json": {
+   "size": 2188,
+   "sha256": "6f78c2e47cde34f7815e3144931aaa488833d3f8cfa299549b76d5df6fa5e793"
+  },
+  "verify-markers.log": {
+   "size": 106,
+   "sha256": "9b91181a69a59807d8f355c4bc81344e5b14b9c335f73fb6dd70fc297dee533b"
+  }
+ }
+}

@@ -99,7 +99,7 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             self.assertIn('/'+lock['source']['commit']+'/brands/example/future/model.md',future['guide_url'])
             def reader(url,maximum):
                 member=url.split('/'+lock['source']['commit']+'/',1)[1]
-                data=(consumer/'components/model-catalog/snapshot'/member).read_bytes()
+                data=(consumer/'adaptations'/member).read_bytes()
                 self.assertLessEqual(len(data),maximum); return data
             online=runtime.load_models(root=consumer,reader=reader)
             self.assertFalse(online['offline']); self.assertEqual(online['models'],offline['models'])
@@ -177,7 +177,7 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             consumer,_=self.snapshot_fixture(Path(temporary))
             destination=consumer/'components/model-catalog'; lock=json.loads((destination/'lock.json').read_bytes())
             name='brands/example/unlisted/manifest.json'; data=b'{}'
-            path=destination/'snapshot'/name; path.parent.mkdir(parents=True); path.write_bytes(data)
+            path=consumer/'adaptations'/name; path.parent.mkdir(parents=True); path.write_bytes(data)
             lock['files'].append(dict(path=name,size=len(data),sha256=hashlib.sha256(data).hexdigest()))
             (destination/'lock.json').write_text(json.dumps(lock))
             with self.assertRaisesRegex(ProtocolError,'catalog'): runtime.load_models(root=consumer,online=False)
@@ -187,6 +187,9 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             consumer=Path(temporary); destination=consumer/'components/model-catalog'
             shutil.copytree(ROOT/'components/model-catalog',destination)
             path=destination/'lock.json'; lock=json.loads(path.read_bytes())
+            for entry in lock['files']:
+                target=consumer/'adaptations'/entry['path']; target.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copyfile(ROOT/'adaptations'/entry['path'],target)
             lock['source']=dict(repository='FlightDan/Boiler-installer',commit='a'*40,subtree='adaptations')
             path.write_text(json.dumps(lock))
             self.assertEqual(len(lock['files']),3)
@@ -223,7 +226,7 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             work=Path(temporary); consumer,_=self.snapshot_fixture(work)
             self.runtime_source_fixture(consumer)
             from maintenance.engine import runtime_files
-            future='components/model-catalog/snapshot/brands/example/future/manifest.json'
+            future='adaptations/brands/example/future/manifest.json'
             self.assertIn((consumer/future).resolve(),runtime_files(root=consumer))
             preparation=module('third_model_integration_prepare',ROOT/'scripts/prepare-integration.py')
             output=work/'integration'
@@ -268,9 +271,9 @@ class ToonRuntimeCatalogTests(unittest.TestCase):
             builder.package(consumer,archive,commit,'https://github.com/FlightDan/Boiler-installer/releases/download/fixture/maintenance.zip')
             with zipfile.ZipFile(archive) as bundle:
                 metadata=json.loads(bundle.read('component.json'))
-                target='usr/local/lib/boiler/components/model-catalog/snapshot/brands/example/future/manifest.json'
+                target='usr/local/lib/boiler/adaptations/brands/example/future/manifest.json'
                 row=next(item for item in metadata['files'] if item['target']==target)
-                self.assertEqual(bundle.read(row['source']),(consumer/'components/model-catalog/snapshot/brands/example/future/manifest.json').read_bytes())
+                self.assertEqual(bundle.read(row['source']),(consumer/'adaptations/brands/example/future/manifest.json').read_bytes())
                 self.assertEqual(bundle.read('maintenance-runtime/protocol/trusted-public-key.pem'),(ROOT/'protocol/trusted-public-key.pem').read_bytes())
 
 

@@ -28,7 +28,7 @@ def make_candidate(path, *, info_overrides=None, integration_overrides=None, ext
         'components/release.json': json.dumps(dict(version=version, display_version=display_version)).encode(),
         'maintenance/release.json': json.dumps(dict(version=maintenance_version)).encode(),
         'components/model-catalog/lock.json': b'{"kind":"ModelCatalogLock"}\n',
-        'components/model-catalog/snapshot/oxp3.json': b'{"id":"device:oxp3","guide_only":true}\n',
+        'adaptations/adaptations.json': b'{"id":"device:oxp3","guide_only":true}\n',
         'cache/integration/' + maintenance_source: b'from maintenance import main\n',
     }
     maintenance_bytes = payload['cache/integration/' + maintenance_source]
@@ -175,8 +175,8 @@ class PublicSlimInstallerTests(unittest.TestCase):
             with zipfile.ZipFile(path) as source:
                 info = json.loads(source.read('build-info.json'))
                 payload = {name: source.read(name) for name in source.namelist()
-                           if name not in ('build-info.json', 'components/model-catalog/snapshot/oxp3.json')}
-            info['files'] = [row for row in info['files'] if row['path'] != 'components/model-catalog/snapshot/oxp3.json']
+                           if name not in ('build-info.json', 'adaptations/adaptations.json')}
+            info['files'] = [row for row in info['files'] if row['path'] != 'adaptations/adaptations.json']
             with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_STORED) as destination:
                 for name, data in payload.items():
                     destination.writestr(name, data)
@@ -193,7 +193,7 @@ class PublicSlimInstallerTests(unittest.TestCase):
         path = self.candidate()
         with zipfile.ZipFile(path) as source:
             members = {name: source.read(name) for name in source.namelist()}
-        target = 'components/model-catalog/snapshot/oxp3.json'
+        target = 'adaptations/adaptations.json'
         members[target] = b'X' * len(members[target])
         with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_STORED) as archive:
             for name, data in members.items():

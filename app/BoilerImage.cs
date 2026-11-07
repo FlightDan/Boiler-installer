@@ -96,6 +96,9 @@ internal static class BoilerImage
         var manifestFile = System.IO.Path.Combine(session, "import-image-manifest.json");
         var outputOwned = false; var manifestOwned = false;
         JsonElement? manifest = null;
+        // The expanded image is hashed while it is written. Re-reading it only to
+        // record a value with no expected counterpart would be pure work.
+        string? streamedHash = null;
         try
         {
             if (input.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
@@ -116,7 +119,9 @@ internal static class BoilerImage
                         throw new IOException("Unsupported or inconsistent image manifest.");
                 }
                 using var source = image.Open();
-                await ImageImportStreams.CopyOwnedAsync(source, output, token, expected: image.Length);
+                using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                await ImageImportStreams.CopyOwnedAsync(source, output, token, expected: image.Length, sha256: hasher);
+                streamedHash = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
                 outputOwned = true;
             }
             else if (input.EndsWith(".img.bz2", StringComparison.OrdinalIgnoreCase))
@@ -128,19 +133,19 @@ internal static class BoilerImage
             else
             {
                 using var source = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, false);
-                await ImageImportStreams.CopyOwnedAsync(source, output, token, expected: source.Length);
+                using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                await ImageImportStreams.CopyOwnedAsync(source, output, token, expected: source.Length, sha256: hasher);
+                streamedHash = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
                 outputOwned = true;
             }
             RecoveryImage.ValidateRaw(output, true);
-            using var file = File.OpenRead(output);
-            using var hashInput = RawImageStaging.SparseRead(file, token);
-            var hash = Convert.ToHexString(await SHA256.HashDataAsync(hashInput, token)).ToLowerInvariant();
+            var hash = streamedHash ?? "";
             if (manifest is { } value && !string.Equals(value.GetProperty("image").GetProperty("sha256").GetString(), hash, StringComparison.Ordinal))
                 throw new IOException("镜像哈希不匹配。 / Image hash does not match manifest.");
             var prepared = RecoveryImage.IsPrepared(output);
             if (manifest is { } m && m.GetProperty("layout").GetString() != (prepared ? "steamos-ab" : "steamos-recovery"))
                 throw new IOException("Image layout differs from manifest.");
-            log($"Imported {(prepared ? "A/B image" : "recovery image")}; SHA256={hash}\n");
+            log($"Imported {(prepared ? "A/B image" : "recovery image")}; SHA256={(hash.Length == 0 ? "not-recorded" : hash)}\n");
             return new(output, prepared, hash, manifest);
         }
         catch

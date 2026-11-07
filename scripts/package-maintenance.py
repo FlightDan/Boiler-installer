@@ -60,7 +60,7 @@ def runtime_inventory(root):
     decoder(root/'adaptations')
     parser_lock = json.loads((root/'adaptations/toon-parser-lock.json').read_bytes())
     return (*RUNTIME_FILES, *('adaptations/vendor/'+entry['path'] for entry in parser_lock['files']),
-            *('components/model-catalog/snapshot/'+entry['path'] for entry in model_lock['files']))
+            *('adaptations/'+entry['path'] for entry in model_lock['files']))
 
 
 def committed_sources(root, source_commit):

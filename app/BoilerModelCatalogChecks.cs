@@ -616,11 +616,12 @@ internal static class BoilerModelCatalogChecks
     private static async Task CheckActualMetadata(MainWindow window, string language, string directory, List<string> checks, List<string> captures, Action<bool, string> require, bool captureScreenshots)
     {
         var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
-        var packagePath = Path.Combine(Backend.Root, "cache", "model-bundles", "packages", "oxp3", "manifest.json");
-        if (!File.Exists(indexPath) || !File.Exists(packagePath)) { checks.Add(language + "-actual-metadata-skipped-cache-unavailable"); return; }
+        if (!File.Exists(indexPath)) { checks.Add(language + "-actual-metadata-skipped-cache-unavailable"); return; }
         using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(indexPath));
         var entry = index.RootElement.GetProperty("packages").EnumerateArray().Single(item => item.GetProperty("id").GetString() == "device:oxp3");
-        var bytes = await File.ReadAllBytesAsync(packagePath);
+        byte[] bytes;
+        try { bytes = BundledModelManifest.Read("device:oxp3"); }
+        catch (IOException) { checks.Add(language + "-actual-metadata-skipped-cache-unavailable"); return; }
         var sha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         require(bytes.Length == entry.GetProperty("manifest_size").GetInt64() && sha == entry.GetProperty("manifest_sha256").GetString(), language + "-actual-metadata-matches-cache-index");
         using var document = JsonDocument.Parse(bytes);

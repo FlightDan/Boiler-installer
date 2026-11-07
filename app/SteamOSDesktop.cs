@@ -134,14 +134,14 @@ internal static class SteamOSDesktop
         {
             var core = PersistCore(programDirectory, Build(kind, deployment));
             var path = Write(desktop, BuildLauncher(core), language);
-            log("PERSISTENT_STEAMOS_SCRIPT=" + core);
-            log("DESKTOP_STEAMOS_SCRIPT=" + path);
+            log("PERSISTENT_STEAMOS_SCRIPT=" + core + Environment.NewLine);
+            log("DESKTOP_STEAMOS_SCRIPT=" + path + Environment.NewLine);
             return new(path, null);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException
             or KeyNotFoundException or InvalidOperationException or FormatException or ArgumentException)
         {
-            log("DESKTOP_STEAMOS_SCRIPT_WARNING=" + error.Message);
+            log("DESKTOP_STEAMOS_SCRIPT_WARNING=" + error.Message + Environment.NewLine);
             return new(null, error.Message); // Successful disk installation remains successful.
         }
     }

@@ -6,25 +6,34 @@ import os
 import stat
 import subprocess
 import sys
+import time
 sys.path.insert(0,'/mnt/payload/components')
 sys.path.insert(0,'/mnt/payload')
 from integration import stage, validate_options, authenticate_model_efi, complete_ssd, save_result, device_plan, release, selected_ssd_provider_owner, SSD_REPAIR
 from system_presets import selected as presets_selected
 from offload_mounts import mount_opt, mount_etc
+from integration_emit import emit_slot
+# Phase timing is plain log output; nothing below reads these values.
+_boiler_clock = time.monotonic()
+def _mark(name):
+    print('BOILER_TIMING=integration:%s:%.3f' % (name, time.monotonic() - _boiler_clock), flush=True)
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip()!='QEMU': raise RuntimeError('Managed VM required')
 if Path('/sys/class/block/vdc/ro').read_text().strip()!='0': raise RuntimeError('Prepared image must be writable')
 table=json.loads(subprocess.check_output(['sfdisk','--json','/dev/vdc']))['partitiontable']
 parts={p.get('name'):p['node'] for p in table['partitions']}
 if len(parts) != len(table['partitions']): raise RuntimeError('Duplicate prepared partition labels')
 if not {'rootfs-A','rootfs-B','var-A','var-B','home'}.issubset(parts): raise RuntimeError('Not a prepared A/B image')
+_mark('partitions')
 options=json.loads(Path('/mnt/payload/selection.json').read_text())
 validate_options(options)
+_mark('options')
 if options.get('install_mode')=='imported':
     print('OXP_INTEGRATION_PRESERVED=imported-image',flush=True)
     raise SystemExit(0)
 if not any(options.get(key) for key in ('repairs','plugins','wireless','device_components','graphics_profile')) and not presets_selected(options):
     probe=Path('/mnt/boiler-plan-source'); probe.mkdir(exist_ok=True)
     for slot in ('A','B'):
+        _mark('probe-' + slot)
         subprocess.run(['mount','-t','btrfs','-o','ro,rescue=nologreplay',parts['rootfs-'+slot],str(probe)],check=True)
         try:
             result=stage(probe,'/mnt/payload',options,slot)
@@ -97,6 +106,7 @@ if ssd_identity is not None or model_needed:
             try: subprocess.run(['umount',str(path)],check=True)
             except Exception as error: failures.append(str(path)+': '+str(error))
         if failures: raise RuntimeError('SSD preflight cleanup incomplete; preserve image: '+'; '.join(failures)) from original_error
+_mark('model-preflight')
 password_file=Path('/tmp/oxp-deck-initial-password')
 password_hash=None
 if options.get('set_deck_password',False):
@@ -118,6 +128,7 @@ if options.get('set_deck_password',False):
         password_file.unlink(missing_ok=True)
 else:
     password_file.unlink(missing_ok=True)
+_mark('password')
 if model_plans:
     from maintenance.model_efi import model_efi_authorize_pair
     from maintenance.ssd_boot import installer_model_ssd_plan
@@ -137,6 +148,7 @@ if model_plans:
         model_efi_authorize_pair(roots[0],roots[1],model_context,model_source,model_selection,
             [model_plans['A'],model_plans['B']],
             [ssd_previews['A'],ssd_previews['B']] if ssd_identity is not None else None)
+        _mark('model-efi-pair')
         for slot,root in zip(('A','B'),roots):
             review_path='/run/boiler-oxp3-efi-'+slot+'.json'
             context=dict(source=model_source,selection=model_selection,host_context=model_context,
@@ -145,20 +157,25 @@ if model_plans:
             with os.fdopen(descriptor,'w') as stream:
                 json.dump(context,stream); stream.flush(); os.fsync(stream.fileno())
             Path('/run/boiler-install-slot').write_text(slot+'\n')
+            _mark('stage-' + slot + '-start')
             results[slot]=stage(root,'/mnt/payload',options,slot,password_hash,target_disk=target_disk,
                 ssd_context=ssd_context,ssd_plan=ssd_previews.get(slot),ssd_identity=ssd_identity,
                 defer_ssd=ssd_identity is not None,model_review_path=review_path)
+            _mark('stage-' + slot)
+            # Report this slot before the next one starts. The plan is only
+            # complete now when no SSD repair is deferred.
+            emit_slot(slot,results[slot],include_result=ssd_identity is None,
+                include_plan=ssd_identity is None)
         if ssd_identity is not None:
             for slot,root in zip(('A','B'),roots):
                 plan=installer_model_ssd_plan(root,ssd_context,ssd_previews[slot],provider_owner=ssd_provider_owner)
                 complete_ssd(root,results[slot],ssd_context,plan,ssd_identity,model_preview=ssd_previews[slot])
                 results[slot]['status']='files_installed'; save_result(root,slot,results[slot])
-        for slot in ('A','B'):
-            result=results[slot]
-            print('OXP_INTEGRATION_RESULT='+json.dumps(result),flush=True)
-            print('BOILER_INSTALL_PLAN_JSON='+json.dumps(result['install_plan']),flush=True)
-            for name,value in result['components'].items():
-                print('OXP_COMPONENT_RESULT='+json.dumps(dict(slot=slot,id=name,**value)),flush=True)
+            _mark('ssd-complete')
+            # The plan only gains ssd_repair after complete_ssd. Emit the final
+            # full result/plan once per slot, then only the deferred SSD rows.
+            for slot in ('A','B'):
+                emit_slot(slot,results[slot],only=ssd_identity)
     finally:
         original_error=sys.exc_info()[1]; failures=[]
         for root in reversed(protected):
@@ -168,10 +185,12 @@ if model_plans:
             try: subprocess.run(['umount',str(path)],check=True)
             except Exception as error: failures.append('unmount '+str(path)+': '+str(error))
         if failures: raise RuntimeError('Combined EFI cleanup incomplete; preserve image: '+'; '.join(failures)) from original_error
+    _mark('done')
     raise SystemExit(0)
 root=Path('/mnt/integration-root'); root.mkdir(exist_ok=True)
 for slot in ('A','B'):
     mounts=[]
+    _mark('slot-' + slot)
     def mount(node,path,*flags):
         path.mkdir(parents=True,exist_ok=True); subprocess.run(['mount',*flags,node,str(path)],check=True); mounts.append(path)
     try:
@@ -185,8 +204,10 @@ for slot in ('A','B'):
         # Device package hooks receive the actual slot EFI mount explicitly.
         if options.get('device_package') or ssd_plans: mount(parts['efi-'+slot],root/'efi','-t','vfat')
         Path('/run/boiler-install-slot').write_text(slot+'\n')
+        _mark('mount-' + slot)
         result=stage(root,'/mnt/payload',options,slot,password_hash,target_disk=target_disk,
                      ssd_context=ssd_context,ssd_plan=ssd_plans.get(slot),ssd_identity=ssd_identity)
+        _mark('stage-' + slot)
         print('OXP_INTEGRATION_RESULT='+json.dumps(result),flush=True)
         print('BOILER_INSTALL_PLAN_JSON='+json.dumps(result['install_plan']),flush=True)
         for name,value in result['components'].items():
@@ -211,3 +232,4 @@ for slot in ('A','B'):
                 cleanup_errors.append('unmount ' + str(path) + ': ' + str(error))
         if cleanup_errors:
             raise RuntimeError('Prepared image cleanup incomplete; preserve image: ' + '; '.join(cleanup_errors)) from original_error
+_mark('done')

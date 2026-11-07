@@ -27,6 +27,12 @@ HASH = re.compile(r'[0-9a-f]{64}\Z')
 STORAGE = 'blob-v1'
 PENDING = 'adoption-pending.json'
 _HELD_LEGACY = contextvars.ContextVar('boiler_held_legacy_lock',default=None)
+# Digests this process already established for exact private CAS objects.
+# A content or metadata change moves ctime, so a stale signature can never
+# satisfy a later lookup; every hit is still re-opened through the no-follow
+# ownership checks before the cached digest is trusted.
+_VERIFIED_PRIVATE = {}
+_VERIFIED_PRIVATE_MAX = 65536
 
 
 def _pairs(entries):
@@ -148,6 +154,56 @@ def _hash_file(path, expected, *, private=False, destination=None, limit=MAX_FIL
         return info
 
 
+def _verified_private(path, expected):
+    """Verify a private CAS object, reusing this process's digest when exact."""
+    if (type(expected.get('size')) is not int or not 0 <= expected['size'] <= MAX_FILE
+            or not HASH.fullmatch(expected.get('sha256', ''))):
+        raise MaintenanceError('Invalid adoption blob digest or size')
+    path = Path(path)
+    with _file(path, private=True) as (stream, info):
+        key = str(path.absolute())
+        signature = _signature(info)
+        # Windows exposes st_ctime_ns as a creation time that the owner can
+        # reproduce after an in-place edit, so the digest is never reused there.
+        cached = _VERIFIED_PRIVATE.get(key) if os.name != 'nt' else None
+        if cached == (signature, expected['sha256'], expected['size']):
+            return
+        if info.st_size != expected['size']:
+            raise MaintenanceError('Adoption file size changed')
+        digest, size = hashlib.sha256(), 0
+        while True:
+            block = stream.read(min(1024*1024, expected['size']+1-size))
+            if not block:
+                break
+            size += len(block)
+            if size > expected['size']:
+                raise MaintenanceError('Adoption file grew while reading')
+            digest.update(block)
+        if size != expected['size'] or digest.hexdigest() != expected['sha256']:
+            raise MaintenanceError('Adoption file digest changed')
+        if os.name != 'nt':
+            if len(_VERIFIED_PRIVATE) >= _VERIFIED_PRIVATE_MAX:
+                _VERIFIED_PRIVATE.clear()
+            _VERIFIED_PRIVATE[key] = (signature, expected['sha256'], expected['size'])
+
+
+def _remember_private(path, expected):
+    """Record a blob this process just created; never trust a mutable path."""
+    if os.name == 'nt':
+        return
+    try:
+        info = Path(path).stat()
+    except OSError:
+        return
+    if (not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o077
+            or info.st_nlink != 1 or info.st_size != expected['size']):
+        return
+    if len(_VERIFIED_PRIVATE) >= _VERIFIED_PRIVATE_MAX:
+        _VERIFIED_PRIVATE.clear()
+    _VERIFIED_PRIVATE[str(Path(path).absolute())] = (
+        _signature(info), expected['sha256'], expected['size'])
+
+
 def _target_account(engine, path):
     """Resolve the fixed deck home from protected target OS account metadata.
 
@@ -253,11 +309,11 @@ def blob_cache(engine, *, create=False):
     return directory
 
 
-def _cache_blob(engine, source, entry, *, source_private=True, source_user=None):
+def _cache_blob(engine, source, entry, *, source_private=True, source_user=None, sync_directory=True):
     directory = blob_cache(engine, create=True)
     target = directory/entry['sha256']
     if target.exists() or target.is_symlink():
-        _hash_file(target, entry, private=True)
+        _verified_private(target, entry)
         return
     fd, temporary = tempfile.mkstemp(prefix='.incoming-', dir=directory)
     temporary = Path(temporary)
@@ -269,25 +325,27 @@ def _cache_blob(engine, source, entry, *, source_private=True, source_user=None)
         try:
             os.link(temporary, target)
         except FileExistsError:
-            _hash_file(target, entry, private=True)
+            _verified_private(target, entry)
         temporary.unlink()
-        _sync_dir(directory)
+        if sync_directory: _sync_dir(directory)
+        _remember_private(target, entry)
     finally:
         temporary.unlink(missing_ok=True)
 
 
-def capture(engine, target, snapshot=None):
+def capture(engine, target, snapshot=None, *, cache_sync=True):
     """Stream a current target into the same durable store used by adoption."""
     snapshot = observe(engine,target) if snapshot is None else snapshot
     if snapshot['exists']:
-        _cache_blob(engine,target,snapshot,source_private=False,source_user=_target_user(engine,target))
+        _cache_blob(engine,target,snapshot,source_private=False,source_user=_target_user(engine,target),
+                    sync_directory=cache_sync)
     return snapshot | {'storage':STORAGE}
 
 
-def payload_snapshot(engine, source, entry, before, *, target=None):
+def payload_snapshot(engine, source, entry, before, *, target=None, cache_sync=True):
     if type(entry.get('size')) is not int or not 0 <= entry['size'] <= MAX_FILE:
         raise MaintenanceError('Component file exceeds the explicit binary transaction limit')
-    _cache_blob(engine,source,entry,source_private=False)
+    _cache_blob(engine,source,entry,source_private=False,sync_directory=cache_sync)
     identity = (_target_account(engine, target) if engine.target_domain == 'shared-home'
                 and target is not None and not before['exists'] else None)
     uid, gid = identity or (0, 0)
@@ -295,7 +353,7 @@ def payload_snapshot(engine, source, entry, before, *, target=None):
                 mode=entry.get('mode',0o644),uid=before.get('uid',uid),gid=before.get('gid',gid))
 
 
-def restore_blob(engine, target, snapshot):
+def restore_blob(engine, target, snapshot, *, sync_directory=True):
     """Restore an authenticated private CAS object with an atomic file replace."""
     source = blob_cache(engine)/snapshot['sha256']
     user = _target_user(engine, target)
@@ -312,16 +370,19 @@ def restore_blob(engine, target, snapshot):
                 fd = None
                 _hash_file(source, snapshot, private=True, destination=output)
                 output.flush()
-                os.fsync(output.fileno())
                 if os.name != 'nt':
                     os.fchown(output.fileno(), snapshot['uid'], snapshot['gid'])
                     os.fchmod(output.fileno(), snapshot['mode'])
+                # One durability barrier covers the written data and metadata;
+                # a second fsync of the same descriptor adds no guarantee.
                 os.fsync(output.fileno())
             if os.name == 'nt':
                 os.replace(target.parent/name, target)
             else:
                 os.replace(name, target.name, src_dir_fd=directory, dst_dir_fd=directory)
-                os.fsync(directory)
+                # The same directory is synced once per apply batch, not once
+                # per file; recovery still syncs each replace immediately.
+                if sync_directory: os.fsync(directory)
         finally:
             if fd is not None:
                 os.close(fd)
@@ -334,7 +395,7 @@ def restore_blob(engine, target, snapshot):
                     pass
 
 
-def remove_blob_target(engine, target):
+def remove_blob_target(engine, target, *, sync_directory=True):
     """Remove an explicitly absent original through its protected parent."""
     try:
         with _directory(target.parent, **_target_user(engine, target)) as directory:
@@ -343,7 +404,7 @@ def remove_blob_target(engine, target):
             else:
                 try:
                     os.unlink(target.name, dir_fd=directory)
-                    os.fsync(directory)
+                    if sync_directory: os.fsync(directory)
                 except FileNotFoundError:
                     pass
     except FileNotFoundError:

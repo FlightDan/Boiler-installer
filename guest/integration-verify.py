@@ -5,6 +5,7 @@ from pathlib import Path
 import stat
 import subprocess
 import sys
+import time
 sys.path.insert(0, '/mnt/payload/components')
 sys.path.insert(0, '/mnt/payload')
 from offload_mounts import mount_etc, mount_opt
@@ -14,6 +15,11 @@ from integration import verify_device_components, validate_options, authenticate
 import system_presets
 import graphics
 import graphics_boot
+
+# Phase timing is plain log output; nothing below reads these values.
+_boiler_clock = time.monotonic()
+def _mark(name):
+    print('BOILER_TIMING=integration-verify:%s:%.3f' % (name, time.monotonic() - _boiler_clock), flush=True)
 
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU':
     raise RuntimeError('Managed VM required')
@@ -49,6 +55,7 @@ parts = {p.get('name'): p['node'] for p in table['partitions']}
 root = Path('/mnt/integration-verify-root'); root.mkdir(exist_ok=True)
 for slot in ('A', 'B'):
     mounts = []
+    _mark('slot-' + slot)
     def mount(node, path, *flags):
         path.mkdir(parents=True, exist_ok=True)
         subprocess.run(['mount', *flags, node, str(path)], check=True); mounts.append(path)
@@ -64,6 +71,7 @@ for slot in ('A', 'B'):
             mount(parts['efi-' + slot], root / 'efi', '-t', 'vfat', '-o', 'ro')
             guest_marker('boiler-guest-context', 'managed-qemu-integration\n')
             guest_marker('boiler-install-slot', slot + '\n')
+        _mark('mount-' + slot)
         if not options.get('device_package'):
             for relative in ('etc/oxp3-installer/update-hold', 'etc/systemd/system/atomupd.service.d/90-oxp3-update-hold.conf',
                              'etc/modprobe.d/xe-oxp3.conf', 'usr/local/lib/oxp3-integration'):
@@ -74,6 +82,7 @@ for slot in ('A', 'B'):
             for relative in ('var/lib/boiler', 'home/.boiler', 'etc/systemd/system/plugin_loader.service'):
                 if (root / relative).exists() or (root / relative).is_symlink(): raise RuntimeError('Vanilla received an unselected component')
             print('OXP_INTEGRATION_VERIFIED='+slot+':no-components-selected', flush=True)
+            print('OXP_INTEGRATION_VERIFY='+json.dumps(dict(slot=slot,readonly=True)), flush=True)
             continue
         result = json.loads((root / 'home/.boiler/integration' / slot / 'result.json').read_text())
         if result['options'] != {key: value for key,value in options.items() if key != '_target_disk'}:
@@ -128,5 +137,8 @@ for slot in ('A', 'B'):
         if ssd_selected and ssd_identity not in result['components']:
             raise RuntimeError('Selected SSD repair result is missing')
         print('OXP_INTEGRATION_VERIFIED=' + slot, flush=True)
+        print('OXP_INTEGRATION_VERIFY=' + json.dumps(dict(slot=slot, readonly=True)), flush=True)
+        _mark('verified-' + slot)
     finally:
         for path in reversed(mounts): subprocess.run(['umount', str(path)], check=True)
+_mark('done')

@@ -49,7 +49,7 @@ class ModelCatalogTests(unittest.TestCase):
             result=preparer.prepare(checkout,git('rev-parse','HEAD'),root/'prepared')
             self.assertEqual(len(result['files']),3)
             for identity in ('oxp3','x2-mini'):
-                guide=json.loads((root/'prepared/snapshot/brands/onexplayer'/identity/'manifest.json').read_bytes())
+                guide=json.loads((root/'prepared/adaptations/brands/onexplayer'/identity/'manifest.json').read_bytes())
                 self.assertTrue(next(item for item in guide['components'] if item['id']=='fingerprint-unlock')['default'])
 
     def test_current_guides_allow_only_canonical_fingerprint_defaults(self):
@@ -81,6 +81,9 @@ class ModelCatalogTests(unittest.TestCase):
         # independent public source commit exists. Test the new lock shape here.
         path=root/'components/model-catalog/lock.json'
         lock=json.loads(path.read_bytes())
+        for entry in lock['files']:
+            target=root/'adaptations'/entry['path'];target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(ROOT/'adaptations'/entry['path'],target)
         lock['source']={'repository':REPOSITORY,'commit':'a'*40,'subtree':''}
         path.write_text(json.dumps(lock))
 
@@ -101,8 +104,7 @@ class ModelCatalogTests(unittest.TestCase):
 
     def test_historical_installer_catalog_lock_remains_readable(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root=Path(temporary)
-            shutil.copytree(ROOT/'components/model-catalog',root/'components/model-catalog')
+            root=Path(temporary);self.fixture(root)
             path=root/'components/model-catalog/lock.json';lock=json.loads(path.read_bytes())
             lock['source']=dict(repository='FlightDan/Boiler-installer',commit='a'*40,subtree='adaptations');path.write_text(json.dumps(lock))
             result=load_models(root=root,online=False)
@@ -131,7 +133,7 @@ class ModelCatalogTests(unittest.TestCase):
             for selected in (True,False):
                 for entry in lock['files']:
                     if not entry['path'].endswith('/manifest.json'):continue
-                    path=root/'components/model-catalog/snapshot'/entry['path'];guide=json.loads(path.read_bytes())
+                    path=root/'adaptations'/entry['path'];guide=json.loads(path.read_bytes())
                     guide['components']=[item for item in guide['components'] if item['id']!='fingerprint-unlock']
                     guide['components'].append(dict(id='fingerprint-unlock',name='Fingerprint',recommendation='optional',default=selected,dependencies=[],sources=[],status='external_runtime_required',notes='Fixture'))
                     raw=json.dumps(guide).encode();path.write_bytes(raw);entry.update(size=len(raw),sha256=hashlib.sha256(raw).hexdigest())
@@ -139,7 +141,7 @@ class ModelCatalogTests(unittest.TestCase):
                 result=load_models(root=root,online=False)
                 for model in result['models']:
                     self.assertIs(next(item for item in model['components'] if item['id']=='fingerprint-unlock')['default'],selected)
-            entry=next(x for x in lock['files'] if x['path'].endswith('/manifest.json'));path=root/'components/model-catalog/snapshot'/entry['path'];guide=json.loads(path.read_bytes());guide['components'][0]['default']=True
+            entry=next(x for x in lock['files'] if x['path'].endswith('/manifest.json'));path=root/'adaptations'/entry['path'];guide=json.loads(path.read_bytes());guide['components'][0]['default']=True
             raw=json.dumps(guide).encode();path.write_bytes(raw);entry.update(size=len(raw),sha256=hashlib.sha256(raw).hexdigest());lock_path.write_text(json.dumps(lock))
             with self.assertRaises(ProtocolError):load_models(root=root,online=False)
 
@@ -150,7 +152,7 @@ class ModelCatalogTests(unittest.TestCase):
             def reader(url,maximum):
                 prefix='https://raw.githubusercontent.com/FlightDan/Boiler-adaptations/'+lock['source']['commit']+'/'
                 self.assertTrue(url.startswith(prefix))
-                return (root/'components/model-catalog/snapshot'/url.removeprefix(prefix)).read_bytes()
+                return (root/'adaptations'/url.removeprefix(prefix)).read_bytes()
             self.assertFalse(load_models(root=root,reader=reader)['offline'])
 
     def test_missing_or_unsafe_subtree_is_rejected(self):
@@ -168,7 +170,7 @@ class ModelCatalogTests(unittest.TestCase):
             def git(*args):
                 return subprocess.check_output(['git','-C',str(checkout),*args],stderr=subprocess.PIPE).decode().strip()
             git('init');git('remote','add','origin','https://github.com/'+REPOSITORY+'.git')
-            snapshot=ROOT/'components/model-catalog/snapshot'
+            snapshot=ROOT/'adaptations'
             for member in ('adaptations.json','brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'):
                 destination=checkout/member;destination.parent.mkdir(parents=True,exist_ok=True)
                 destination.write_bytes((snapshot/member).read_bytes())
@@ -176,13 +178,12 @@ class ModelCatalogTests(unittest.TestCase):
             commit=git('rev-parse','HEAD')
             # A dirty working copy cannot replace the explicitly pinned commit.
             (checkout/'adaptations.json').write_text('{}')
-            output=root/'prepared'
+            output=root/'consumer/components/model-catalog'
             lock=preparer.prepare(checkout,commit,output)
             self.assertEqual(lock['source'],dict(repository=REPOSITORY,commit=commit,subtree=''))
             for member in lock['files']:
-                self.assertEqual((output/'snapshot'/member['path']).read_bytes(),(snapshot/member['path']).read_bytes())
-            installed=root/'consumer/components/model-catalog';installed.parent.mkdir(parents=True)
-            shutil.copytree(output,installed)
+                self.assertEqual((root/'consumer/adaptations'/member['path']).read_bytes(),(snapshot/member['path']).read_bytes())
+            self.assertFalse((output/'snapshot').exists())
             result=load_models(root=root/'consumer',online=False)
             self.assertTrue(all('/'+commit+'/brands/' in model['guide_url'] for model in result['models']))
             git('remote','set-url','origin','https://github.com/FlightDan/Boiler-devices.git')
@@ -215,7 +216,7 @@ class ModelCatalogTests(unittest.TestCase):
     def test_corrupt_offline_snapshot_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);self.fixture(root)
-            (root/'components/model-catalog/snapshot/adaptations.json').write_text('{}')
+            (root/'adaptations/adaptations.json').write_text('{}')
             with self.assertRaisesRegex(ProtocolError,'pinned source'):
                 load_models(root=root,online=False)
 

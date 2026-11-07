@@ -249,8 +249,8 @@ class AdoptionBlobTests(unittest.TestCase):
         component,payload=self.upgrade();component['retain_owned_paths']=True
         before=(path.stat().st_ino,path.stat().st_mtime_ns)
         original=self.engine._put_snapshot
-        def dying(target,snapshot):
-            original(target,snapshot)
+        def dying(target,snapshot,**kwargs):
+            original(target,snapshot,**kwargs)
             raise RuntimeError('interrupted static update')
         with mock.patch.object(self.engine,'_put_snapshot',side_effect=dying), mock.patch.object(self.engine,'_recover',return_value=[]):
             with self.assertRaises(RuntimeError): self.engine.apply(component,payload)
@@ -263,8 +263,8 @@ class AdoptionBlobTests(unittest.TestCase):
         adopted = self.engine.adopt(self.receipt)
         component,payload = self.upgrade()
         original = self.engine._put_snapshot
-        def dying(path,snapshot):
-            original(path,snapshot)
+        def dying(path,snapshot,**kwargs):
+            original(path,snapshot,**kwargs)
             raise RuntimeError('simulated process death after streamed write')
         with mock.patch.object(self.engine,'_put_snapshot',side_effect=dying), mock.patch.object(self.engine,'_recover',return_value=[]):
             with self.assertRaisesRegex(RuntimeError,'process death'):
@@ -732,8 +732,8 @@ class InlineAdoptionCompatibilityTests(unittest.TestCase):
     def test_inline_adoption_interrupted_binary_upgrade_recovers_without_old_store(self):
         adopted=self.engine.adopt(self.receipt)
         component,payload=self.component();original=self.engine._put_snapshot
-        def dying(path,snapshot):
-            original(path,snapshot)
+        def dying(path,snapshot,**kwargs):
+            original(path,snapshot,**kwargs)
             raise RuntimeError('simulated interruption')
         with mock.patch.object(implementation,'_legacy_lock',side_effect=AssertionError('V1 had no legacy lock contract')):
             with mock.patch.object(self.engine,'_put_snapshot',side_effect=dying), mock.patch.object(self.engine,'_recover',return_value=[]):

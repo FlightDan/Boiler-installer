@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 from deployment import run, table, fs, resolve
 from install_session import table_identity
+from fixture_layout import preserved_files, validate
 
 target = table('/dev/vdd')
+profile_name = validate('/dev/vdd')
 root = Path('/mnt/ui-cancel-check'); root.mkdir(exist_ok=True)
 esp = next(p['node'] for p in target['partitions'] if p.get('name') == 'esp')
 run('mount', '-t', 'vfat', '-o', 'ro', esp, str(root))
@@ -31,12 +33,13 @@ for old in intent['before']['table']['partitions']:
     actual = next(p for p in target['partitions'] if p['uuid'] == old['uuid'])
     if {k:v for k,v in old.items() if k != 'node'} != {k:v for k,v in actual.items() if k != 'node'}:
         raise RuntimeError('Protected partition metadata changed')
-for node, kind, name, expected in [
-    ('/dev/vdd1', 'vfat', 'preserved-efi.txt', 'Windows EFI fixture file must survive deployment.\n'),
-    ('/dev/vdd2', 'ntfs-3g', 'preserved.txt', 'Windows fixture data must survive partition append.\n')]:
+for part in preserved_files(profile_name):
+    kind = 'vfat' if part['fs'] == 'vfat' else 'ntfs-3g'
+    node = '/dev/vdd%d' % part['number']
     run('mount', '-t', kind, '-o', 'ro', node, str(root))
     try:
-        if (root / name).read_text() != expected: raise RuntimeError('Cancellation changed protected file content')
+        if (root / part['sentinel']).read_text() != part['content']:
+            raise RuntimeError('Cancellation changed protected file content')
     finally: run('umount', str(root))
 print('OXP_UI_CANCEL_CHECK=failed-copy-A-journal-filesystem-uuids-intent-windows-preserved', flush=True)
 print('OXP_UI_FS_SNAPSHOT=' + json.dumps({'schema': 1, 'intent_id': intent['id'],

@@ -1,6 +1,7 @@
 runtime/
 cache/
 work/
+workspace.json
 output/
 dist/
 logs/
@@ -18,6 +19,9 @@ components/refind/
 
 .local/
 adaptations/inputs/
+
+# Pinned catalog guides are read from adaptations/; do not keep a duplicate snapshot tree.
+components/model-catalog/snapshot/
 
 # Local agent instructions
 AGENTS.md

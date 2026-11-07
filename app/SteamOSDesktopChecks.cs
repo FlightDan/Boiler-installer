@@ -43,6 +43,9 @@ internal static class SteamOSDesktopChecks
         var logs = new List<string>();
         var installed = SteamOSDesktop.InstallAt(InstallationTargetKind.InternalShared, portable, installDesktop, persistent, logs.Add, "en-US");
         Require(installed.Path is not null && installed.Warning is null, "persistent-install-succeeds");
+        Require(logs.Count >= 2 && logs[0].StartsWith("PERSISTENT_STEAMOS_SCRIPT=") && logs[0].EndsWith(Environment.NewLine)
+            && logs[1].StartsWith("DESKTOP_STEAMOS_SCRIPT=") && logs[1].EndsWith(Environment.NewLine)
+            && !logs[0].Contains("DESKTOP_STEAMOS_SCRIPT="), "script-path-log-lines-are-separate");
         var core = Directory.GetFiles(persistent, "*.bat").Single();
         Require(File.ReadAllText(core) == content && !content.Contains(portable, StringComparison.OrdinalIgnoreCase)
             && content.Contains("public static class OxpDesktopFirmware") && !content.Contains("SteamOSInstaller.exe"), "persistent-core-is-complete-and-portable-independent");
@@ -81,7 +84,7 @@ internal static class SteamOSDesktopChecks
         var blocked = Path.Combine(directory, "blocked-program-directory"); File.WriteAllText(blocked, "user file");
         var warning = SteamOSDesktop.InstallAt(InstallationTargetKind.ExternalDisk, directory, installDesktop, blocked, logs.Add, "en-US");
         Require(warning.Path is null && !string.IsNullOrEmpty(warning.Warning) && File.ReadAllText(blocked) == "user file"
-            && logs.Any(line => line.StartsWith("DESKTOP_STEAMOS_SCRIPT_WARNING=")), "persistent-write-failure-is-warning-and-preserves-user-file");
+            && logs.Any(line => line.StartsWith("DESKTOP_STEAMOS_SCRIPT_WARNING=") && line.EndsWith(Environment.NewLine)), "persistent-write-failure-is-warning-and-preserves-user-file");
         var missingDesktop = SteamOSDesktop.InstallAt(InstallationTargetKind.ExternalDisk, directory,
             Path.Combine(directory, "missing-desktop"), persistent, logs.Add, "en-US");
         Require(missingDesktop.Path is null && !string.IsNullOrEmpty(missingDesktop.Warning), "desktop-write-failure-is-warning");

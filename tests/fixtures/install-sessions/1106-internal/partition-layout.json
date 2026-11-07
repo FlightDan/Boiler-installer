@@ -1,0 +1,139 @@
+{
+ "schema": 1,
+ "kind": "internal",
+ "disk": {
+  "number": 0,
+  "size": 1024209543168,
+  "sector_size": 512,
+  "bus": 17,
+  "serial": "SANITIZED_DC38B7D7DC43833E0BE9AB703DAF5A",
+  "model": "Predator SSD GM7 1TB",
+  "vendor": "",
+  "guid": "{676d78de-615c-408b-af42-b9fe59b97828}"
+ },
+ "selection": {
+  "start": 779415977984,
+  "size": 137438953472,
+  "align_right": true
+ },
+ "preserved": [
+  {
+   "number": 1,
+   "offset": 1048576,
+   "size": 104857600,
+   "id": "c4ce8c15-e493-4fd1-83cb-b11933376d67",
+   "type": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
+  },
+  {
+   "number": 2,
+   "offset": 105906176,
+   "size": 134217728,
+   "id": "a670fb89-fbd2-4fa8-8be9-fd4a244692b9",
+   "type": "e3c9e316-0b5c-4db8-817d-f92df00215ae"
+  },
+  {
+   "number": 3,
+   "offset": 240123904,
+   "size": 461328351232,
+   "id": "b6493e49-6398-454c-bb06-fd0e0785a759",
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+  },
+  {
+   "number": 4,
+   "offset": 461568475136,
+   "size": 317847502848,
+   "id": "e2100e38-7508-4814-8a0f-ba232f16bf29",
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+  },
+  {
+   "number": 5,
+   "offset": 998439387136,
+   "size": 23622320128,
+   "id": "c3d18937-20e5-4cb7-91d5-613f22ccf9e1",
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+  },
+  {
+   "number": 6,
+   "offset": 1022061707264,
+   "size": 2147483648,
+   "id": "48df7f79-67cc-46e1-bde6-f1c49e681b93",
+   "type": "de94bba4-06d1-4d40-a16a-bfd50179d6ac"
+  }
+ ],
+ "roles": [
+  {
+   "number": 7,
+   "name": "esp",
+   "offset": 861000433664,
+   "size": 268435456,
+   "type": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+   "id": "013a1d1a-0c80-4e78-97a3-1526b08cdb16",
+   "attributes": 0
+  },
+  {
+   "number": 8,
+   "name": "efi-A",
+   "offset": 861268869120,
+   "size": 67108864,
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+   "id": "25f80625-0200-4045-9e26-98cd80c3a07e",
+   "attributes": 0
+  },
+  {
+   "number": 9,
+   "name": "efi-B",
+   "offset": 861335977984,
+   "size": 67108864,
+   "type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+   "id": "116e6641-70eb-42d5-924f-70f0629adf83",
+   "attributes": 0
+  },
+  {
+   "number": 10,
+   "name": "rootfs-A",
+   "offset": 861403086848,
+   "size": 11811160064,
+   "type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+   "id": "9424a8a0-16d9-439a-863d-ba11be733579",
+   "attributes": 0
+  },
+  {
+   "number": 11,
+   "name": "rootfs-B",
+   "offset": 873214246912,
+   "size": 11811160064,
+   "type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+   "id": "733509da-6dfd-48ac-b142-e9972852c79f",
+   "attributes": 0
+  },
+  {
+   "number": 12,
+   "name": "var-A",
+   "offset": 885025406976,
+   "size": 1073741824,
+   "type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+   "id": "bc48557e-e080-45b2-aa34-f83c64dcda48",
+   "attributes": 0
+  },
+  {
+   "number": 13,
+   "name": "var-B",
+   "offset": 886099148800,
+   "size": 1073741824,
+   "type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+   "id": "bd155de0-a5ef-42cd-a533-74e7644f2e56",
+   "attributes": 0
+  },
+  {
+   "number": 14,
+   "name": "home",
+   "offset": 887172890624,
+   "size": 111266496512,
+   "type": "933ac7e1-2eb4-4f13-b844-0e14e2aef915",
+   "id": "27ac567b-f60a-401d-8752-288004ba7031",
+   "attributes": 0
+  }
+ ],
+ "home_used_bytes": 2409873408,
+ "home_partition_size": 111266496512
+}

@@ -71,8 +71,7 @@ internal static class BoilerCustomBuildChecks
             window.Show(); window.BoilerModeForChecks("custom");
             var options = Field<InstallerOptionsPanel>("optionsPanel");
             var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
-            var packagePath = Path.Combine(Backend.Root, "cache", "model-bundles", "packages", "oxp3", "manifest.json");
-            var bytes = await File.ReadAllBytesAsync(packagePath);
+            var bytes = BundledModelManifest.Read("device:oxp3");
             var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
             using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(indexPath));
             var entry = index.RootElement.GetProperty("packages").EnumerateArray().Single(p => p.GetProperty("id").GetString() == "device:oxp3");
@@ -134,22 +133,27 @@ internal static class BoilerCustomBuildChecks
             foreach (var language in new[] { "zh-CN", "en-US" })
             {
                 InstallerI18n.SetLanguage(language); Call("RefreshCurrentHardwareUi");
+                // The selected brand package may itself provide the BE201 resource;
+                // that is a model component, not the hidden generic wireless option.
+                var be201ModelChoice = deviceComponents.TryGetValue("resource:intel-be201-firmware", out var be201Choice)
+                    && be201Choice.IsEnabled;
+                var be201Text = be201ModelChoice
+                    ? language == "en-US" ? "The selected model includes BE201 firmware. Adjust it in the component list." : "所选机型包含 BE201 固件，可在构件列表调整。"
+                    : language == "en-US" ? "BE201 on the destination is unconfirmed; firmware will not be installed." : "目标是否为 BE201 尚未确认，暂不安装固件。";
                 var availabilityByComponent = hardwareResultRows.Children.OfType<StackPanel>()
                     .ToDictionary(row => (string)row.Tag!, row => row.Children.OfType<TextBlock>().Single(text => Equals(text.Tag, "availability")).Text, StringComparer.Ordinal);
                 foreach (var result in hardwareDetection.Results)
                 {
                     var expected = result.ComponentId == "intel-be201-firmware"
-                        ? language == "en-US" ? "BE201 on the destination is unconfirmed; firmware will not be installed." : "目标是否为 BE201 尚未确认，暂不安装固件。"
+                        ? be201Text
                         : language == "en-US"
                         ? HasAvailableComponent(result.ComponentId) ? "Related component: currently available (select it manually)." : "Related component: not currently provided. Detection does not establish Linux-driver or hardware support."
                         : HasAvailableComponent(result.ComponentId) ? "对应构件：当前可选（请手动选择）。" : "对应构件：尚未提供。识别结果不代表 Linux 驱动或硬件支持。";
                     Require(availabilityByComponent[result.ComponentId] == expected,
                         $"current-pc-related-component-availability-localizes-{result.ComponentId}-{language}");
                 }
-                var unavailableWirelessText = language == "en-US" ? "BE201 on the destination is unconfirmed; firmware will not be installed." : "目标是否为 BE201 尚未确认，暂不安装固件。";
                 Require(options.RepairsExpander.Visibility == Visibility.Collapsed && !options.OptionBoxes["wifi:intel"].IsEnabled
-                    && !HasAvailableComponent("intel-be201-firmware")
-                    && availabilityByComponent["intel-be201-firmware"] == unavailableWirelessText,
+                    && availabilityByComponent["intel-be201-firmware"] == be201Text,
                     $"current-pc-hidden-generic-wireless-is-not-advertised-as-available-{language}");
             }
             InstallerI18n.SetLanguage(originalLanguage); Call("RefreshCurrentHardwareUi");

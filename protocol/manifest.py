@@ -6,6 +6,7 @@ trust grant. A digest in an untrusted package is integrity, not authenticity.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -367,6 +368,31 @@ def verify_file(path, expected):
     return True
 
 
+_VALIDATED_PACKAGES = {}
+_MAX_VALIDATED_PACKAGES = 8
+
+
+def _package_signature(root):
+    """Cheap tree fingerprint used only to reuse an already verified package.
+
+    Every file's name, size and modification time must be unchanged, so any
+    rewrite of package content falls through to a full re-validation. Links make
+    the signature unusable and force the strict path.
+    """
+    rows = []
+    for path in root.rglob("*"):
+        if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
+            return None
+        if path.is_file():
+            try:
+                info = path.lstat()
+            except OSError:
+                return None
+            rows.append((path.relative_to(root).as_posix(), info.st_size, info.st_mtime_ns))
+    rows.sort()
+    return tuple(rows)
+
+
 def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha256=None):
     root=_filesystem_path(directory).resolve()
     manifest_path=confined(root,"manifest.json")
@@ -374,6 +400,14 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
         if not _HASH.fullmatch(expected_manifest_sha256): _fail("Invalid anchored manifest digest")
     elif not allow_unsigned:
         _fail("Package requires a signed-index digest or explicit session developer trust")
+    cache_key = (str(root), expected_manifest_sha256)
+    if expected_manifest_sha256 is not None and cache_key in _VALIDATED_PACKAGES:
+        cached_signature, cached = _VALIDATED_PACKAGES[cache_key]
+        # The installer and maintenance hooks validate the same read-only package
+        # many times per run; only a byte-for-byte unchanged tree is reused.
+        if _package_signature(root) == cached_signature:
+            return copy.deepcopy(cached)
+    initial_signature = _package_signature(root) if expected_manifest_sha256 is not None else None
     # Read and authenticate the same bytes that are parsed below.
     raw=_bounded_bytes(manifest_path,MAX_MANIFEST)
     if expected_manifest_sha256 is not None and hashlib.sha256(raw).hexdigest()!=expected_manifest_sha256:
@@ -427,6 +461,11 @@ def validate_package(directory, *, allow_unsigned=False, expected_manifest_sha25
             inv=inventory[entry["source"]]
             if any(inv[k]!=entry[k] for k in ("sha256","size")): _fail("Component source digest differs from inventory")
         if any(p not in inventory for p in component.get("hooks",{}).values()): _fail("Hook absent from inventory")
+    # Cache only a tree that stayed byte-identical for the whole validation.
+    if initial_signature is not None and _package_signature(root) == initial_signature:
+        if len(_VALIDATED_PACKAGES) >= _MAX_VALIDATED_PACKAGES:
+            _VALIDATED_PACKAGES.pop(next(iter(_VALIDATED_PACKAGES)))
+        _VALIDATED_PACKAGES[cache_key] = (initial_signature, copy.deepcopy(obj))
     return obj
 
 

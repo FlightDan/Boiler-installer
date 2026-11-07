@@ -1,0 +1,282 @@
+[
+ {
+  "slot": "A",
+  "id": "core:maintenance",
+  "status": "files_installed",
+  "operation": {
+   "transaction": "9f62fe643e9d0fb129a55a81d771beed",
+   "component": "core:maintenance",
+   "status": "committed",
+   "files": 88,
+   "state_sha256": "3c8ab9ec247d3004b953a67980fd9cb01713fae7a8bfe639f8ea26c8af2a86e8"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "oxp3:legacy-adaptation",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "60e75e7c8b2e045147c6958e58e2dfdc",
+   "component": "oxp3:legacy-adaptation",
+   "status": "committed",
+   "files": 0,
+   "state_sha256": "a6e6bf9c7a07536ae7ad3a5ac0d4509cbe42553992bb0a339c172303c56d4b6d"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "oxp3:microphone",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "acd86be9a6819634807f7d84118f93fc",
+   "component": "oxp3:microphone",
+   "status": "committed",
+   "files": 3,
+   "state_sha256": "0c4d50598344299bdb416e4c59978a01fb257f45bd46e85df6623f22c92142b3"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "oxp3:speaker-route",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "6b6462a09aaaf6997c08d3b78b4a22b9",
+   "component": "oxp3:speaker-route",
+   "status": "committed",
+   "files": 6,
+   "state_sha256": "b0f73da92a14122c2ab6b27941c7808052f42ff22ff6117ccb04eaf5d8726954"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "oxp3:xevmafix",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "10ed207384106172eb012dc9f4d2032f",
+   "component": "oxp3:xevmafix",
+   "status": "committed",
+   "files": 10,
+   "state_sha256": "3cc60ee363bb1bf234f8b2683e6c79fd549275d5bd82d5c0ee48cb229c54931f"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "oxp3:fingerprint-unlock",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "06095e73e481d72ae15ce78f7e9270a0",
+   "component": "oxp3:fingerprint-unlock",
+   "status": "committed",
+   "files": 51,
+   "state_sha256": "9afda43f836311a462d5bb2ca9e5a545a9bceda91b025c966da2e88930951cd0"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "resource:intel-be201-firmware",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "a22e3f7220df111a0231a2174132c34a",
+   "component": "resource:intel-be201-firmware",
+   "status": "committed",
+   "files": 9,
+   "state_sha256": "f053ffea79248ba538c403cdfc2895e61491efc50ceb669d8b3386c3c2ad058c"
+  }
+ },
+ {
+  "slot": "A",
+  "id": "core:system-presets",
+  "status": "files_installed",
+  "operation": {
+   "transaction": "6e537f13a9b196564528d71e2c88eb1f",
+   "component": "core:system-presets",
+   "status": "committed",
+   "files": 2,
+   "state_sha256": "b7e523e5adb66614c4a8d7a922b40177d21e8e7d56ea584eb716739cfff487f4"
+  },
+  "language": "zh_CN",
+  "password_set": false,
+  "ssh_enabled": false,
+  "activation": "next-boot"
+ },
+ {
+  "slot": "A",
+  "id": "x2-mini:ssd-gm7-boot-repair",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "activation": "first_boot_required",
+  "outcome": "applied",
+  "operation": {
+   "ok": true,
+   "action": "apply",
+   "changed": true,
+   "status": "configured",
+   "activation": "first_boot_required",
+   "restart_required": null
+  },
+  "target": {
+   "root_partuuid": "9424a8a0-16d9-439a-863d-ba11be733579",
+   "slot": "A",
+   "esp_partuuid": "25f80625-0200-4045-9e26-98cd80c3a07e",
+   "esp_type": "3d03ccf4-e630-4328-8b45-7b625136a6a3",
+   "home_uuid": "d4e8a433-e763-4cdd-88e7-71444ccee5e9",
+   "root_device": "253:38",
+   "esp_device": "253:36",
+   "disk": "/dev/vdc",
+   "disposition": "match",
+   "physical": {
+    "kind": "physical",
+    "bus": "NVMe",
+    "model": "Predator SSD GM7 1TB",
+    "serial": "SANITIZED_DC38B7D7DC43833E0BE9AB703DAF5A",
+    "disposition": "match"
+   }
+  }
+ },
+ {
+  "slot": "B",
+  "id": "core:maintenance",
+  "status": "files_installed",
+  "operation": {
+   "transaction": "07cf459e9c1890dcda39bccaf203f3d0",
+   "component": "core:maintenance",
+   "status": "committed",
+   "files": 88,
+   "state_sha256": "9afd3e0434f05affdb7d7b6a1937faf4fb991d569fdae846011dcefc9634f3b7"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "oxp3:legacy-adaptation",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "020f994758105c300149e54efea83098",
+   "component": "oxp3:legacy-adaptation",
+   "status": "committed",
+   "files": 0,
+   "state_sha256": "36b574fbee5b72a7be605598d3deb70631e6dc0289914ca2eeaeff565621a465"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "oxp3:microphone",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "c2a91869261f14bee4fd4a535e8886e8",
+   "component": "oxp3:microphone",
+   "status": "committed",
+   "files": 3,
+   "state_sha256": "e11469461d18f70b848bdd8e87bfae9f70819da4460032823c443abfb8a4d00f"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "oxp3:speaker-route",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "78cb677a95dc082f39485f36d7a16aaa",
+   "component": "oxp3:speaker-route",
+   "status": "committed",
+   "files": 6,
+   "state_sha256": "1e35d1c10e14e674e9e22cc74ac25b12ba559cace3b84f12b7c21295e70488e8"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "oxp3:xevmafix",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "83173663e130a3ba30f221268167ad0b",
+   "component": "oxp3:xevmafix",
+   "status": "committed",
+   "files": 10,
+   "state_sha256": "9503fb1de60140b79950ec4d25e2d324170b0f80f195cc48aadc4cdabf75aafe"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "oxp3:fingerprint-unlock",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "e384ff96f72cd90aadaedf0f9f761bc8",
+   "component": "oxp3:fingerprint-unlock",
+   "status": "committed",
+   "files": 51,
+   "state_sha256": "0e5f4ec041c9dabbc765e693a89014cfed91b19c7f126871086816905927728b"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "resource:intel-be201-firmware",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "operation": {
+   "transaction": "8e8e9ccc5cd95c478c11179c7916ea11",
+   "component": "resource:intel-be201-firmware",
+   "status": "committed",
+   "files": 9,
+   "state_sha256": "c169a6df139ca3e28abfda93bdd66a3f86799a479b18cd77844892dbc96d2f4c"
+  }
+ },
+ {
+  "slot": "B",
+  "id": "core:system-presets",
+  "status": "files_installed",
+  "operation": {
+   "transaction": "a57dd361291044cc0e7bf8e3c19aba69",
+   "component": "core:system-presets",
+   "status": "committed",
+   "files": 2,
+   "state_sha256": "d42bb22f217584cc5203af115d59f0a3571af6ce7361b1569f0d19bea138fe51"
+  },
+  "language": "zh_CN",
+  "password_set": false,
+  "ssh_enabled": false,
+  "activation": "next-boot"
+ },
+ {
+  "slot": "B",
+  "id": "x2-mini:ssd-gm7-boot-repair",
+  "status": "files_installed",
+  "runtime": "not_validated",
+  "activation": "first_boot_required",
+  "outcome": "applied",
+  "operation": {
+   "ok": true,
+   "action": "apply",
+   "changed": true,
+   "status": "configured",
+   "activation": "first_boot_required",
+   "restart_required": null
+  },
+  "target": {
+   "root_partuuid": "733509da-6dfd-48ac-b142-e9972852c79f",
+   "slot": "B",
+   "esp_partuuid": "116e6641-70eb-42d5-924f-70f0629adf83",
+   "esp_type": "3d03ccf4-e630-4328-8b45-7b625136a6a3",
+   "home_uuid": "d4e8a433-e763-4cdd-88e7-71444ccee5e9",
+   "root_device": "253:39",
+   "esp_device": "253:37",
+   "disk": "/dev/vdc",
+   "disposition": "match",
+   "physical": {
+    "kind": "physical",
+    "bus": "NVMe",
+    "model": "Predator SSD GM7 1TB",
+    "serial": "SANITIZED_DC38B7D7DC43833E0BE9AB703DAF5A",
+    "disposition": "match"
+   }
+  }
+ }
+]

@@ -1,0 +1,1503 @@
+{
+ "schema_version": 1,
+ "kind": "InstallPlan",
+ "mode": "normal",
+ "slot": "A",
+ "components": [
+  {
+   "files": [
+    {
+     "mode": 420,
+     "sha256": "1d46996f906f2fc8604e3048f5bfa3b0723225fe8c97db353b751d953c28f2da",
+     "size": 42921,
+     "source": "maintenance-runtime/maintenance/ssd_boot.py",
+     "target": "usr/local/lib/boiler/maintenance/ssd_boot.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "9711453a3d44aec3ab20df58e48142a52ef1cfe4fda1cc94002b82a6e551cae4",
+     "size": 60593,
+     "source": "maintenance-runtime/maintenance/model_efi.py",
+     "target": "usr/local/lib/boiler/maintenance/model_efi.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "877a4dd683a8338182c84093edf2e008642af04c792c969b1a58188bc27009aa",
+     "size": 2910,
+     "source": "maintenance-runtime/components/ssd_boot.py",
+     "target": "usr/local/lib/boiler/components/ssd_boot.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "bd8176381b040a44dd7ee8c7a82da58d8dce29b12d35692d4b452b05a3f135fb",
+     "size": 3836,
+     "source": "maintenance-runtime/components/oxp3_efi_provider.py",
+     "target": "usr/local/lib/boiler/components/oxp3_efi_provider.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "7fcf117273f029f87763561232173a806d09387970fc0dceaa4fd05db07f1fd8",
+     "size": 7337,
+     "source": "maintenance-runtime/components/oxp3_efi_provider.lock.json",
+     "target": "usr/local/lib/boiler/components/oxp3_efi_provider.lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "a70129547f5792f5ac564ea3fe514ca8312cd17a1b1b760a005a9e8f83829e75",
+     "size": 2236,
+     "source": "maintenance-runtime/components/x2_efi_provider.py",
+     "target": "usr/local/lib/boiler/components/x2_efi_provider.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "001e57c08ac6aee3bbe577cc507553f121bf6112ce5df04a5305472c81cebb10",
+     "size": 14646,
+     "source": "maintenance-runtime/components/x2_efi_provider.lock.json",
+     "target": "usr/local/lib/boiler/components/x2_efi_provider.lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "a9ffead39e92e28ae9e7027f64e9d8b8cd684e2544a28812b50d4bc8db684171",
+     "size": 1909,
+     "source": "maintenance-runtime/components/oxp3_full_efi_provider.py",
+     "target": "usr/local/lib/boiler/components/oxp3_full_efi_provider.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "32162bb2a83f21c8635722737dd69674dd899f81f0c98317502a8e46d4d8be58",
+     "size": 14461,
+     "source": "maintenance-runtime/components/oxp3_full_efi_provider.lock.json",
+     "target": "usr/local/lib/boiler/components/oxp3_full_efi_provider.lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "2183de948fd80ee7116d519f995fe19fa7573975066b68d52436bd77caf911fa",
+     "size": 1838,
+     "source": "maintenance-runtime/adaptations/common/ssd/GM7_POLICY.md",
+     "target": "usr/local/lib/boiler/adaptations/common/ssd/GM7_POLICY.md"
+    },
+    {
+     "mode": 420,
+     "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+     "size": 1070,
+     "source": "maintenance-runtime/adaptations/common/scripts/licenses/upstream-fixes-MIT.txt",
+     "target": "usr/local/lib/boiler/adaptations/common/scripts/licenses/upstream-fixes-MIT.txt"
+    },
+    {
+     "mode": 420,
+     "sha256": "3f5172e93de550ede040741204bd6c6075bd4eb8592b0f81bc4eb7d9c64735ac",
+     "size": 15952,
+     "source": "maintenance-runtime/maintenance/resource_staging.py",
+     "target": "usr/local/lib/boiler/maintenance/resource_staging.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "21e3e4092bcae050bec605889a5495323a865e64e1f0635edc9d482bd52b4906",
+     "size": 5441,
+     "source": "maintenance-runtime/maintenance/hdr_resources.py",
+     "target": "usr/local/lib/boiler/maintenance/hdr_resources.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "c0f3798f9bbcc18581d5a07d47a8dbeca4a257d9c80059e520a4613279679a08",
+     "size": 3656,
+     "source": "maintenance-runtime/protocol/hdr_contract.py",
+     "target": "usr/local/lib/boiler/protocol/hdr_contract.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "2580304783333478743f04a7926c4ea5a805913f51637ddcfeeb331c46a13407",
+     "size": 8317,
+     "source": "maintenance-runtime/maintenance/core_retention.py",
+     "target": "usr/local/lib/boiler/maintenance/core_retention.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "f2201ec15edb1610a5d0038d15a83a82d50a09bacd1326059fc1d85d8d589a90",
+     "size": 204,
+     "source": "maintenance-runtime/maintenance/__init__.py",
+     "target": "usr/local/lib/boiler/maintenance/__init__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "b7bca7babecb3104704c4d5f5fd25a91b088ddf556d3827265cea9f8ce2f4a13",
+     "size": 11346,
+     "source": "maintenance-runtime/maintenance/__main__.py",
+     "target": "usr/local/lib/boiler/maintenance/__main__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "ce1f230563d9ef5fa9755c323755455af06362dc147a8be44c558131f87a55b3",
+     "size": 51111,
+     "source": "maintenance-runtime/maintenance/engine.py",
+     "target": "usr/local/lib/boiler/maintenance/engine.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "3cb3efa22c5f4d39b935f694054c52c90697d35a8c18553a1f51a3e7441171c1",
+     "size": 29490,
+     "source": "maintenance-runtime/maintenance/plugins.py",
+     "target": "usr/local/lib/boiler/maintenance/plugins.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "b6cbb3c336df1236430cab27d41d9e69b547b0b1071a2c272d26a69c94c47e77",
+     "size": 31558,
+     "source": "maintenance-runtime/maintenance/updates.py",
+     "target": "usr/local/lib/boiler/maintenance/updates.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "521175aa251731c1db544796e365e727c1a2225d9ead2a69c7b8925df120551d",
+     "size": 30820,
+     "source": "maintenance-runtime/maintenance/adoption_blobs.py",
+     "target": "usr/local/lib/boiler/maintenance/adoption_blobs.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "56f8d25b93572b2a3df2ea926f31f6d48347de9a1163cf343ea17c8a4886a5e9",
+     "size": 14066,
+     "source": "maintenance-runtime/maintenance/live_root.py",
+     "target": "usr/local/lib/boiler/maintenance/live_root.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "add6e0d3d817f86607dc061649e0b926f2c67b8af0d91e2b1cb78f13cf49254e",
+     "size": 37800,
+     "source": "maintenance-runtime/maintenance/models.py",
+     "target": "usr/local/lib/boiler/maintenance/models.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "137db4bbde3c577e7ef36ea2d1441f903557d210783efe9e44486c0c24af3b6b",
+     "size": 44521,
+     "source": "maintenance-runtime/maintenance/model_ui.py",
+     "target": "usr/local/lib/boiler/maintenance/model_ui.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "ef036b1972547494ba96cbc415ce1122606cf2148bc452775db5690ba2a22578",
+     "size": 37889,
+     "source": "maintenance-runtime/maintenance/shared_models.py",
+     "target": "usr/local/lib/boiler/maintenance/shared_models.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "33dc69e5ec8707579ef0c3ce6c01e4b0fd1804d92753550b3b5eb9595c0984ae",
+     "size": 34174,
+     "source": "maintenance-runtime/maintenance/resource_runtime.py",
+     "target": "usr/local/lib/boiler/maintenance/resource_runtime.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "37b733db3a8e277af8c31cb15fff6b90a3e02f13af7ce8284769b4e5e2f91541",
+     "size": 3747,
+     "source": "maintenance-runtime/maintenance/resource_entrypoints.py",
+     "target": "usr/local/lib/boiler/maintenance/resource_entrypoints.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "7ba60e923e40d7f646808f36c9aa394a02b2d59182dc1d6252037891df0ab1f6",
+     "size": 4240,
+     "source": "maintenance-runtime/maintenance/firmware_resources.py",
+     "target": "usr/local/lib/boiler/maintenance/firmware_resources.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "5ae14f598ad7773ab0727737e8d4b61a431c20402182b7935bc79b22767deb9a",
+     "size": 2901,
+     "source": "maintenance-runtime/maintenance/be201_model_resource.py",
+     "target": "usr/local/lib/boiler/maintenance/be201_model_resource.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "e7de113f9482c1f0697f0f9640f208857c10e9205c9284b25b53891b144bcc87",
+     "size": 5213,
+     "source": "maintenance-runtime/maintenance/cpu_resources.py",
+     "target": "usr/local/lib/boiler/maintenance/cpu_resources.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "68846dc18dcad6a7d90cb973e62cef8c00332a20ed3a1ecc53fc4961a20093f9",
+     "size": 16668,
+     "source": "maintenance-runtime/maintenance/resource_cli.py",
+     "target": "usr/local/lib/boiler/maintenance/resource_cli.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "9e2c9522f3dea726cfe5f516722855e48de5fdf43e96127dc20ad779f3ba265b",
+     "size": 2974,
+     "source": "maintenance-runtime/maintenance/feedback.py",
+     "target": "usr/local/lib/boiler/maintenance/feedback.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "b7f1f86ee8e371148d37c8d540e5cb077fd553f3bff259db394a751abd115a61",
+     "size": 14842,
+     "source": "maintenance-runtime/maintenance/reporter.py",
+     "target": "usr/local/lib/boiler/maintenance/reporter.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "456ddf6abb80c82d9bf0c4e51ba12d11b366c1b2687f609dcece3dbfb84b34f0",
+     "size": 502,
+     "source": "maintenance-runtime/maintenance/release.json",
+     "target": "usr/local/lib/boiler/maintenance/release.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "7987b6753fd5ca3271f8ebdb3cfcc97c853c9b8b6b01c5e8fb45e06c949e2926",
+     "size": 580,
+     "source": "maintenance-runtime/protocol/__init__.py",
+     "target": "usr/local/lib/boiler/protocol/__init__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "bc904e51af3e8b370a68ea08dc0ffd6a4147becd53149caf220554f2698bbb01",
+     "size": 7182,
+     "source": "maintenance-runtime/protocol/__main__.py",
+     "target": "usr/local/lib/boiler/protocol/__main__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "ccfe966c5b74ff26470000b0597485f6d55e24ff109826f52f93cb3d3404485b",
+     "size": 10278,
+     "source": "maintenance-runtime/protocol/fetch.py",
+     "target": "usr/local/lib/boiler/protocol/fetch.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "4385a5fcb383ee3d8e80794199cfc072b92d131f1e2b217c07a8c9a50cd3dcb9",
+     "size": 9319,
+     "source": "maintenance-runtime/protocol/local.py",
+     "target": "usr/local/lib/boiler/protocol/local.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "96dc0f42db300cc6fbcdb1bb35774d94d416f8971e04f12476040e06e222227b",
+     "size": 13148,
+     "source": "maintenance-runtime/protocol/brand_bundle.py",
+     "target": "usr/local/lib/boiler/protocol/brand_bundle.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "d3d8a840ce3df8c36741a0403beb2a73ef169cc9f048ba2969e9d59b5a572e2d",
+     "size": 30848,
+     "source": "maintenance-runtime/protocol/manifest.py",
+     "target": "usr/local/lib/boiler/protocol/manifest.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "e41c763c5d26d52d5beb06851c72153beaafdc97766ba4910c2c34bdc9870615",
+     "size": 20873,
+     "source": "maintenance-runtime/protocol/model_catalog.py",
+     "target": "usr/local/lib/boiler/protocol/model_catalog.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "77b3cb2b6758a1997a45bd280e71775ad0152329cd88d48b775d0c978619cec0",
+     "size": 3334,
+     "source": "maintenance-runtime/protocol/model_options.py",
+     "target": "usr/local/lib/boiler/protocol/model_options.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "c3f443312c74bcdc3013d7a9deb306473dc6c3b21f6625319012c9dbdb9b1e86",
+     "size": 113,
+     "source": "maintenance-runtime/protocol/trusted-public-key.pem",
+     "target": "usr/local/lib/boiler/protocol/trusted-public-key.pem"
+    },
+    {
+     "mode": 420,
+     "sha256": "208a777955a17f81ea34e53349f99a05fb13c7c39ce15ae76f8cd947eda21bd5",
+     "size": 8571,
+     "source": "maintenance-runtime/protocol/resource_pool.py",
+     "target": "usr/local/lib/boiler/protocol/resource_pool.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "7177ade4517606477486f697bea1cd47a9fbad494057a2fce69feb017bb27194",
+     "size": 5030,
+     "source": "maintenance-runtime/protocol/resource_selection.py",
+     "target": "usr/local/lib/boiler/protocol/resource_selection.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "bf479ad63a3dd09ba1d743091f33b22192967a93b39dc3ff63b1ce0556b0165c",
+     "size": 2720,
+     "source": "maintenance-runtime/protocol/resource_import.py",
+     "target": "usr/local/lib/boiler/protocol/resource_import.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "45b8198c6edddeb5b18201820d65eab39d8ba8251f36bb66cf4fedba6a92e2de",
+     "size": 2797,
+     "source": "maintenance-runtime/protocol/firmware_contract.py",
+     "target": "usr/local/lib/boiler/protocol/firmware_contract.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "3c248313c1e498c4baaf5b66f58163b42454602e6eb4f09ddde200e37d4b9c3a",
+     "size": 3651,
+     "source": "maintenance-runtime/protocol/cpu_contract.py",
+     "target": "usr/local/lib/boiler/protocol/cpu_contract.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "f8314cd5f40ccbe494e0d2887ad504e43af9eab39ded46894a5389c273c1dbc8",
+     "size": 2365,
+     "source": "maintenance-runtime/adaptations/toon-parser-lock.json",
+     "target": "usr/local/lib/boiler/adaptations/toon-parser-lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "1e45f7a69363f7f2a6bb4f43b5c18787231e9de31362ca737e12cab015ef3bf6",
+     "size": 713,
+     "source": "maintenance-runtime/components/model-catalog/lock.json",
+     "target": "usr/local/lib/boiler/components/model-catalog/lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "a4671997e463553f86537197b733459002c98987c4a5325f25d54f1294600825",
+     "size": 1404,
+     "source": "maintenance-runtime/maintenance/keyboard_contract.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_contract.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "74fe188af4b9c19eb6b0fa47a665d0eb29e85687880e9a2b02cb9750a66bf748",
+     "size": 2682,
+     "source": "maintenance-runtime/maintenance/keyboard_target.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_target.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "5f034a7be9f6c618093c6f9665d716e3245127d1de85b52b72026920c3df1fc8",
+     "size": 8141,
+     "source": "maintenance-runtime/maintenance/keyboard_models.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_models.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "a6f4ff9773269ab66d8d51ea127adfe370d1745bd8efe1bbce75b00902beb3d7",
+     "size": 84,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/__init__.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/__init__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "fe9f91b84d2c6d36a79554a51975c18c7178d6117b7a6554f03a2bc2ac21e7da",
+     "size": 2012,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/merge.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/merge.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "320f5c4c7f8c52393cea18c211ae35c15375f36f1e8ed6a20b883db72a7fcbdd",
+     "size": 3556,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/public-source-lock.json",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/public-source-lock.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "152304760a596c8308052c5b26773844e7fd4c453f666454a17a4af68df38478",
+     "size": 20772,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/service.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/service.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+     "size": 34523,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/LICENSE-AGPL-3.0",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/LICENSE-AGPL-3.0"
+    },
+    {
+     "mode": 420,
+     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "size": 0,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/__init__.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/__init__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "751a1f6902e5c304223e0215fdd6072cf6a77ccbd0935a50281c62fdf2e5bff5",
+     "size": 12223,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/animation_changer_compat.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/animation_changer_compat.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "36b4b0b8b970b640e404d09772a625e990e37588e69b9e3ee73448b2b6493047",
+     "size": 12240,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/autoflatpaks_compat.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/autoflatpaks_compat.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "a331adf7768b4019dc9ea4bc8e15376a9a50617070d7fd5ef5f4b2fdd20742a9",
+     "size": 3454,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/compatibility.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/compatibility.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "973f1b3c61db67598546c8f4d9f61ec6ec6ec953329ba9ac015262df7d91fa48",
+     "size": 2109,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/decky_order.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/decky_order.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "6af9554ef77dc335e8295dd79d1309da1489b07e413f490acb8f52dc8597af3e",
+     "size": 1055,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/keyboard_merge.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/keyboard_merge.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "8adcb35bcb2cd48d7641b3645631dd11473cb061654e93748463d0a0f22aeeb7",
+     "size": 836,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/opti_migration.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/opti_migration.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "e202c700a5ddaaad28775ae79b7801faa52912887a4587ae30b27d0e5a1e5ffa",
+     "size": 14187,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/probe.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/probe.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "f7c74b3bd6701d3367bdbe895ec6b91535c46e76a28a79d1a0edd4b23e845ba4",
+     "size": 18254,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/runtime_directories.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/runtime_directories.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "1eb270c5ac1151422b26d0233ee68b52155042b316c26a6e932bcbd4e8abc694",
+     "size": 2491,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/split_lock.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/split_lock.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "a27eed43dd15ba2d18db723f8d138813a3b056084eebfb31e7994d47c419bb43",
+     "size": 20445,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/state_io.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/state_io.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "39f122669a151b85a66223f2779d4352c014d7d331cabc1aa616b31099f06baf",
+     "size": 61029,
+     "source": "maintenance-runtime/maintenance/keyboard_runtime/vendor/transactions.py",
+     "target": "usr/local/lib/boiler/maintenance/keyboard_runtime/vendor/transactions.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "5b6550985ffe3b2e1178087ec442ce4f5a9f67a5e3779d2e82f000e1946d864f",
+     "size": 1287,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/__init__.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/__init__.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "3eedb3fb29a7c3b1d5dad2814154f59391bb7120f19310eff36bf7bb09b6b55d",
+     "size": 6222,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/_api.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/_api.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "20800ade21b98e5699f4e849ab1ace39c8649f4ce41edefce26248de7228eda3",
+     "size": 25143,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/_decoder.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/_decoder.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "39be8b180e4991cc02fba743707151485fac87e2b8350296c67f1ed7214b50bd",
+     "size": 14028,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/_encoder.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/_encoder.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "8a2730b09fb67e844db45462ba875c732eae73311b8110a2c91e72bc6c9aed27",
+     "size": 1127,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/_errors.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/_errors.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "b6e1fc249ee473be80768d608b63cef193ff609c33e6623af5db301960b467cd",
+     "size": 4289,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/_text.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/_text.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+     "size": 0,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/py.typed",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/py.typed"
+    },
+    {
+     "mode": 420,
+     "sha256": "f44b93401a26b417d9f3b60da9dc84e5af5bb8999116fe5743278959a86f9666",
+     "size": 2502,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format/pydantic.py",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format/pydantic.py"
+    },
+    {
+     "mode": 420,
+     "sha256": "26da95efc362eba3999b4b72a7e163c37908f5515cacac36c46011e595ee8d42",
+     "size": 1244,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format-1.2.0.dist-info/licenses/LICENSE",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format-1.2.0.dist-info/licenses/LICENSE"
+    },
+    {
+     "mode": 420,
+     "sha256": "b9a288a35b78f7c9d790053742bb0e7c19140ee10cefe43a46662446afd1a251",
+     "size": 8292,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format-1.2.0.dist-info/METADATA",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format-1.2.0.dist-info/METADATA"
+    },
+    {
+     "mode": 420,
+     "sha256": "2c24710f53b681c9f67124c5dd34b8791cfa208a6f497b2931f2934a0d201c0a",
+     "size": 947,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format-1.2.0.dist-info/RECORD",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format-1.2.0.dist-info/RECORD"
+    },
+    {
+     "mode": 420,
+     "sha256": "f48518b2562e1bf6ac4f85a55af7e4fcaefa9ef7ae2ef493283a0b78bd1c57e4",
+     "size": 80,
+     "source": "maintenance-runtime/adaptations/vendor/toon_format-1.2.0.dist-info/WHEEL",
+     "target": "usr/local/lib/boiler/adaptations/vendor/toon_format-1.2.0.dist-info/WHEEL"
+    },
+    {
+     "mode": 420,
+     "sha256": "4dd8a98e707fe947d29e70e879f5dfd1dea3742736ff6c657150f7113040c9a1",
+     "size": 1301,
+     "source": "maintenance-runtime/components/model-catalog/snapshot/adaptations.json",
+     "target": "usr/local/lib/boiler/components/model-catalog/snapshot/adaptations.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "d11df2dff1794dd191982f8b15aedb46a4087baf84c275b880139579cc147be5",
+     "size": 13507,
+     "source": "maintenance-runtime/components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json",
+     "target": "usr/local/lib/boiler/components/model-catalog/snapshot/brands/onexplayer/oxp3/manifest.json"
+    },
+    {
+     "mode": 420,
+     "sha256": "95adc68b5df57a5e56e14aaebd924379dd301bef040f6e3f0b4598e5dadae2ba",
+     "size": 16174,
+     "source": "maintenance-runtime/components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json",
+     "target": "usr/local/lib/boiler/components/model-catalog/snapshot/brands/onexplayer/x2-mini/manifest.json"
+    },
+    {
+     "mode": 493,
+     "sha256": "205d3ef5a3c2fef7b8ae8b5618ff553f72974749e17cee8ad7cf1564edffc384",
+     "size": 202,
+     "source": "maintenance-runtime/boiler-maintenance",
+     "target": "usr/local/bin/boiler-maintenance"
+    },
+    {
+     "mode": 493,
+     "sha256": "be68721c00903854acb4180074d84ebd7834997ee9ebb83169e6b9c6662485fb",
+     "size": 202,
+     "source": "maintenance-runtime/boiler-maintenance-ui",
+     "target": "usr/local/bin/boiler-maintenance-ui"
+    },
+    {
+     "mode": 420,
+     "sha256": "e8d14e40568ce96f36dbd801354453285fc793c3e968506d9f7fdb5eaaa00dcc",
+     "size": 253,
+     "source": "maintenance-runtime/Boiler-Maintenance.desktop",
+     "target": "usr/share/applications/Boiler-Maintenance.desktop"
+    }
+   ],
+   "id": "core:maintenance",
+   "kind": "ComponentManifest",
+   "schema_version": 1,
+   "version": "0.2.0+maintenance.17"
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "oxp3:legacy-adaptation",
+   "version": "0.1.0-localtest.20261104.toon2",
+   "minimum_engine_version": "0.1.4",
+   "name": {
+    "zh": "X2 Mini 完整共用适配",
+    "en": "X2 Mini complete shared adaptations"
+   },
+   "description": {
+    "en": "Runs the pinned public OXP3 integration once using the package selection, including its explicitly acknowledged OS-image update hold.",
+    "zh": "按包内显式选择执行一次已公开 OXP3 集成，包含已确认的系统镜像更新暂停。"
+   },
+   "optional": true,
+   "default": false,
+   "requires": [],
+   "conflicts": [],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "device_ids": [
+     "x2-mini"
+    ],
+    "os_versions": [
+     "3.10"
+    ],
+    "kernels": [
+     "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+    ]
+   },
+   "files": [],
+   "hooks": {
+    "apply": "scripts/apply.sh",
+    "verify": "scripts/verify.sh",
+    "restore": "scripts/restore.sh"
+   }
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "oxp3:microphone",
+   "version": "0.1.0",
+   "name": {
+    "en": "Microphone native mute synchronization",
+    "zh": "麦克风原生静音联动"
+   },
+   "description": {
+    "en": "Event-driven ALSA Capture Switch synchronization; keeps source mute and gain settings. Restart the desktop session to activate.",
+    "zh": "按音频事件同步 ALSA 录音开关，保留原生静音和增益设置；重新登录桌面后启用。"
+   },
+   "default": false,
+   "optional": true,
+   "requires": [],
+   "conflicts": [],
+   "files": [
+    {
+     "source": "shared-adaptations/microphone/000.bin",
+     "target": "usr/local/lib/oxp-microphone/microphone.py",
+     "size": 9440,
+     "sha256": "25074a70432dcd3be14f48b5e3133f063611ad0fd46805fbfa829c054b03c269",
+     "mode": 420
+    },
+    {
+     "source": "shared-adaptations/microphone/001.bin",
+     "target": "etc/systemd/user/oxp-microphone.service",
+     "size": 364,
+     "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a",
+     "mode": 420
+    },
+    {
+     "source": "shared-adaptations/microphone/002.bin",
+     "target": "etc/systemd/user/default.target.d/90-oxp-microphone.conf",
+     "size": 36,
+     "sha256": "40b0db31f7f8f7f2fc96fa147a8ff10ed3316dff7316a1b83b7d59d8a34f7888",
+     "mode": 420
+    }
+   ],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "os_versions": [
+     "3.10"
+    ]
+   },
+   "minimum_engine_version": "0.1.4"
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "oxp3:speaker-route",
+   "version": "2026.10.30",
+   "name": {
+    "zh": "OXP3 扬声器路由与初始化恢复",
+    "en": "OXP3 speaker route and initialization recovery"
+   },
+   "description": {
+    "zh": "在启动会话及休眠恢复后，确认 ALC245 耳机孔为空时修复误选的耳机路由；近期有 Speaker UCM 初始化失败日志时重选原扬声器配置。需要实际声音与耳机插拔验收。",
+    "en": "After session start and resume, repairs a mistaken headphones route only when the ALC245 jack is empty. Retries the unchanged speaker profile after a recent Speaker UCM initialization failure. Physical audio and headset acceptance remain required."
+   },
+   "default": false,
+   "optional": true,
+   "requires": [],
+   "conflicts": [],
+   "files": [
+    {
+     "source": "upstream-repairs/speaker/speaker_route.py",
+     "target": "usr/local/lib/oxp3-speaker-route/speaker_route.py",
+     "size": 5602,
+     "sha256": "bc6b72125dc68c9dd15dec8600f9a506be2c7e99170023f0c08c26e7a158330a",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/speaker/oxp3-speaker-route.service",
+     "target": "etc/systemd/user/oxp3-speaker-route.service",
+     "size": 221,
+     "sha256": "327dade2d73ab6da60572967d8e14b7a3bb7377c147c4fb4efa386183b989324",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/speaker/90-oxp3-speaker-route.conf",
+     "target": "etc/systemd/user/default.target.d/90-oxp3-speaker-route.conf",
+     "size": 40,
+     "sha256": "7a36e2ef341e6eec0aef1a63b92954452ad98ff0ba090b1e9b0d3e5543b3bde1",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/speaker/oxp3-speaker-resume.service",
+     "target": "etc/systemd/system/oxp3-speaker-resume.service",
+     "size": 284,
+     "sha256": "efe98f22d45c43988e848ec5db406feffe1d7e1b9734d5956663b9b75f3d05d9",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/speaker/20-oxp3-speaker-resume.conf",
+     "target": "etc/systemd/system/sleep.target.d/20-oxp3-speaker-resume.conf",
+     "size": 41,
+     "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/speaker/UPSTREAM_LICENSE",
+     "target": "usr/share/licenses/boiler-oxp3-speaker-route/LICENSE",
+     "size": 1070,
+     "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+     "mode": 420
+    }
+   ],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "os_versions": [
+     "3.10"
+    ]
+   },
+   "minimum_engine_version": "0.1.4"
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "oxp3:xevmafix",
+   "version": "2026.10.30",
+   "name": {
+    "zh": "OXP3 xe 大量映射休眠恢复修复（可选）",
+    "en": "OXP3 xe large-mapping resume workaround (optional)"
+   },
+   "description": {
+    "zh": "仅限精确 7.2.4 内核和已记录 SteamOS 3.10 build。使用可回退虚拟连续内存分配规避大量 GPU 映射恢复时的单块分配上限。已完成官方 ELF 和离线构建核验，尚无本组件实机加载及休眠验收；已加载模块需重启移除。",
+    "en": "Only for the exact 7.2.4 kernel and recorded SteamOS 3.10 build. Uses virtually contiguous allocation for large GPU mapping rebind arrays. Official ELF and offline build verified; physical loading and suspend acceptance remain pending. An active module requires reboot to remove."
+   },
+   "default": false,
+   "optional": true,
+   "requires": [],
+   "conflicts": [],
+   "files": [
+    {
+     "source": "upstream-repairs/xevmafix/xevmafix.ko",
+     "target": "usr/lib/modules/7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9/extra/xevmafix.ko",
+     "size": 397512,
+     "sha256": "10a473fca8031ab43206f7a9146413cf781355ddedd3ff5a66cf59bb5369461b",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/load.py",
+     "target": "usr/lib/boiler/oxp3/xevmafix/load.py",
+     "size": 3033,
+     "sha256": "d39cda04906560f5d3e0a01d94c1d649e97920bb685573b96a43a827a06cda63",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/boiler-oxp3-xevmafix.service",
+     "target": "usr/lib/systemd/system/boiler-oxp3-xevmafix.service",
+     "size": 218,
+     "sha256": "4e05053564db612fab03dd7c838aa85b7472c4dc3791a5bee5f1162acc6641e8",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/90-boiler-oxp3-xevmafix.conf",
+     "target": "etc/systemd/system/multi-user.target.d/90-boiler-oxp3-xevmafix.conf",
+     "size": 42,
+     "sha256": "ba2a8b4edebc640910521643e7962d09546a043cd8f539fcb1b504047e503132",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/LICENSE",
+     "target": "usr/share/licenses/boiler-oxp3-xevmafix/GPL-2.0",
+     "size": 18600,
+     "sha256": "8780e78a1a737e127f25a65f6d95269bffd36158dc261114de7859b490bfc5aa",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/xevmafix.c",
+     "target": "usr/share/doc/boiler-oxp3-xevmafix/xevmafix.c",
+     "size": 5135,
+     "sha256": "ff2c89af58171028f23d4e23b613c0c346a02708b668a142f216d93c9ac1d9c5",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/Makefile",
+     "target": "usr/share/doc/boiler-oxp3-xevmafix/Makefile",
+     "size": 20,
+     "sha256": "1cd3b948f78e7622583dd6d30a6f076e54a8b9ae680ffae38e06409a987dcb4a",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/README.md",
+     "target": "usr/share/doc/boiler-oxp3-xevmafix/README.md",
+     "size": 2300,
+     "sha256": "3382fb696e004bc00ddabb8729ca16ba2b32f6e5be0b6ca244ced88f4cc74b00",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/UPSTREAM_LICENSE",
+     "target": "usr/share/doc/boiler-oxp3-xevmafix/UPSTREAM_LICENSE",
+     "size": 1070,
+     "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+     "mode": 420
+    },
+    {
+     "source": "upstream-repairs/xevmafix/module-lock.json",
+     "target": "usr/share/doc/boiler-oxp3-xevmafix/module-lock.json",
+     "size": 26919,
+     "sha256": "8bb5ee26ae6bcd2bfa8ecf57cb18f9d6819b95f595a76b5bd857a8ae15db6f41",
+     "mode": 420
+    }
+   ],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "os_versions": [
+     "3.10"
+    ],
+    "kernels": [
+     "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+    ]
+   },
+   "minimum_engine_version": "0.1.4"
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "oxp3:fingerprint-unlock",
+   "version": "0.1.0-localtest.20261104.fingerprint.10",
+   "name": {
+    "zh": "指纹解锁（实验）",
+    "en": "Fingerprint unlock (experimental)"
+   },
+   "description": {
+    "zh": "默认开启；下次启动生效。保留 PIN 和已有指纹数据，硬件兼容性尚需验证。",
+    "en": "Enabled by default; active after next boot. PIN and existing fingerprints are retained; hardware compatibility remains unverified."
+   },
+   "default": true,
+   "optional": true,
+   "requires": [],
+   "conflicts": [],
+   "files": [
+    {
+     "source": "fingerprint/profile/brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
+     "target": "etc/udev/rules.d/69-boiler-x2-fingerprint.rules",
+     "size": 356,
+     "sha256": "808e72d3f63ed9453374f70510a8641f55a367dfa805adb3f89d895244e3668d",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/runtime-profile/spidev.conf",
+     "target": "etc/modprobe.d/boiler-oxp3-fingerprint.conf",
+     "size": 29,
+     "sha256": "4fa71ac24903901425aa99ffb1d669569e7858044dbabbe22303183a845269dc",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/runtime-profile/boiler-fprintd.service",
+     "target": "etc/systemd/system/boiler-fprintd.service",
+     "size": 297,
+     "sha256": "7c34339bc2c51b37bc3e397a5ef57e2a7936300f6820ea55a3f49c5a87fb49fa",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
+     "target": "usr/share/dbus-1/system-services/net.reactivated.Fprint.service",
+     "size": 150,
+     "sha256": "7189936528b25d066fa7c504c8d3a510a68534cd499b9e764726908ec6ea9e54",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/runtime-profile/profile.json",
+     "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/profile.json",
+     "size": 243,
+     "sha256": "33975adb8a98a7dfe79c3a55a9a239fab8d413a11b3c1b225f0f5d3f154aa449",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/bridge/main.py",
+     "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/main.py",
+     "size": 3730,
+     "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/bridge/index.js",
+     "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/dist/index.js",
+     "size": 14560,
+     "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/bridge/plugin.json",
+     "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/plugin.json",
+     "size": 111,
+     "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/profile/common/fingerprint/bridge/package.json",
+     "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/package.json",
+     "size": 84,
+     "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/native/bin/fprintd-delete",
+     "target": "var/lib/oxp3-installer/fingerprint/bin/fprintd-delete",
+     "size": 133336,
+     "sha256": "907b21b16d2be63d5765191343c662d1c562669eaf3d581c30c0e970d80eef61",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/bin/fprintd-enroll",
+     "target": "var/lib/oxp3-installer/fingerprint/bin/fprintd-enroll",
+     "size": 133232,
+     "sha256": "9116f5a1be61921225d409868a733012b099acf4f7d07eb331eab621df6314f4",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/bin/fprintd-list",
+     "target": "var/lib/oxp3-installer/fingerprint/bin/fprintd-list",
+     "size": 128968,
+     "sha256": "f5063e610aa3bb027f8ae1860c957eb42680bd77d1296be668ae96f76d007b74",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/bin/fprintd-verify",
+     "target": "var/lib/oxp3-installer/fingerprint/bin/fprintd-verify",
+     "size": 137328,
+     "sha256": "568e653e64149312049deda9e8c8ec2c8ff92cc2a8424f3c5cc5975a9b3e24cb",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/config/net.reactivated.Fprint.conf",
+     "target": "etc/dbus-1/system.d/net.reactivated.Fprint.conf",
+     "size": 1051,
+     "sha256": "0c18d42e3b6e7ef00158d24a5cd3755cd4062ce2c8fa1399d9c7aa3da74535e4",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/native/config/net.reactivated.fprint.device.policy",
+     "target": "usr/share/polkit-1/actions/net.reactivated.fprint.device.policy",
+     "size": 23751,
+     "sha256": "6c5296feeb25020d396168c9d2fa0474ff2bfb6d3fe3289a226df3d75cfc206f",
+     "mode": 420
+    },
+    {
+     "source": "fingerprint/native/lib/libGLX.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libGLX.so.0",
+     "size": 146080,
+     "sha256": "7f4d3eb916835d8900b7a604dc58466c37bef9ea467646e920b0ef152abdfc71",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libGLdispatch.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libGLdispatch.so.0",
+     "size": 722384,
+     "sha256": "ce0841b13eac3f33595425c1321b940e1d249a3023e0cbe8742c518f2376c71d",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libX11.so.6",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libX11.so.6",
+     "size": 1352704,
+     "sha256": "3b166fe04a85c80a5c1c79b01babf0da0e30241868e16b6cf375e13a91af83c4",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libXau.so.6",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libXau.so.6",
+     "size": 18344,
+     "sha256": "fc46a5e82c2de162f069e922c4996a03e8f0eaab3091fee6e47b16ca91bb0780",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libXdmcp.so.6",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libXdmcp.so.6",
+     "size": 26560,
+     "sha256": "8ebff6a42b57ec2a1adbf5fed7922daa0bd7d7525054967f6dfc5ba7a31cdd34",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libblas.so.3",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libblas.so.3",
+     "size": 457104,
+     "sha256": "bb7de6794db7721a599c52460b95d1f1dd88cf634b57faeeb67685151f1bed44",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libblkid.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libblkid.so.1",
+     "size": 362600,
+     "sha256": "5b56277cae2f0ee6fe150b60c4a87317d75dcd567d37292dea5748c027293559",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libbsd.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libbsd.so.0",
+     "size": 90192,
+     "sha256": "3dac62dbe6d3da4096d8e2f312702d4e80054e7bbd6a17da0d45981313df27f1",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libcap.so.2",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libcap.so.2",
+     "size": 51920,
+     "sha256": "4a208e10192b59f1fe84798d8c83875890de0a0432dffd14fcbd5a093cd35f05",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libffi.so.8",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libffi.so.8",
+     "size": 47216,
+     "sha256": "ff92d4750c5c682e4cb937fbb20c56dbe42b7680135883a8fc28b641464f9611",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libfprint-2.so.2",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libfprint-2.so.2",
+     "size": 363336,
+     "sha256": "97b01286c47ccfb5249ef23e6d52bf6d723f775304dc0a80bafdf22656720fd2",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libgcrypt.so.20",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libgcrypt.so.20",
+     "size": 1342696,
+     "sha256": "d6f37cf22dae83acf0fbd250683d2cd9ab17e888513fe7e401bd74e2a8c921f2",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libgfortran.so.5",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libgfortran.so.5",
+     "size": 2975560,
+     "sha256": "57b740a369abc1407694eceda00add21e4a886f4c7a8b4bdc46a9109ad84d60b",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libgpg-error.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libgpg-error.so.0",
+     "size": 165224,
+     "sha256": "8ef2f323f2664f0dad53508e8783c54a30d2ff1c672c4cbc16c9c87b675b7c7e",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libgudev-1.0.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libgudev-1.0.so.0",
+     "size": 55088,
+     "sha256": "27116e253c9fbd1b9f03708dc3591b073f2df6518f831c1cd7baa241dfa67b8a",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libgusb.so.2",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libgusb.so.2",
+     "size": 76920,
+     "sha256": "3e28672bec97eeaa53c47bb8b9f29d4981cd6e0c785fecdb838700f88543a9fc",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/liblapack.so.3",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/liblapack.so.3",
+     "size": 7368928,
+     "sha256": "8a33fa941ae19e4ea3dc0975538801c2ad2a3fe1f80f83b8c5f80305bb2a43b5",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/liblz4.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/liblz4.so.1",
+     "size": 155704,
+     "sha256": "c252439e635dd5545022294cad8c45dd150b29a1c089d717cd54f7dc9e3348a3",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/liblzma.so.5",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/liblzma.so.5",
+     "size": 197080,
+     "sha256": "0da7094a2afd8f6bbe324051e9e54a8ed6343b059dd40fe55409913ffc4fe018",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libmd.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libmd.so.0",
+     "size": 51400,
+     "sha256": "b9f5e12ecd2a5d9a2757add07ad3e029839d9bc6a23a8a27c6061f63783aa545",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libmount.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libmount.so.1",
+     "size": 417864,
+     "sha256": "c4d8eceb4124bb791a8fb915c820019cc9c3e96e21f408151d55849f0e63c59b",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libopencv_calib3d.so.406",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libopencv_calib3d.so.406",
+     "size": 2111944,
+     "sha256": "d56fbc937a4b9a462b265816277aae28150bac709a9106f8b579d48a6f2cc5ef",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libopencv_core.so.406",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libopencv_core.so.406",
+     "size": 3729376,
+     "sha256": "869edd53e66f966f3d0a06e4c866cb4d95e09b2c5d7ebae5b5eb30d9e5491bc5",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libopencv_features2d.so.406",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libopencv_features2d.so.406",
+     "size": 809416,
+     "sha256": "52d645758c6439b763dcc27c69beafcf917c4964845df3fa62e781fa57ec89ab",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libopencv_flann.so.406",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libopencv_flann.so.406",
+     "size": 453808,
+     "sha256": "4b72f032a5bd3011a6bd1438f34f0daf5b59209f999817501c03f4b18d70e46f",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libopencv_imgproc.so.406",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libopencv_imgproc.so.406",
+     "size": 4978944,
+     "sha256": "49c2f89f5609cbfb466cf132e2c184d8ef5f0c6db8177a96afad4104bcb2f8b3",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libpcre2-8.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libpcre2-8.so.0",
+     "size": 634272,
+     "sha256": "e65b01a00e4c46b8f1bb1d6e05c2093340bcea702be35157ad6ba3ec623a380a",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libpolkit-gobject-1.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libpolkit-gobject-1.so.0",
+     "size": 133960,
+     "sha256": "3986fc6d5ddce20a8de8234d67eeece1ff6518e9d146b1d1a12be2970ae8456b",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libquadmath.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libquadmath.so.0",
+     "size": 289304,
+     "sha256": "9e56d633c033aeaa4b16de7e7b3982a14d9328249ed43c968425a783ea085172",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libselinux.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libselinux.so.1",
+     "size": 185672,
+     "sha256": "5c4a3dc5e4d5a73c1e1268dad9ed1713033e5453b455513471f244ed2c30b7b2",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libtbb.so.12",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libtbb.so.12",
+     "size": 239904,
+     "sha256": "bc28f67ffb0cd5904c0a91f5620c274ae58cdcecaca86c548dbc31c8a70b43c8",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libusb-1.0.so.0",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libusb-1.0.so.0",
+     "size": 128200,
+     "sha256": "60b7ee60a3ad56f2d096ace4eb01efe8bff08fc9868252eebbcac9eac7c3281e",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libxcb.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libxcb.so.1",
+     "size": 191776,
+     "sha256": "ffc042c56a7ed51814a178c2d55450b7db070a85c9cbaf7999577d46adb344f4",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libz.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libz.so.1",
+     "size": 125888,
+     "sha256": "9a3ba0e5ea7de3d9235322d607d0c73543040dab2419e0e0a800b8ac3c8862dc",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/lib/libzstd.so.1",
+     "target": "var/lib/oxp3-installer/fingerprint/lib/libzstd.so.1",
+     "size": 772792,
+     "sha256": "6f3b0b5549b0d8604b2d4302265296627b25158b8bd3a765a9aef2c3d6ec5279",
+     "mode": 493
+    },
+    {
+     "source": "fingerprint/native/libexec/fprintd",
+     "target": "var/lib/oxp3-installer/fingerprint/libexec/fprintd",
+     "size": 205352,
+     "sha256": "b918c5d6e95b56f3529b0fd10c989e4694185f12cce74f9c0b2bd831fe48f0af",
+     "mode": 493
+    }
+   ],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "os_versions": [
+     "3.10"
+    ],
+    "device_ids": [
+     "x2-mini"
+    ]
+   }
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "resource:intel-be201-firmware",
+   "version": "0.1.0+wifi-single-source.20261031",
+   "files": [
+    {
+     "source": "common/network/intel/be201/files/000-iwlwifi-sc-a0-fm-c0-c101.ucode",
+     "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c101.ucode",
+     "size": 2305636,
+     "sha256": "3475bdb1f59d15707d5018144484d370a3b1f4868d5f4e6f38ef83a5004704c2",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/001-iwlwifi-sc-a0-fm-c0-c102.ucode",
+     "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c102.ucode",
+     "size": 2311660,
+     "sha256": "4efdd46b024b6fa5aaae8f9b921fc10d6cde04e035fa6d5a93c2f419ebfbdeec",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/002-iwlwifi-sc-a0-fm-c0-c103.ucode",
+     "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c103.ucode",
+     "size": 2326720,
+     "sha256": "cce159597d0b8915e3d1166a8680c00a3c12133c4c2ec577d7f09f60636edd9c",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/003-iwlwifi-sc-a0-fm-c0-c106.ucode",
+     "target": "usr/lib/firmware/iwlwifi-sc-a0-fm-c0-c106.ucode",
+     "size": 2226844,
+     "sha256": "7a4b428edf7dfc5ec1573bc1b8f98804b52e3a469aeec8187cae9aae66b583fd",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/004-ibt-00a0-0291-iml.sfi",
+     "target": "usr/lib/firmware/intel/ibt-00a0-0291-iml.sfi",
+     "size": 62892,
+     "sha256": "a9401eeea677c80fb027d316e4530e3a839463967b74ab3e610921ba1b215903",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+     "target": "usr/lib/firmware/intel/ibt-00a0-0291-pci.ddc",
+     "size": 4,
+     "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/006-ibt-00a0-0291-pci.sfi",
+     "target": "usr/lib/firmware/intel/ibt-00a0-0291-pci.sfi",
+     "size": 997224,
+     "sha256": "6d417061ab9890658e33e1b7015a05a40d0fae0df7a4a6ab652a5bb6936b48cd",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/005-ibt-00a0-0291-pci.ddc",
+     "target": "usr/lib/firmware/intel/ibt-00a0-0291-usb.ddc",
+     "size": 4,
+     "sha256": "e0fb10fe29f60607d6507ced3f697492d9611f62c4765feaee59c4bd4101d3e7",
+     "mode": 420
+    },
+    {
+     "source": "common/network/intel/be201/files/008-ibt-00a0-0291-usb.sfi",
+     "target": "usr/lib/firmware/intel/ibt-00a0-0291-usb.sfi",
+     "size": 991052,
+     "sha256": "b0987a2b366dce2812e53ff0f3e04e48368424da90e16a2618d87b4127fec778",
+     "mode": 420
+    }
+   ],
+   "compatibility": {
+    "architectures": [
+     "x86_64"
+    ],
+    "os_ids": [
+     "steamos"
+    ],
+    "os_versions": [
+     "3.10"
+    ],
+    "kernels": [
+     "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+    ]
+   },
+   "requires": [],
+   "conflicts": [],
+   "firmware_preserved": [],
+   "firmware_policy_sha256": "e70aa5927ee013d701be3e58ef3d673f5c6e233f37b5aad2db6197eac9e9767e"
+  },
+  {
+   "schema_version": 1,
+   "kind": "ComponentManifest",
+   "id": "core:system-presets",
+   "version": "0.1.0",
+   "files": [
+    {
+     "source": "preset/etc/locale.conf",
+     "size": 41,
+     "sha256": "ddc57d95d62f5e2275db1c14138cf4809506f49000f97cf49b4d7d43eb5d3d15",
+     "target": "etc/locale.conf",
+     "mode": 420
+    },
+    {
+     "source": "preset/etc/xdg/plasma-localerc",
+     "size": 83,
+     "sha256": "00683d9a8dad15b2dc3a662a872f3e3443d8aa43db4c05104f20eeb7b0ce9b68",
+     "target": "etc/xdg/plasma-localerc",
+     "mode": 420
+    }
+   ],
+   "requires": [],
+   "conflicts": [],
+   "hooks": {}
+  }
+ ],
+ "source": {
+  "id": "steamos",
+  "version": "3.10",
+  "build": "20260924.1000",
+  "kernels": [
+   "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+  ]
+ },
+ "environment": {
+  "architecture": "x86_64",
+  "os_id": "steamos",
+  "os_version": "3.10",
+  "device_id": "x2-mini",
+  "kernels": [
+   "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9"
+  ]
+ },
+ "maintenance": {
+  "id": "core:maintenance",
+  "version": "0.2.0+maintenance.17",
+  "state_schema": 1
+ },
+ "device_package": {
+  "id": "device:x2-mini",
+  "version": "2026.11.5.2",
+  "manifest_sha256": "381dd40541f7fe7eb7c306ff055663b23fa2e111d15b938274d9012f6cbe8f9d",
+  "trust": "developer-session",
+  "device_warnings": [],
+  "ssd_providers": [
+   "x2-mini:ssd-gm7-boot-repair"
+  ],
+  "resources": [
+   {
+    "id": "resource:intel-be201-firmware",
+    "path": "common/network/intel/be201/resource.toon"
+   }
+  ],
+  "x2_efi_contract": {
+   "kind": "x2-split-lock-efi-v1",
+   "component": "oxp3:legacy-adaptation"
+  },
+  "legacy_selection": {
+   "schema_version": 1,
+   "repairs": [
+    "oxp3:slot-switch",
+    "oxp3:partition-mount",
+    "oxp3:opti2xmx",
+    "oxp3:gamescope-env",
+    "oxp3:flathub-ustc",
+    "oxp3:hdr",
+    "oxp3:desktop-hdr",
+    "oxp3:keyboard",
+    "oxp3:input",
+    "oxp3:multifunction",
+    "oxp3:gyro",
+    "oxp3:xe-dsb",
+    "oxp3:split-lock",
+    "oxp3:manager",
+    "oxp3:native-tdp",
+    "oxp3:overlay",
+    "oxp3:fan-driver",
+    "oxp3:oxp3-fan",
+    "oxp3:oxp3-cpu",
+    "oxp3:charging",
+    "oxp3:oxp3-light",
+    "oxp3:legacy-runtime"
+   ],
+   "plugins": [
+    "oxp3:decky",
+    "oxp3:windows-reboot",
+    "oxp3:waydroid"
+   ],
+   "installer_language": "zh-CN",
+   "kde_language": "zh_CN",
+   "acknowledge_legacy_update_hold": true,
+   "slot": "guest"
+  }
+ },
+ "device_warnings": [],
+ "model_efi": {
+  "kind": "x2-split-lock-efi-v1"
+ },
+ "ssd_repair": {
+  "id": "x2-mini:ssd-gm7-boot-repair",
+  "root_partuuid": "9424a8a0-16d9-439a-863d-ba11be733579",
+  "esp_partuuid": "25f80625-0200-4045-9e26-98cd80c3a07e",
+  "review_sha256": "b6cc594a8dce8580d5dc8c5027929ade04638ae8a513cb38abad0c8a1fa0415e",
+  "provider_owner": {
+   "component_id": "x2-mini:ssd-gm7-boot-repair",
+   "manifest_sha256": "381dd40541f7fe7eb7c306ff055663b23fa2e111d15b938274d9012f6cbe8f9d"
+  }
+ }
+}

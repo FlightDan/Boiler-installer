@@ -4,17 +4,17 @@ from pathlib import Path
 import sys
 
 from deployment import Deployment, fs, run, table
-from layout import GIB
+from fixture_layout import validate, preserved_files, range_bytes, profile
 
 if len(sys.argv) != 2 or sys.argv[1] not in ('interrupt', 'recover'): raise RuntimeError('Unknown test mode')
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU': raise RuntimeError('Not QEMU')
 if Path('/sys/block/vdd/size').read_text().strip() != '167772160': raise RuntimeError('Not 80 GiB fixture')
 target = table('/dev/vdd')
-if [p.get('name') for p in target['partitions']] != ['Windows EFI fixture', 'Windows data fixture',
-        'esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home']:
-    raise RuntimeError('Not the tool-created fixture')
+profile_name = validate('/dev/vdd')
+preserved_count = len(profile(profile_name)['preserved'])
 choice = {'schema': 1, 'mode': 'virtual_install', 'source_table': table('/dev/vdc'),
-          'target_table': target, 'range': {'start': 12 * GIB, 'size': 64 * GIB}}
+          'target_table': target, 'range': {'start': range_bytes(profile_name)[0],
+                                             'size': range_bytes(profile_name)[1]}}
 
 probe = Deployment(choice, fault='pause-configure-A' if sys.argv[1] == 'interrupt' else None)
 try:
@@ -26,7 +26,7 @@ try:
         # This is a test setup, not proof of interruption at an arbitrary install phase.
         probe.state['hard_stop_test'] = {'copied': dict(probe.state['copied']),
                                         'formatted': dict(probe.state['formatted']),
-                                        'protected': target['partitions'][:2]}
+                                        'protected': target['partitions'][:preserved_count]}
         probe.state['configured'].remove('A')
         probe.phase('configure-A')
         probe.configure('A')
@@ -50,7 +50,7 @@ try:
         raise RuntimeError('Configuration recovery did not complete')
     if probe.state['copied'] != checkpoint['copied'] or probe.state['formatted'] != checkpoint['formatted']:
         raise RuntimeError('Recovery recopied or reformatted completed filesystems')
-    if table('/dev/vdd')['partitions'][:2] != checkpoint['protected']:
+    if table('/dev/vdd')['partitions'][:preserved_count] != checkpoint['protected']:
         raise RuntimeError('Windows partition metadata changed')
     checks = [('rootfs-A', 'btrfs', None, None), ('rootfs-B', 'btrfs', None, None),
               ('home', 'ext4', 'retry-preserved.txt', 'Already formatted home must survive retry.\n')]
@@ -63,11 +63,12 @@ try:
                 raise RuntimeError('Recovered root protection is missing: ' + role)
         elif (probe.root / filename).read_text() != expected: raise RuntimeError('Home content lost')
         probe.unmount(probe.root)
-    for node, filesystem, filename, expected in [
-        ('/dev/vdd1', 'vfat', 'preserved-efi.txt', 'Windows EFI fixture file must survive deployment.\n'),
-        ('/dev/vdd2', 'ntfs-3g', 'preserved.txt', 'Windows fixture data must survive partition append.\n')]:
+    for part in preserved_files(profile_name):
+        filesystem = 'vfat' if part['fs'] == 'vfat' else 'ntfs-3g'
+        node = '/dev/vdd%d' % part['number']
         probe.mount(node, probe.root, '-t', filesystem, '-o', 'ro')
-        if (probe.root / filename).read_text() != expected: raise RuntimeError('Windows fixture file changed')
+        if (probe.root / part['sentinel']).read_text() != part['content']:
+            raise RuntimeError('Windows fixture file changed: ' + part['name'])
         probe.unmount(probe.root)
     probe.state['hard_stop_test']['recovery_verified'] = True; probe.save()
     print('OXP_DEPLOY_HARDSTOP=recovered-roots-home-windows-preserved', flush=True)

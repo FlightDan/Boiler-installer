@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "kind": "BoilerVmDiagnosticAllowlist",
+  "scope": "Diagnostics observed in retained QEMU guest logs that did not stop those runs. Entries are reviewed evidence, not acceptance. A new failure-shaped line fails the task until it is classified here with a reason.",
+  "tasks": {
+    "*": [
+      {
+        "pattern": "EFI variables are not supported on this system.",
+        "max": 2,
+        "reason": "Printed by the SteamOS bootloader helper in retained successful deployments; the tool-created QEMU disk has no UEFI variable store. Bootloader files were still installed."
+      },
+      {
+        "pattern": "acpi PNP0A03:00: fail to add MMCONFIG information",
+        "max": 2,
+        "reason": "Kernel ACPI notice at QEMU boot in retained runs; extended PCI configuration space is not needed by the guest tasks."
+      }
+    ],
+    "deployment-test": [
+      {
+        "pattern": "realpath: /dev/disk/by-partsets/self/rootfs: No such file or directory",
+        "max": 2,
+        "reason": "Printed once per slot during bootloader configuration in retained successful deployments; the helper probes a path that does not exist in the minimal guest. Not isolated; other tasks must classify it themselves."
+      },
+      {
+        "pattern": "error trace:",
+        "max": 2,
+        "reason": "Printed without a visible failing command in retained successful deployments; cause not isolated. Do not extend this entry without a reviewed reason."
+      }
+    ],
+    "resize-prepared": [
+      {
+        "pattern": "GPT PMBR size mismatch",
+        "max": 3,
+        "reason": "sfdisk corrects the primary GPT size after the staging image grows to the selected capacity; observed three times in each retained 80 to 128 GiB expansion."
+      }
+    ]
+  }
+}

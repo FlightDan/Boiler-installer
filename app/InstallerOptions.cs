@@ -28,10 +28,49 @@ public static class InstallerOptions
         from vendor in new[] { "intel", "realtek", "mediatek" }
         select transport + ":" + vendor);
     internal static bool AllowsWireless(string mode, bool hasPackage) => !hasPackage && mode is "custom" or "vanilla";
-    public static OptionCatalog Catalog => JsonSerializer.Deserialize<OptionCatalog>(
-        File.ReadAllText(Path.Combine(Backend.Root, "components/options.json")),
-        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower, PropertyNameCaseInsensitive = true })
-        ?? throw new IOException("Missing installer option catalog.");
+    private static readonly object catalogLock = new();
+    private static OptionCatalog? catalogCache;
+    private static string catalogStamp = "";
+    public static OptionCatalog Catalog
+    {
+        get
+        {
+            var path = Path.Combine(Backend.Root, "components/options.json");
+            var payloadPath = Path.Combine(Backend.Root, "cache/integration/manifest.json");
+            string Stamp(string file) => File.Exists(file) ? new FileInfo(file).Length + ":" + File.GetLastWriteTimeUtc(file).Ticks : "missing";
+            var stamp = Stamp(path) + "|" + Stamp(payloadPath);
+            lock (catalogLock)
+            {
+                if (catalogCache != null && catalogStamp == stamp) return catalogCache;
+                var catalog = JsonSerializer.Deserialize<OptionCatalog>(File.ReadAllText(path),
+                    new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower, PropertyNameCaseInsensitive = true })
+                    ?? throw new IOException("Missing installer option catalog.");
+                // The static catalog describes what can exist; the shipped component
+                // payload decides what this build can actually deliver.
+                catalogCache = ApplyPayloadAvailability(catalog, payloadPath);
+                catalogStamp = stamp;
+                return catalogCache;
+            }
+        }
+    }
+    private static OptionCatalog ApplyPayloadAvailability(OptionCatalog catalog, string payloadPath)
+    {
+        if (!File.Exists(payloadPath)) return catalog;
+        using var document = JsonDocument.Parse(File.ReadAllBytes(payloadPath));
+        if (!document.RootElement.TryGetProperty("components", out var components) || components.ValueKind != JsonValueKind.Object) return catalog;
+        OptionItem Apply(OptionItem item)
+        {
+            if (!item.Id.StartsWith("core:", StringComparison.Ordinal)) return item;
+            if (!components.TryGetProperty(item.Id, out var component))
+                return item with { Available = false,
+                    UnavailableZh = "此安装包未包含该组件。", UnavailableEn = "This installer build does not include the component." };
+            // The downloader requires the literal true; anything else is unavailable here too.
+            if (component.TryGetProperty("available", out var value) && value.ValueKind == JsonValueKind.True) return item;
+            return item with { Available = false,
+                UnavailableZh = "当前组件载荷不提供该组件。", UnavailableEn = "The current component payload does not provide this component." };
+        }
+        return catalog with { Repairs = catalog.Repairs.Select(Apply).ToArray(), Plugins = catalog.Plugins.Select(Apply).ToArray() };
+    }
     public static bool IsDefault(OptionItem item) => item.Available && (item.Id == "flathub-ustc" ? InstallerI18n.Language == "zh-CN" : item.Default);
     internal static string KdeLanguageForWindows(string cultureName)
     {

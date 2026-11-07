@@ -127,7 +127,8 @@ internal static class ImageImportStreams
     }
 
     internal static async Task<long> CopyOwnedAsync(Stream source, string output, CancellationToken token,
-        long? expected = null, long maximum = MaximumImageBytes, Func<ulong>? available = null)
+        long? expected = null, long maximum = MaximumImageBytes, Func<ulong>? available = null,
+        System.Security.Cryptography.IncrementalHash? sha256 = null)
     {
         if (maximum < 0 || maximum > MaximumImageBytes || expected is < 0 || expected > maximum)
             throw new IOException("镜像解压大小限制无效（最大 1 TiB）。 / Invalid expanded image size budget (maximum 1 TiB).");
@@ -162,6 +163,9 @@ internal static class ImageImportStreams
                 var count = await input.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, limit - total + 1)), token);
                 if (count == 0) break;
                 if (count > limit - total) throw new IOException("镜像数据超过解压大小限制。 / Image stream exceeds its expanded byte budget.");
+                // Hash the exact bytes written, from the same read, so no second
+                // pass over the expanded image is needed.
+                sha256?.AppendData(buffer, 0, count);
                 Space((ulong)count + 65536);
                 await RawImageStaging.WriteSparseAsync(target, buffer.AsMemory(0, count), sparse, token);
                 total += count;
@@ -408,8 +412,12 @@ public static class Backend
                             throw new IOException("机型包已撤销或已不在当前目录中，请重新选择。 / Device package revoked or absent from current index; select it again.");
                     }
                     await BoilerProtocol.RunAsync(["package", from, "--manifest-sha256", digest], token);
-                    await BoilerProtocol.RunAsync(["import-device", from, target, "--developer"], token);
-                    await BoilerProtocol.RunAsync(["package", target, "--manifest-sha256", digest], token);
+                    // import-device validates the copied tree against the manifest it
+                    // copied and returns that anchored digest; asserting equality here
+                    // keeps the same binding without a second full package hash.
+                    var importedDevice = await BoilerProtocol.RunAsync(["import-device", from, target, "--developer"], token);
+                    if (!string.Equals(importedDevice.GetProperty("manifest_sha256").GetString(), digest, StringComparison.Ordinal))
+                        throw new IOException("Device package import did not preserve the reviewed manifest digest.");
                 }
             }
         }
@@ -465,10 +473,11 @@ public static class Backend
         var scratch = Path.Combine(work, "scratch.raw");
         using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task is "home-copy-plan-checks" or "integration-check" or "integration-delta-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
-        // Legacy component journals embed installed payload bytes; a default model selection
-        // includes a component whose journal needs more than the base guest allowance.
-        var memory = task is "integration" or "integration-verify" ? "4096" : "1024";
-        var arguments = new List<string> { "-accel", "tcg", "-m", memory, "-smp", "2", "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
+        // Legacy component journals embed installed payload bytes; the heavy tasks
+        // get the larger allowance selected from actual host capacity.
+        var resources = GuestResourcesPolicy.ForHost(task);
+        log($"BOILER_HOST_RESOURCES={task}:{resources.Summary}\n");
+        var arguments = new List<string> { "-accel", resources.Accel, "-m", resources.MemoryMiB.ToString(), "-smp", resources.CpuCount.ToString(), "-display", "none", "-monitor", "none", "-serial", "stdio", "-no-reboot", "-nic", "none",
             "-kernel", Path.Combine(Root, "runtime/alpine/boot/vmlinuz-virt"), "-initrd", Path.Combine(Root, "runtime/alpine/boot/initramfs-virt"),
             "-append", "console=ttyS0,115200 modules=loop,squashfs,sd-mod,virtio_pci,virtio_blk,vfat alpine_dev=cdrom:iso9660",
             "-drive", $"file={Option(Path.Combine(Root, "cache/alpine-virt-3.23.6-x86_64.iso"))},format=raw,media=cdrom,readonly=on",
@@ -535,110 +544,138 @@ public static class Backend
             arguments.AddRange(["-drive", $"file={Option(merge)},format=raw,if=none,id=payload-merge", "-device", "virtio-blk-pci,drive=payload-merge,serial=boiler-payload-merge"]);
         }
         var qemu = Path.Combine(Root, "runtime/qemu-min/qemu-system-x86_64.exe");
-        if (task is "model-maintenance-check" or "firmware-plan" or "integration" or "integration-check" or "integration-verify") arguments[arguments.IndexOf("-m") + 1] = "2048";
-        var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
-        foreach (var argument in arguments) start.ArgumentList.Add(argument);
-        using var process = new Process { StartInfo = start };
         var taskTimeout = TimeSpan.FromMinutes(task == "model-maintenance-check" ? 90 : task == "integration" ? 60 : task is "home-copy-plan-checks" or "refind-image" or "integration-check" or "integration-delta-check" or "integration-verify" or "build" or "install-session-test" or "session-intent-interrupt" or "session-intent-recover" or "deployment-test" or "deployment-interrupt" or "deployment-recovery" or "firstboot-prepare" or "firstboot-verify" or "ui-bootstrap-seed" or "shared-state-test" or "hdr-test" or "plugin-test" ? 20 : 5);
-        using var timeout = new CancellationTokenSource(taskTimeout);
-        using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
-        // Open the log before starting QEMU: an unwritable/full log disk must
-        // not leave a running guest outside the process cleanup scope.
-        var logPath = Path.Combine(Root, "logs", id + ".txt"); Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-        using var liveLog = new StreamWriter(new FileStream(logPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
-        combined.Token.ThrowIfCancellationRequested();
-        process.Start();
-        void StopGuest()
+        var attempts = resources.Attempts;
+        for (var attempt = 0; attempt < attempts.Count; attempt++)
         {
-            try { if (!process.HasExited) process.Kill(true); }
-            catch (InvalidOperationException) { }
-        }
-        using var kill = combined.Token.Register(StopGuest);
-        var transcript = new StringBuilder(); int phase = 0;
-        async Task ReadAsync(StreamReader reader)
-        {
-            try
+            // A later attempt is entered only after the previous accelerator
+            // failed before the guest produced any output (phase 0), so the
+            // task command never ran and no target bytes were touched.
+            arguments[1] = attempts[attempt];
+            var logPath = Path.Combine(Root, "logs", (attempt == 0 ? id : id + "-accel" + attempt) + ".txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+            var start = new ProcessStartInfo(qemu) { WorkingDirectory = Path.GetDirectoryName(qemu)!, UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            foreach (var argument in arguments) start.ArgumentList.Add(argument);
+            using var process = new Process { StartInfo = start };
+            using var timeout = new CancellationTokenSource(taskTimeout);
+            using var combined = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
+            // Open the log before starting QEMU: an unwritable/full log disk must
+            // not leave a running guest outside the process cleanup scope.
+            using var liveLog = new StreamWriter(new FileStream(logPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
+            combined.Token.ThrowIfCancellationRequested();
+            // Timing lines are plain log records; no decision reads them.
+            var guestClock = System.Diagnostics.Stopwatch.StartNew();
+            var hostExitRecorded = false;
+            void RecordHostExit(string status)
             {
-                var buffer = new char[4096]; int count;
-                while ((count = await reader.ReadAsync(buffer.AsMemory(), combined.Token)) > 0)
+                if (hostExitRecorded) return;
+                hostExitRecorded = true;
+                var suffix = status == "ok" ? "" : ":status=" + status;
+                log($"BOILER_HOST_TIMING={task}:vm-exit:{guestClock.Elapsed.TotalSeconds:F3}{suffix}\n");
+            }
+            log($"BOILER_HOST_TIMING={task}:vm-start\n");
+            process.Start();
+            void StopGuest()
+            {
+                try { if (!process.HasExited) process.Kill(true); }
+                catch (InvalidOperationException) { }
+            }
+            using var kill = combined.Token.Register(StopGuest);
+            var transcript = new StringBuilder(); int phase = 0;
+            async Task ReadAsync(StreamReader reader)
+            {
+                try
                 {
-                    var chunk = new string(buffer, 0, count); string text;
-                    lock (transcript) { transcript.Append(chunk); liveLog.Write(chunk); text = transcript.ToString(); }
-                    log(chunk);
-                    var terminal = Regex.Replace(text, @"\x1b\[[0-9;?]*[A-Za-z]", "");
-                    if (Regex.IsMatch(terminal, @"login:\s*$") && Interlocked.CompareExchange(ref phase, 1, 0) == 0) await process.StandardInput.WriteAsync("root\n");
-                    else if (Regex.IsMatch(terminal, @"~\s*#\s*$") && Interlocked.CompareExchange(ref phase, 2, 1) == 1)
+                    var buffer = new char[4096]; int count;
+                    while ((count = await reader.ReadAsync(buffer.AsMemory(), combined.Token)) > 0)
                     {
-                        // Only the secret file uses 077. Applying it to the task also makes
-                        // public runtime directories root-only and breaks the deck session.
-                        var command = GuestCommand(task, payloadMount, secureInput != null);
-                        for (var offset = 0; offset < command.Length; offset += 8)
+                        var chunk = new string(buffer, 0, count); string text;
+                        lock (transcript) { transcript.Append(chunk); liveLog.Write(chunk); text = transcript.ToString(); }
+                        log(chunk);
+                        var terminal = Regex.Replace(text, @"\x1b\[[0-9;?]*[A-Za-z]", "");
+                        if (Regex.IsMatch(terminal, @"login:\s*$") && Interlocked.CompareExchange(ref phase, 1, 0) == 0) await process.StandardInput.WriteAsync("root\n");
+                        else if (Regex.IsMatch(terminal, @"~\s*#\s*$") && Interlocked.CompareExchange(ref phase, 2, 1) == 1)
                         {
-                            await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);
-                            await process.StandardInput.FlushAsync(combined.Token);
-                            await Task.Delay(25, combined.Token);
-                        }
-                    }
-                    else if (secureInput != null && secureEncoded != null && secureEncodedLength > 0
-                        && phase == 2 && Regex.IsMatch(terminal, @"(?:^|[\r\n])OXP_SECRET_INPUT_READY[\r\n]"))
-                    {
-                        if (Interlocked.CompareExchange(ref phase, 3, 2) == 2)
-                        {
-                            // QEMU's emulated serial receiver can drop a burst larger
-                            // than its FIFO, including the terminating newline.
-                            // Pace secrets just like the shell command above.
-                            for (var offset = 0; offset < secureEncodedLength; offset += 8)
+                            // Only the secret file uses 077. Applying it to the task also makes
+                            // public runtime directories root-only and breaks the deck session.
+                            var command = GuestCommand(task, payloadMount, secureInput != null);
+                            for (var offset = 0; offset < command.Length; offset += 8)
                             {
-                                await process.StandardInput.WriteAsync(secureEncoded.AsMemory(offset, Math.Min(8, secureEncodedLength - offset)), combined.Token);
+                                await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);
                                 await process.StandardInput.FlushAsync(combined.Token);
                                 await Task.Delay(25, combined.Token);
                             }
-                            await process.StandardInput.WriteAsync("\n".AsMemory(), combined.Token);
-                            await process.StandardInput.FlushAsync(combined.Token);
-                            lock (transcript) liveLog.WriteLine("\nOXP_SECRET_INPUT_SENT");
-                            Array.Clear(secureEncoded);
-                            Array.Clear(secureBytes!);
-                            secureEncodedLength = 0;
+                        }
+                        else if (secureInput != null && secureEncoded != null && secureEncodedLength > 0
+                            && phase == 2 && Regex.IsMatch(terminal, @"(?:^|[\r\n])OXP_SECRET_INPUT_READY[\r\n]"))
+                        {
+                            if (Interlocked.CompareExchange(ref phase, 3, 2) == 2)
+                            {
+                                // QEMU's emulated serial receiver can drop a burst larger
+                                // than its FIFO, including the terminating newline.
+                                // Pace secrets just like the shell command above.
+                                for (var offset = 0; offset < secureEncodedLength; offset += 8)
+                                {
+                                    await process.StandardInput.WriteAsync(secureEncoded.AsMemory(offset, Math.Min(8, secureEncodedLength - offset)), combined.Token);
+                                    await process.StandardInput.FlushAsync(combined.Token);
+                                    await Task.Delay(25, combined.Token);
+                                }
+                                await process.StandardInput.WriteAsync("\n".AsMemory(), combined.Token);
+                                await process.StandardInput.FlushAsync(combined.Token);
+                                lock (transcript) liveLog.WriteLine("\nOXP_SECRET_INPUT_SENT");
+                                Array.Clear(secureEncoded);
+                                Array.Clear(secureBytes!);
+                                secureEncodedLength = 0;
+                            }
                         }
                     }
                 }
+                catch
+                {
+                    StopGuest();
+                    throw;
+                }
             }
-            catch
+            try
             {
-                StopGuest();
-                throw;
+                if (secureInput != null)
+                {
+                    secureBytes = Encoding.UTF8.GetBytes(secureInput);
+                    secureEncoded = new char[checked(((secureBytes.Length + 2) / 3) * 4)];
+                    if (!Convert.TryToBase64Chars(secureBytes, secureEncoded, out secureEncodedLength))
+                        throw new InvalidOperationException("Could not encode secure input.");
+                }
+                await Task.WhenAll(ReadAsync(process.StandardOutput), ReadAsync(process.StandardError), process.WaitForExitAsync(combined.Token));
+                combined.Token.ThrowIfCancellationRequested();
+                var result = transcript.ToString();
+                if (process.ExitCode != 0 || !Regex.IsMatch(result, @"(?:^|[\r\n])OXP_TASK_RESULT=passed[\r\n]")) throw new InvalidOperationException("构建环境任务失败，参见日志：" + logPath);
+                RecordHostExit("ok");
+                return result;
             }
-        }
-        try
-        {
-            if (secureInput != null)
+            catch (OperationCanceledException error) when (timeout.IsCancellationRequested && !token.IsCancellationRequested)
             {
-                secureBytes = Encoding.UTF8.GetBytes(secureInput);
-                secureEncoded = new char[checked(((secureBytes.Length + 2) / 3) * 4)];
-                if (!Convert.TryToBase64Chars(secureBytes, secureEncoded, out secureEncodedLength))
-                    throw new InvalidOperationException("Could not encode secure input.");
+                RecordHostExit("timeout");
+                throw new TimeoutException($"构建环境任务 {task} 超过 {taskTimeout.TotalMinutes:g} 分钟，参见日志：{logPath}", error);
             }
-            await Task.WhenAll(ReadAsync(process.StandardOutput), ReadAsync(process.StandardError), process.WaitForExitAsync(combined.Token));
-            combined.Token.ThrowIfCancellationRequested();
-            var result = transcript.ToString();
-            if (process.ExitCode != 0 || !Regex.IsMatch(result, @"(?:^|[\r\n])OXP_TASK_RESULT=passed[\r\n]")) throw new InvalidOperationException("构建环境任务失败，参见日志：" + logPath);
-            return result;
-        }
-        catch (OperationCanceledException error) when (timeout.IsCancellationRequested && !token.IsCancellationRequested)
-        {
-            throw new TimeoutException($"构建环境任务 {task} 超过 {taskTimeout.TotalMinutes:g} 分钟，参见日志：{logPath}", error);
-        }
-        finally
-        {
-            if (secureEncoded != null) Array.Clear(secureEncoded);
-            if (secureBytes != null) Array.Clear(secureBytes);
-            if (!process.HasExited)
+            catch (Exception)
             {
-                StopGuest();
-                await process.WaitForExitAsync();
+                RecordHostExit(token.IsCancellationRequested ? "cancelled" : "failed");
+                if (attempt + 1 >= attempts.Count || phase != 0 || token.IsCancellationRequested) throw;
+                log($"BOILER_HOST_RESOURCES={task}:accel-fallback:{attempts[attempt]}->{attempts[attempt + 1]}:no-guest-output\n");
             }
-            await liveLog.FlushAsync();
+            finally
+            {
+                if (secureEncoded != null) Array.Clear(secureEncoded);
+                if (secureBytes != null) Array.Clear(secureBytes);
+                if (!process.HasExited)
+                {
+                    StopGuest();
+                    await process.WaitForExitAsync();
+                }
+                await liveLog.FlushAsync();
+            }
         }
+        throw new InvalidOperationException("QEMU accelerator attempts did not complete.");
     }
     internal static string GuestCommand(string task, string payloadMount, bool secureInput)
     {
@@ -672,7 +709,7 @@ public static class Backend
                     foreach (var entry in entries.EnumerateArray())
                         inventory[entry.GetProperty("source").GetString()!] = (entry.GetProperty("size").GetInt64(), entry.GetProperty("sha256").GetString()!);
         }
-        var files = new List<(string Source, string Relative)>();
+        var destination = Path.Combine(payload, "integration"); Directory.CreateDirectory(destination);
         if (!metadataOnly)
             foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {
@@ -681,20 +718,34 @@ public static class Backend
                 MediaSource.Ordinary(file, source);
                 if (!inventory.TryGetValue(relative, out var expected) || new FileInfo(file).Length != expected.Size)
                     throw new IOException("Unexpected or changed component payload file.");
-                using var stream = File.OpenRead(file);
-                var digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)).ToLowerInvariant();
-                if (digest != expected.Sha256) throw new IOException("Component payload hash differs.");
                 if (privatePayload == null && (relative.StartsWith("wireless/", StringComparison.Ordinal) || relative.StartsWith("graphics/", StringComparison.Ordinal)))
                     throw new IOException("Firmware binaries must be acquired into a private download plan.");
-                files.Add((file, relative));
+                var target = Path.Combine(destination, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                // One held source handle is hashed while it is copied into a private
+                // partial name, so only verified bytes ever appear at the target.
+                var partial = target + ".partial-" + Guid.NewGuid().ToString("N");
+                using var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.SequentialScan);
+                using (var output = new FileStream(partial, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, false))
+                using (var hash = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256))
+                {
+                    var buffer = new byte[1024 * 1024]; int count;
+                    while ((count = input.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        hash.AppendData(buffer, 0, count); output.Write(buffer, 0, count);
+                    }
+                    output.Flush(true);
+                    if (!string.Equals(Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant(), expected.Sha256, StringComparison.Ordinal))
+                    {
+                        output.Dispose();
+                        File.Delete(partial);
+                        throw new IOException("Component payload hash differs.");
+                    }
+                }
+                File.Move(partial, target);
             }
-        var destination = Path.Combine(payload, "integration"); Directory.CreateDirectory(destination);
+        // The catalogue is published only after every listed file verified.
         File.WriteAllBytes(Path.Combine(destination, "manifest.json"), manifestBytes);
-        foreach (var file in files)
-        {
-            var target = Path.Combine(destination, file.Relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!); File.Copy(file.Source, target);
-        }
         if (privatePayload != null && File.Exists(Path.Combine(privatePayload, "firmware-plan.json")))
             File.Copy(Path.Combine(privatePayload, "firmware-plan.json"), Path.Combine(payload, "firmware-plan.json"));
     }
@@ -719,14 +770,15 @@ public static class Backend
             if ((directory.Attributes & FileAttributes.ReparsePoint) != 0) throw new InvalidOperationException("虚拟测试路径不能是目录重定向。");
         if ((File.GetAttributes(fixture) & FileAttributes.ReparsePoint) != 0) throw new InvalidOperationException("虚拟测试盘不能是文件链接。");
     }
-    public static async Task<string> CreateFixtureAsync(Action<string> log, CancellationToken token)
+    public static async Task<string> CreateFixtureAsync(Action<string> log, CancellationToken token, string profile = "production")
     {
         var directory = Path.Combine(InstallationTemporaryFiles.Root, "virtual-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
         var fixture = Path.Combine(directory, "windows-fixture.qcow2");
         await ProcessAsync(Path.Combine(Root, "runtime/qemu-min/qemu-img.exe"), ["create", "-f", "qcow2", fixture, "80G"], log, token);
-        var marker = System.Text.Json.JsonSerializer.Serialize(new { kind = "oxp3-virtual-fixture", size = 80L * 1024 * 1024 * 1024 });
+        var marker = System.Text.Json.JsonSerializer.Serialize(new { kind = "oxp3-virtual-fixture", size = 80L * 1024 * 1024 * 1024, profile });
         await File.WriteAllTextAsync(Path.ChangeExtension(fixture, ".fixture.json"), marker, token);
-        await GuestAsync("partition-test", null, false, log, token, fixture: fixture);
+        await GuestAsync("partition-test", null, false, log, token, fixture: fixture,
+            selection: System.Text.Json.JsonSerializer.Serialize(new { fixture_profile = profile }));
         return fixture;
     }
 

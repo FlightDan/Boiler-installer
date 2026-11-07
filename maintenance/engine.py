@@ -105,7 +105,7 @@ def runtime_files(root=None):
     resource_pool.decoder(root/'adaptations')
     parser_lock = json.loads((root/'adaptations/toon-parser-lock.json').read_bytes())
     parser_files = ['adaptations/vendor/'+entry['path'] for entry in parser_lock['files']]
-    names=[*RUNTIME_FILES,*parser_files,*('components/model-catalog/snapshot/'+entry['path'] for entry in lock['files'])]
+    names=[*RUNTIME_FILES,*parser_files,*('adaptations/'+entry['path'] for entry in lock['files'])]
     return [confined(root,name) for name in names]
 
 
@@ -370,11 +370,11 @@ class Engine:
         if path.is_symlink(): raise MaintenanceError("Unsafe journal path")
         return path
 
-    def _put_snapshot(self,path,snapshot):
+    def _put_snapshot(self,path,snapshot,*,sync_directory=True):
         if snapshot.get('storage') == 'blob-v1':
             from .adoption_blobs import restore_blob, remove_blob_target
-            if snapshot.get('exists'): restore_blob(self,path,snapshot)
-            else: remove_blob_target(self,path)
+            if snapshot.get('exists'): restore_blob(self,path,snapshot,sync_directory=sync_directory)
+            else: remove_blob_target(self,path,sync_directory=sync_directory)
             return
         if not snapshot["exists"]:
             if path.exists(): path.unlink(); _sync_dir(path.parent)
@@ -572,7 +572,8 @@ class Engine:
         retained=self.retained_owned(component,state)
         if len(component.get('files',[]))+len(retained) > MAX_OPERATIONS:
             raise MaintenanceError('Component operation limit exceeded')
-        for entry in component.get("files",[]):
+        entries=component.get("files",[])
+        for entry in entries:
             target=self._target(entry["target"]); key=entry["target"]
             if key.casefold() in targets: raise MaintenanceError("Duplicate target")
             targets.add(key.casefold())
@@ -595,11 +596,15 @@ class Engine:
                 old_operation=next((op for op in prior['operations'] if op['target']==key),None)
                 mutable_prior=(key==mutable and old_operation is not None and mutable_operation(prior['component'],old_operation))
                 if recorded is None or (not mutable_prior and not _same(before,recorded)): raise MaintenanceError("Upgrade refused modified managed file")
-            before=capture(self,target,before)
-            if key==mutable and (before.get('exists') or owner):
+            mutable_retained = key==mutable and (before.get('exists') or owner)
+            # The private CAS directory is synced once after every object for
+            # this transaction exists, before the prepared journal can refer
+            # to it. Per-object syncs would only repeat the same barrier.
+            before=capture(self,target,before,cache_sync=False)
+            if mutable_retained:
                 operations.append(dict(target=key,before=before,after=dict(before),retained=True,cpu_mutable_config=True))
             else:
-                after=payload_snapshot(self,source,entry,before,target=target)
+                after=payload_snapshot(self,source,entry,before,target=target,cache_sync=False)
                 operation={"target":key,"before":before,"after":after}
                 if key==mutable: operation['cpu_mutable_config']=True
                 operations.append(operation)
@@ -609,8 +614,12 @@ class Engine:
             if total > MAX_TOTAL: raise MaintenanceError('Transaction exceeds binary backup limit')
             current=observe(self,self._target(item['target']))
             if not _same(current,snapshot): raise MaintenanceError('Retained managed file changed during preparation')
-            snapshot=capture(self,self._target(item['target']),snapshot)
+            snapshot=capture(self,self._target(item['target']),snapshot,cache_sync=False)
             operations.append(dict(target=item['target'],before=snapshot,after=dict(snapshot),retained=True))
+        if entries or retained:
+            from .adoption_blobs import blob_cache
+            try: _sync_dir(blob_cache(self))
+            except FileNotFoundError: pass
         # Fail closed for upgrades that silently drop previously owned paths.
         old_paths={p for p,o in state["owners"].items() if o["component"]==component["id"]}
         if old_paths - {op["target"] for op in operations}: raise MaintenanceError("Upgrade drops owned files; explicit restore is required")
@@ -619,14 +628,26 @@ class Engine:
         path=self._journal(identity); _json_write(path,journal)
         try:
             journal["status"]="applying"; _json_write(path,journal)
+            # Fail-before-write, as before this change: a batch-level pass, then a
+            # per-target recheck immediately before that target's own replace. A
+            # live desktop session may rewrite home configuration during the batch,
+            # so the recheck is kept; its cost is one read of each current target.
             for item in operations:
                 if not _same(observe(self,self._target(item['target'])),item['before']):
                     raise MaintenanceError('Target changed before apply')
-            for item in operations:
+            last_directory={}
+            for index,item in enumerate(operations):
+                if not item.get('retained'):
+                    last_directory[str(self._target(item['target']).parent)]=index
+            for index,item in enumerate(operations):
                 target=self._target(item['target'])
                 if not _same(observe(self,target),item['before']):
                     raise MaintenanceError('Target changed before apply')
-                if not item.get('retained'): self._put_snapshot(target,item['after'])
+                if item.get('retained'): continue
+                # Each changed directory is made durable once, at its last
+                # replace; the state commit below remains the single barrier.
+                self._put_snapshot(target,item['after'],
+                    sync_directory=last_directory.get(str(target.parent))==index)
             if hooks:
                 journal["status"]="hook_running"; _json_write(path,journal)
                 for phase in ("apply","verify"):
@@ -634,9 +655,12 @@ class Engine:
                         env=build_hook_environment(self.root,identity,hook_environment)
                         subprocess.run(["/bin/bash",str(confined(payload_root,hooks[phase])),str(self.root)],cwd=payload_root,env=env,check=True,timeout=900)
                 journal["status"]="hook_completed"; _json_write(path,journal)
-            # Hooks may not rewrite managed files behind ownership records.
+            # Hooks may not rewrite managed files behind ownership records. The full
+            # post-write observation also catches a live writer that lands after our
+            # replace, before the state commit records these bytes as owned.
             for item in operations:
-                if not _same(observe(self,self._target(item["target"])),item["after"]): raise MaintenanceError("Applied file verification failed")
+                if not _same(observe(self,self._target(item["target"])),item["after"]):
+                    raise MaintenanceError("Applied file verification failed")
             next_state=json.loads(json.dumps(state))
             for item in operations: next_state["owners"][item["target"]]={"component":component["id"],"transaction":identity,"sha256":item["after"].get("sha256")}
             next_state["components"][component["id"]]={"version":component["version"],"transaction":identity,

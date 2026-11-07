@@ -13,13 +13,19 @@ trap cleanup EXIT
 python3 - <<'PY'
 import json, stat, subprocess
 from pathlib import Path
+import sys
+sys.path.insert(0, '/mnt/payload/tasks')
+from fixture_layout import role_node, preserved_node
 root = Path('/mnt/target'); results = []
-for slot, root_node, var_node in (('A', '/dev/vdd6', '/dev/vdd8'), ('B', '/dev/vdd7', '/dev/vdd9')):
+for slot in ('A', 'B'):
+    root_node = role_node('/dev/vdd', 'rootfs-' + slot)
+    var_node = role_node('/dev/vdd', 'var-' + slot)
+    home_node = role_node('/dev/vdd', 'home')
     subprocess.run(['mount', '-t', 'btrfs', '-o', 'ro,rescue=nologreplay', root_node, str(root)], check=True)
     try:
         if subprocess.check_output(['btrfs', 'property', 'get', '-ts', str(root), 'ro'], text=True).strip() != 'ro=true': raise RuntimeError('Unprotected firstboot root')
         subprocess.run(['mount', '-t', 'ext4', '-o', 'ro,noload', var_node, str(root / 'var')], check=True)
-        subprocess.run(['mount', '-t', 'ext4', '-o', 'ro,noload', '/dev/vdd10', str(root / 'home')], check=True)
+        subprocess.run(['mount', '-t', 'ext4', '-o', 'ro,noload', home_node, str(root / 'home')], check=True)
         directory = root / 'home/.oxp3-installer/firstboot'
         state = json.loads((directory / 'state.json').read_text()); previous = json.loads((directory / 'before-uefi.json').read_text())
         active = state['runs'] > previous['runs'] and state['boot_id'] != previous['boot_id']
@@ -39,7 +45,7 @@ if not all(result['shared_boot_dispatch'] for result in results) or results[0]['
 print('OXP_FIRSTBOOT_UEFI=actual-systemd-dispatch-new-boot-and-incompatible-component-no-writes')
 print('OXP_FIRSTBOOT_RESULT=' + json.dumps(results))
 PY
-mount -t ntfs-3g -o ro /dev/vdd2 /mnt/windows
+mount -t ntfs-3g -o ro "$(python3 -B -c "import sys;sys.path.insert(0,'/mnt/payload/tasks');from fixture_layout import preserved_node;print(preserved_node('/dev/vdd','Windows data fixture'))")" /mnt/windows
 test "$(cat /mnt/windows/preserved.txt)" = 'Windows fixture data must survive partition append.'
 umount /mnt/windows
 printf '\nOXP_TASK_RESULT=passed\n'

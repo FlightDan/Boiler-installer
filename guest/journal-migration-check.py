@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 from deployment import Deployment, run, table, fs
 from fs_metadata import normalize_uuid
+from fixture_layout import preserved_files, validate
 
 choice = json.loads(Path('/mnt/payload/selection.json').read_text())
+profile_name = validate('/dev/vdd')
 selection = {'schema': 1, 'mode': 'virtual_install', 'source_table': table('/dev/vdc'),
              'target_table': table('/dev/vdd'), 'range': {'start': choice['target']['Start'], 'size': choice['target']['Size']}}
 probe = Deployment(selection)
@@ -50,13 +52,17 @@ try:
         raise RuntimeError('Rejected journal was overwritten')
     (root / 'oxp3/install-state.json').write_bytes(current_bytes); run('sync')
 finally: run('umount', str(root))
-for node, kind, name, expected in [
-    ('/dev/vdd1', 'vfat', 'preserved-efi.txt', 'Windows EFI fixture file must survive deployment.\n'),
-    ('/dev/vdd2', 'ntfs-3g', 'preserved.txt', 'Windows fixture data must survive partition append.\n'),
-    (probe.nodes['home'], 'ext4', 'retry-preserved.txt', 'Already formatted home must survive retry.\n')]:
+for part in preserved_files(profile_name):
+    kind = 'vfat' if part['fs'] == 'vfat' else 'ntfs-3g'
+    node = '/dev/vdd%d' % part['number']
     run('mount', '-t', kind, '-o', 'ro', node, str(root))
     try:
-        if (root / name).read_text() != expected: raise RuntimeError('Existing content changed')
+        if (root / part['sentinel']).read_text() != part['content']: raise RuntimeError('Existing content changed')
     finally: run('umount', str(root))
+run('mount', '-t', 'ext4', '-o', 'ro', probe.nodes['home'], str(root))
+try:
+    if (root / 'retry-preserved.txt').read_text() != 'Already formatted home must survive retry.\n':
+        raise RuntimeError('Existing home content changed')
+finally: run('umount', str(root))
 print('OXP_JOURNAL_MIGRATION=actual-uuid-types-distinct-roots-and-preserved-files', flush=True)
 print('OXP_JOURNAL_MIGRATION=foreign-uuid-refused-with-journal-bytes-preserved', flush=True)

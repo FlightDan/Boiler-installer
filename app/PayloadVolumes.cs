@@ -57,7 +57,7 @@ internal static class PayloadVolumes
         }
         // FAT cannot be an overlayfs lower layer. Assemble only on a dedicated,
         // disposable disk, then make the complete payload readonly before scripts run.
-        commands.Add("printf '%s\\n' /media/sr0/apks > /etc/apk/repositories; mkdir -p /var/cache/apk && apk --cache-dir /var/cache/apk add --no-network --no-progress /mnt/boiler-volume-0/apks/*.apk");
+        commands.Add("printf '%s\\n' /media/sr0/apks > /etc/apk/repositories; mkdir -p /var/cache/apk && apk --cache-dir /var/cache/apk add --no-network --no-progress /mnt/boiler-volume-0/apks/*.apk && touch /var/cache/apk/.boiler-apk-prepared");
         commands.Add("modprobe ext4");
         commands.Add("d=; for p in /sys/block/vd*; do s=$(cat \"$p/serial\" 2>/dev/null || cat \"$p/device/serial\" 2>/dev/null); if [ \"$s\" = boiler-payload-merge ]; then [ -z \"$d\" ] || exit 1; d=/dev/${p##*/}; fi; done; [ -n \"$d\" ] || exit 1");
         commands.Add("mkfs.ext4 -q -F \"$d\" && mount -t ext4 \"$d\" /mnt/payload");

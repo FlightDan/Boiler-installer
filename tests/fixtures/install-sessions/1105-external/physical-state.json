@@ -1,0 +1,191 @@
+{
+ "schema": 2,
+ "phase": "written-awaiting-device-boot",
+ "device": {
+  "Number": 1,
+  "Size": 1024209543168,
+  "SectorSize": 512,
+  "Bus": 7,
+  "Serial": "SANITIZED_4A184F",
+  "Vendor": "Realtek",
+  "Product": "RTL9210 NVME",
+  "Removable": false
+ },
+ "plan": {
+  "Selection": {
+   "Snapshot": "[{\"number\":0,\"guid\":\"{9dfcc2e9-2657-490e-87fa-ce874fa23222}\",\"serial\":\"SANITIZED_0DB188DB95\",\"sectorSize\":512,\"model\":\"PNY CS2142 2TB SSD\",\"size\":2048408248320,\"style\":\"GPT\",\"bus\":\"NVMe\",\"isBoot\":true,\"isSystem\":true,\"isOffline\":false,\"isReadOnly\":false,\"partitionReadError\":\"\",\"partitions\":[{\"number\":1,\"guid\":\"{47e90de4-6a14-473e-aaa8-054615a67f41}\",\"offset\":1048576,\"size\":104857600,\"type\":\"System\",\"gptType\":\"{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}\",\"letter\":\"\\u0000\",\"isBoot\":false,\"isSystem\":true,\"isHidden\":true,\"deletionAllowed\":false,\"deletionBlockReason\":\"System, boot, hidden, offline, or read-only partition is protected.\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"Basic data partition\",\"gptAttributes\":\"9223372036854775808\",\"nativeGptVerified\":true,\"filesystem\":\"FAT32\",\"filesystemSource\":\"windows\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"\",\"free\":64550912},{\"number\":2,\"guid\":\"{27f4566f-7035-4b6c-a271-0d9916699fef}\",\"offset\":105906176,\"size\":16777216,\"type\":\"Reserved\",\"gptType\":\"{e3c9e316-0b5c-4db8-817d-f92df00215ae}\",\"letter\":\"\\u0000\",\"isBoot\":false,\"isSystem\":false,\"isHidden\":true,\"deletionAllowed\":false,\"deletionBlockReason\":\"EFI, MSR, recovery and boot partitions are protected.\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"Microsoft reserved partition\",\"gptAttributes\":\"9223372036854775808\",\"nativeGptVerified\":true,\"filesystem\":\"\",\"filesystemSource\":\"\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"\",\"free\":null},{\"number\":3,\"guid\":\"{50210176-3183-455b-8a8e-6edfc9ddc940}\",\"offset\":122683392,\"size\":536870912000,\"type\":\"Basic\",\"gptType\":\"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}\",\"letter\":\"C\",\"isBoot\":true,\"isSystem\":false,\"isHidden\":false,\"deletionAllowed\":false,\"deletionBlockReason\":\"System, boot, hidden, offline, or read-only partition is protected.\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"Basic data partition\",\"gptAttributes\":\"9223372036854775808\",\"nativeGptVerified\":true,\"filesystem\":\"NTFS\",\"filesystemSource\":\"windows\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"\",\"free\":356876607488},{\"number\":4,\"guid\":\"{b663280a-3d83-49f2-aacb-338d2f521d72}\",\"offset\":536993595392,\"size\":1510417104896,\"type\":\"Basic\",\"gptType\":\"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}\",\"letter\":\"D\",\"isBoot\":false,\"isSystem\":false,\"isHidden\":false,\"deletionAllowed\":false,\"deletionBlockReason\":\"This volume contains Windows, the installer, temporary files, a pagefile or crash dump.\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"Basic data partition\",\"gptAttributes\":\"0\",\"nativeGptVerified\":true,\"filesystem\":\"NTFS\",\"filesystemSource\":\"windows\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"新加卷\",\"free\":1217519595520},{\"number\":5,\"guid\":\"{2d22b100-59c3-4d87-a61a-97a8bb1685dc}\",\"offset\":2047411748864,\"size\":995098624,\"type\":\"Recovery\",\"gptType\":\"{de94bba4-06d1-4d40-a16a-bfd50179d6ac}\",\"letter\":\"\\u0000\",\"isBoot\":false,\"isSystem\":false,\"isHidden\":true,\"deletionAllowed\":false,\"deletionBlockReason\":\"EFI, MSR, recovery and boot partitions are protected.\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"\",\"gptAttributes\":\"9223372036854775809\",\"nativeGptVerified\":true,\"filesystem\":\"NTFS\",\"filesystemSource\":\"windows\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"\",\"free\":89272320}]},{\"number\":1,\"guid\":\"{38beef06-7455-473d-8faf-2544bf374d8b}\",\"serial\":\"SANITIZED_4A184F\",\"sectorSize\":512,\"model\":\"Realtek RTL9210 NVME\",\"size\":1024209543168,\"style\":\"GPT\",\"bus\":\"USB\",\"isBoot\":false,\"isSystem\":false,\"isOffline\":false,\"isReadOnly\":false,\"partitionReadError\":\"\",\"partitions\":[]},{\"number\":2,\"guid\":\"{c80d56a0-f875-4c91-b12e-a04375f920fb}\",\"serial\":\"SANITIZED_4A184F\",\"sectorSize\":512,\"model\":\"Realtek RTL9210B-CG\",\"size\":2048408248320,\"style\":\"GPT\",\"bus\":\"USB\",\"isBoot\":false,\"isSystem\":false,\"isOffline\":false,\"isReadOnly\":false,\"partitionReadError\":\"\",\"partitions\":[{\"number\":1,\"guid\":\"{ed7a86f5-d0c3-47ff-bc2a-0a6c6bbefd99}\",\"offset\":1048576,\"size\":2048406847488,\"type\":\"Basic\",\"gptType\":\"{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}\",\"letter\":\"E\",\"isBoot\":false,\"isSystem\":false,\"isHidden\":false,\"deletionAllowed\":true,\"deletionBlockReason\":\"\",\"nativeUnrecognizedSafe\":false,\"gptName\":\"Basic data partition\",\"gptAttributes\":\"0\",\"nativeGptVerified\":true,\"filesystem\":\"NTFS\",\"filesystemSource\":\"windows\",\"sharedStorageSafe\":false,\"filesystemProbeError\":\"\",\"label\":\"\",\"free\":1746752114688}]}]",
+   "Example": false,
+   "Disk": 1,
+   "Start": 1048576,
+   "Capacity": 137438953472,
+   "AlignRight": true
+  },
+  "Kind": 1,
+  "DiskId": "38beef06-7455-473d-8faf-2544bf374d8b",
+  "Preserved": [],
+  "Added": [
+   {
+    "Number": 1,
+    "Name": "esp",
+    "Type": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+    "Id": "63d5cb71-7468-4198-a376-1ac176fda68a",
+    "Offset": 886769188864,
+    "Size": 268435456,
+    "Attributes": 0,
+    "Native": {
+     "Number": 1,
+     "Offset": 886769188864,
+     "Size": 268435456,
+     "Id": "63d5cb71-7468-4198-a376-1ac176fda68a",
+     "Style": 1,
+     "Type": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
+    }
+   },
+   {
+    "Number": 2,
+    "Name": "efi-A",
+    "Type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+    "Id": "a9235a3c-393a-4bb0-bd83-4f94a9da65be",
+    "Offset": 887037624320,
+    "Size": 67108864,
+    "Attributes": 0,
+    "Native": {
+     "Number": 2,
+     "Offset": 887037624320,
+     "Size": 67108864,
+     "Id": "a9235a3c-393a-4bb0-bd83-4f94a9da65be",
+     "Style": 1,
+     "Type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+    }
+   },
+   {
+    "Number": 3,
+    "Name": "efi-B",
+    "Type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+    "Id": "11c5de13-99c1-4a78-a022-5a0a642f31e5",
+    "Offset": 887104733184,
+    "Size": 67108864,
+    "Attributes": 0,
+    "Native": {
+     "Number": 3,
+     "Offset": 887104733184,
+     "Size": 67108864,
+     "Id": "11c5de13-99c1-4a78-a022-5a0a642f31e5",
+     "Style": 1,
+     "Type": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+    }
+   },
+   {
+    "Number": 4,
+    "Name": "rootfs-A",
+    "Type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+    "Id": "f25c7bcc-0c8e-41db-9173-be99e4d801c8",
+    "Offset": 887171842048,
+    "Size": 11811160064,
+    "Attributes": 0,
+    "Native": {
+     "Number": 4,
+     "Offset": 887171842048,
+     "Size": 11811160064,
+     "Id": "f25c7bcc-0c8e-41db-9173-be99e4d801c8",
+     "Style": 1,
+     "Type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
+    }
+   },
+   {
+    "Number": 5,
+    "Name": "rootfs-B",
+    "Type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709",
+    "Id": "2fc9d3a0-e566-4a0d-ac91-8dcf1d2e877b",
+    "Offset": 898983002112,
+    "Size": 11811160064,
+    "Attributes": 0,
+    "Native": {
+     "Number": 5,
+     "Offset": 898983002112,
+     "Size": 11811160064,
+     "Id": "2fc9d3a0-e566-4a0d-ac91-8dcf1d2e877b",
+     "Style": 1,
+     "Type": "4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
+    }
+   },
+   {
+    "Number": 6,
+    "Name": "var-A",
+    "Type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+    "Id": "e9cac278-bc5b-43b8-b0ac-f56ba2b6c07c",
+    "Offset": 910794162176,
+    "Size": 1073741824,
+    "Attributes": 0,
+    "Native": {
+     "Number": 6,
+     "Offset": 910794162176,
+     "Size": 1073741824,
+     "Id": "e9cac278-bc5b-43b8-b0ac-f56ba2b6c07c",
+     "Style": 1,
+     "Type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d"
+    }
+   },
+   {
+    "Number": 7,
+    "Name": "var-B",
+    "Type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d",
+    "Id": "e194b9ec-c786-4967-a263-cf4570dc0b73",
+    "Offset": 911867904000,
+    "Size": 1073741824,
+    "Attributes": 0,
+    "Native": {
+     "Number": 7,
+     "Offset": 911867904000,
+     "Size": 1073741824,
+     "Id": "e194b9ec-c786-4967-a263-cf4570dc0b73",
+     "Style": 1,
+     "Type": "4d21b016-b534-45c2-a9fb-5c16e091fd2d"
+    }
+   },
+   {
+    "Number": 8,
+    "Name": "home",
+    "Type": "933ac7e1-2eb4-4f13-b844-0e14e2aef915",
+    "Id": "d34a9517-a938-454a-9dab-6fab38a63096",
+    "Offset": 912941645824,
+    "Size": 111266496512,
+    "Attributes": 0,
+    "Native": {
+     "Number": 8,
+     "Offset": 912941645824,
+     "Size": 111266496512,
+     "Id": "d34a9517-a938-454a-9dab-6fab38a63096",
+     "Style": 1,
+     "Type": "933ac7e1-2eb4-4f13-b844-0e14e2aef915"
+    }
+   }
+  ],
+  "Required": 137438953472,
+  "MakeDefaultBoot": false,
+  "SsdRepair": null
+ },
+ "source": {
+  "Path": "D:\\fixture\\installer\\work\\install-session-c09a4bb6a702b7f45ab03072bf5a5da1\\prepared.img",
+  "Length": 150324903936,
+  "WriteTime": 134383642419297983,
+  "Volume": 1778942705,
+  "FileId": 562949953424249,
+  "DiskGuid": "7a908282-8520-4214-9613-3335956927b6"
+ },
+ "completed": [
+  "esp",
+  "efi-A",
+  "efi-B",
+  "rootfs-A",
+  "rootfs-B",
+  "var-A",
+  "var-B",
+  "home"
+ ],
+ "error": null,
+ "homeCopy": {
+  "Mode": "ext4-used-v1",
+  "Digest": "c93403efc6508aaa92745015f0dbd890ef0d157162ed37cf1bf60a4ebb3d8358"
+ }
+}

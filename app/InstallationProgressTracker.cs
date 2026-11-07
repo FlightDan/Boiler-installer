@@ -14,6 +14,17 @@ internal sealed class InstallationProgressTracker
     internal double Percent { get; private set; }
     internal string ComponentStep { get; private set; } = "02.01";
     internal string ComponentDetail { get; private set; } = "";
+    private static int ComponentRank(string step) => step switch
+    {
+        "02.01" => 1, "02.02" => 2, "02.03" => 3, "02.04" => 4, _ => 0
+    };
+    // Deferred records (for example a slot-A SSD row emitted after slot B) must
+    // never move the visible component step backwards.
+    private void NoteComponent(string step, string detail)
+    {
+        if (ComponentRank(step) < ComponentRank(ComponentStep)) return;
+        ComponentStep = step; ComponentDetail = detail;
+    }
     internal static string PartitionStep(string role, string operation)
     {
         var index = Array.IndexOf(PreparedDisk.Roles, role);
@@ -89,19 +100,21 @@ internal sealed class InstallationProgressTracker
                 if (checking)
                 {
                     if (verify && item.GetProperty("readonly").GetBoolean())
-                    { changed |= verifiedSlots.Add(slot); ComponentStep = slot == "A" ? "02.03" : "02.04"; ComponentDetail = slot; }
+                    {
+                        changed |= verifiedSlots.Add(slot);
+                        NoteComponent(slot == "A" ? "02.03" : "02.04", slot);
+                    }
                 }
                 else
                 {
                     var id = item.GetProperty("id").GetString();
                     changed |= components.Add(slot + ":" + id);
-                    ComponentStep = slot == "A" ? "02.01" : "02.02";
-                    ComponentDetail = slot + " / " + (id switch {
+                    NoteComponent(slot == "A" ? "02.01" : "02.02", slot + " / " + (id switch {
                         "system-update-hold" => PartitionInventory.L("保留当前系统版本", "Preserve current system version"),
                         "maintenance-tool" => PartitionInventory.L("修复与更新工具", "Repairs and project updates"),
                         "serial-console-policy" => PartitionInventory.L("串口兼容性", "Serial console compatibility"),
                         "partition-mount" => PartitionInventory.L("KDE 分区持久挂载", "KDE persistent partition mounts"),
-                        _ => id });
+                        _ => id }));
                 }
             }
             catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException) { }

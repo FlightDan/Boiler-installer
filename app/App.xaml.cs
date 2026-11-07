@@ -84,6 +84,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "installer-restart-checks") { log.AppendLine(await InstallerRestartChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "desktop-reboot-checks") { log.AppendLine(SteamOSDesktopChecks.Run()); }
                 else if (e.Args.Length is 2 or 3 && e.Args[1] == "installation-progress-checks") { log.AppendLine(InstallationProgressChecks.Run(e.Args.Length == 3 ? e.Args[2] : null)); }
+                else if (e.Args.Length is 2 or 3 && e.Args[1] == "install-session-checks") { log.AppendLine(InstallationSessionReplayChecks.Run(e.Args.Length == 3 ? e.Args[2] : null)); }
                 else if (e.Args.Length == 2 && e.Args[1] == "official-system-progress-checks") { log.AppendLine(await OfficialSystemProgressChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "physical-recovery-checks") { log.AppendLine(await PhysicalRecoveryChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "home-copy-native-checks") { log.AppendLine(await Ext4HomeCopyChecks.RunAsync()); }
@@ -209,7 +210,7 @@ public partial class App : Application
                 }
                 else if (e.Args[1] == "smoke") await Backend.GuestAsync("smoke", null, false, text => log.Append(text), CancellationToken.None);
                 else if (e.Args[1] == "verify" && e.Args.Length == 3) await Backend.GuestAsync("verify", e.Args[2], false, text => log.Append(text), CancellationToken.None);
-                else if (e.Args[1] == "virtual-create") log.AppendLine("FIXTURE=" + await Backend.CreateFixtureAsync(text => log.Append(text), CancellationToken.None));
+                else if (e.Args[1] == "virtual-create") log.AppendLine("FIXTURE=" + await Backend.CreateFixtureAsync(text => log.Append(text), CancellationToken.None, e.Args.Length == 3 ? e.Args[2] : "production"));
                 else if (e.Args[1] == "virtual-deploy" && e.Args.Length == 4) await Backend.GuestAsync("deployment-test", e.Args[2], false, text => log.Append(text), CancellationToken.None, fixture: e.Args[3]);
                 else if (e.Args[1] == "virtual-boot" && e.Args.Length == 3) log.AppendLine("BOOT=" + await VirtualBoot.RunAsync(e.Args[2], text => log.Append(text), CancellationToken.None));
                 else if (e.Args[1] == "virtual-interrupt-check" && e.Args.Length == 4)

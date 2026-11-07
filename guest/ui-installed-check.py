@@ -5,10 +5,10 @@ from pathlib import Path
 from deployment import run, table, fs, resolve
 from media_layer import OWNED
 from install_session import table_identity
+from fixture_layout import validate, preserved_files
 
 target = table('/dev/vdd')
-if [p.get('name') for p in target['partitions']] != ['Windows EFI fixture', 'Windows data fixture', 'esp', 'efi-A', 'efi-B', 'rootfs-A', 'rootfs-B', 'var-A', 'var-B', 'home']:
-    raise RuntimeError('Unexpected post-UI installation partition table')
+profile_name = validate('/dev/vdd')
 root = Path('/mnt/ui-result-check'); root.mkdir(exist_ok=True)
 esp = next(p['node'] for p in target['partitions'] if p.get('name') == 'esp')
 run('mount', '-t', 'vfat', '-o', 'ro', esp, str(root))
@@ -69,12 +69,13 @@ for slot in ('A', 'B'):
 if 'component_request' in state:
     if len(bootstrap_views) != 2 or bootstrap_views[0] != bootstrap_views[1]: raise RuntimeError('Both slots do not share one request inode')
     print('OXP_UI_FIRSTBOOT=normal-install-same-request-id-shared-state-root-code-carriage-not-enabled', flush=True)
-for node, kind, name, expected in [
-    ('/dev/vdd1', 'vfat', 'preserved-efi.txt', 'Windows EFI fixture file must survive deployment.\n'),
-    ('/dev/vdd2', 'ntfs-3g', 'preserved.txt', 'Windows fixture data must survive partition append.\n')]:
+for part in preserved_files(profile_name):
+    kind = 'vfat' if part['fs'] == 'vfat' else 'ntfs-3g'
+    node = '/dev/vdd%d' % part['number']
     run('mount', '-t', kind, '-o', 'ro', node, str(root))
     try:
-        if (root / name).read_text() != expected: raise RuntimeError('Protected Windows file changed')
+        if (root / part['sentinel']).read_text() != part['content']:
+            raise RuntimeError('Protected Windows file changed')
     finally: run('umount', str(root))
 intent = selection.get('append_intent')
 if intent is None or state.get('append_intent_id') != intent['id']:

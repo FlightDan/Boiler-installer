@@ -5,6 +5,10 @@
 ## 当前入口
 
 - [交付记录 0.2.0-preview.20261105.11](MERGED_FIXES_DELIVERY_20261105.md) — 当前 `main` 对应的本地候选构建与验收边界
+- [首次安装提速与重复校验收敛 20261106](INSTALL_SPEED_20261106.md) — 客户机资源分配、重复哈希去除、vanilla 组件可用性
+- [首次安装提速后续 20261106](INSTALL_SPEED_FOLLOWUP_20261106.md) — 计时聚合、WHPX、apk 只读镜像、A/B 并行与验收进度
+- [维护事务 I/O 与缓存切换 20261107](MAINTENANCE_IO_AND_CACHE_20261107.md) — 旧缓存导致的 core-maintenance 计时假象、品牌包切换与事务读取收敛
+- [真实安装会话夹具与 VM 测试改进 20261107](INSTALL_SESSION_FIXTURES_20261107.md) — 两份真实安装日志的脱敏夹具、回放检查、生产自检盘拓扑、VM 诊断基线与未完成项
 - [依赖引导](DEPENDENCY_BOOTSTRAP.md)
 - [设备包格式](DEVICE_PACKAGES.md)
 - [GitHub slim 安装器发布策略](GITHUB_SLIM_INSTALLER_RELEASE_POLICY.md)

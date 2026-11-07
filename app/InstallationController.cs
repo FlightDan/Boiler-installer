@@ -244,7 +244,8 @@ public static partial class InstallationController
                 }
                 progress.Advance("preparing", 12d / 32);
                 Phase("preparing", "正在创建独立测试盘…", "01.03");
-                var fixture = await Backend.CreateFixtureAsync(log, token);
+                var fixture = await Backend.CreateFixtureAsync(log, token,
+                    request.Kind == InstallationTargetKind.ExternalDisk ? "external" : "production");
                 progress.Advance("preparing", 16d / 32);
                 Phase("preparing", "正在准备 SteamOS 系统，这一步可能需要较长时间…", "01.04");
                 await Backend.GuestAsync("deployment-test", imported, false, log, token, fixture: fixture);

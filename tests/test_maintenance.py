@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -67,8 +68,8 @@ class MaintenanceTests(unittest.TestCase):
     def test_crash_pending_rolls_back(self):
         original=self.engine._put_snapshot
         calls=[]
-        def crash(path,snapshot):
-            original(path,snapshot); calls.append(path)
+        def crash(path,snapshot,**kwargs):
+            original(path,snapshot,**kwargs); calls.append(path)
             if len(calls)==1: raise RuntimeError("simulated crash")
         # Suppress automatic recovery to simulate process death after durable write.
         with patch.object(self.engine,"_put_snapshot",side_effect=crash),patch.object(self.engine,"_recover",return_value=[]):
@@ -113,6 +114,70 @@ class MaintenanceTests(unittest.TestCase):
         with self.assertRaises(MaintenanceError): self.engine.apply(c,self.payload)
         c=component(); c["compatibility"]={"architectures":["x86_64"]}
         with self.assertRaises(MaintenanceError): self.engine.apply(c,self.payload)
+
+    def _multi_component(self):
+        entries=[]
+        for name in ('a','b','c'):
+            data=('value-'+name).encode()
+            source=self.payload/"multi"/(name)
+            source.parent.mkdir(parents=True,exist_ok=True); source.write_bytes(data)
+            entries.append(dict(source='multi/'+name,target='etc/multi/'+name,
+                                sha256=hashlib.sha256(data).hexdigest(),size=len(data),mode=0o644))
+        return dict(schema_version=1,kind='ComponentManifest',id='fixture:multi',version='1.0.0',
+                    requires=[],files=entries)
+
+    @unittest.skipUnless(os.name=='posix','POSIX directory durability is required')
+    def test_apply_syncs_each_changed_directory_once_and_restore_keeps_per_file_barriers(self):
+        target_dir=self.root/"etc/multi"
+        def counted(action):
+            total=0; real=os.fsync
+            def counting(descriptor):
+                nonlocal total
+                info=os.fstat(descriptor)
+                try: directory=os.stat(target_dir)
+                except FileNotFoundError: return real(descriptor)
+                if (info.st_dev,info.st_ino)==(directory.st_dev,directory.st_ino): total+=1
+                return real(descriptor)
+            with patch('os.fsync',counting): action()
+            return total
+        result=None
+        def apply():
+            nonlocal result
+            result=self.engine.apply(self._multi_component(),self.payload)
+        self.assertEqual(counted(apply),1)
+        self.assertEqual(counted(lambda: self.engine.restore(result['transaction'])),3)
+        self.assertFalse(target_dir.joinpath('a').exists())
+        # A second apply recreates the files; its three replaces share one sync.
+        replaced=None
+        def reapply():
+            nonlocal replaced
+            replaced=self.engine.apply(self._multi_component(),self.payload)
+        self.assertEqual(counted(reapply),1)
+        self.assertEqual(counted(lambda: self.engine.restore(replaced['transaction'])),3)
+
+    @unittest.skipUnless(os.name=='posix' and os.geteuid()==0,'Private CAS verification requires a root-owned store')
+    def test_repeated_private_blob_verification_reuses_the_verified_signature(self):
+        from maintenance import adoption_blobs as implementation
+        data=b'private blob bytes'; source=self.payload/"blob-source"; source.write_bytes(data)
+        source.chmod(0o600)
+        entry=dict(sha256=hashlib.sha256(data).hexdigest(),size=len(data))
+        implementation._cache_blob(self.engine,source,entry)
+        target=implementation.blob_cache(self.engine)/entry['sha256']
+        implementation._VERIFIED_PRIVATE.clear()
+        real=hashlib.sha256; calls=[]
+        def counting(*args,**kwargs):
+            calls.append(1); return real(*args,**kwargs)
+        with patch.object(implementation.hashlib,'sha256',counting):
+            implementation._verified_private(target,entry)
+            self.assertEqual(len(calls),1)
+            implementation._verified_private(target,entry)
+            self.assertEqual(len(calls),1)
+        # Any content or metadata change invalidates the reused digest.
+        os.chmod(target,0o600)
+        os.utime(target,None)
+        with patch.object(implementation.hashlib,'sha256',counting):
+            implementation._verified_private(target,entry)
+        self.assertEqual(len(calls),2)
 
 
 if __name__=="__main__": unittest.main()
