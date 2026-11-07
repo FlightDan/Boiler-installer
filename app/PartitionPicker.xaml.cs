@@ -78,7 +78,7 @@ public partial class PartitionPicker : UserControl
         SteamOsExampleButton.Content = L("SteamOS 重装示例", "SteamOS reinstall example");
         DeletePartitionButton.Content = L("删除选定分区…", "Delete selected partition…");
         SteamOsHeading.Text = L("重新安装 SteamOS", "Reinstall SteamOS");
-        SelectSteamOsButton.Content = L("全选可删除的 SteamOS 分区", "Select all deletable SteamOS partitions");
+        SelectSteamOsButton.Content = L("选择 SteamOS 分区全部删除", "Select all SteamOS partitions for deletion");
         ClearSteamOsButton.Content = L("取消全选", "Clear selection");
         DeleteSteamOsButton.Content = L("删除所选 SteamOS 分区…", "Delete selected SteamOS partitions…");
         SteamOsDetails.Header = L("查看并选择 SteamOS 分区", "Review and select SteamOS partitions");
@@ -279,8 +279,8 @@ public partial class PartitionPicker : UserControl
         SteamOsDetails.Visibility = rows.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (resetDetails) SteamOsDetails.IsExpanded = false;
         SteamOsStatus.Text = rows.Length == 0
-            ? L("未识别到完整 SteamOS 分区组。仅完整的标准 8 分区布局支持全选；其他布局请在下方逐项核对。读取识别信息需要管理员权限。", "No complete SteamOS partition group identified. Select all supports the standard eight-partition layout; review other layouts individually below. Administrator access is needed to read identification data.")
-            : L($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。受保护的启动等分区保留；删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Protected boot partitions are kept. Deletion requires a separate confirmation.");
+            ? L("未识别到可核验的 SteamOS 分区组。支持标准八分区及其三个启动分区残留；其他布局请在下方逐项核对。读取识别信息需要管理员权限。", "No verifiable SteamOS group identified. Standard eight-partition groups and their residual boot trios are supported; review other layouts below. Administrator access is needed to read identification data.")
+            : L($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。包括经核验的 SteamOS 自有启动分区；Windows、宿主及无法核验的分区保留，原因列在下方。删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Includes verified SteamOS-owned boot partitions. Windows, host and unverifiable partitions are kept; reasons are listed below. Deletion requires a separate confirmation.");
         SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => !steamOsSelected.Contains(r.Start));
         ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
         UpdateSteamOsDeleteButton(candidates);

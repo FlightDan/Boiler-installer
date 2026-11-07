@@ -1,4 +1,6 @@
 using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
@@ -10,7 +12,22 @@ namespace OxpInstaller;
 
 public static class PartitionPickerChecks
 {
-    public static string Run(string? liveSnapshot = null)
+    public static Task<string> RunAsync(string? liveSnapshot = null) => Application.Current.Dispatcher.CheckAccess()
+        ? RunOnUiAsync(liveSnapshot) : Application.Current.Dispatcher.InvokeAsync(() => RunOnUiAsync(liveSnapshot)).Task.Unwrap();
+
+    private static async Task<string> RunOnUiAsync(string? liveSnapshot)
+    {
+        var originalLanguage = InstallerI18n.Language;
+        var ownedWindows = new List<Window>();
+        try { return await RunChecksAsync(liveSnapshot, ownedWindows); }
+        finally
+        {
+            foreach (var window in Application.Current.Windows.OfType<Window>().Where(ownedWindows.Contains).ToArray()) window.Close();
+            InstallerI18n.SetLanguage(originalLanguage);
+        }
+    }
+
+    private static async Task<string> RunChecksAsync(string? liveSnapshot, List<Window> ownedWindows)
     {
         System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         var proof = new List<string>();
@@ -59,7 +76,7 @@ public static class PartitionPickerChecks
         Reject(() => PartitionDeletion.Validate(deletion with { Snapshot = linux.ToJsonString() }), "hidden-unknown-needs-native-attributes");
         linuxPart["nativeUnrecognizedSafe"] = true;
         Require(PartitionDeletion.Validate(deletion with { Snapshot = linux.ToJsonString() }).Row.CanDelete, "linux-synthetic-hidden-with-clear-native-attributes-deletable");
-        foreach (var protectedType in new[] { "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC", "21686148-6449-6E6F-744E-656564454649" })
+        foreach (var protectedType in new[] { "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC", "21686148-6449-6E6F-744E-656564454649" })
         {
             linuxPart["gptType"] = protectedType;
             Reject(() => PartitionDeletion.Validate(deletion with { Snapshot = linux.ToJsonString() }), "unknown-still-protects-type-" + protectedType);
@@ -104,6 +121,7 @@ public static class PartitionPickerChecks
         }
         InstallerI18n.SetLanguage("zh-CN");
         var physicalWindow = new MainWindow();
+        ownedWindows.Add(physicalWindow);
         var physicalPicker = (PartitionPicker)physicalWindow.FindName("PartitionSelector");
         physicalPicker.AutomaticReadEnabled = false;
         physicalPicker.LoadSnapshot(json, true);
@@ -114,11 +132,50 @@ public static class PartitionPickerChecks
         Require(physicalPicker.DefaultCapacityGiB == 128, "physical-source-reset-retains-128g-default");
         physicalWindow.Close();
         var window = new MainWindow(rehearsal: true) { ShowActivated = false, WindowState = WindowState.Normal };
+        ownedWindows.Add(window);
         ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
+        window.BoilerModeForChecks("imported");
         window.Show(); window.PreviewStep(0);
         T Find<T>(string name) => (T)window.FindName(name);
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var picker = Find<PartitionPicker>("PartitionSelector");
+        Find<RadioButton>("InternalTarget").IsChecked = true;
+
+        // Exercise the source-first route with a valid internal target, then
+        // satisfy it through real inspection, never through injected cache flags.
+        var fixtureDirectory = Path.Combine(InstallerWorkspace.DirectoryPath, "partition-navigation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(fixtureDirectory);
+        var source = Path.Combine(fixtureDirectory, "recovery.img");
+        var sourceBytes = RecoveryImageChecks.Fixture();
+        await File.WriteAllBytesAsync(source, sourceBytes);
+        var sourceSha256 = Convert.ToHexString(SHA256.HashData(sourceBytes)).ToLowerInvariant();
+        var privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        string? SourceDigest() => (string?)typeof(MainWindow).GetProperty("CurrentSourceDigest", privateInstance)!.GetValue(window);
+        async Task InspectSource()
+        {
+            await (Task)typeof(MainWindow).GetMethod("InspectSourceAsync", privateInstance)!.Invoke(window, [false])!;
+            await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            Require(SourceDigest() == sourceSha256, "navigation-source-binding-matches-actual-fixture-bytes");
+        }
+        picker.LoadSnapshot(json, true);
+        picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().Single(r => r.Space != null);
+        Find<TextBox>("ImagePath").Clear();
+        Click("NextButton");
+        Require(Find<StackPanel>("SourcePage").Visibility == Visibility.Visible
+            && Find<TextBlock>("ValidationMessage").Text.Length > 0, "missing-source-returns-to-source-before-target-navigation");
+        Find<TextBox>("ImagePath").Text = source;
+        window.PreviewStep(0);
+        Click("NextButton");
+        Require(SourceDigest() == null && Find<StackPanel>("SourcePage").Visibility == Visibility.Visible
+            && Find<TextBlock>("ValidationMessage").Text.Contains("MD5"), "uninspected-source-cannot-advance-with-valid-internal-target");
+        await InspectSource();
+        File.SetLastWriteTimeUtc(source, File.GetLastWriteTimeUtc(source).AddSeconds(2));
+        window.PreviewStep(0);
+        Click("NextButton");
+        Require(SourceDigest() == null && Find<StackPanel>("SourcePage").Visibility == Visibility.Visible
+            && Find<TextBlock>("ValidationMessage").Text.Contains("MD5"), "changed-source-invalidates-binding-and-returns-to-source");
+        await InspectSource();
+        window.PreviewStep(0);
 
         Require(picker.AlignRight.IsChecked == true && picker.AlignLeft.IsChecked != true, "new-picker-defaults-to-right-placement");
         picker.LoadSnapshot(json, true);
@@ -204,7 +261,8 @@ public static class PartitionPickerChecks
         Require(picker.CapacityInput.IsReadOnly, "manual-capacity-input-disabled");
         picker.CapacityInput.Text = "128";
         Click("NextButton"); Require(Find<StackPanel>("BootPage").Visibility == Visibility.Visible, "valid-target-reaches-boot-options");
-        Click("BackButton"); Require(picker.CapacityInput.Text == "128", "back-retains-selection");
+        Click("BackButton"); Require(Find<StackPanel>("TargetPage").Visibility == Visibility.Visible
+            && picker.CapacityInput.Text == "128", "back-retains-selection");
         Find<RadioButton>("EnglishLanguage").IsChecked = true;
         Require(picker.Selection.Capacity == 128 * PartitionInventory.GiB && picker.Heading.Text == "Choose disk and installation space", "language-switch-preserves-selection");
         Require(!picker.FormatRemainingButton.Content.ToString()!.Contains("Untested") && !picker.FormatRemainingHint.Text.Contains("Untested on hardware"), "ntfs-english-tested-entry");
@@ -238,6 +296,7 @@ public static class PartitionPickerChecks
         {
             InstallerI18n.SetLanguage(language);
             var formatDialog = RemainingSpaceFormat.Confirmation(formatRequest with { Language = language });
+            ownedWindows.Add(formatDialog);
             Require(!formatDialog.Title.Contains(language == "en-US" ? "Untested" : "未测试"), "ntfs-confirmation-tested-" + language);
             formatDialog.ShowActivated = false; formatDialog.MaxHeight = 540; formatDialog.Show(); formatDialog.UpdateLayout();
             var formatPanel = (StackPanel)((ScrollViewer)formatDialog.Content).Content;
@@ -252,6 +311,7 @@ public static class PartitionPickerChecks
             using(var stream=File.Create(Path.Combine(directory,"format-confirmation-"+language+".png")))formatEncoder.Save(stream);
             formatDialog.Close();
             var dialog = PartitionDeletion.Confirmation(deletion with { Language = language, Example = false });
+            ownedWindows.Add(dialog);
             dialog.ShowActivated = false; dialog.MaxHeight = 540; dialog.Show(); dialog.UpdateLayout();
             var panel = (StackPanel)((ScrollViewer)dialog.Content).Content;
             var consent = panel.Children.OfType<CheckBox>().Single();
@@ -295,7 +355,9 @@ public static class PartitionPickerChecks
                 }
             }
         }
-        File.WriteAllText(Path.Combine(directory,"checks.json"), JsonSerializer.Serialize(new { passed = true, proof, scope = "Read-only planning and real WPF control/navigation checks. No disk writes or installation performed." }, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(Path.Combine(directory,"checks.json"), JsonSerializer.Serialize(new { passed = true, proof,
+            source = new { path = source, sha256 = sourceSha256, size = sourceBytes.Length, mode = "imported", inspected = true },
+            scope = "Synthetic partition planning and actual WPF imported-mode navigation with a genuinely hashed, owned 2 MiB GPT source fixture, not an installable OS. No disk enumeration, disk writes, guest preparation or installation performed." }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close(); return directory;
     }
 }

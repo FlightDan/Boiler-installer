@@ -24,26 +24,40 @@ function Assert-DeletionSnapshot($Expected, $Fresh, $Remaining, [bool]$NativeNam
         if ([guid]$part.guid -eq [guid]::Empty) { throw 'Partition GUID is missing.' }
     }
 }
-function Get-ReviewedDeletionTarget([int]$Number, $Fresh, $Target) {
+function Get-ReviewedDeletionTarget([int]$Number, $Fresh, $Target, $SteamOsEvidence = $null) {
     $same = @($Fresh.partitions | Where-Object { $_.guid -eq $Target.guid })
-    if ($same.Count -ne 1 -or $same[0].deletionAllowed -ne $true) { throw 'Partition is now protected or cannot be inspected safely.' }
+    # During a reviewed batch the original group is intentionally dismantled.
+    # Recompute boot eligibility with its bound context, never with a stale allow flag.
+    if ($same.Count -ne 1 -or ($null -eq $SteamOsEvidence -and $same[0].deletionAllowed -ne $true)) { throw 'Partition is now protected or cannot be inspected safely.' }
     $disk = Get-Disk -Number $Number -ErrorAction Stop
     $partition = Get-Partition -DiskNumber $Number -PartitionNumber $same[0].number -ErrorAction Stop
     if ([string]$disk.Guid -ne [string]$Fresh.guid -or $disk.Size -ne $Fresh.size -or [string]$partition.Guid -ne [string]$Target.guid -or
         $partition.Offset -ne $Target.offset -or $partition.Size -ne $Target.size -or [guid]$partition.GptType -ne [guid]$Target.gptType) { throw 'Device changed during the final check.' }
     $volume = $partition | Get-Volume -ErrorAction SilentlyContinue
-    $reason = Get-PartitionDeletionBlockReason $disk $partition $volume
+    $reason = Get-PartitionDeletionBlockReason $disk $partition $volume $SteamOsEvidence
     if ($reason) { throw $reason }
     return $partition
 }
 function Invoke-ReviewedPartitionDeletion($Expected, $Fresh, $Targets, [bool]$NativeNames, [switch]$ValidateOnly) {
-    foreach ($target in $Targets) { $null = Get-ReviewedDeletionTarget $Expected.number $Fresh $target }
+    # This context comes from a freshly rebound complete group or verified
+    # residual candidate, not from a caller-supplied role assertion.
+    $context = Get-SteamOsDeletionContext $Fresh
+    $bootContext = @{}
+    foreach ($target in $Targets) {
+        $same = @($Fresh.partitions | Where-Object { $_.guid -eq $target.guid })
+        if ($same.Count -ne 1 -or $same[0].deletionAllowed -ne $true) { throw 'Selected partition is now protected.' }
+        $key=([guid]$target.guid).ToString('D')
+        $evidence=$context[$key]
+        if ($null -ne $evidence -and $evidence.gptName -cin @('esp','efi-A','efi-B')) { $bootContext[$key]=$evidence; $NativeNames=$true }
+    }
+    Assert-DeletionSnapshot $Expected $Fresh @($Expected.partitions) $NativeNames
+    foreach ($target in $Targets) { $null = Get-ReviewedDeletionTarget $Expected.number $Fresh $target $bootContext[([guid]$target.guid).ToString('D')] }
     if ($ValidateOnly) { return }
     $remaining = @($Expected.partitions)
     foreach ($target in @($Targets | Sort-Object offset -Descending)) {
         $fresh = Read-ReviewedDeletionDisk $Expected.number
         Assert-DeletionSnapshot $Expected $fresh $remaining $NativeNames
-        $partition = Get-ReviewedDeletionTarget $Expected.number $fresh $target
+        $partition = Get-ReviewedDeletionTarget $Expected.number $fresh $target $bootContext[([guid]$target.guid).ToString('D')]
         $partition | Remove-Partition -Confirm:$false -ErrorAction Stop
         $remaining = @($remaining | Where-Object { $_.guid -ne $target.guid })
         $after = Read-ReviewedDeletionDisk $Expected.number

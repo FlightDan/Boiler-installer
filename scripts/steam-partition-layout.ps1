@@ -68,12 +68,13 @@ function Get-SteamOsNativeMetadata($Disk, $Partitions) {
     return $result
 }
 # Pure snapshot recognizer, also used by the privileged batch-deletion preflight.
-function Get-SteamOsPartitionStarts($Disk) {
+function Get-SteamOsPartitionStarts($Disk, [switch]$IncludeBootRemnants) {
     if ($Disk.style -cne 'GPT' -or $Disk.bus -notin @('NVMe','SATA','USB','SD','MMC') -or $Disk.sectorSize -ne 512 -or
         $Disk.isOffline -ne $false -or $Disk.isReadOnly -ne $false -or $Disk.partitionReadError) { return }
     $roles = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'steam-partition-roles.json') -Raw | ConvertFrom-Json))
     if ($roles.Count -ne 8) { throw 'Invalid SteamOS role policy.' }
     $parts = @($Disk.partitions | Sort-Object offset)
+    $complete = @()
     for ($start = 0; $start -le $parts.Count - $roles.Count; $start++) {
         $matches = $true
         for ($i = 0; $i -lt $roles.Count; $i++) {
@@ -81,6 +82,40 @@ function Get-SteamOsPartitionStarts($Disk) {
             if ($part.nativeGptVerified -ne $true -or $part.gptName -cne $roles[$i].name -or [guid]$part.gptType -ne [guid]$roles[$i].gptType) { $matches = $false; break }
             if ($i -gt 0 -and [long]$part.offset -ne [long]$parts[$start + $i - 1].offset + [long]$parts[$start + $i - 1].size) { $matches = $false; break }
         }
-        if ($matches) { for ($i = 0; $i -lt $roles.Count; $i++) { [long]$parts[$start + $i].offset } }
+        if ($matches) { for ($i = 0; $i -lt $roles.Count; $i++) { $complete += [long]$parts[$start + $i].offset } }
     }
+    $complete
+    if (-not $IncludeBootRemnants) { return }
+    # Names are candidates, never deletion permission. Residual boot ownership
+    # must also be established by the live, read-only boot-content inspection.
+    $named = @($parts | Where-Object { $complete -notcontains [long]$_.offset -and $roles.name -ccontains $_.gptName })
+    if ($named.Count -ne 3) { return }
+    for ($i=0; $i -lt 3; $i++) {
+        $part=$named[$i]
+        if ($part.nativeGptVerified -ne $true -or $part.gptName -cne $roles[$i].name -or [guid]$part.gptType -ne [guid]$roles[$i].gptType -or
+            [long]$roles[$i].bootSize -le 0 -or [long]$part.size -ne [long]$roles[$i].bootSize) { return }
+        if ($i -gt 0 -and [long]$part.offset -ne [long]$named[$i-1].offset + [long]$named[$i-1].size) { return }
+    }
+    $named | ForEach-Object { [long]$_.offset }
+}
+function Get-SteamOsDeletionContext($Disk) {
+    $complete = @(Get-SteamOsPartitionStarts $Disk)
+    $recognized = @(Get-SteamOsPartitionStarts $Disk -IncludeBootRemnants)
+    $context = @{}
+    foreach ($part in $Disk.partitions) {
+        if ($recognized -notcontains [long]$part.offset) { continue }
+        $copy = $part | Select-Object *
+        $copy | Add-Member NoteProperty completeSteamOsLayout ($complete -contains [long]$part.offset) -Force
+        $key=([guid]$part.guid).ToString('D')
+        if ([guid]$part.guid -eq [guid]::Empty -or $context.ContainsKey($key)) { throw 'Ambiguous SteamOS partition identity.' }
+        $context[$key]=$copy
+    }
+    return $context
+}
+function Get-SteamOsDeletionMetadata($Disk, $Partition) {
+    Initialize-SteamPartitionReader
+    $native = @([BoilerSteamPartitionReader]::Read([int]$Disk.Number, [guid]$Disk.Guid, [long]$Disk.Size) |
+        Where-Object { $_.Id -eq [guid]$Partition.Guid })
+    if ($native.Count -ne 1) { throw 'SteamOS native partition identity is missing or ambiguous.' }
+    return $native[0]
 }

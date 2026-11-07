@@ -179,7 +179,7 @@ public partial class App : Application
                 else if (e.Args[1] == "usb-inventory" && e.Args.Length == 3) log.AppendLine(System.Text.Json.JsonSerializer.Serialize(await UsbMediaPlanning.ReadAsync(e.Args[2], CancellationToken.None)));
                 else if (e.Args[1] == "disk-inventory" && e.Args.Length == 2) log.AppendLine(await Backend.PowerShellAsync("read-disks.ps1", [], _ => { }, CancellationToken.None));
                 else if (e.Args[1] == "plan-checks") log.AppendLine(PlanningChecks.Run());
-                else if (e.Args[1] == "partition-picker-checks") log.AppendLine(PartitionPickerChecks.Run(e.Args.Length > 2 ? e.Args[2] : null));
+                else if (e.Args[1] == "partition-picker-checks") log.AppendLine(await PartitionPickerChecks.RunAsync(e.Args.Length > 2 ? e.Args[2] : null));
                 else if (e.Args[1] == "handoff-roundtrip") log.AppendLine("HANDOFF=" + await Backend.CheckHandoffAsync(text => log.Append(text), CancellationToken.None));
                 else if (e.Args[1] == "virtual-install-media" && e.Args.Length == 3)
                     log.AppendLine("INSTALL_SESSION=" + await Backend.CheckHandoffAsync(text => log.Append(text), CancellationToken.None, e.Args[2]));

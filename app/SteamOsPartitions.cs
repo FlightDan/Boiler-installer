@@ -6,7 +6,7 @@ namespace OxpInstaller;
 
 internal static class SteamOsPartitions
 {
-    private sealed record Role(string name, Guid gptType);
+    private sealed record Role(string name, Guid gptType, long bootSize = 0);
     private static readonly Role[] Roles = LoadRoles();
     private static Role[] LoadRoles()
     {
@@ -28,8 +28,10 @@ internal static class SteamOsPartitions
                 ["number"] = 10 + i, ["guid"] = Guid.NewGuid().ToString(), ["offset"] = part.GetProperty("start").GetInt64(), ["size"] = part.GetProperty("size").GetInt64(),
                 ["gptType"] = role.gptType.ToString("D"), ["gptName"] = role.name, ["gptAttributes"] = "0", ["nativeGptVerified"] = true,
                 ["type"] = i == 0 ? "System" : "Unknown", ["filesystem"] = i < 3 ? "FAT32" : "", ["letter"] = "", ["label"] = "",
-                ["isBoot"] = false, ["isSystem"] = false, ["isHidden"] = i >= 3, ["nativeUnrecognizedSafe"] = i >= 3, ["deletionAllowed"] = i >= 3,
-                ["deletionBlockReason"] = i == 0 ? "EFI, MSR, recovery and boot partitions are protected." : i < 3 ? "Volume has no verifiable access path." : ""
+                // Synthetic result of the role-aware live policy; native/host
+                // inspection is exercised separately by the PowerShell checks.
+                ["isBoot"] = false, ["isSystem"] = false, ["isHidden"] = i >= 1, ["nativeUnrecognizedSafe"] = true, ["deletionAllowed"] = true,
+                ["deletionBlockReason"] = ""
             });
         }
         // Native metadata is available for retained Windows partitions too.
@@ -59,6 +61,33 @@ internal static class SteamOsPartitions
             }
             if (matches) for (var i = 0; i < Roles.Length; i++) result.Add(parts[start + i].GetProperty("offset").GetInt64(), Roles[i].name);
         }
+        return result;
+    }
+
+    // A residual boot trio is only an ownership candidate. The live deletion
+    // policy must additionally inspect its boot files and exclude host volumes.
+    internal static Dictionary<long, string> DeletionCandidates(JsonElement disk)
+    {
+        var result = Detect(disk);
+        if (disk.GetProperty("style").GetString() != "GPT" || disk.GetProperty("sectorSize").GetInt32() != 512
+            || !disk.TryGetProperty("isOffline", out var offline) || offline.ValueKind != JsonValueKind.False
+            || !disk.TryGetProperty("isReadOnly", out var readOnly) || readOnly.ValueKind != JsonValueKind.False
+            || disk.GetProperty("bus").GetString() is not ("NVMe" or "SATA" or "USB" or "SD" or "MMC")
+            || disk.TryGetProperty("partitionReadError", out var error) && !string.IsNullOrEmpty(error.GetString())) return result;
+        var remaining = disk.GetProperty("partitions").EnumerateArray()
+            .Where(p => !result.ContainsKey(p.GetProperty("offset").GetInt64())).OrderBy(p => p.GetProperty("offset").GetInt64()).ToArray();
+        var named = remaining.Where(p => p.TryGetProperty("gptName", out var n) && Roles.Any(r => r.name == n.GetString())).ToArray();
+        if (named.Length != 3) return result;
+        for (var i = 0; i < 3; i++)
+        {
+            var part = named[i];
+            if (!part.TryGetProperty("nativeGptVerified", out var verified) || verified.ValueKind != JsonValueKind.True
+                || part.GetProperty("gptName").GetString() != Roles[i].name
+                || !Guid.TryParse(part.GetProperty("gptType").GetString(), out var type) || type != Roles[i].gptType
+                || Roles[i].bootSize <= 0 || part.GetProperty("size").GetInt64() != Roles[i].bootSize
+                || i > 0 && part.GetProperty("offset").GetInt64() != checked(named[i - 1].GetProperty("offset").GetInt64() + named[i - 1].GetProperty("size").GetInt64())) return result;
+        }
+        for (var i = 0; i < 3; i++) result.Add(named[i].GetProperty("offset").GetInt64(), Roles[i].name);
         return result;
     }
 }

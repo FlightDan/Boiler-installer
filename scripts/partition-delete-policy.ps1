@@ -40,7 +40,7 @@ public static class OxpPartitionAttributes {
     }
     [OxpPartitionAttributes]::Unprotected([int]$Disk.Number,[guid]$Disk.Guid,[guid]$Partition.Guid,[guid]$Partition.GptType,[long]$Partition.Offset,[long]$Partition.Size)
 }
-function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume) {
+function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume, $SteamOsEvidence = $null) {
     $Partition | Add-Member NoteProperty NativeUnrecognizedSafe $false -Force
     foreach ($name in @('IsOffline','IsReadOnly')) {
         if ($null -eq $Disk.$name -or $Disk.$name) { return 'Disk is offline, read-only, or protection metadata is unavailable.' }
@@ -51,9 +51,30 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume) {
     }
     $type = [guid]::Empty
     if (-not [guid]::TryParse([string]$Partition.GptType, [ref]$type) -or $type -eq [guid]::Empty) { return 'Partition type cannot be identified.' }
-    if ($type -in @([guid]'C12A7328-F81F-11D2-BA4B-00A0C93EC93B', [guid]'E3C9E316-0B5C-4DB8-817D-F92DF00215AE', [guid]'DE94BBA4-06D1-4D40-A16A-BFD50179D6AC', [guid]'21686148-6449-6E6F-744E-656564454649') -or [string]$Partition.Type -in @('System','Reserved','Recovery')) { return 'EFI, MSR, recovery and boot partitions are protected.' }
+    $steamBoot = $null -ne $SteamOsEvidence
+    if ($steamBoot) {
+        try {
+            $role = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'steam-partition-roles.json') -Raw | ConvertFrom-Json) |
+                Where-Object { $_.name -ceq $SteamOsEvidence.gptName -and [long]$_.bootSize -gt 0 })
+            if ($role.Count -ne 1 -or $SteamOsEvidence.nativeGptVerified -ne $true -or [string]$SteamOsEvidence.gptAttributes -cne '0' -or
+                [guid]$SteamOsEvidence.guid -ne [guid]$Partition.Guid -or [long]$SteamOsEvidence.offset -ne [long]$Partition.Offset -or
+                [long]$SteamOsEvidence.size -ne [long]$Partition.Size -or [guid]$SteamOsEvidence.gptType -ne $type -or [guid]$role[0].gptType -ne $type) {
+                return 'SteamOS boot partition ownership could not be verified.'
+            }
+            $native = Get-SteamOsDeletionMetadata $Disk $Partition
+            if ($native.Id -ne [guid]$Partition.Guid -or $native.Type -ne $type -or $native.Offset -ne $Partition.Offset -or
+                $native.Size -ne $Partition.Size -or $native.Name -cne $SteamOsEvidence.gptName -or [string]$native.Attributes -cne '0') {
+                return 'SteamOS boot partition native identity or protection attributes changed.'
+            }
+            if ($Partition.IsReadOnly -eq $true) { return 'Hidden, read-only or unavailable partition protection metadata.' }
+            $Partition.NativeUnrecognizedSafe = $true
+        } catch { return 'SteamOS boot partition ownership could not be verified.' }
+    }
+    if ((-not $steamBoot -and ($type -eq [guid]'C12A7328-F81F-11D2-BA4B-00A0C93EC93B' -or [string]$Partition.Type -eq 'System')) -or
+        $type -in @([guid]'E3C9E316-0B5C-4DB8-817D-F92DF00215AE', [guid]'DE94BBA4-06D1-4D40-A16A-BFD50179D6AC', [guid]'21686148-6449-6E6F-744E-656564454649') -or
+        [string]$Partition.Type -in @('Reserved','Recovery')) { return 'EFI, MSR, recovery and boot partitions are protected.' }
     $unknown = $null -eq $Volume -or [string]$Volume.FileSystemType -in @('','Unknown','RAW')
-    if ($null -eq $Partition.IsHidden -or $Partition.IsHidden -or $null -eq $Partition.IsReadOnly -or $Partition.IsReadOnly) {
+    if (-not $steamBoot -and ($null -eq $Partition.IsHidden -or $Partition.IsHidden -or $null -eq $Partition.IsReadOnly -or $Partition.IsReadOnly)) {
         if (-not $unknown -or $type -eq [guid]'EBD0A0A2-B9E5-4433-87C0-68B6B72699C7' -or $Partition.IsReadOnly -eq $true) { return 'Hidden, read-only or unavailable partition protection metadata.' }
         try {
             if (-not (Test-UnrecognizedPartitionAttributes $Disk $Partition)) { return 'GPT protection attributes are set or unavailable.' }
@@ -63,6 +84,12 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume) {
     if (-not $unknown -and ([string]$Volume.FileSystemType -notin @('NTFS','FAT32','exFAT','ReFS') -or [string]$Volume.HealthStatus -ne 'Healthy')) { return 'Volume is unhealthy or cannot be inspected.' }
     try {
         $paths = @($Partition.AccessPaths | Where-Object { $_ })
+        $bootRoot = ''
+        if ($steamBoot) {
+            $bootRoot = Get-SteamOsBootRoot $Disk $Partition $Volume
+            if (-not $bootRoot) { return 'SteamOS boot volume could not be inspected safely.' }
+            $paths += $bootRoot
+        }
         if (-not $unknown -and $paths.Count -eq 0) { return 'Volume has no verifiable access path.' }
         if ([string]$Partition.DriveLetter -match '^[A-Za-z]$') { $paths += ([string]$Partition.DriveLetter + ':\') }
         # Protect the installer, Windows, temp, pagefile and dump volumes, including folder mount points.
@@ -74,6 +101,9 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume) {
         }
         foreach ($protectedPath in $protectedPaths) {
             if (-not $protectedPath) { continue }
+            if ($steamBoot -and (Test-SteamOsBootHostPath $Disk $Partition $protectedPath)) {
+                return 'This volume contains Windows, the installer, temporary files, a pagefile or crash dump.'
+            }
             $full = [IO.Path]::GetFullPath($protectedPath).TrimEnd('\') + '\'
             foreach ($access in $paths) {
                 if ($full.StartsWith($access, [StringComparison]::OrdinalIgnoreCase)) { return 'This volume contains Windows, the installer, temporary files, a pagefile or crash dump.' }
@@ -81,6 +111,9 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume) {
         }
         # Unrecognized filesystems cannot be inspected for files. Metadata and protected
         # Windows paths are still checked; the UI requires explicit whole-partition consent.
+        if ($steamBoot) {
+            return Get-SteamOsBootContentBlockReason $bootRoot $SteamOsEvidence.gptName ($SteamOsEvidence.completeSteamOsLayout -ne $true)
+        }
         if ($unknown) { return '' }
         # Also inspect the volume GUID path for recognized filesystems.
         $root = [string]$Volume.Path

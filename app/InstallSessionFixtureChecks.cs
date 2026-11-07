@@ -73,6 +73,23 @@ internal static class InstallSessionFixtureChecks
         var inventory = PartitionInventory.Read("[" + after.RootElement.GetRawText() + "]").Single();
         Require(inventory.Rows.Count(row => row.SteamOsRole != null) == 8,
             "gm7-after-install-inventory-exposes-all-eight-roles");
+        // The immutable capture records the OLD five-only policy. Model a fresh
+        // successful policy evaluation without rewriting that historical evidence.
+        Require(inventory.Rows.Count(row => row.SteamOsRole != null && row.CanDelete) == 5,
+            "historical-capture-is-not-silently-promoted-to-new-permission");
+        var reviewed = JsonNode.Parse(after.RootElement.GetRawText())!;
+        foreach (var part in reviewed["partitions"]!.AsArray().Where(p => (string?)p!["gptName"] is "esp" or "efi-A" or "efi-B"))
+        { part!["deletionAllowed"] = true; part["deletionBlockReason"] = ""; }
+        var reviewedJson = "[" + reviewed.ToJsonString() + "]";
+        var reviewedDisk = PartitionInventory.Read(reviewedJson).Single();
+        var selected = reviewedDisk.Rows.Where(r => r.SteamOsRole != null && r.CanDelete).Select(r => r.Start).Order().ToArray();
+        Require(selected.Length == 8 && reviewed["partitions"]!.AsArray().Where(p => detected.ContainsKey((long)p!["offset"]!))
+            .Select(p => (int)p!["number"]!).SequenceEqual(Enumerable.Range(7, 8)),
+            "gm7-all-eight-including-original-7-8-9-selectable-after-policy-checks");
+        var delete = new PartitionDeleteRequest(reviewedJson, true, reviewedDisk.Number, selected[0], "zh-CN", selected);
+        var retained = PartitionInventory.Read(PartitionDeletion.Simulate(delete)).Single().Rows.Where(r => r.Type != "—").ToArray();
+        Require(retained.Length == 6 && retained.SequenceEqual(reviewedDisk.Rows.Where(r => r.Type != "—" && r.SteamOsRole == null)),
+            "gm7-all-eight-deletion-keeps-six-original-partitions");
         var changed = JsonNode.Parse(after.RootElement.GetRawText())!;
         changed["partitions"]!.AsArray().Single(part => (string?)part!["gptName"] == "rootfs-A")!["gptType"] =
             "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7";

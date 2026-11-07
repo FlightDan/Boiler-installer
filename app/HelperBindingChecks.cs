@@ -91,7 +91,7 @@ public static class HelperBindingChecks
             {
                 var script = Path.Combine(Backend.Root, "scripts", item.Purpose == HelperRequestBinding.Delete ? "delete-partition.ps1" : "format-remaining.ps1");
                 var ps = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
-                var args = new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-RequestPath", path };
+                var args = new[] { "-NoProfile", "-NonInteractive", "-File", script, "-RequestPath", path };
                 foreach (var variant in new[] { "missing", "malformed", "mismatch", "valid" })
                 {
                     var scriptArgs = variant == "missing" ? args : args.Concat(new[] { "-ExpectedDigest", variant == "malformed" ? "bad" : variant == "mismatch" ? new string('0', 64) : digest }).ToArray();

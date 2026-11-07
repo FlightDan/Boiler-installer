@@ -918,10 +918,14 @@
     "scripts/resources/xevma_proof.py",
     "scripts/runtime-dependencies.lock.json",
     "scripts/source-files.json",
+    "scripts/steam-boot-inspection.ps1",
     "scripts/steam-partition-layout.ps1",
     "scripts/steam-partition-roles.json",
     "scripts/summarize-install-timing.py",
     "scripts/test-script-dependencies.ps1",
+    "scripts/test-steam-boot-inspection.ps1",
+    "scripts/test-steam-boot-vhd.ps1",
+    "scripts/test-steamos-delete-policy.ps1",
     "scripts/test-steamos-partitions.ps1",
     "scripts/toon_catalog.py",
     "scripts/vhd-test-volumes.ps1",
@@ -1079,6 +1083,8 @@
     "tests/test_vm_stderr_allowlist.py",
     "tests/test_fixture_layout.py",
     "docs/INSTALL_SESSION_FIXTURES_20261107.md",
+    "docs/STEAMOS_PARTITION_DELETE_20261107.md",
+    "docs/RELEASE_SLIM_20261108.md",
     "docs/SOURCE_PUBLICATION_PRIVACY_20261107.md"
   ],
   "excluded": [

@@ -15,9 +15,14 @@ public sealed record PartitionDeleteRequest(string Snapshot, bool Example, int D
 public static class PartitionDeletion
 {
     private static string L(string zh, string en) => PartitionInventory.L(zh, en);
-    internal static bool Allowed(JsonElement disk, JsonElement part)
+    internal static bool Allowed(JsonElement disk, JsonElement part, string? steamOsRole = null)
     {
         bool IsFalse(JsonElement value, string key) => value.TryGetProperty(key, out var flag) && flag.ValueKind == JsonValueKind.False;
+        // This only consumes the live policy's allow result, never substitutes
+        // role recognition for its host/content checks. The helper rechecks it.
+        var ownBoot = steamOsRole is "esp" or "efi-A" or "efi-B"
+            && part.TryGetProperty("nativeGptVerified", out var verified) && verified.ValueKind == JsonValueKind.True
+            && part.TryGetProperty("gptAttributes", out var attributes) && attributes.GetString() == "0";
         return disk.GetProperty("style").GetString() == "GPT"
             && disk.TryGetProperty("guid", out var diskId) && Guid.TryParse(diskId.GetString(), out var diskGuid) && diskGuid != Guid.Empty
             && part.TryGetProperty("guid", out var partId) && Guid.TryParse(partId.GetString(), out var partGuid) && partGuid != Guid.Empty
@@ -25,11 +30,11 @@ public static class PartitionDeletion
             && IsFalse(disk, "isOffline") && IsFalse(disk, "isReadOnly")
             && part.TryGetProperty("deletionAllowed", out var allowed) && allowed.ValueKind == JsonValueKind.True
             && IsFalse(part, "isBoot") && IsFalse(part, "isSystem")
-            && (IsFalse(part, "isHidden") || part.TryGetProperty("nativeUnrecognizedSafe", out var nativeSafe) && nativeSafe.ValueKind == JsonValueKind.True
+            && (ownBoot || IsFalse(part, "isHidden") || part.TryGetProperty("nativeUnrecognizedSafe", out var nativeSafe) && nativeSafe.ValueKind == JsonValueKind.True
                 && part.GetProperty("filesystem").GetString() is "" or "Unknown" or "RAW"
                 && part.GetProperty("gptType").GetString()?.Trim('{','}').ToUpperInvariant() != "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7")
             && Guid.TryParse(part.GetProperty("gptType").GetString(), out var type)
-            && type != Guid.Empty && !ProtectedTypes.Contains(type);
+            && type != Guid.Empty && (!ProtectedTypes.Contains(type) || ownBoot && steamOsRole == "esp" && type == new Guid("C12A7328-F81F-11D2-BA4B-00A0C93EC93B"));
     }
 
     private static readonly HashSet<Guid> ProtectedTypes = [
@@ -82,7 +87,7 @@ public static class PartitionDeletion
         Text(disk.Title + "\n" + L($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total"));
         foreach (var row in rows) Text(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + L($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
         Text(L("删除的是整个分区，包括系统、游戏和个人文件。确认后立即删除，不会等到开始安装；返回或退出不能撤销。", "Whole partitions are erased, including their system, games and personal files. Deletion happens immediately, before installation. Going back or exiting cannot undo it."));
-        if (bulk) Text(L("未选分区及受保护的 EFI / Windows / 恢复分区将保留。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "Unselected partitions and protected EFI / Windows / recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
+        if (bulk) Text(L("以上所选 SteamOS 分区（包括其自有启动分区）将删除；未选分区、Windows / 宿主 / 恢复分区保持不变。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "Selected SteamOS partitions, including their own boot partitions, will be deleted. Unselected, Windows, host and recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
         var consent = new CheckBox { Name = "DeleteConsent", Content = new TextBlock { Text = L("我已备份需要的文件，确认清空以上全部所选分区。", "I have backed up my files and agree to erase every selected partition shown above."), TextWrapping = TextWrapping.Wrap } };
         panel.Children.Add(consent);
         var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0,16,0,0) };

@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'partition-delete-policy.ps1')
 . (Join-Path $PSScriptRoot 'linux-storage-probe.ps1')
 . (Join-Path $PSScriptRoot 'steam-partition-layout.ps1')
+. (Join-Path $PSScriptRoot 'steam-boot-inspection.ps1')
 $Error.Clear()
 $diskSnapshots = @(Get-Disk -ErrorAction Stop)
 if ($Error.Count -gt 0) { throw "Disk query failed: $($Error[0])" }
@@ -50,8 +51,21 @@ $disks = @($diskSnapshots | ForEach-Object {
             free = if ($null -ne $volume) { $volume.SizeRemaining } else { $null }
         }
     })
-    [pscustomobject]@{ number = $disk.Number; guid = [string]$disk.Guid; serial = ([string]$disk.SerialNumber).Trim(); sectorSize = $disk.LogicalSectorSize; model = $disk.FriendlyName; size = $disk.Size
+    $snapshot = [pscustomobject]@{ number = $disk.Number; guid = [string]$disk.Guid; serial = ([string]$disk.SerialNumber).Trim(); sectorSize = $disk.LogicalSectorSize; model = $disk.FriendlyName; size = $disk.Size
         style = [string]$disk.PartitionStyle; bus = [string]$disk.BusType; isBoot = $disk.IsBoot
         isSystem = $disk.IsSystem; isOffline = $disk.IsOffline; isReadOnly = $disk.IsReadOnly; partitionReadError = $partitionReadError; partitions = $partitions }
+    $context = Get-SteamOsDeletionContext $snapshot
+    foreach ($part in $partitions) {
+        $evidence = $context[([string]$part.guid).Trim('{}').ToLowerInvariant()]
+        if ($null -eq $evidence -or $evidence.gptName -cnotin @('esp','efi-A','efi-B')) { continue }
+        $raw = @($diskPartitions | Where-Object { [guid]$_.Guid -eq [guid]$part.guid })
+        if ($raw.Count -ne 1) { throw 'Ambiguous SteamOS partition inventory.' }
+        $volume = $raw[0] | Get-Volume -ErrorAction SilentlyContinue
+        $reason = Get-PartitionDeletionBlockReason $disk $raw[0] $volume $evidence
+        $part.deletionAllowed = ($reason -eq '')
+        $part.deletionBlockReason = $reason
+        $part.nativeUnrecognizedSafe = ($raw[0].NativeUnrecognizedSafe -eq $true)
+    }
+    $snapshot
 })
 ConvertTo-Json -InputObject $disks -Depth 6

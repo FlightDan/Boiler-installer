@@ -17,8 +17,12 @@ $expected = $disks[0]
 $expected | Add-Member NoteProperty serial 'synthetic-steamos-reinstall' -Force
 $recognized = @(Get-SteamOsPartitionStarts $expected)
 Assert-Check ($recognized.Count -eq 8) 'recognizes-complete-layout-with-protected-esp'
-$targets = @($expected.partitions | Where-Object { $recognized -contains [long]$_.offset -and $_.deletionAllowed })
-Assert-Check ($targets.Count -eq 5) 'only-existing-policy-eligible-partitions-selected'
+Assert-Check (@($expected.partitions | Where-Object { $recognized -contains [long]$_.offset -and $_.deletionAllowed }).Count -eq 5) 'historical-five-only-policy-is-not-rewritten'
+# Orchestration consumes a freshly evaluated policy result. The actual policy
+# is separately executed by test-steamos-delete-policy.ps1, not this stub suite.
+foreach ($p in $expected.partitions) { if ($recognized -contains [long]$p.offset) { $p.deletionAllowed=$true; $p.deletionBlockReason='' } }
+$targets = @($expected.partitions | Where-Object { $recognized -contains [long]$_.offset })
+Assert-Check ($targets.Count -eq 8) 'new-policy-result-selects-all-eight'
 foreach ($key in @('gptName','gptType','nativeGptVerified','missing','gap','label-only')) {
     $changed = Copy-Snapshot $expected
     $part = @($changed.partitions | Where-Object { $_.gptName -eq 'rootfs-A' })[0]
@@ -69,11 +73,27 @@ Assert-Refused { [void][BoilerSteamPartitionReader]::Parse($native,47,[guid]$exp
 Put-Bytes 4 ([BitConverter]::GetBytes([uint32]999999))
 Assert-Refused { [void][BoilerSteamPartitionReader]::Parse($native,$native.Length,[guid]$expected.guid,[long]$expected.size) } 'native-rejects-out-of-bounds-count'
 # Exercise the actual sequential orchestration with mock disk/target functions.
-function Reset-Mock {
-    $script:current=Copy-Snapshot $expected; $script:deleted=@(); $script:preflights=0; $script:stopAt=0; $script:changeAfter=$false
+function Reset-Mock($Initial=$expected) {
+    $script:current=Copy-Snapshot $Initial; $script:deleted=@(); $script:preflights=0; $script:stopAt=0; $script:changeAfter=$false; $script:refuseAt=0; $script:retainedContextChecks=0
 }
-function Read-ReviewedDeletionDisk([int]$Number) { Copy-Snapshot $script:current }
-function Get-ReviewedDeletionTarget([int]$Number,$Fresh,$Target) { $script:preflights++; return $Target }
+function Read-ReviewedDeletionDisk([int]$Number) {
+    $copy=Copy-Snapshot $script:current
+    # Real inventory loses full-group qualification while the reviewed group
+    # is being dismantled; final checks must re-evaluate its bound context.
+    if ($script:deleted.Count -gt 0) {
+        foreach ($p in $copy.partitions) { if ($p.gptName -cin @('esp','efi-A','efi-B')) { $p.deletionAllowed=$false } }
+    }
+    return $copy
+}
+function Get-ReviewedDeletionTarget([int]$Number,$Fresh,$Target,$Evidence=$null) {
+    $script:preflights++
+    if ($script:refuseAt -eq $script:preflights) { throw 'Synthetic final-check refusal' }
+    if ($Target.gptName -cin @('esp','efi-A','efi-B')) {
+        if ($null -eq $Evidence -or $Evidence.guid -ne $Target.guid -or $Evidence.gptName -cne $Target.gptName -or $Evidence.offset -ne $Target.offset) { throw 'Missing or changed boot context' }
+        if ($script:deleted.Count -gt 0) { $script:retainedContextChecks++ }
+    }
+    return $Target
+}
 function Remove-Partition {
     [CmdletBinding()]param([Parameter(ValueFromPipeline=$true)]$InputObject,[switch]$Confirm)
     process {
@@ -85,12 +105,39 @@ function Remove-Partition {
 }
 Reset-Mock
 Invoke-ReviewedPartitionDeletion $expected $script:current $targets $true -ValidateOnly
-Assert-Check ($script:deleted.Count -eq 0 -and $script:preflights -eq 5) 'preflight-validates-every-target-with-zero-removals'
+Assert-Check ($script:deleted.Count -eq 0 -and $script:preflights -eq 8) 'preflight-validates-eight-targets-with-zero-removals'
+Reset-Mock; $script:refuseAt=8
+Assert-Refused { Invoke-ReviewedPartitionDeletion $expected $script:current $targets $true } 'last-target-preflight-refusal'
+Assert-Check ($script:deleted.Count -eq 0) 'any-preflight-refusal-means-zero-removals'
 Reset-Mock
 Invoke-ReviewedPartitionDeletion $expected $script:current $targets $true
-Assert-Check ($script:deleted.Count -eq 5 -and $script:preflights -eq 10) 'batch-rechecks-every-target-before-each-removal'
-Assert-Check (@($script:current.partitions | Where-Object { $_.gptName -in @('esp','efi-A','efi-B') }).Count -eq 3) 'batch-keeps-protected-boot-partitions'
-Assert-Check (@($script:current.partitions | Where-Object { $_.filesystem -eq 'NTFS' }).Count -eq 3) 'batch-keeps-windows-data-and-recovery'
+Assert-Check ($script:deleted.Count -eq 8 -and $script:preflights -eq 16) 'batch-rechecks-eight-targets-before-each-removal'
+Assert-Check ($script:retainedContextChecks -eq 3) 'all-three-boot-roles-rechecked-with-bound-context-after-group-dismantled'
+Assert-Check (($script:deleted -join ',') -eq (($targets | Sort-Object offset -Descending | ForEach-Object { $_.guid }) -join ',')) 'batch-deletes-by-descending-range-not-partition-number'
+$preserved=@($expected.partitions | Where-Object { $recognized -notcontains [long]$_.offset })
+Assert-Check (($script:current.partitions | ConvertTo-Json -Depth 10 -Compress) -ceq ($preserved | ConvertTo-Json -Depth 10 -Compress)) 'all-six-unselected-partitions-preserved-exactly'
+$residual=Copy-Snapshot $expected
+$residual.partitions=@($residual.partitions | Where-Object { $_.gptName -cnotin @('rootfs-A','rootfs-B','var-A','var-B','home') })
+Assert-Check (@(Get-SteamOsPartitionStarts $residual).Count -eq 0 -and @(Get-SteamOsPartitionStarts $residual -IncludeBootRemnants).Count -eq 3) 'residual-three-candidates-are-not-a-complete-layout'
+$bootTargets=@($residual.partitions | Where-Object { $_.gptName -cin @('esp','efi-A','efi-B') })
+foreach ($key in @('size','gptName','nativeGptVerified','gptType')) {
+    $changed=Copy-Snapshot $residual
+    $p=@($changed.partitions | Where-Object { $_.gptName -ceq 'efi-A' })[0]
+    switch ($key) {
+        'size' { $p.size-=1MB }
+        'gptName' { $p.gptName='efi-a' }
+        'nativeGptVerified' { $p.nativeGptVerified=$false }
+        'gptType' { $p.gptType='0fc63daf-8483-4772-8e79-3d69d8477de4' }
+    }
+    Assert-Check (@(Get-SteamOsPartitionStarts $changed -IncludeBootRemnants).Count -eq 0) ('residual-rejects:'+ $key)
+}
+Reset-Mock $residual
+Invoke-ReviewedPartitionDeletion $residual $script:current $bootTargets $true
+Assert-Check ($script:deleted.Count -eq 3 -and $script:preflights -eq 6 -and $script:retainedContextChecks -eq 2) 'residual-three-complete-despite-incomplete-intermediate-layouts'
+Assert-Check (($script:current.partitions | ConvertTo-Json -Depth 10 -Compress) -ceq ($preserved | ConvertTo-Json -Depth 10 -Compress)) 'residual-three-keeps-identical-six-retained-partitions'
+Reset-Mock
+Invoke-ReviewedPartitionDeletion $expected $script:current @($targets | Where-Object { $_.gptName -ceq 'esp' }) $false
+Assert-Check ($script:deleted.Count -eq 1) 'single-esp-entry-uses-same-bound-context'
 Reset-Mock; $script:stopAt=1
 Assert-Refused { Invoke-ReviewedPartitionDeletion $expected $script:current $targets $true } 'partial-removal-failure-stops-batch'
 Assert-Check ($script:deleted.Count -eq 1) 'partial-removal-has-no-retry-or-further-deletions'

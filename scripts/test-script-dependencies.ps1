@@ -91,6 +91,16 @@ Assert-Check (-not (Test-LinuxStorageProbeEligible $disk $part $null)) 'syntheti
 Initialize-LinuxStorageProbe
 Assert-Check ([OxpLinuxStorageProbe]::Identify((New-Object byte[] 131072), 131072) -eq '') 'linux-pure-byte-parser-rejects-blank-buffer'
 Assert-Check (-not [OxpLinuxStorageProbe]::MatchesLayout((New-Object byte[] 48), 48, [guid]::NewGuid(), [guid]::NewGuid(), [guid]::NewGuid(), 1048576, 67108864)) 'linux-pure-layout-parser-rejects-invalid-layout'
+# Exercise real inventory's second pass on an unsupported MBR partition whose
+# GUID is empty. It must remain protected, not abort all inventory by casting ''.
+$mbrJson = & {
+    function Get-Disk { [CmdletBinding()]param(); [pscustomobject]@{Number=9999;Guid='';SerialNumber='synthetic';LogicalSectorSize=512;FriendlyName='synthetic MBR';Size=1GB;PartitionStyle='MBR';BusType='USB';IsBoot=$false;IsSystem=$false;IsOffline=$false;IsReadOnly=$false;NumberOfPartitions=1} }
+    function Get-Partition { [CmdletBinding()]param(); [pscustomobject]@{DiskNumber=9999;PartitionNumber=1;Guid='';Offset=1MB;Size=64MB;Type='Basic';GptType='';DriveLetter='';IsBoot=$false;IsSystem=$false;IsHidden=$false} }
+    function Get-Volume { [CmdletBinding()]param([Parameter(ValueFromPipeline=$true)]$InputObject); process { $null } }
+    & (Join-Path $PSScriptRoot 'read-disks.ps1')
+}
+$mbr=@($mbrJson | ConvertFrom-Json)
+Assert-Check ($mbr.Count -eq 1 -and $mbr[0].style -eq 'MBR' -and $mbr[0].partitions[0].deletionAllowed -eq $false) 'real-inventory-mbr-empty-guid-stays-protected-without-native-io'
 $hashes = @()
 foreach ($name in @('partition-delete-policy.ps1', 'linux-storage-probe.ps1', 'read-usb-media.ps1', 'vhd-test-volumes.ps1')) {
     $hashes += [ordered]@{file=('scripts/' + $name);sha256=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $name) -Algorithm SHA256).Hash.ToLowerInvariant()}

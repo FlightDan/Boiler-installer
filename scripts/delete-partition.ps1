@@ -34,6 +34,7 @@ if ($expected.Count -ne 1) { throw 'Ambiguous reviewed disk.' }
 $expected = $expected[0]
 . (Join-Path $PSScriptRoot 'partition-delete-policy.ps1')
 . (Join-Path $PSScriptRoot 'steam-partition-layout.ps1')
+. (Join-Path $PSScriptRoot 'steam-boot-inspection.ps1')
 . (Join-Path $PSScriptRoot 'partition-delete-snapshot.ps1')
 $batch = $null -ne $request.SteamOsStarts
 $starts = @($request.Start)
@@ -49,8 +50,8 @@ $targets = @($starts | ForEach-Object {
 $fresh = Read-ReviewedDeletionDisk $request.Disk
 Assert-DeletionSnapshot $expected $fresh @($expected.partitions) $batch
 if ($batch) {
-    $recognized = @(Get-SteamOsPartitionStarts $fresh)
-    foreach ($target in $targets) { if ($recognized -notcontains [long]$target.offset) { throw 'Selected partition does not belong to a complete SteamOS layout.' } }
+    $recognized = @(Get-SteamOsPartitionStarts $fresh -IncludeBootRemnants)
+    foreach ($target in $targets) { if ($recognized -notcontains [long]$target.offset) { throw 'Selected partition does not belong to a verified SteamOS group or residual boot candidate.' } }
 }
 # Preflight every selected partition before the first mutation. The elevated app
 # also runs this pass before showing its mandatory confirmation dialog.

@@ -74,7 +74,7 @@ public static class PartitionInventory
                 result.Add(new(number, model, size, bus, style, rows.ToArray()));
                 continue;
             }
-            var steamOs = reason.Length == 0 ? SteamOsPartitions.Detect(disk) : [];
+            var steamOs = reason.Length == 0 ? SteamOsPartitions.DeletionCandidates(disk) : [];
             foreach (var part in disk.GetProperty("partitions").EnumerateArray().OrderBy(p => p.GetProperty("offset").GetInt64()))
             {
                 var start = part.GetProperty("offset").GetInt64(); var bytes = part.GetProperty("size").GetInt64();
@@ -89,7 +89,7 @@ public static class PartitionInventory
                 if (type.Length == 0) type = L("未知文件系统", "Unknown filesystem");
                 if (part.TryGetProperty("isBoot", out var boot) && boot.ValueKind == JsonValueKind.True) type += " · Windows";
                 long? free = part.TryGetProperty("free", out var f) && f.ValueKind == JsonValueKind.Number ? f.GetInt64() : null;
-                var canDelete = reason.Length == 0 && Str(part, "deletionBlockReason").Length == 0 && PartitionDeletion.Allowed(disk, part);
+                var canDelete = reason.Length == 0 && Str(part, "deletionBlockReason").Length == 0 && PartitionDeletion.Allowed(disk, part, steamOsRole);
                 rows.Add(new(number, start, bytes, name, type, free, canDelete
                     ? L("可删除以释放空间（清空数据）", "Can delete to free space (erases data)")
                     : DeletionStatus(reason, Str(part, "deletionBlockReason")), CanDelete: canDelete, SteamOsRole: steamOsRole));
@@ -128,6 +128,17 @@ public static class PartitionInventory
             "Volume cannot be inspected safely." => "无法安全检查此卷。",
             "Volume contains operating-system or boot files." => "此卷包含操作系统或启动文件。",
             "Volume protection checks failed; refresh or unlock the volume first." => "卷保护检查失败；请先刷新或解锁卷。",
+            "SteamOS boot partition ownership could not be verified." => "无法核验 SteamOS 启动分区归属。",
+            "SteamOS boot partition native identity or protection attributes changed." => "SteamOS 启动分区原生标识或保护属性已改变。",
+            "SteamOS boot volume could not be inspected safely." => "无法安全检查 SteamOS 启动卷。",
+            "SteamOS ESP boot configuration evidence is missing." => "缺少 SteamOS ESP 启动配置证据。",
+            "SteamOS slot GRUB evidence is missing." or "SteamOS generated slot boot entry evidence is missing." => "缺少 SteamOS 槽位启动配置证据。",
+            "SteamOS fallback ownership evidence is missing." or "Fallback loader is not bound to this volume SteamOS deployment." => "无法核验回退启动器属于此 SteamOS 卷。",
+            "Boot root is a reparse point." => "启动卷根路径发生重定向。",
+            _ when blockReason.StartsWith("Project rEFInd", StringComparison.Ordinal) => "rEFInd 归属或恢复状态无法核验：" + blockReason,
+            _ when blockReason.StartsWith("Other operating-system boot content:", StringComparison.Ordinal)
+                || blockReason.StartsWith("Shared operating-system boot configuration:", StringComparison.Ordinal)
+                || blockReason.StartsWith("Shared or unrecognized boot content:", StringComparison.Ordinal) => "启动卷含其他系统、共享或无法识别的内容：" + blockReason,
             _ => ""
         };
         var fallback = L("受保护 / 不支持删除", "Protected / deletion unavailable");

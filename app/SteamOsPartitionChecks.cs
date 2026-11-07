@@ -18,12 +18,22 @@ internal static class SteamOsPartitionChecks
         var checks = new List<string>(); var captures = new List<string>(); var captureErrors = new List<string>();
         void Require(bool ok, string name) { if (!ok) throw new IOException("SteamOS partition check failed: " + name); checks.Add(name); }
         void Reject(Action action, string name) { var rejected = false; try { action(); } catch (InvalidOperationException) { rejected = true; } Require(rejected, name); }
+        async Task Capture(MainWindow owner, string name)
+        {
+            await Flush(owner);
+            var path = Path.Combine(directory, name + ".png");
+            try { await BoilerUiChecks.CaptureAsync((FrameworkElement)owner.Content, path); captures.Add(path); }
+            catch (IOException error) { captureErrors.Add(error.Message); }
+        }
         var json = ExampleJson(); var disk = PartitionInventory.Read(json).Single();
         var steam = disk.Rows.Where(r => r.SteamOsRole != null).ToArray(); var deletable = steam.Where(r => r.CanDelete).ToArray();
-        Require(steam.Length == 8 && deletable.Length == 5 && steam[0].SteamOsRole == "esp", "exact-eight-roles-and-existing-boot-protection");
+        Require(steam.Length == 8 && deletable.Length == 8 && steam[0].SteamOsRole == "esp", "all-eight-steamos-roles-including-own-boot-are-deletable");
+        using (var roles = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(Backend.Root, "scripts/steam-partition-roles.json"))))
+            Require(roles.RootElement.EnumerateArray().Take(3).All(role => role.GetProperty("bootSize").GetInt64()
+                == steam.Single(row => row.SteamOsRole == role.GetProperty("name").GetString()).Size), "residual-boot-policy-sizes-match-production-layout");
         var starts = deletable.Select(r => r.Start).Order().ToArray();
         var request = new PartitionDeleteRequest(json, true, disk.Number, starts[0], "zh-CN", starts);
-        Require(PartitionDeletion.ValidateTargets(request).Rows.Length == 5, "batch-contains-only-deletable-steamos-roles");
+        Require(PartitionDeletion.ValidateTargets(request).Rows.Length == 8, "batch-includes-all-steamos-boot-and-linux-roles");
         foreach (var mutation in new[] { "gptName", "gptType", "nativeGptVerified", "missing-role", "gap", "label-only", "duplicate-role" })
         {
             var changed = JsonNode.Parse(json)!; var parts = changed[0]!["partitions"]!.AsArray();
@@ -50,6 +60,27 @@ internal static class SteamOsPartitionChecks
         var after = PartitionInventory.Read(result).Single();
         Require(after.Rows.Where(r => r.Type != "—").SequenceEqual(disk.Rows.Where(r => r.Type != "—" && !starts.Contains(r.Start)).Select(r => r with { SteamOsRole = null, Name = r.Name.Split(" · SteamOS / ")[0] })), "simulation-preserves-all-unselected-and-protected-partitions");
         Require(after.Rows.Any(r => r.Space?.Size >= 95 * PartitionInventory.GiB), "released-space-is-contiguous-and-installable");
+        var linuxStarts = steam.Where(r => r.SteamOsRole is not ("esp" or "efi-A" or "efi-B")).Select(r => r.Start).ToArray();
+        var remnants = PartitionDeletion.Simulate(request with { Start = linuxStarts.Min(), SteamOsStarts = linuxStarts });
+        var bootRows = PartitionInventory.Read(remnants).Single().Rows.Where(r => r.SteamOsRole != null).ToArray();
+        Require(bootRows.Length == 3 && bootRows.All(r => r.CanDelete), "previous-five-deleted-leaves-three-selectable-boot-roles");
+        var bootStarts = bootRows.Select(r => r.Start).ToArray();
+        var residualRequest = request with { Snapshot = remnants, Start = bootStarts.Min(), SteamOsStarts = bootStarts };
+        Require(PartitionDeletion.Simulate(residualRequest) == result, "residual-three-deletion-reaches-identical-preserved-layout");
+        foreach (var mutation in new[] { "gptAttributes", "isSystem", "deletionAllowed", "boot-size", "nativeGptVerified" })
+        {
+            var changed = JsonNode.Parse(remnants)!;
+            var part = changed[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!;
+            switch (mutation)
+            {
+                case "gptAttributes": part[mutation] = "1"; break;
+                case "isSystem": part[mutation] = true; break;
+                case "deletionAllowed": part[mutation] = false; break;
+                case "boot-size": part["size"] = (long)part["size"]! - PartitionInventory.MiB; break;
+                case "nativeGptVerified": part[mutation] = false; break;
+            }
+            Reject(() => PartitionDeletion.ValidateTargets(residualRequest with { Snapshot = changed.ToJsonString() }), "residual-protection-not-bypassed-" + mutation);
+        }
         await File.WriteAllTextAsync(Path.Combine(directory, "fixture.json"), json);
         MainWindow? window = null; var originalLanguage = InstallerI18n.Language;
         try
@@ -59,15 +90,36 @@ internal static class SteamOsPartitionChecks
                 InstallerI18n.SetLanguage(language);
                 window = new MainWindow(true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false };
                 var picker = (PartitionPicker)window.FindName("PartitionSelector"); picker.AutomaticReadEnabled = false;
-                window.Show(); window.BoilerModeForChecks("imported"); window.PreviewStep(0); picker.LoadSnapshot(json, true);
+                window.Show(); window.BoilerModeForChecks("imported"); window.PreviewStep(0);
+                picker.LoadSnapshot(remnants, true);
+                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(bootStarts)
+                    && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().Count(c => c.IsEnabled && c.IsChecked == true) == 3,
+                    language + "-residual-three-boot-partitions-all-selected");
+                picker.SteamOsDetails.IsExpanded = true;
+                await Flush(window);
+                picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().First().BringIntoView();
+                await Capture(window, language + "-residual-three");
+                var protectedBoot = JsonNode.Parse(json)!;
+                var systemEsp = protectedBoot[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!;
+                systemEsp["isSystem"] = true; systemEsp["deletionAllowed"] = false;
+                systemEsp["deletionBlockReason"] = "System, boot, hidden, offline, or read-only partition is protected.";
+                picker.LoadSnapshot(protectedBoot.ToJsonString(), true);
+                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7
+                    && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().Count(c => !c.IsEnabled) == 1,
+                    language + "-real-system-esp-remains-disabled-while-seven-eligible-select");
+                picker.SteamOsDetails.IsExpanded = true;
+                await Flush(window);
+                picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().First().BringIntoView();
+                await Capture(window, language + "-protected-system-esp");
+                picker.LoadSnapshot(json, true);
                 Require(picker.DeleteSteamOsButton.IsEnabled && !picker.SteamOsDetails.IsExpanded, language + "-empty-selection-offers-selection");
                 picker.DeleteSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts) && picker.SteamOsDetails.IsExpanded, language + "-delete-action-selects-all-eligible-only");
                 var choices = picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().ToArray();
-                Require(choices.Count(c => c.IsEnabled) == 5 && choices.Count(c => !c.IsEnabled && c.IsChecked != true) == 3, language + "-protected-boot-rows-visible-and-unselectable");
-                var protectedText = string.Join(" ", choices.Where(c => !c.IsEnabled).Select(c => ((TextBlock)c.Content).Text));
-                Require(protectedText.Contains(language == "en-US" ? "EFI, MSR, recovery and boot partitions are protected." : "EFI、MSR、恢复和启动分区受保护。")
-                    && protectedText.Contains(language == "en-US" ? "Volume has no verifiable access path." : "卷没有可验证的访问路径。"), language + "-protected-reasons-visible");
+                Require(choices.Length == 8 && choices.All(c => c.IsEnabled && c.IsChecked == true), language + "-all-steamos-boot-rows-selectable");
+                Require((string)picker.SelectSteamOsButton.Content == (language == "en-US" ? "Select all SteamOS partitions for deletion" : "选择 SteamOS 分区全部删除"), language + "-select-all-wording");
                 var unknownReason = JsonNode.Parse(json)!;
                 unknownReason[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!["deletionBlockReason"] = "Unrecognized protection reason.";
                 var unknownStatus = PartitionInventory.Read(unknownReason.ToJsonString()).Single().Rows.Single(r => r.SteamOsRole == "esp").Status;
@@ -75,14 +127,14 @@ internal static class SteamOsPartitionChecks
                 unknownReason[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "rootfs-A")!["deletionBlockReason"] = "Unrecognized protection reason.";
                 Require(!PartitionInventory.Read(unknownReason.ToJsonString()).Single().Rows.Single(r => r.SteamOsRole == "rootfs-A").CanDelete, language + "-unknown-reason-blocks-conflicting-allow");
                 choices.First(c => c.IsEnabled).IsChecked = false;
-                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 4 && picker.SelectSteamOsButton.IsEnabled, language + "-individual-opt-out");
+                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7 && picker.SelectSteamOsButton.IsEnabled, language + "-individual-opt-out");
                 var confirmationSeen = false;
                 _ = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => {
                     var confirmation = Application.Current.Windows.OfType<Window>().Single(w => w != window && w.IsVisible);
                     confirmationSeen = true; confirmation.Close();
                 }));
                 picker.DeleteSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(confirmationSeen && picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 4, language + "-delete-preserves-manual-subset");
+                Require(confirmationSeen && picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7, language + "-delete-preserves-manual-subset");
                 choices.First(c => c.IsEnabled).IsChecked = true;
                 picker.RefreshLanguage(); Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts), language + "-language-refresh-retains-selection");
                 foreach (var size in new[] { new Size(1060, 720), new Size(640, 360) })
