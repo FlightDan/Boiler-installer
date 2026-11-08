@@ -4,7 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 if __package__:
-    from .oxp3_efi_provider import _verify
+    from .oxp3_efi_provider import _recovery_lock, _verify
 else:
     # The model adapter loads this module by filename, without adding the
     # components directory to its import search path.
@@ -13,6 +13,20 @@ else:
     common = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(common)
     _verify = common._verify
+    _recovery_lock = common._recovery_lock
+
+
+def lock_for(manifest, lock_file):
+    lock_file = Path(lock_file)
+    if lock_file.name == 'x2_efi_provider.lock.json':
+        candidate = lock_file.with_name('x2_efi_provider.hdr1100.lock.json')
+        if candidate.is_file() and not candidate.is_symlink():
+            expected = json.loads(candidate.read_bytes())['provenance']['hdr_overlay_sha256']
+            overlay = (manifest.get('source', {}).get('hdr_overlay_sha256')
+                       or manifest.get('hdr_overlay_sha256'))
+            if overlay == expected:
+                lock_file = candidate
+    return _recovery_lock(manifest, lock_file)
 
 
 def verify(package, lock_file):
@@ -30,6 +44,7 @@ def verify(package, lock_file):
     if (manifest.get('id') != 'device:x2-mini'
             or manifest.get('x2_efi_contract') != {'kind':'x2-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}):
         raise ValueError('Fixed X2 provider requires the X2 package contract')
+    lock_file = lock_for(manifest, lock_file)
     result = _verify(package, lock_file, 'FixedX2EfiProviderSourceLock')
     names = {row['path'] for row in json.loads(Path(lock_file).read_bytes())['files']}
     directory = package/'payload/legacy/maintenance/app/oxp3_maintenance'

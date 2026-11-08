@@ -91,6 +91,7 @@ public partial class MainWindow
     private StackPanel? deviceComponentsPanel;
     private CheckBox? deviceAdaptationsChoice;
     private bool updatingDeviceAdaptations;
+    private bool deviceUsesProjectMaintenance;
 
     private void RefreshDeviceAdaptationsChoice()
     {
@@ -109,6 +110,7 @@ public partial class MainWindow
     {
         importedDeviceFileName = null;
         selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
+        deviceUsesProjectMaintenance = false;
         optionsPanel.SetWirelessContext(installMode, hasPackage: adaptationBranch != "generic");
         displayedDeviceMetadata = null;
         reviewedDeviceMetadata = null;
@@ -296,6 +298,7 @@ public partial class MainWindow
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
             ?? new DeviceLegacySelection(1, [], [], deviceLegacyUpdateHold?.IsChecked == true) : null;
         var package = selection.Package;
+        deviceUsesProjectMaintenance = package.TryGetProperty("legacy_recovery_contract", out _);
         var modelId = package.GetProperty("id").GetString()!;
         fingerprintModel = modelId;
         adaptationBranch = "device"; adaptationScreen = AdaptationScreen.Device;

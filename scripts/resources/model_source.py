@@ -5,7 +5,7 @@ import json
 import re
 from pathlib import Path
 from protocol.resource_pool import decoder, local, json_document
-from protocol.hdr_contract import IDENTITY as HDR, PROFILES
+from protocol.hdr_contract import IDENTITY as HDR, PROFILES, LEGACY_PROFILES
 
 PATTERN = re.compile(r'adaptations/brands/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)/\2\.toon')
 DEVICE_PATTERN = re.compile(r'adaptations/devices/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)\.toon')
@@ -213,7 +213,9 @@ def apply(pool, project, catalog):
             if not isinstance(hdr,dict) or set(hdr)!={'profile','full_frame','peak'}:raise ValueError('Invalid HDR mapping: '+source)
             profile=hdr['profile']
             if (not isinstance(profile,str) or profile not in PROFILES or type(hdr['full_frame']) is not int or type(hdr['peak']) is not int
-                    or hdr['full_frame']!=PROFILES[profile]['full_frame'] or hdr['peak']!=PROFILES[profile]['peak']):
+                    or (hdr['full_frame'], hdr['peak']) not in {
+                        (profiles[profile]['full_frame'], profiles[profile]['peak'])
+                        for profiles in (PROFILES, LEGACY_PROFILES)}):
                 raise ValueError('HDR mapping is not supported by fixed shared handler: '+source)
             for row in model['resources']:
                 if row['resource']==HDR:row['parameters']={'profile':profile}

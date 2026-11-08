@@ -143,10 +143,14 @@ public partial class MainWindow : Window
                 return new(1, [], [], InstallerI18n.Language, "system", InstallMode: installMode);
             var legacy = CurrentDeviceLegacyOptions;
             var selection = optionsPanel.Selection;
+            var components = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray();
+            var plugins = legacy?.Plugins.Contains("oxp3:decky") == true
+                ? selection.Plugins.Where(id => id != "core:decky").ToArray() : selection.Plugins;
+            if (deviceUsesProjectMaintenance && components.Contains("oxp3:legacy-adaptation") && !plugins.Contains("core:maintenance"))
+                plugins = [.. plugins, "core:maintenance"];
             return selection with { StorageMounts = null, InstallMode = installMode, DevicePackage = selectedDevicePackage,
                 DeviceManifestSha256 = selectedDeviceDigest, DeviceTrust = selectedDeviceTrust,
-                DeviceComponents = deviceComponentChoices.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray(),
-                Plugins = legacy?.Plugins.Contains("oxp3:decky") == true ? selection.Plugins.Where(id => id != "core:decky").ToArray() : selection.Plugins,
+                DeviceComponents = components, Plugins = plugins,
                 DeviceLegacyOptions = legacy };
         }
     }
@@ -665,6 +669,12 @@ public partial class MainWindow : Window
                 if (group.Key == "system-update-policy" && failed.Length == 0) return label + ": " + PartitionInventory.L(
                     "此任务曾部署系统更新暂停策略；该记录不代表当前系统的更新状态。",
                     "This task deployed a system update pause policy; this record does not describe the system's current update status.");
+                if (group.Key == "core:maintenance" && failed.Length == 0) return label + ": " + PartitionInventory.L(
+                    "在 KDE 应用菜单打开“Boiler 修复与项目更新”。",
+                    "Open Boiler Repairs and Project Updates from the KDE application menu.");
+                if (group.Key == "maintenance-tool" && failed.Length == 0 &&
+                    group.All(record => record.TryGetProperty("activation", out var activation) && activation.GetString() == "boot-service"))
+                    return PartitionInventory.L("旧适配的启动与恢复服务已部署。", "Legacy adaptation startup and recovery services were installed.");
                 if (group.Key == "maintenance-tool" && failed.Length == 0) return label + ": " + PartitionInventory.L(
                     "已安装；进入 KDE 桌面后打开“修复与项目更新”快捷方式。",
                     "Installed; open the Repairs and Project Updates shortcut on the KDE desktop.");

@@ -182,9 +182,8 @@ def component(resource, scope, *, shared_opt=False):
     if resource['install']['kind'] == CPU_KIND and scope == 'root-slots':
         value['cpu_mutable_config'] = dict(CPU_POLICY)
     if resource.get('hdr_selected_profile'):
-        from protocol.hdr_contract import PROFILES
         profile = resource['hdr_selected_profile']
-        value['hdr_profile'] = dict(kind='fixed-gamma22-profile-v1', profile=profile, **PROFILES[profile])
+        value['hdr_profile'] = dict(kind='fixed-gamma22-profile-v1', profile=profile, **resource['profiles'][profile])
     validate_manifest(value, 'ComponentManifest')
     return value
 

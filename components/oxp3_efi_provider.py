@@ -14,6 +14,23 @@ def verify(package, lock_file):
     return _verify(package, lock_file, 'FixedOxp3EfiProviderSourceLock')
 
 
+def _recovery_lock(manifest, lock_file):
+    lock_file = Path(lock_file)
+    contract = manifest.get('legacy_recovery_contract')
+    if contract is None:
+        return lock_file
+    if not isinstance(contract, dict) or contract.get('kind') != 'boiler-embedded-recovery-v1':
+        raise ValueError('Invalid embedded recovery provider contract')
+    if not lock_file.name.endswith('.recovery.lock.json'):
+        suffix = '.release.recovery.lock.json' if manifest.get('source', {}).get('kind') == 'github' else '.recovery.lock.json'
+        lock_file = lock_file.with_name(lock_file.name.replace('.lock.json', suffix))
+    if lock_file.is_symlink() or not lock_file.is_file():
+        raise ValueError('The embedded recovery provider lock is missing')
+    if json.loads(lock_file.read_bytes())['provenance'].get('embedded_recovery') != contract:
+        raise ValueError('The embedded recovery provider contract differs from its installed lock')
+    return lock_file
+
+
 def _verify(package, lock_file, kind):
     package, lock_file = Path(package), Path(lock_file)
     if package.is_symlink() or not package.is_dir() or lock_file.is_symlink() or not lock_file.is_file():

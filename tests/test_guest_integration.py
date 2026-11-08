@@ -25,6 +25,26 @@ class GenericIntegrationChecks(unittest.TestCase):
     def inventory(self):
         return {p.relative_to(self.root).as_posix(): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
 
+    def test_recovery_only_model_requires_reviewed_maintainer_and_verified_provider(self):
+        component = {'id': 'oxp3:legacy-adaptation'}
+        contract = {'kind': 'boiler-embedded-recovery-v1', 'source_revision': 'a'*40, 'source_kind': 'tree'}
+        options = dict(device_package='fixture', device_manifest_sha256='b'*64, device_trust='developer-session',
+                       device_components=[component['id']], plugins=[])
+        source = dict(ID='steamos', VERSION_ID='3.10', KERNELS=['fixture'])
+        payload = self.root/'payload'
+        for model, module in (('oxp3', 'oxp3_full_efi_provider'), ('x2-mini', 'x2_efi_provider')):
+            package = dict(id='device:'+model, version='2026.11.8.2', components=[component],
+                           legacy_recovery_contract=contract)
+            with self.subTest(model=model), mock.patch('protocol.validate_package', return_value=package), \
+                    mock.patch('protocol.resolve_plan', return_value=dict(components=[component], device_warnings=[])), \
+                    mock.patch(module+'.verify') as verify:
+                with self.assertRaisesRegex(ValueError, 'reviewed model selection'):
+                    device_plan(payload, options, source)
+                verify.assert_not_called()
+                _, _, _, descriptor = device_plan(payload, dict(options, plugins=['core:maintenance']), source)
+                self.assertEqual(descriptor['legacy_recovery_contract'], contract)
+                verify.assert_called_once_with(payload/'device-packages/fixture', payload/'components'/(module+'.lock.json'))
+
     def test_capacity_fixture_import_does_not_probe_or_modify_devices(self):
         with mock.patch.object(Path, 'read_text', side_effect=AssertionError('Import must not probe filesystems')):
             fixture = runpy.run_path(str(ROOT / 'guest/test_prepared_capacity.py'))

@@ -53,12 +53,24 @@ internal static class BoilerDeviceChecks
             new(BoilerWirelessHardware.NetworkClass, "Intel Wi-Fi 7 BE201", "Intel", ["PCI\\VEN_8086&DEV_FFFF"], []),
             Device(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_1002&DEV_B081"),
             Device(Guid.Empty, "HDAUDIO\\FUNC_01&VEN_10EC&DEV_0246"),
-            Device(Guid.Empty, "ACPI\\10EC5281\\0")]);
+            Device(Guid.Empty, "ACPI\\10EC5281\\0"),
+            Device(Guid.Empty, "ACPI\\FTE3601\\0"),
+            Device(Guid.Empty, "USB\\FTE3600\\0")]);
         if (rejected.Results.Any(result => result.State != BoilerCustomComponentHardware.MatchState.NotFound))
             throw new IOException("Current-PC matcher accepted a friendly name, vendor, or nearby ID.");
         var otherIntel = BoilerCustomComponentHardware.Match([Device(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_8086&DEV_B081")]);
         if (otherIntel.Results.Single(result => result.ComponentId == "intel-xevma").State != BoilerCustomComponentHardware.MatchState.Candidate)
             throw new IOException("Other Intel displays must remain candidates until xe compatibility is established.");
+        var bfSensor = BoilerCustomComponentHardware.Match([Device(Guid.Empty, "ACPI\\BF63112\\0")]);
+        var fteSensor = BoilerCustomComponentHardware.Match([Device(Guid.Empty, "ACPI\\FTE3600\\0")]);
+        // Each HID maps to its own observation only; neither may borrow the other's
+        // identity, and neither is a statement about the destination device.
+        if (bfSensor.Results.Single(result => result.ComponentId == "fingerprint-bf63112") is not { State: BoilerCustomComponentHardware.MatchState.Candidate, RawId: "ACPI\\BF63112\\0" }
+            || fteSensor.Results.Single(result => result.ComponentId == "fingerprint-fte3600") is not { State: BoilerCustomComponentHardware.MatchState.Candidate, RawId: "ACPI\\FTE3600\\0" })
+            throw new IOException("Sensor ACPI HIDs must stay identity candidates; they do not prove chip variant or runtime support.");
+        if (bfSensor.Results.Single(result => result.ComponentId == "fingerprint-fte3600").State != BoilerCustomComponentHardware.MatchState.NotFound
+            || fteSensor.Results.Single(result => result.ComponentId == "fingerprint-bf63112").State != BoilerCustomComponentHardware.MatchState.NotFound)
+            throw new IOException("A BF63112 observation must not report an FTE3600 sensor, or vice versa.");
         var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
         void RequireGeneralPanel(string context)
         {
@@ -123,7 +135,9 @@ internal static class BoilerDeviceChecks
                 BoilerCustomComponentHardware.MatchState.Matched,
                 BoilerCustomComponentHardware.MatchState.Candidate,
                 BoilerCustomComponentHardware.MatchState.Matched,
-                BoilerCustomComponentHardware.MatchState.Candidate]))
+                BoilerCustomComponentHardware.MatchState.Candidate,
+                BoilerCustomComponentHardware.MatchState.NotFound,
+                BoilerCustomComponentHardware.MatchState.NotFound]))
             throw new IOException("Current-PC matcher did not preserve exact/candidate distinctions.");
         RequireUnchanged("a matched/candidate result");
         window.CurrentHardwareReaderForChecks = () => [];

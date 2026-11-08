@@ -78,7 +78,7 @@ public partial class MainWindow
         }
     }
 
-    private static string CurrentHardwareName(string id) => id switch { "intel-xevma" => "Intel xeVMA", "intel-be201-firmware" => "Intel BE201", "realtek-alc245-speaker" => PartitionInventory.L("Realtek ALC245 扬声器", "Realtek ALC245 speaker"), "bmi260-gyro" => PartitionInventory.L("BMI260 陀螺仪", "BMI260 gyro"), _ => id };
+    private static string CurrentHardwareName(string id) => id switch { "intel-xevma" => "Intel xeVMA", "intel-be201-firmware" => "Intel BE201", "realtek-alc245-speaker" => PartitionInventory.L("Realtek ALC245 扬声器", "Realtek ALC245 speaker"), "bmi260-gyro" => PartitionInventory.L("BMI260 陀螺仪", "BMI260 gyro"), "fingerprint-bf63112" => PartitionInventory.L("指纹传感器 BF63112", "Fingerprint sensor BF63112"), "fingerprint-fte3600" => PartitionInventory.L("指纹传感器 FTE3600", "Fingerprint sensor FTE3600"), _ => id };
     private string CurrentHardwareAvailability(string id)
     {
         if (id == "intel-be201-firmware")
@@ -90,6 +90,10 @@ public partial class MainWindow
             "intel-xevma" => new[] { "resource:intel-xevmafix-724", "oxp3:xevmafix", "x2-mini:xevmafix", "generic:xevmafix" },
             "realtek-alc245-speaker" => new[] { "resource:oxp3-speaker-route", "oxp3:speaker-route" },
             "bmi260-gyro" => new[] { "resource:bmi260-gyro" },
+            // A fingerprint HID read from this Windows computer says nothing about the
+            // sensor on the destination SteamOS device. Until provider selection works
+            // from authenticated target evidence, these observations map to no
+            // installable component at all.
             _ => []
         };
         var found = aliases.Select(FindCurrentHardwareChoice).FirstOrDefault(choice => choice is { IsEnabled: true });
@@ -112,6 +116,7 @@ public partial class MainWindow
         "shared-intel-connectivity-pci" => PartitionInventory.L("此 Intel 连接 PCI 身份由多个无线产品共用；它不是 BE201 的证明，因此保持候选。", "This Intel connectivity PCI identity is shared by multiple wireless products; it does not prove BE201, so it remains a candidate."),
         "exact-alc245-codec-speaker-route-unproven" => PartitionInventory.L("已识别 ALC245；扬声器路由适配需单独核验。", "ALC245 identified; speaker-route adaptation needs separate verification."),
         "acpi-id-ambiguous-not-chip-proof" => PartitionInventory.L("ACPI 10EC5280 身份本身不足以证明是 BMI260 芯片；Linux 芯片、驱动和内核兼容性需单独核验。", "ACPI 10EC5280 alone does not prove a BMI260 chip; Linux chip, driver, and kernel compatibility need separate verification."),
+        "sensor-acpi-hid-candidate-runtime-unverified" => PartitionInventory.L("已识别指纹传感器 ACPI 身份；实际芯片型号、Linux 驱动运行时和采集功能需在 SteamOS 中单独核验。", "Fingerprint sensor ACPI identity identified; the actual chip variant, Linux driver runtime, and capture support need separate verification in SteamOS."),
         _ => PartitionInventory.L("当前电脑上未发现符合此检测规则的硬件 ID。", "No hardware ID matching this detection rule was found on this computer.")
     };
 }

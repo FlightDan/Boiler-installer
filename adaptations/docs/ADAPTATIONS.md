@@ -3,7 +3,7 @@
 这里按品牌、机型整理已有公开适配源码，并记录应该选择哪些组件。
 
 - [ONEXPLAYER 3 安装清单](../brands/onexplayer/oxp3/model.md)
-- [ONEXPLAYER X2 Mini / Mini PRO 安装清单](../brands/onexplayer/x2-mini/model.md)
+- [ONEXPLAYER X2 Mini 安装清单](../brands/onexplayer/x2-mini/model.md)
 - [跨品牌共用源码说明](../common/components.md)
 - [ONEXPLAYER 共用源码说明](../brands/onexplayer/common/components.md)
 

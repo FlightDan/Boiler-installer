@@ -24,10 +24,12 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def build(base, bridge, hdr):
+def build(base, bridge, hdr, *, adaptations=ROOT/'adaptations'):
     from protocol.manifest import validate_package
-    builder = load('_x2_complete_source_lock', ROOT/'adaptations/scripts/build-x2-complete.py')
-    source_path = ROOT/'adaptations/brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py'
+    adaptations = Path(adaptations)
+    builder = load('_x2_complete_source_lock', adaptations/'scripts/build-x2-complete.py')
+    _, inputs = builder.load_recipe(ROOT, adaptations)
+    source_path = adaptations/'brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py'
     if sha(source_path.read_bytes()) != '44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856':
         raise ValueError('X2 bridge transform differs from the reviewed source')
     transform = load('_x2_fixed_efi_source_lock', source_path)
@@ -38,8 +40,8 @@ def build(base, bridge, hdr):
     base_files = {row['path']: row for row in manifest['files']}
     changes = {}
     for role, directory, pin in (
-        ('bridge', bridge, 'a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d'),
-        ('hdr', hdr, 'f1c159d826106eb038fe1845efc515fbd4ed2897089b0e1f8b68cd80c554d1d6'),
+        ('bridge', bridge, inputs['bridge_overlay']['sha256']),
+        ('hdr', hdr, inputs['hdr_overlay']['sha256']),
     ):
         entries = builder.overlay(directory, role, pin, base_files)
         if set(changes) & set(entries): raise ValueError('Overlays conflict')
@@ -56,7 +58,7 @@ def build(base, bridge, hdr):
     rows = []
     for name in names:
         if name in ('adapter.py','maintenance_adapter.py'):
-            data = transform.transform(name, (ROOT/'adaptations/brands/onexplayer/oxp3/bridge'/name).read_bytes())
+            data = transform.transform(name, (adaptations/'brands/onexplayer/oxp3/bridge'/name).read_bytes())
         elif name in changes:
             data = changes[name]['input_path'].read_bytes()
         else:
@@ -68,8 +70,8 @@ def build(base, bridge, hdr):
         rows.append(dict(path=name, size=len(data), sha256=sha(data)))
     return dict(schema=1, kind='FixedX2EfiProviderSourceLock', public_commit=reference['public_commit'],
                 provenance=dict(base_manifest_sha256=builder.BASE_ANCHOR,
-                    bridge_overlay_sha256='a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d',
-                    hdr_overlay_sha256='f1c159d826106eb038fe1845efc515fbd4ed2897089b0e1f8b68cd80c554d1d6',
+                    bridge_overlay_sha256=inputs['bridge_overlay']['sha256'],
+                    hdr_overlay_sha256=inputs['hdr_overlay']['sha256'],
                     transform_sha256=sha(source_path.read_bytes()),
                     bridge_source='reviewed project-local bytes; public source commit pending'), files=rows)
 
@@ -79,9 +81,10 @@ if __name__ == '__main__':
     parser.add_argument('--base', type=Path, required=True)
     parser.add_argument('--bridge', type=Path, required=True)
     parser.add_argument('--hdr', type=Path, required=True)
+    parser.add_argument('--adaptations-root', type=Path, default=ROOT/'adaptations')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    raw = (json.dumps(build(args.base, args.bridge, args.hdr), sort_keys=True, indent=2)+'\n').encode()
+    raw = (json.dumps(build(args.base, args.bridge, args.hdr, adaptations=args.adaptations_root), sort_keys=True, indent=2)+'\n').encode()
     if args.output.exists(): raise ValueError('Use a fresh output path')
     args.output.write_bytes(raw)
     print(sha(raw))

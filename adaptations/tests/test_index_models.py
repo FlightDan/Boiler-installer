@@ -86,13 +86,27 @@ class MultiIndexTests(unittest.TestCase):
     def test_two_models_preserve_history_and_bind_bytes(self):
         result=self.run_build(); self.assertEqual(result['devices'],['devices/oxp3.json','devices/x2-mini.json']); self.assertEqual(result['packages'][0],self.old); self.assertEqual(result['revocations'],self.previous['revocations']); self.assertEqual(result['sequence'],2)
         oxp3,x2=result['packages'][1:]
-        self.assertEqual(x2['name']['en'],'ONEXPLAYER X2 Mini / Mini PRO')
-        self.assertEqual(x2['hardware_matching'],{'mode':'advisory-exact-dmi-v1','pairs':[{'manufacturer':'ONE-NETBOOK','model':'ONEXPLAYER X2 Mini'},{'manufacturer':'ONE-NETBOOK','model':'ONEXPLAYER X2 Mini PRO'}]})
+        self.assertEqual(x2['name']['en'],'ONEXPLAYER X2 Mini')
+        self.assertEqual(x2['hardware_matching'],{'mode':'advisory-exact-dmi-v1','pairs':[{'manufacturer': 'ONE-NETBOOK', 'model': 'ONEXPLAYER X2 Mini'}, {'manufacturer': 'ONE-NETBOOK', 'model': 'ONEXPLAYER X2Mini'}]})
         self.assertIn('physical hardware',x2['notes'][0])
         for entry,model in ((oxp3,'oxp3'),(x2,'x2-mini')):
             self.assertEqual(entry['source_url'],'https://github.com/FlightDan/Boiler-adaptations/tree/'+self.commit+'/brands/onexplayer/'+model)
         for row,(folder,archive,_) in zip(result['packages'][1:],self.models):
             self.assertEqual(row['sha256'],builder.digest(folder/'manifest.json')); self.assertEqual(row['source']['sha256'],builder.digest(archive)); self.assertEqual(row['minimum_engine_version'],'0.1.5')
+    def test_x2_only_preserves_historical_oxp3(self):
+        self.models = [self.models[1]]
+        result = self.run_build()
+        self.assertEqual(result['packages'][0], self.old)
+        self.assertEqual([p['id'] for p in result['packages']], ['device:oxp3', 'device:x2-mini'])
+        self.assertEqual(result['revocations'], self.previous['revocations'])
+        self.assertEqual(result['sequence'], 2)
+
+    def test_rejects_empty_and_duplicate_models(self):
+        self.models = []
+        with self.assertRaises(ValueError): self.run_build()
+        self.models = [self.work / 'missing'] * 3
+        with self.assertRaises(ValueError): self.run_build()
+
     def test_rejects_rollback_and_source_identity(self):
         for kwargs in ({'sequence':1},{'source_commit':'a'*40},{'version':'0.1.2'}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError): self.run_build(**kwargs)

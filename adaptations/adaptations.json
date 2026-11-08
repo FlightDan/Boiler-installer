@@ -30,8 +30,8 @@
     {
       "id": "device:x2-mini",
       "name": {
-        "en": "ONEXPLAYER X2 Mini / Mini PRO",
-        "zh": "ONEXPLAYER X2 Mini / Mini PRO"
+        "en": "ONEXPLAYER X2 Mini",
+        "zh": "ONEXPLAYER X2 Mini"
       },
       "hardware_matching": {
         "mode": "advisory-exact-dmi-v1",
@@ -42,7 +42,7 @@
           },
           {
             "manufacturer": "ONE-NETBOOK",
-            "model": "ONEXPLAYER X2 Mini PRO"
+            "model": "ONEXPLAYER X2Mini"
           }
         ]
       },

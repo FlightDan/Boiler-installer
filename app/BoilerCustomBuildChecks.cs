@@ -88,7 +88,9 @@ internal static class BoilerCustomBuildChecks
                 new(BoilerWirelessHardware.NetworkClass, "Intel Wi-Fi 7 BE201", "Intel", ["PCI\\VEN_8086&DEV_FFFF"], []),
                 Hardware(BoilerGraphicsHardware.DisplayClass, "PCI\\VEN_1002&DEV_B081"),
                 Hardware(Guid.Empty, "HDAUDIO\\FUNC_01&VEN_10EC&DEV_0246"),
-                Hardware(Guid.Empty, "ACPI\\10EC5281\\0")]);
+                Hardware(Guid.Empty, "ACPI\\10EC5281\\0"),
+                Hardware(Guid.Empty, "ACPI\\BF63113\\0"),
+                Hardware(Guid.Empty, "USB\\FTE3600\\0")]);
             Require(negativeHardware.Results.All(result => result.State == BoilerCustomComponentHardware.MatchState.NotFound),
                 "current-pc-matcher-rejects-friendly-name-vendor-and-nearby-id-guessing");
             var otherIntel = BoilerCustomComponentHardware.Match([
@@ -113,7 +115,9 @@ internal static class BoilerCustomBuildChecks
                 BoilerCustomComponentHardware.MatchState.Matched,
                 BoilerCustomComponentHardware.MatchState.Candidate,
                 BoilerCustomComponentHardware.MatchState.Matched,
-                BoilerCustomComponentHardware.MatchState.Candidate]), "current-pc-custom-hardware-results-are-bounded-and-typed");
+                BoilerCustomComponentHardware.MatchState.Candidate,
+                BoilerCustomComponentHardware.MatchState.NotFound,
+                BoilerCustomComponentHardware.MatchState.NotFound]), "current-pc-custom-hardware-results-are-bounded-and-typed");
             var componentAliases = new Dictionary<string, string[]>(StringComparer.Ordinal)
             {
                 ["intel-xevma"] = ["resource:intel-xevmafix-724", "oxp3:xevmafix", "x2-mini:xevmafix", "generic:xevmafix"],
@@ -188,6 +192,20 @@ internal static class BoilerCustomBuildChecks
                 Hardware(Guid.Empty, "ACPI\\VEN_10EC&DEV_5280\\0")]);
             Require(bmiForms.Results.Single(result => result.ComponentId == "bmi260-gyro").State == BoilerCustomComponentHardware.MatchState.Candidate,
                 "current-pc-bmi260-acpi-short-and-long-forms-remain-candidates");
+            var sensorForms = BoilerCustomComponentHardware.Match([
+                Hardware(Guid.Empty, "ACPI\\BF63112\\0"),
+                Hardware(Guid.Empty, "ACPI\\FTE3600\\0")]);
+            // Both sensors present must yield two independent candidates, never one
+            // collapsed result that silently hides whichever sensor lost the race.
+            Require(sensorForms.Results.Single(result => result.ComponentId == "fingerprint-bf63112") is
+                    { State: BoilerCustomComponentHardware.MatchState.Candidate, RawId: "ACPI\\BF63112\\0" }
+                && sensorForms.Results.Single(result => result.ComponentId == "fingerprint-fte3600") is
+                    { State: BoilerCustomComponentHardware.MatchState.Candidate, RawId: "ACPI\\FTE3600\\0" },
+                "current-pc-fingerprint-acpi-hids-report-independent-runtime-unverified-candidates");
+            var sensorOnlyFte = BoilerCustomComponentHardware.Match([Hardware(Guid.Empty, "ACPI\\FTE3600\\0")]);
+            Require(sensorOnlyFte.Results.Single(result => result.ComponentId == "fingerprint-bf63112").State == BoilerCustomComponentHardware.MatchState.NotFound
+                && sensorOnlyFte.Results.Single(result => result.ComponentId == "fingerprint-fte3600").State == BoilerCustomComponentHardware.MatchState.Candidate,
+                "current-pc-fte-only-inventory-does-not-impersonate-bf63112");
             var before = boxes.ToDictionary(p => p.Key, p => p.Value.IsChecked);
             var ids = (string)Call("CustomBuildIds")!;
             try { Call("ApplyCustomBuildIds", ids + "\nwrong-model:unknown"); throw new InvalidOperationException("invalid IDs accepted"); }

@@ -5,11 +5,16 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from .oxp3_efi_provider import _verify
+    from .oxp3_efi_provider import _recovery_lock, _verify
 else:
     spec=importlib.util.spec_from_file_location('boiler_fixed_efi_provider_common',Path(__file__).with_name('oxp3_efi_provider.py'))
     common=importlib.util.module_from_spec(spec);spec.loader.exec_module(common)
     _verify=common._verify
+    _recovery_lock=common._recovery_lock
+
+
+def lock_for(manifest, lock_file):
+    return _recovery_lock(manifest, lock_file)
 
 
 def verify(package,lock_file):
@@ -22,6 +27,7 @@ def verify(package,lock_file):
     if (manifest.get('id')!='device:oxp3' or manifest.get('oxp3_full_efi_contract') !=
             {'kind':'oxp3-full-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}):
         raise ValueError('Fixed full OXP3 provider requires the OXP3 package contract')
+    lock_file=lock_for(manifest,lock_file)
     result=_verify(package,lock_file,'FixedFullOxp3EfiProviderSourceLock')
     names={row['path'] for row in json.loads(Path(lock_file).read_bytes())['files']}
     directory=package/'payload/legacy/maintenance/app/oxp3_maintenance'

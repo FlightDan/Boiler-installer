@@ -7,7 +7,7 @@ TOON 是结构化文本。在这里，一台机型的 TOON 就是一张清单：
 ## 从哪两个文件开始
 
 - [ONEXPLAYER 3：oxp3.toon](../devices/onexplayer/oxp3.toon)
-- [X2 Mini / Mini PRO：x2-mini.toon](../devices/onexplayer/x2-mini.toon)
+- [X2 Mini：x2-mini.toon](../devices/onexplayer/x2-mini.toon)
 
 这两份文件是各机型的维护入口。`models.toon` 和 `common-device-sources.toon` 是由机型资料生成的目录或视图。安装器源码快照中的机型 `manifest.json` 由 TOON 生成；适配仓库的既有检查工具也会读取 `manifest.json` 并据此核对机型说明。修改时先改机型 TOON，再用相应工具同步和检查这些视图。
 

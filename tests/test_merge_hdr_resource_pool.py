@@ -74,7 +74,9 @@ class HdrPoolMergeTests(unittest.TestCase):
             root=Path(temporary);(root/'cache').mkdir();shutil.copytree(self.output,root/'cache/resource-pool')
             catalog=resource_catalog(root);self.assertFalse(catalog['deployment_available'])
             for model in catalog['models']:
-                choice=next(c for c in model['components'] if c['id']==HDR);p=PROFILES[model['id'].split(':')[1]]
+                choice=next(c for c in model['components'] if c['id']==HDR)
+                profiles=next(row['profiles'] for row in self.catalog['resources'] if row['id']==HDR)
+                p=profiles[model['id'].split(':')[1]]
                 self.assertTrue(choice['selectable']);self.assertFalse(choice['default'])
                 self.assertEqual((choice['parameter_data']['full_frame'],choice['parameter_data']['peak']),(p['full_frame'],p['peak']))
                 result=select_resources(model['id'],[HDR],catalog['catalog_sha256'],trust_local_test=True,root=root)

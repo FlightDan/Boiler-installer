@@ -6,7 +6,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
-from protocol.hdr_contract import KIND, IDENTITY, PROFILES, FACTS, TARGET, profile_bytes
+from protocol.hdr_contract import KIND, IDENTITY, PROFILES, LEGACY_PROFILES, FACTS, TARGET, VERSION, profile_bytes
 PINS={'upstream.lua':(5836,'a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846'),
       'HDR-MIT.txt':(1070,'1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a')}
 SOURCE_NAMES={'upstream.lua':'adaptations/brands/onexplayer/oxp3/scripts/hdr/upstream.lua',
@@ -27,6 +27,15 @@ def build(project,output):
     output=Path(output)
     if output.exists(): raise FileExistsError('Fresh output required')
     checked=inputs(project)
+    from scripts.resources.model_context import models
+    x2 = next(model['parameters']['hdr'] for model, _ in models(project) if model['id'] == 'device:x2-mini')
+    mapping = (x2['sdr_white_nits'], x2['peak_nits'])
+    if mapping == (472, 1100):
+        version, profiles = VERSION, PROFILES
+    elif mapping == (475, 700):
+        version, profiles = '1.0.0-hdr.local1', LEGACY_PROFILES
+    else:
+        raise ValueError('Unsupported X2 mapping in the pinned TOON')
     source=checked['upstream.lua'].decode()
     # Shared implementation, profile state supplied by a separately inventoried
     # model parameter file. Startup works in either Lua-script loading order.
@@ -48,11 +57,11 @@ def build(project,output):
             'boiler_hdr_register = function(profile)\n'+source+'\nend\n'
             'if boiler_hdr_profile ~= nil then boiler_hdr_register(boiler_hdr_profile) end\n').encode()
     files={'payload/game/common.lua':common,'licenses/HDR-MIT.txt':checked['HDR-MIT.txt']}
-    for key in PROFILES:files['payload/game/'+key+'.lua']=profile_bytes(key)
+    for key in profiles:files['payload/game/'+key+'.lua']=profile_bytes(key, profiles)
     inventory=[dict(path=n,size=len(raw),sha256=sha(raw)) for n,raw in sorted(files.items())]
-    resource=dict(schema_version=1,kind='BoilerResource',id=IDENTITY,version='1.0.0-hdr.local1',
+    resource=dict(schema_version=1,kind='BoilerResource',id=IDENTITY,version=version,
         install=dict(kind=KIND,files=[dict(source='payload/game/common.lua',target=TARGET+'98-boiler-gamma22.lua',scope='shared-home',mode=420)]),
-        verify={'kind':'sha256-v1'},restore={'kind':'transaction-backup-v1'},profiles=PROFILES,
+        verify={'kind':'sha256-v1'},restore={'kind':'transaction-backup-v1'},profiles=profiles,
         payload={'files':[r for r in inventory if r['path'].startswith('payload/')]},license_files=['licenses/HDR-MIT.txt'],
         compatibility=dict(architectures=['x86_64'],os_ids=['steamos'],os_versions=['3.10'],
             kernels=['7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9']),hardware_requires=FACTS,dependencies=[])
@@ -70,7 +79,7 @@ def build(project,output):
     def encoded(path,value):path.write_text(toon.dumps(value)+'\n',encoding='utf-8')
     encoded(output/'resources/gamma22-hdr-game.toon',resource)
     models=[]
-    for key in PROFILES:
+    for key in profiles:
         model=dict(schema_version=1,kind='BoilerResourceModel',id='device:'+key,name=key,resources=[dict(resource=IDENTITY,default=False,enabled=False,parameters={'profile':key})],complete=False,
             pending=[dict(component='desktop-hdr',reason='Native rebuild/ABI and runtime evidence required')])
         name='models/hdr-'+key+'.toon';path=output/name;path.parent.mkdir(exist_ok=True);encoded(path,model)

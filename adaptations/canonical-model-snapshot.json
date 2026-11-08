@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "51e63c6a0d7808bfbca18fdca0abd3134ff042f9",
+  "commit": "3140d8789d34522439c0ac161cb1ac28086faab9",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -16,8 +16,8 @@
     },
     {
       "path": "adaptations/ADAPTATIONS.md",
-      "size": 2838,
-      "sha256": "ecc0c9fb0cf9fa45a7329340a156b89101bdb75bb7fef29ebec06aef27f1c052"
+      "size": 2827,
+      "sha256": "4457282104a33fba77f688537d29272929558e20a9f271bc0ba393edb85ca593"
     },
     {
       "path": "adaptations/LICENSE",
@@ -36,8 +36,8 @@
     },
     {
       "path": "adaptations/adaptations.json",
-      "size": 1301,
-      "sha256": "4dd8a98e707fe947d29e70e879f5dfd1dea3742736ff6c657150f7113040c9a1"
+      "size": 1274,
+      "sha256": "58f3803db1a09780016a6d9cd728d91db8b6a34d7c36cac8deee19c64889ef47"
     },
     {
       "path": "adaptations/brands/onexplayer/common/battery/battery-plugin-index.js",
@@ -198,6 +198,11 @@
       "path": "adaptations/brands/onexplayer/oxp3/bridge/docs/MAINTENANCE_PACKAGE.md",
       "size": 3976,
       "sha256": "dd7aae623f2196c93824179b012cc65cb66603c1dc02fde799fbcd58d02ef052"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/bridge/embedded-maintenance-tool.py",
+      "size": 2401,
+      "sha256": "cc8a654b451895efb33a4e036c690feae87e3b1ebd0ab9e3e1a9c9098a3dacf4"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/bridge/full_efi_sources.py",
@@ -731,13 +736,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
-      "size": 16174,
-      "sha256": "95adc68b5df57a5e56e14aaebd924379dd301bef040f6e3f0b4598e5dadae2ba"
+      "size": 16044,
+      "sha256": "65edf9fb84fbae5a0d3023dca81a788f072e890937fb5a513be58569b1b04e0c"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/model.md",
-      "size": 9081,
-      "sha256": "797a0a46ec6d672c7f450093fb1923700dc75df3780b98367ffb6a186967c741"
+      "size": 9055,
+      "sha256": "eb7512dc8d57f56219a27c57e4bf8f61e8113f5d4031128ea95e45cc0cb3165d"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
@@ -1431,13 +1436,13 @@
     },
     {
       "path": "adaptations/devices/onexplayer/x2-mini.toon",
-      "size": 17327,
-      "sha256": "12f72f4b7bbe71ceb5141a2b85768d86db1f4c2575428d169cc3fb46bb733bf2"
+      "size": 17176,
+      "sha256": "4ca702b3a9eb6c935c7230f27ea0caeffbd7e7d0f89f305ff30516f60e788e67"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
-      "size": 3017,
-      "sha256": "6bb7ff5bb57f2f757a34c8547ddc0e800b348e73052515622752519280f46349"
+      "size": 3006,
+      "sha256": "87d4f7971b5d9bb73ddcd9c76fa61b8e9973a7374b163d571bbd6b1f6b939b94"
     },
     {
       "path": "adaptations/docs/BUILD.en.md",
@@ -1476,13 +1481,13 @@
     },
     {
       "path": "adaptations/docs/TOON.en.md",
-      "size": 4487,
-      "sha256": "d0918a83de7c0172b0eb2ea850d6ae80c35f8c6a9812066f5a4a9cee75ffb8bf"
+      "size": 4476,
+      "sha256": "e23f38525f339747fd44fecd0d8a68c25f4dbd1b4aee531b232aae9fe8193baa"
     },
     {
       "path": "adaptations/docs/TOON.md",
-      "size": 4075,
-      "sha256": "c533985dab0472701dd509c628ae578ea1a906cf0ce14ae72e761230294ab956"
+      "size": 4064,
+      "sha256": "176fcc7867279d9fd13b8179fa4d8e415779a68d830583669fcb0af2556641f9"
     },
     {
       "path": "adaptations/fingerprint-source-lock.json",
@@ -1736,8 +1741,8 @@
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 35118,
-      "sha256": "00e262bd4b6b33c95c12392c66a04da00613053b82ba5f099e191e5e3f34bc8c"
+      "size": 35125,
+      "sha256": "af3de3eeee38e633ad05650935e3e4137589cc3f62fa6b8379767969e68ec0de"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
@@ -1756,18 +1761,23 @@
     },
     {
       "path": "adaptations/scripts/build-x2-complete.py",
-      "size": 18332,
-      "sha256": "a92d4161170209898b5d23d1b3d1bbc953ee632617a5a4cc2f815b2e9879e360"
+      "size": 18843,
+      "sha256": "86ea163440412ce97763e18b179c71226e4bf226a17cead9777ba2028eb4307b"
     },
     {
       "path": "adaptations/scripts/build-x2-hdr-overlay.py",
-      "size": 15538,
-      "sha256": "0fbeb08adfcbc40b7ccab5a0d3f806eea79354cfcc53f2c1c7dac57aeced3167"
+      "size": 10218,
+      "sha256": "21abb1dde3c205296214abeea21bfa7572a0a6e6685f8b2e8e86beb3d565d3fb"
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
       "size": 10443,
       "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
+    },
+    {
+      "path": "adaptations/scripts/derive-legacy-maintenance.py",
+      "size": 5732,
+      "sha256": "26724decbeaab2f8cd84f52534b36965bec75183a7c087ff5a7ed4eeaa01134f"
     },
     {
       "path": "adaptations/scripts/fingerprint_provenance.py",
@@ -1790,6 +1800,11 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
+      "path": "adaptations/scripts/rebase-x2-hdr.py",
+      "size": 8206,
+      "sha256": "dce11b3dabf8627a59fbd935df5fc258d46559ec1fef5ef192fde86dbc473a0f"
+    },
+    {
       "path": "adaptations/scripts/refresh-model-source-inventory.py",
       "size": 3039,
       "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
@@ -1801,8 +1816,8 @@
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 52644,
-      "sha256": "952b2134684106af6e34df0ab5a589c1baf8a49db0f06065b2d4c3cf2f58f9f4"
+      "size": 52899,
+      "sha256": "5c705a4002a48732b3978a2b9055e5c9f5866c7e52509b6b19f9fd372c92f557"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1813,6 +1828,16 @@
       "path": "adaptations/source-plan.json",
       "size": 16490,
       "sha256": "5d40dc14731ba10a382991d3bbf9080ec2b4d9f104e9af9c0c710bc47340905b"
+    },
+    {
+      "path": "adaptations/tests/fixtures/model-identity-aea9ee/oxp3.json",
+      "size": 3996,
+      "sha256": "c14b43b80069c50846418287a61cf7d88f4d74d48e7c2f8b3c5aa2f476f4d651"
+    },
+    {
+      "path": "adaptations/tests/fixtures/model-identity-aea9ee/x2-mini.json",
+      "size": 724,
+      "sha256": "74ce19feec692f336ac67e66b7161fb268c523fc6845a6964039e2869258ba08"
     },
     {
       "path": "adaptations/tests/test_adaptations.py",
@@ -1831,13 +1856,13 @@
     },
     {
       "path": "adaptations/tests/test_index_models.py",
-      "size": 14425,
-      "sha256": "8b852676ed6358e8dc7ec4a199a87e44b08ad5e6ac9c0f77f653861e6c834c41"
+      "size": 15080,
+      "sha256": "e761120d0d7463a50e74ca1b605d8d30fb11836c4a9d687babfa9746c02521d2"
     },
     {
       "path": "adaptations/tests/test_model_identity.py",
-      "size": 13172,
-      "sha256": "1efa704509a1fa0fe1cc0d7d560bc6b190ee65ec1985d2c57bcecc6a97c1a5a5"
+      "size": 13791,
+      "sha256": "4e2c99140e44d636d9b75d1407e7fb617f13a27eb5790878401554c3c2d54153"
     },
     {
       "path": "adaptations/tests/test_registry.py",
@@ -1848,6 +1873,11 @@
       "path": "adaptations/tests/test_x2_catalog_entrypoints.py",
       "size": 1741,
       "sha256": "d698d0e43212bcd16487ffc5deb297459109a6395bd316ee8b4cdd7403ee9f7e"
+    },
+    {
+      "path": "adaptations/tests/test_x2_hdr_overlay.py",
+      "size": 4192,
+      "sha256": "28400e84cc0e279ec054e9f57d355d6c9aa2f44b194ae30c7ab97b0c79d2266e"
     },
     {
       "path": "adaptations/toon-parser-lock.json",
@@ -1931,8 +1961,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 69727,
-      "sha256": "e73314e61f625ac8effeedef3a2791cc31849d5c8b8f2f2a498c4b4e38b8cb97"
+      "size": 70771,
+      "sha256": "576d4d9e53fdbc06905676db7a600582b7927d04e4b0c371772ad0d8683dff66"
     }
   ]
 }

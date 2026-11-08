@@ -1,0 +1,386 @@
+{
+  "files": [
+    {
+      "path": "payload/legacy/components/boot_repairs.py",
+      "sha256": "3084c2cfceddd6e4545597a702290caeae063eaed1bdf345fdb291b3aa78ea8d",
+      "size": 1926
+    },
+    {
+      "path": "payload/legacy/components/decky_order.py",
+      "sha256": "8361e9e94946303cfe94fc9645a1d553de5bb378c5c71425748f50e697ff1b4e",
+      "size": 3021
+    },
+    {
+      "path": "payload/legacy/components/directory_transaction.py",
+      "sha256": "098ce024ae4a57698741b235a15503977b29c10730b195f00dc4f07c3f557adc",
+      "size": 6236
+    },
+    {
+      "path": "payload/legacy/components/file_transaction.py",
+      "sha256": "491dce0a0b753295d2466adb44780595055ba4cc96ad004ba25a04cf1df1c786",
+      "size": 10276
+    },
+    {
+      "path": "payload/legacy/components/firstboot_stage.py",
+      "sha256": "c8db6f7c377b7ab034504dac433dc7e71e5ae0443116abaf13d5aab0bb552564",
+      "size": 5326
+    },
+    {
+      "path": "payload/legacy/components/firstboot.py",
+      "sha256": "c324c084f4785862beb2d871c7cfbcc1ea7896e90480e387826d9ffe9443e9d5",
+      "size": 7965
+    },
+    {
+      "path": "payload/legacy/components/input_profile.py",
+      "sha256": "d39c0914c8dd1379a9b07a7e67ad0904c6f351fd8d265f82b037dfbf090f0d3e",
+      "size": 9861
+    },
+    {
+      "path": "payload/legacy/components/integration_runtime.py",
+      "sha256": "fda76ccd5f1b9d9e0194b8469d01ac64dca3605d8b5b286a415776ebfe3c85d8",
+      "size": 7897
+    },
+    {
+      "path": "payload/legacy/components/integration.py",
+      "sha256": "08be17862b5c383bd9560704ada2a8daae0e9a0807a90a749776445679a5d2ff",
+      "size": 57360
+    },
+    {
+      "path": "payload/legacy/components/maintenance_tool.py",
+      "sha256": "cc8a654b451895efb33a4e036c690feae87e3b1ebd0ab9e3e1a9c9098a3dacf4",
+      "size": 2401
+    },
+    {
+      "path": "payload/legacy/components/ntfs_steam.py",
+      "sha256": "fad68844c876b4c80097250d73be67c3714865cbe821c41a19bfa85a66ebaf4c",
+      "size": 25270
+    },
+    {
+      "path": "payload/legacy/components/partition_mount.py",
+      "sha256": "c48d500e11f41802aa9f2c283993dae96ac226f662ff88ed78a681a3aeb1fbf4",
+      "size": 4348
+    },
+    {
+      "path": "payload/legacy/components/plugin_installer.py",
+      "sha256": "9cacadb1c6959601324710a634183b401e4bfec4019ca2019a07db70a5d6d048",
+      "size": 11740
+    },
+    {
+      "path": "payload/legacy/components/release_notes.py",
+      "sha256": "44ec7247db226636155d474588eef71227454b0e7c4865da1abae27488f48bcf",
+      "size": 200
+    },
+    {
+      "path": "payload/legacy/components/runtime_access.py",
+      "sha256": "4e593d969e5290675c5c7a360a2c892b2b491bca5646751e1e30cc41cc4de43f",
+      "size": 3962
+    },
+    {
+      "path": "payload/legacy/components/serial_console.py",
+      "sha256": "52011057bfc61b172a4773415c2fe5939c86be87673033d3e1b883eb471b5c30",
+      "size": 651
+    },
+    {
+      "path": "payload/legacy/components/shared_state.py",
+      "sha256": "a79885a87e2fd923c3c3013092ee4c229efc1cdbffc88631396b0d1e874da938",
+      "size": 1512
+    },
+    {
+      "path": "payload/legacy/components/shared_storage.py",
+      "sha256": "66d3722db2175da6fae270013632d88b8d18d5ba3d77c76d310f150aae6802ac",
+      "size": 18228
+    },
+    {
+      "path": "payload/legacy/components/slot_switch.py",
+      "sha256": "f3d4c188a5c3e206e819b0f864052fb495d1b7d0fa2a16c0bce0fcf720312d4e",
+      "size": 3881
+    },
+    {
+      "path": "payload/legacy/components/split_lock.py",
+      "sha256": "ad1602db2d380734ac9d28a77a4c3764c2704197784bb0ddcec20ce5179ddbd9",
+      "size": 8828
+    },
+    {
+      "path": "payload/legacy/components/system_update_policy.py",
+      "sha256": "1fd7ca3315cca3258c9365797be214523fb2913d41721f150cab4530186dc6ec",
+      "size": 5024
+    },
+    {
+      "path": "payload/legacy/components/update_hold_verify.py",
+      "sha256": "aecadad126b8e9b416052f7999767be03c21f4c9944d925894d978355a3ed78f",
+      "size": 1367
+    },
+    {
+      "path": "payload/legacy/components/update_hold.py",
+      "sha256": "6084f00b5d82dbf78c8b3b6282aff1f532a8ec3e655d6bb9b56e2b16c56baf67",
+      "size": 13626
+    },
+    {
+      "path": "payload/legacy/components/waydroid_setup.py",
+      "sha256": "92f4c74294ff95a68749a805beccb0d24fac4330417054e79b75473c3e154619",
+      "size": 4212
+    },
+    {
+      "path": "payload/legacy/components/windows_reboot.py",
+      "sha256": "9d7a5ba9152cefd818b8f63f8a839502197f9939678dbab49a8c6a73df0e18a9",
+      "size": 2638
+    },
+    {
+      "path": "payload/legacy/components/x2mini_hdr_device.py",
+      "sha256": "27e9d9f5afb8eed21a162aca8bc63c06ff9959087283dff6563a6739d837cbbd",
+      "size": 39369
+    },
+    {
+      "path": "payload/legacy/components/hdr/generate.py",
+      "sha256": "3f9d645a6a341ffe900dd06104dc351953b3bcb5ee9a3005d8b83c6694b9d828",
+      "size": 1173
+    },
+    {
+      "path": "payload/legacy/components/hdr/installer.py",
+      "sha256": "12061f567e42f0c445d4ffc4ec222797870348d11f1745b5bfdea8ef178bd780",
+      "size": 10942
+    },
+    {
+      "path": "payload/legacy/components/hdr/upstream.lua",
+      "sha256": "a37042dbcbcb91515244bf42ec3f5efe96e04b9e417b6945dd476b31e48ae846",
+      "size": 5836
+    },
+    {
+      "path": "payload/legacy/components/hdr/UPSTREAM_LICENSE",
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "size": 1070
+    },
+    {
+      "path": "payload/legacy/components/split-lock/UPSTREAM_LICENSE",
+      "sha256": "1959942e9e263938024cbd4d8c63bba342647877777dd48056c467672dcb915a",
+      "size": 1070
+    },
+    {
+      "path": "payload/legacy/components/options.json",
+      "sha256": "1d8153c0b87f9ce824f4b674e20dcbb1e77450a62aa197768854699c6b4b9e89",
+      "size": 6255
+    },
+    {
+      "path": "payload/legacy/components/release.json",
+      "sha256": "d84f548a635cf197d8d6540d7fe4eb66e36563747534510cd8b1f0304d2399f6",
+      "size": 154
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/adoption.py",
+      "sha256": "f12a9a4b7185073dbfb03d8df2d1fe903ff66c6e093f05be5265adac810f90d7",
+      "size": 20687
+    },
+    {
+      "path": "adapter.py",
+      "sha256": "0dbf0d91901e9268c900061b41915e911f799c47ec7ea6fab9451e6d2d8fcd4e",
+      "size": 53180
+    },
+    {
+      "path": "scripts/apply.sh",
+      "sha256": "77fe7511173a401d137e015a05b0b09d5262f849855b203ec94d10117c79ea49",
+      "size": 130
+    },
+    {
+      "path": "scripts/verify.sh",
+      "sha256": "63c0e6cbc9ee60857c640ae1920d6577461b3273805a4eff9372eb7981866201",
+      "size": 131
+    },
+    {
+      "path": "scripts/restore.sh",
+      "sha256": "268237cadf57447dbdc4ed2f7f27b80fea0772de090a4d5ccfa27fa988e1151d",
+      "size": 132
+    },
+    {
+      "path": "maintenance_adapter.py",
+      "sha256": "49a9392f40e254f3eef9c2fd804161eb740db4610e1317b1f9c46a07b84a2ff3",
+      "size": 34914
+    },
+    {
+      "path": "scripts/maintenance.sh",
+      "sha256": "81244b088f00276d600ebcbd29f6f5526116f816956eff20aeda8f2302703105",
+      "size": 141
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/__init__.py",
+      "sha256": "3d7a7af58b4d8a6f4be32e3bca91188cf13ddbfff485a5f025e7278a3d18cd86",
+      "size": 72
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/animation_changer_compat.py",
+      "sha256": "751a1f6902e5c304223e0215fdd6072cf6a77ccbd0935a50281c62fdf2e5bff5",
+      "size": 12223
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/auth_session.py",
+      "sha256": "598ebd83ab6f3505d4f71d30f2f12cc8980964f2f482dce16fb48d645f0eb802",
+      "size": 17728
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/autoflatpaks_compat.py",
+      "sha256": "36b4b0b8b970b640e404d09772a625e990e37588e69b9e3ee73448b2b6493047",
+      "size": 12240
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/bootstrap.py",
+      "sha256": "b2add1749a5d670c5f715c7bb2799089a9830c2d240e75be24c19b6cbbb90bb6",
+      "size": 13033
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/bundle.py",
+      "sha256": "f815d3a287b90ca8e6dad79bb8cf941366297c8c02eed873a55c7a62eaa50d77",
+      "size": 25232
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/catalog.py",
+      "sha256": "ac3df9c4d8e9399698f9cf8ba511f4c449f4a69d32687fc1c45a53f83aa1ced4",
+      "size": 7441
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/cli.py",
+      "sha256": "b0df8f7db1564cb732d265be20e7a9842c084abeb6816877e7785bcdd191a155",
+      "size": 30584
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/compatibility.py",
+      "sha256": "a331adf7768b4019dc9ea4bc8e15376a9a50617070d7fd5ef5f4b2fdd20742a9",
+      "size": 3454
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/components.py",
+      "sha256": "23074229c7db1631cdb20155d69081e1aa87e9d0b37c6569a45d7db180c37248",
+      "size": 46494
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/decky_order.py",
+      "sha256": "973f1b3c61db67598546c8f4d9f61ec6ec6ec953329ba9ac015262df7d91fa48",
+      "size": 2109
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/display_language.py",
+      "sha256": "5e6ac46a082eb00d172c1df57b6705bb8e99e299dac35776236a787d12e42648",
+      "size": 1863
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/distribution.py",
+      "sha256": "6ec10b927a094c267fa3b52e07773b6a769957a494624bd4b9cdae0a5d9aa17e",
+      "size": 19433
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/downloads.py",
+      "sha256": "b7e7e9dbaef026ff4f93e333fe1d7adff469749857a151dd2af2480cc99a6885",
+      "size": 3193
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/gyro_binding.py",
+      "sha256": "967701d1cbb3ba274acb459a87df9de81309f33530f582b995bdb9f1fa298926",
+      "size": 11894
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/health.py",
+      "sha256": "01568c259895ed9459481648a6b4801c219807a34061885eadfa62fea0ea9e25",
+      "size": 33426
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/input_profile.py",
+      "sha256": "d39c0914c8dd1379a9b07a7e67ad0904c6f351fd8d265f82b037dfbf090f0d3e",
+      "size": 9861
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/inventory.py",
+      "sha256": "15128ee75d3ff9796d700731083d523d990698c19824a2b80e5c54e2a496855a",
+      "size": 21150
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/network.py",
+      "sha256": "180f05034233934e0da098d517ea7e00ff18c7658e2cc8c7285737802153a05a",
+      "size": 7964
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/operations.py",
+      "sha256": "e2513a12f4b5f2a427a5899e44948e2a651d1db4cd422a665a7fb25762a922e4",
+      "size": 52831
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/opti_migration.py",
+      "sha256": "8adcb35bcb2cd48d7641b3645631dd11473cb061654e93748463d0a0f22aeeb7",
+      "size": 836
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/packages.py",
+      "sha256": "6198ecc6c466672e76c082fade0bd663924c3db309702b0862f8025d542977ce",
+      "size": 21248
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/payload_policy.py",
+      "sha256": "58970a5bb77b7375f68cabaefb319eb8852ad28a239ead7dae7bd1ac2ceb6655",
+      "size": 9071
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/probe.py",
+      "sha256": "e202c700a5ddaaad28775ae79b7801faa52912887a4587ae30b27d0e5a1e5ffa",
+      "size": 14187
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/releases.py",
+      "sha256": "326a5a41644ce8897ae59e0b5445b06fe85ddddd94dbfe78eba06ff42ffdfff9",
+      "size": 26443
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/runtime_directories.py",
+      "sha256": "f7c74b3bd6701d3367bdbe895ec6b91535c46e76a28a79d1a0edd4b23e845ba4",
+      "size": 18254
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/serial_console.py",
+      "sha256": "5e6d7b77e6bbcac5fc277f25e49c2bdbecdd9a1b62398fc944850ed2abdb09d6",
+      "size": 1450
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/split_lock.py",
+      "sha256": "1eb270c5ac1151422b26d0233ee68b52155042b316c26a6e932bcbd4e8abc694",
+      "size": 2491
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/state_io.py",
+      "sha256": "a27eed43dd15ba2d18db723f8d138813a3b056084eebfb31e7994d47c419bb43",
+      "size": 20445
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/transactions.py",
+      "sha256": "39f122669a151b85a66223f2779d4352c014d7d331cabc1aa616b31099f06baf",
+      "size": 61029
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/update_state.py",
+      "sha256": "489d72121e8387223881c437f2e283eee7684580667fc31eb79a716cad9ac659",
+      "size": 3831
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/wifi_health.py",
+      "sha256": "99f80f136813170b0f7b8187f524ea7c2c60e4c60504572d993e103d317a3530",
+      "size": 21914
+    },
+    {
+      "path": "payload/legacy/maintenance/app/oxp3_maintenance/x2mini_hdr_device.py",
+      "sha256": "27e9d9f5afb8eed21a162aca8bc63c06ff9959087283dff6563a6739d837cbbd",
+      "size": 39369
+    }
+  ],
+  "kind": "FixedX2EfiProviderSourceLock",
+  "provenance": {
+    "base_manifest_sha256": "cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684",
+    "base_package_manifest_sha256": "c3cdee5a057588d3c95db272d65e02660d1c464d65eba2c6e122d28e2868a9bf",
+    "base_provider_lock_sha256": "1dd1a144623351f411c77eab5642d2c141e503d254db5f34ab95ed16d6e39840",
+    "bridge_overlay_sha256": "a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d",
+    "bridge_source": "reviewed project-local bytes; public source commit pending",
+    "embedded_recovery": {
+      "kind": "boiler-embedded-recovery-v1",
+      "source_kind": "commit",
+      "source_revision": "3140d8789d34522439c0ac161cb1ac28086faab9"
+    },
+    "hdr_overlay_sha256": "62a284864c0900a33eae643721fa5f35ee3040ceeeaba21c58e4fc446e62e381",
+    "transform_sha256": "44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856"
+  },
+  "public_commit": "72f864e0498c10366493c74608c5ffed62cc99ca",
+  "schema": 1
+}

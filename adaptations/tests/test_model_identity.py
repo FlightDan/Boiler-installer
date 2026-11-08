@@ -54,9 +54,14 @@ class IdentityTests(unittest.TestCase):
         expected = {'oxp3': 'e5ff789b2fc54994d551ba403d12346010806a34402dbe3de75d1278d2240825',
                     'x2-mini': '348bd3fceef0a9ee26ad1f05c10b9c701dbe7010f3bc5801f4d7ad90a75fa9dd'}
         for slug, digest in expected.items():
-            value = json.loads(identity.protocol_views(self.root)[f'devices/{slug}.json'])
+            value = json.loads((ROOT/'tests/fixtures/model-identity-aea9ee'/f'{slug}.json').read_bytes())
             raw = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
             self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
+        current = json.loads(identity.protocol_views(self.root)['devices/x2-mini.json'])
+        self.assertEqual(current['name']['en'], 'ONEXPLAYER X2 Mini')
+        self.assertEqual(current['hardware_matching']['pairs'], [{'manufacturer': 'ONE-NETBOOK', 'model': 'ONEXPLAYER X2 Mini'}, {'manufacturer': 'ONE-NETBOOK', 'model': 'ONEXPLAYER X2Mini'}])
+        model = identity.common.toon_format.loads((self.root/'devices/onexplayer/x2-mini.toon').read_text(encoding='utf-8'), strict=True)
+        self.assertEqual(model['resource_model']['hdr'], {'profile': 'x2-mini', 'full_frame': 472, 'peak': 1100})
         snapshot = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         identity.generate(self.root, check=True)
         identity.generate(self.root)

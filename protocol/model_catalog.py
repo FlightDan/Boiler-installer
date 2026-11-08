@@ -23,8 +23,8 @@ CATALOG_SOURCE = 'adaptations'
 # New catalogs are completely data-driven and never extend this legacy table.
 _LEGACY_MODELS = {
     'device:oxp3': ('guide:oxp3', 'ONEXPLAYER 3', ['ONEXPLAYER 3']),
-    'device:x2-mini': ('guide:x2-mini', 'ONEXPLAYER X2 Mini / Mini PRO',
-                       ['ONEXPLAYER X2 Mini', 'ONEXPLAYER X2 Mini PRO']),
+    'device:x2-mini': ('guide:x2-mini', 'ONEXPLAYER X2 Mini',
+                       ['ONEXPLAYER X2 Mini', 'ONEXPLAYER X2Mini']),
 }
 # Compatibility API consumed by the existing legacy maintenance facades. This
 # stays an executable-facade capability limit, never the display catalog. Adding

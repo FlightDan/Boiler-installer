@@ -29,8 +29,8 @@ def _choices(pool, model):
                       and set(resource['dependencies']) <= authorized)
         parameter_data=None
         if resource['install']['kind']=='gamma22-hdr-game-v1':
-            from .hdr_contract import render,PROFILES
-            rendered=render(resource,parameters);key=rendered['hdr_selected_profile'];profile=PROFILES[key]
+            from .hdr_contract import render
+            rendered=render(resource,parameters);key=rendered['hdr_selected_profile'];profile=resource['profiles'][key]
             selectable=bool(rendered['install']['files']) and set(resource['dependencies'])<=authorized
             parameter_data=dict(profile=key,full_frame=profile['full_frame'],peak=profile['peak'],panel_model_known=profile['model'] is not None)
         choices.append(dict(id=resource['id'], version=resource['version'],

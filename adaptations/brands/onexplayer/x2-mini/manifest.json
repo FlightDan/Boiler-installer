@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "ModelInstallGuide",
   "id": "guide:x2-mini",
-  "name": "ONEXPLAYER X2 Mini / Mini PRO",
+  "name": "ONEXPLAYER X2 Mini",
   "installable": false,
   "guide": "brands/onexplayer/x2-mini/model.md",
   "source_inventory": "source-lock.json",
@@ -109,24 +109,24 @@
       "recommendation": "conditional",
       "default": false,
       "dependencies": [],
-      "sources": [],
+      "sources": [
+        "brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
+        "scripts/build-x2-hdr-overlay.py"
+      ],
       "status": "model_implementation_unverified",
-      "notes": "复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。"
+      "notes": "复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。"
     },
     {
       "id": "desktop-hdr",
-      "name": "KDE 桌面 HDR 475/700 安全试用",
+      "name": "KDE 桌面 HDR 1100/472",
       "recommendation": "recommended",
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
-        "brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh",
-        "brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh",
-        "brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py"
+        "scripts/build-x2-hdr-overlay.py"
       ],
       "status": "external_runtime_required",
-      "notes": "复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。"
+      "notes": "复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。"
     },
     {
       "id": "keyboard",

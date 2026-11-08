@@ -391,7 +391,7 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
     if (previous.get('kind')!='DeviceIndex' or previous.get('id')!=baseline['id'] or type(previous.get('sequence')) is not int
             or previous['sequence']<max(1,baseline['sequence']) or type(sequence) is not int or sequence<=previous['sequence']): raise ValueError('Invalid previous index or nonmonotonic sequence')
     if not set(baseline.get('revocations',[])).issubset(previous.get('revocations',[])): raise ValueError('Previous index omits committed revocations')
-    if len(models)!=2: raise ValueError('Exactly two model packages required')
+    if not 1 <= len(models) <= 2: raise ValueError('One or two model packages required')
     installer_root=Path(installer_root).resolve(strict=True)
     if not re.fullmatch(r'[0-9a-f]{40}', installer_commit or ''): raise ValueError('Exact installer commit required')
     def installer_git(*args): return subprocess.check_output(['git','-C',str(installer_root),*args],stderr=subprocess.PIPE)
@@ -439,7 +439,7 @@ def build_models(models, output, *, previous_index, previous_sha256, sequence, s
             manifest=document(raw); inventory=validate_contract(manifest); sha=hashlib.sha256(raw).hexdigest()
             validate_package(package,expected_manifest_sha256=sha)
             identity=manifest['id']
-            if identity not in ('device:oxp3','device:x2-mini') or identity in seen: raise ValueError('Expected one OXP3 and one X2 mini package')
+            if identity not in ('device:oxp3','device:x2-mini') or identity in seen: raise ValueError('Expected distinct OXP3 or X2 mini packages')
             seen.add(identity); record=records['devices/oxp3.json' if identity=='device:oxp3' else 'devices/x2-mini.json']
             if record.get('id')!=identity or record.get('package_status')!='experimental': raise ValueError('Invalid model record')
             if manifest['version']!=version or manifest.get('source')!={'kind':'github','repository':'FlightDan/Boiler-adaptations','commit':source_commit}: raise ValueError('Package version or authority source differs')
@@ -487,7 +487,7 @@ def main(argv=None):
         ROOT = args.source_checkout.resolve(strict=True)
     if args.model:
         if args.package or args.archive or args.asset_url or not all((args.previous_index,args.previous_sha256,args.source_commit,args.version,args.installer_root,args.installer_commit)):
-            parser.error('Two-model mode requires previous index and independently verified SHA-256, source commit, version, installer root and installer commit')
+            parser.error('Model mode requires previous index and independently verified SHA-256, source commit, version, installer root and installer commit')
         value=build_models(args.model,args.output,previous_index=args.previous_index,previous_sha256=args.previous_sha256,sequence=args.sequence,source_commit=args.source_commit,version=args.version,installer_root=args.installer_root,installer_commit=args.installer_commit)
     else:
         if not args.package: parser.error('--package required')

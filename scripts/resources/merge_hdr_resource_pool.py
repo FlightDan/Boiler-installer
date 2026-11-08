@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 from protocol.local import _safe_path
 from protocol.resource_pool import decoder,local,validate_pool
-from protocol.hdr_contract import IDENTITY,PROFILES,validate_contract
+from protocol.hdr_contract import IDENTITY,validate_contract
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 def jb(value):return (json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode()
 def snapshot(root,catalog):
@@ -25,6 +25,7 @@ def build(base_root,hdr_root,output,*,base_sha256,hdr_sha256):
     if len(base['resources'])!=13 or {m['id'] for m in base['models']}!={'device:oxp3','device:x2-mini'}:raise ValueError('Expected the reviewed thirteen-resource/two-model base')
     if any(r['id']==IDENTITY for r in base['resources']) or len(hdr['resources'])!=1:raise ValueError('HDR resource must be unique and separate')
     resource=copy.deepcopy(validate_contract(hdr['resources'][0]));files=snapshot(base_root,base);extra=snapshot(hdr_root,hdr)
+    profiles=resource['profiles']
     content={(row['sha256'],row['size']):row['path'] for item in base['resources'] for row in item['payload']['files']}
     for row in resource['payload']['files']:
         previous=content.get((row['sha256'],row['size']))
@@ -50,10 +51,10 @@ def build(base_root,hdr_root,output,*,base_sha256,hdr_sha256):
     models=[]
     for original,reference in zip(base['models'],base['model_refs']):
         model=copy.deepcopy(original);profile=model['id'].split(':',1)[1]
-        if profile not in PROFILES:raise ValueError('HDR model profile is not registered')
+        if profile not in profiles:raise ValueError('HDR model profile is not registered')
         model['resources'].append(dict(resource=IDENTITY,enabled=False,default=False,parameters={'profile':profile}))
         parameters=model['parameters']['hdr']
-        if (parameters['sdr_white_nits'],parameters['peak_nits'])!=(PROFILES[profile]['full_frame'],PROFILES[profile]['peak']):raise ValueError('Existing model luminance parameters differ from fixed profile')
+        if (parameters['sdr_white_nits'],parameters['peak_nits'])!=(profiles[profile]['full_frame'],profiles[profile]['peak']):raise ValueError('Existing model luminance parameters differ from fixed profile')
         parameters['status']='shared-game-handler-candidate-desktop-native-blocked';parameters['resource']=IDENTITY
         for pending in model['pending']:
             if pending['component']=='hdr':
@@ -63,7 +64,7 @@ def build(base_root,hdr_root,output,*,base_sha256,hdr_sha256):
         files[reference['path']]=(toon.dumps(model)+'\n').encode()
         models.append(dict(id=model['id'],path=reference['path'],sha256=sha(files[reference['path']])))
     write('provenance/merge-shared-hdr.json',jb(dict(kind='SharedGameHdrResourceMerge',base_catalog_sha256=base_sha256,hdr_catalog_sha256=hdr_sha256,
-        base_resource_records_preserved=True,defaults_enabled=False,shared_implementation=True,parameters=PROFILES,
+        base_resource_records_preserved=True,defaults_enabled=False,shared_implementation=True,parameters=profiles,
         license_deduplication=mapping,physical_hardware_accepted=False,desktop_installable=False)))
     catalog=dict(schema_version=1,kind='BoilerResourceCatalog',trust='unsigned-development',official_release=False,resources=refs,models=models,
         files=[dict(path=n,size=len(raw),sha256=sha(raw)) for n,raw in sorted(files.items())])

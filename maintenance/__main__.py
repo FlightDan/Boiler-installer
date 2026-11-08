@@ -25,6 +25,20 @@ def main(argv=None):
     command.add_argument("--component",action="append"); command.add_argument("--device-id")
     command=commands.add_parser("execute-update",help="Execute an unchanged, explicitly reviewed update plan")
     command.add_argument("plan"); command.add_argument("index_cache"); command.add_argument("package_dir"); command.add_argument("--reviewed-sha256",required=True)
+    project=commands.add_parser("project",help="Check and maintain the running system's signed Boiler project components")
+    project_commands=project.add_subparsers(dest="project_command",required=True)
+    command=project_commands.add_parser("check")
+    command.add_argument("session"); command.add_argument("--offline",action="store_true")
+    project_commands.add_parser("inventory")
+    for action in ("acquire","plan","execute"):
+        command=project_commands.add_parser(action)
+        command.add_argument("session"); command.add_argument("stream",choices=("device","maintenance"))
+        if action == "execute":
+            command.add_argument("plan"); command.add_argument("--reviewed-sha256",required=True)
+        else:
+            command.add_argument("identity"); command.add_argument("version")
+        if action == "plan":
+            command.add_argument("--component",action="append")
     command=commands.add_parser("inspect-legacy"); command.add_argument("state"); command.add_argument("public_key")
     command=commands.add_parser("adopt"); command.add_argument("receipt")
     model=commands.add_parser('models',help='Pinned model guides and explicitly reviewed on-device adaptations')
@@ -72,6 +86,10 @@ def main(argv=None):
             print(json.dumps({'ok':True,'result':result})); return 0
         from .live_root import check_state_directory,pending
         check_state_directory(args.root,args.state_dir)
+        if args.command=="project":
+            from .project import dispatch
+            result=dispatch(args)
+            print(json.dumps({"ok":True,"result":result},ensure_ascii=False)); return 0
         if args.command=='ssd-boot':
             if args.state_dir is not None:
                 raise RuntimeError('SSD boot repair uses its canonical shared-home state')

@@ -32,7 +32,7 @@ LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
 UI_LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
                b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
                b'from maintenance.model_ui import main; raise SystemExit(main())\' "$@"\n')
-DESKTOP = ('[Desktop Entry]\nType=Application\nName=Boiler Maintenance\nName[zh_CN]=Boiler 维护工具\n'
+DESKTOP = ('[Desktop Entry]\nType=Application\nName=Boiler Repairs and Project Updates\nName[zh_CN]=Boiler 修复与项目更新\n'
            'Comment=Review, install and restore device adaptations\n'
            'Exec=/usr/local/bin/boiler-maintenance-ui\nIcon=preferences-system\nTerminal=false\nCategories=System;Settings;\n').encode('utf-8')
 
@@ -175,7 +175,8 @@ def package(root, output, source_commit, asset_url):
         source='maintenance-runtime/'+name;payload[source]=data
         runtime.append(dict(source=source,target=target,size=len(data),sha256=sha256(data),mode=mode))
     component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance',
-                     version=release['version'], compatibility=release['compatibility'], files=runtime)
+                     version=release['version'], compatibility=release['compatibility'], files=runtime,
+                     retain_owned_paths=True)
     payload['component.json'] = json_bytes(component)
     payload['release.json'] = contents['maintenance/release.json']
     payload['LICENSE'] = contents['LICENSE']

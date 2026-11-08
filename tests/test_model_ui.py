@@ -422,7 +422,9 @@ class InvocationTests(unittest.TestCase):
         self.assertTrue(KDialog('en-US', runner).details('<a href="exec:bad">source</a>'))
 
     @patch('maintenance.model_ui.Path.is_file', return_value=False)
-    def test_missing_kdialog_gives_terminal_instructions(self, exists):
+    @patch('maintenance.model_ui.gtk_modules', return_value=None)
+    @patch('maintenance.model_ui.os.geteuid', return_value=1000, create=True)
+    def test_missing_kdialog_gives_terminal_instructions(self, _geteuid, _gtk, _exists):
         with patch('sys.stderr') as stderr:
             self.assertEqual(main([]), 1)
         self.assertIn('models list --offline', ''.join(str(call) for call in stderr.write.call_args_list))

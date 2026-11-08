@@ -6,7 +6,7 @@ trusted facts and mount lifetime. This adapter cannot create those authorities.
 import copy
 from pathlib import Path
 from maintenance.resource_runtime import ResourcePool, ResourceSession, ResourceError, maintenance_action, installer_install
-from protocol.hdr_contract import KIND, IDENTITY, PROFILES, render, validate_contract
+from protocol.hdr_contract import KIND, IDENTITY, render, validate_contract
 
 def bind(pool, references, selected):
     rows = []; refs = copy.deepcopy(references)
@@ -36,7 +36,7 @@ def preflight(pool, references, selected, slots):
     from maintenance.resource_runtime import resolve
     for resource in resolve(effective, refs, selected):
         if resource.get('hdr_selected_profile'):
-            profile = PROFILES[resource['hdr_selected_profile']]
+            profile = resource['profiles'][resource['hdr_selected_profile']]
             if profile['model'] is None or profile['vendor'] is None or profile['timing'] is None:
                 raise ResourceError('HDR panel policy not established: Gamescope model/timing evidence is unavailable')
             from maintenance.resource_runtime import check_hardware

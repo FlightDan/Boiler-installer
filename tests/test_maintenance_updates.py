@@ -106,11 +106,12 @@ class MaintenanceUpdateTests(unittest.TestCase):
         (payload/'manifest.json').write_text(json.dumps(value))
         return payload, value
 
-    def sign_index(self, package, *, sequence=10, revoked=False, repository='FlightDan/Boiler-installer'):
+    def sign_index(self, package, *, sequence=10, revoked=False, repository='FlightDan/Boiler-installer',
+                   registry_id='registry:boiler-devices'):
         payload, manifest = package
         data = (payload/'manifest.json').read_bytes()
         digest = hashlib.sha256(data).hexdigest()
-        index = {'schema_version': 1, 'kind': 'DeviceIndex', 'id': 'registry:boiler-devices', 'version': '0.1.0', 'sequence': sequence,
+        index = {'schema_version': 1, 'kind': 'DeviceIndex', 'id': registry_id, 'version': '0.1.0', 'sequence': sequence,
                  'generated_at': '2026-10-23T00:00:00Z', 'revocations': [digest] if revoked else [],
                  'packages': [{'id': manifest['id'], 'version': manifest['version'], 'size': len(data), 'sha256': digest,
                                'source': {'kind': 'github', 'repository': repository, 'commit': 'b'*40}, 'compatibility': manifest['compatibility']}]}
@@ -131,6 +132,65 @@ class MaintenanceUpdateTests(unittest.TestCase):
 
     def target_bytes(self):
         return {path.relative_to(self.root).as_posix(): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
+
+    def test_verified_wrong_channel_never_changes_cache_pointer(self):
+        from protocol import fetch
+        self.sign_index(self.package())
+        source = self.cache / json.loads((self.cache/'current.json').read_bytes())['generation']
+        destination = self.work/'maintenance-registry'
+        def copy_asset(url, target, **_kwargs):
+            shutil.copyfile(source/url.rsplit('/', 1)[-1], target)
+        with mock.patch.object(fetch, 'download', side_effect=copy_asset):
+            with self.assertRaisesRegex(ProtocolError, 'different update channel'):
+                fetch.fetch_index('https://example.test/index.json', 'https://example.test/index.sig', destination,
+                                  public_key=self.public_key, openssl=self.openssl or 'openssl',
+                                  expected_id='registry:boiler-maintenance')
+        self.assertFalse((destination/'current.json').exists())
+
+    def test_desktop_signed_model_plugin_update_rechecks_live_model_and_can_restore(self):
+        from maintenance import project
+        from protocol import fetch
+        plugin = 'plugin:oxp3-test'
+        (self.root/'etc/passwd').write_text('deck:x:1000:1000:Deck:/home/deck:/bin/bash\n')
+        old = self.component(self.old, plugin, '1.0.0', b'old plugin\n',
+                             target='home/deck/homebrew/plugins/boiler-test/main.py')
+        (self.root/old['files'][0]['target']).parent.mkdir(parents=True)
+        self.engine.apply(old, self.old, environment=self.environment)
+        package = self.package(components=lambda payload: [
+            self.component(payload, plugin, '2.0.0', b'new plugin\n', target=old['files'][0]['target'])])
+        payload, manifest = package
+        manifest['id'] = 'device:oxp3'
+        manifest['source']['repository'] = project.REPOSITORY
+        (payload/'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+        index = self.sign_index(package, repository=project.REPOSITORY)
+        session = self.work/'desktop-session'
+        session.mkdir()
+        self.cache.rename(session/'device')
+        payload.rename(project._package_path(session, 'device', index['packages'][0]))
+
+        verify = fetch.verify_signed_index
+        def verify_fixture(path, signature, _public_key=None, **_kwargs):
+            return verify(path, signature, self.public_key, openssl=self.openssl or 'openssl')
+
+        match = {'status': 'matched', 'model_id': 'device:oxp3'}
+        with mock.patch.object(fetch, 'verify_signed_index', side_effect=verify_fixture), \
+                mock.patch('maintenance.models._privileged'), \
+                mock.patch.object(project, 'hardware_match', return_value=(match, {})) as hardware:
+            plan = project.reviewed_update(self.root, session, 'device', 'device:oxp3', '2.0.0',
+                                           components=[plugin])
+            self.assertEqual(plan['environment']['device_id'], 'oxp3')
+            hardware.return_value = ({'status': 'matched', 'model_id': 'device:x2-mini'}, {})
+            with self.assertRaisesRegex(MaintenanceError, 'must match'):
+                project.reviewed_update(self.root, session, 'device', 'device:oxp3', '2.0.0',
+                                        plan=plan, digest=plan['review_sha256'])
+            target = self.root/old['files'][0]['target']
+            self.assertEqual(target.read_bytes(), b'old plugin\n')
+            hardware.return_value = (match, {})
+            result = project.reviewed_update(self.root, session, 'device', 'device:oxp3', '2.0.0',
+                                             plan=plan, digest=plan['review_sha256'])
+            self.assertEqual(target.read_bytes(), b'new plugin\n')
+            self.engine.restore(result['transactions'][0]['transaction'])
+            self.assertEqual(target.read_bytes(), b'old plugin\n')
 
     def test_device_mismatch_warns_in_discovery_plan_and_still_updates(self):
         package = self.package()

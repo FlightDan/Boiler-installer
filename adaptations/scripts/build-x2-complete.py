@@ -16,7 +16,7 @@ import zipfile
 
 BASE_ANCHOR = 'cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684'
 BASE_VERSION = '0.1.0-localtest.20261030.8'
-VERSION = '0.1.0-localtest.20261103.x2-fixed-efi.3'
+VERSION = '2026.11.8.3'
 MODEL = 'guide:x2-mini'
 IDENTITY = 'device:x2-mini'
 REUSE_RECORD = 'x2-full-reuse.json'
@@ -24,7 +24,7 @@ GENERATED = 'payload/legacy/maintenance/manifest.json'
 BRIDGE_PATHS = {'adapter.py', 'maintenance_adapter.py', 'scripts/apply.sh',
                 'scripts/verify.sh', 'scripts/restore.sh', 'scripts/maintenance.sh',
                 'upstream-repairs/speaker/speaker_route.py', 'upstream-repairs/xevmafix/load.py'}
-HDR_SHARED_PATHS = {'payload/legacy/components/profile.json',
+HDR_SHARED_PATHS = {'payload/legacy/components/options.json', 'payload/legacy/components/profile.json',
     'payload/legacy/components/controls/profile.json',
     'payload/legacy/components/x2mini_hdr_device.py',
     'payload/legacy/maintenance/app/oxp3_maintenance/components.py',
@@ -198,6 +198,13 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     from protocol.local import import_local
     base, bridge_overlay, hdr_overlay = map(lambda p: Path(p).absolute(), (base,bridge_overlay,hdr_overlay))
     model, inputs = recipe if recipe is not None else load_recipe(root, adaptations)
+    mapping = model['resource_model']['hdr']
+    if mapping != {'profile':'x2-mini','full_frame':472,'peak':1100}:
+        raise BuildError('Unexpected X2 HDR mapping in TOON')
+    hdr_lock = regular(hdr_overlay, 'overlay-lock.json')
+    values = {key: mapping[key] for key in ('peak', 'full_frame')}
+    require(document(hdr_lock.read_bytes()).get('mapping') == dict(game=values, desktop=values),
+            'HDR overlay mapping differs from the X2 TOON')
     baseline = validate_package(base, expected_manifest_sha256=BASE_ANCHOR)
     require(baseline['id'] == 'device:oxp3' and baseline['version'] == BASE_VERSION, 'Wrong complete OXP3 base')
     components, capabilities = check_coverage(baseline, model)
@@ -214,19 +221,19 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
         copy_approved(regular(base,name),directory/name,row)
     for name, row in changes.items():
         copy_approved(row['input_path'],directory/name,row)
-    source_path = regular(root, 'adaptations/brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py')
+    source_path = regular(adaptations, 'brands/onexplayer/x2-mini/bridge/fixed_efi_sources.py')
     require(sha(source_path) == '44b04774e27d5bded09b6803d4fd124980e739518e41c8cf59c44c606e26f856',
             'X2 fixed EFI transform differs from reviewed bytes')
     spec = importlib.util.spec_from_file_location('boiler_x2_fixed_efi_sources', source_path)
     source_transform = importlib.util.module_from_spec(spec); spec.loader.exec_module(source_transform)
     for name in ('adapter.py','maintenance_adapter.py'):
-        source = regular(root, 'adaptations/brands/onexplayer/oxp3/bridge/'+name)
+        source = regular(adaptations, 'brands/onexplayer/oxp3/bridge/'+name)
         regular(directory, name).write_bytes(source_transform.transform(name, source.read_bytes()))
     lock_builder_path = regular(root, 'scripts/prepare-x2-efi-provider-lock.py')
     spec = importlib.util.spec_from_file_location('boiler_x2_fixed_efi_lock', lock_builder_path)
     lock_builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(lock_builder)
-    expected_lock = (json.dumps(lock_builder.build(base, bridge_overlay, hdr_overlay), sort_keys=True, indent=2)+'\n').encode()
-    require(regular(root, 'components/x2_efi_provider.lock.json').read_bytes() == expected_lock,
+    expected_lock = (json.dumps(lock_builder.build(base, bridge_overlay, hdr_overlay, adaptations=adaptations), sort_keys=True, indent=2)+'\n').encode()
+    require(regular(root, 'components/x2_efi_provider.hdr1100.lock.json').read_bytes() == expected_lock,
             'X2 provider closure differs from reviewed source inputs')
     generated = {GENERATED} if refresh_maintenance(directory) else set()
     generated.add(finalize_xevma_loader(directory, root, changes))
@@ -234,7 +241,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     metadata['minimum_engine_version'] = '0.1.4'
     metadata.pop('oxp3_efi_contract', None)
     metadata['x2_efi_contract'] = {'kind':'x2-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}
-    metadata['name'] = {'zh':'ONEXPLAYER X2 Mini / Mini PRO 完整适配','en':'ONEXPLAYER X2 Mini / Mini PRO complete adaptation'}
+    metadata['name'] = {'zh':'ONEXPLAYER X2 Mini 完整适配','en':'ONEXPLAYER X2 Mini complete adaptation'}
     for item in [metadata] + metadata['components']:
         compatibility = item.get('compatibility', {})
         if 'device_ids' in compatibility: compatibility['device_ids'] = ['x2-mini']
@@ -250,7 +257,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
         'hdr_overlay_sha256':inputs['hdr_overlay']['sha256']}
     metadata['complete_reuse'] = {'kind':'boiler-x2-complete-reuse-v1','base_manifest_sha256':BASE_ANCHOR,
         'base_source':baseline['source'],
-        'components':components,'legacy_capabilities':capabilities,'hdr_mapping':{'paper_white_nits':475,'peak_nits':700}}
+        'components':components,'legacy_capabilities':capabilities,'hdr_mapping':{'paper_white_nits':mapping['full_frame'],'peak_nits':mapping['peak']}}
     (directory/REUSE_RECORD).write_bytes(encoded(metadata['complete_reuse']))
     for name, row in originals.items():
         if name not in changes and name not in generated:
@@ -261,7 +268,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     (directory/'manifest.json').write_bytes(encoded(metadata))
     manifest_sha = sha(directory/'manifest.json'); final = validate_package(directory, expected_manifest_sha256=manifest_sha)
     from components.x2_efi_provider import verify as verify_x2_provider
-    verify_x2_provider(directory, root/'components/x2_efi_provider.lock.json')
+    verify_x2_provider(directory, root/'components/x2_efi_provider.hdr1100.lock.json')
     require([row['id'] for row in final['components']] == components and [row['id'] for row in final['legacy_capabilities']] == capabilities,
             'Final package lost complete inherited scope')
     archive = output/('boiler-device-x2-mini-'+VERSION+'.zip'); deterministic_zip(directory,archive,rows)

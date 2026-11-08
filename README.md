@@ -24,7 +24,7 @@ Boiler Installer 是一款运行在 Windows 上的 SteamOS 安装助手。你可
 
 想了解有哪些机型适配、适配到什么程度，或参与新机型适配，请访问 [Boiler 机型适配仓库](https://github.com/FlightDan/Boiler-adaptations)。
 
-当前源码版本为 **0.2.1 preview**。下载版本、已验证范围和已知问题请以 [Releases](https://github.com/FlightDan/Boiler-installer/releases) 中对应版本的说明为准。
+当前源码版本为 **0.2.2 preview**。下载版本、已验证范围和已知问题请以 [Releases](https://github.com/FlightDan/Boiler-installer/releases) 中对应版本的说明为准。
 
 ## 2. 功能介绍
 

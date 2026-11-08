@@ -1,7 +1,7 @@
 schema_version: 1
 kind: ModelInstallGuide
 id: "guide:x2-mini"
-name: ONEXPLAYER X2 Mini / Mini PRO
+name: ONEXPLAYER X2 Mini
 installable: false
 guide: brands/onexplayer/x2-mini/model.md
 source_inventory: source-lock.json
@@ -71,17 +71,17 @@ components[34]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources: []
+    sources[2]: brands/onexplayer/oxp3/scripts/hdr/upstream.lua,scripts/build-x2-hdr-overlay.py
     status: model_implementation_unverified
-    notes: 复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。
+    notes: 复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。
   - id: desktop-hdr
-    name: KDE 桌面 HDR 475/700 安全试用
+    name: KDE 桌面 HDR 1100/472
     recommendation: recommended
     default: false
     dependencies: []
-    sources[4]: brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py,brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py
+    sources[1]: scripts/build-x2-hdr-overlay.py
     status: external_runtime_required
-    notes: 复用 OXP3 HDR 机制及运行时，X2 专属目标映射 475/700；单独验证游戏模式与桌面模式。
+    notes: 复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。
   - id: keyboard
     name: KDE 屏幕键盘配置
     recommendation: optional
@@ -295,7 +295,7 @@ build:
   inputs[3]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."
     bridge_overlay,locked-directory,adaptations/inputs/x2-bridge-overlay,adaptations/inputs/x2-bridge-overlay/overlay-lock.json,a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d,Explicit reviewed X2 identity and recovery bridge overlay.
-    hdr_overlay,locked-directory,adaptations/inputs/x2-hdr-overlay,adaptations/inputs/x2-hdr-overlay/overlay-lock.json,f1c159d826106eb038fe1845efc515fbd4ed2897089b0e1f8b68cd80c554d1d6,Explicit reviewed X2 HDR mapping overlay.
+    hdr_overlay,locked-directory,adaptations/inputs/x2-hdr-overlay,adaptations/inputs/x2-hdr-overlay/overlay-lock.json,62a284864c0900a33eae643721fa5f35ee3040ceeeaba21c58e4fc446e62e381,Explicit reviewed X2 HDR mapping overlay.
 package:
   kind: BoilerInheritedPackageDefinition
   base_input: base
@@ -305,13 +305,13 @@ package:
 runtime:
   id: "device:x2-mini"
   name:
-    en: ONEXPLAYER X2 Mini / Mini PRO
-    zh: ONEXPLAYER X2 Mini / Mini PRO
+    en: ONEXPLAYER X2 Mini
+    zh: ONEXPLAYER X2 Mini
   hardware_matching:
     mode: advisory-exact-dmi-v1
     pairs[2]{manufacturer,model}:
       ONE-NETBOOK,ONEXPLAYER X2 Mini
-      ONE-NETBOOK,ONEXPLAYER X2 Mini PRO
+      ONE-NETBOOK,ONEXPLAYER X2Mini
 resource_model:
   schema_version: 1
   kind: BoilerModelResourceSource
@@ -334,8 +334,8 @@ resource_model:
     "resource:gamma22-hdr-game"
   hdr:
     profile: x2-mini
-    full_frame: 475
-    peak: 700
+    full_frame: 472
+    peak: 1100
   common_references:
     schema_version: 1
     kind: BoilerModelCommonReferences

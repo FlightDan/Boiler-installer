@@ -167,6 +167,17 @@ def device_plan(payload, options, source):
                     raise ValueError('Model resource is incompatible with the image')
                 plan['components'].append(component(resource, 'root-slots'))
     legacy_choice = device_legacy_selection(package, options, plan['components'])
+    if package.get('legacy_recovery_contract') and any(item['id'] == 'oxp3:legacy-adaptation' for item in plan['components']):
+        if 'core:maintenance' not in options.get('plugins', []):
+            raise ValueError('The reviewed model selection must include Boiler Maintenance')
+        if package['id'] == 'device:oxp3':
+            from oxp3_full_efi_provider import verify
+            verify(folder, payload / 'components/oxp3_full_efi_provider.lock.json')
+        elif package['id'] == 'device:x2-mini':
+            from x2_efi_provider import verify
+            verify(folder, payload / 'components/x2_efi_provider.lock.json')
+        else:
+            raise ValueError('The embedded recovery contract is unsupported for this model')
     validate_fingerprint_provider(plan['components'], options)
     warning = device_advisory(package, environment)
     descriptor = dict(id=package['id'], version=package['version'],
@@ -187,6 +198,8 @@ def device_plan(payload, options, source):
         descriptor['x2_efi_contract'] = package['x2_efi_contract']
     if package.get('oxp3_full_efi_contract') is not None:
         descriptor['oxp3_full_efi_contract'] = package['oxp3_full_efi_contract']
+    if package.get('legacy_recovery_contract') is not None:
+        descriptor['legacy_recovery_contract'] = package['legacy_recovery_contract']
     if legacy_choice is not None:
         descriptor['legacy_selection'] = legacy_choice
     return folder, plan['components'], environment, descriptor
@@ -528,6 +541,12 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         _stage_mark(slot, 'no-components', clock)
         return result
     manifest = load_manifest(payload)
+    if (package_root and descriptor.get('legacy_recovery_contract') and
+            any(component['id'] == 'oxp3:legacy-adaptation' for component in device_components)):
+        from maintenance.updates import _version_key
+        version = manifest['core:maintenance']['component']['version']
+        if _version_key(version) < _version_key('0.2.0+maintenance.18'):
+            raise ValueError('The embedded recovery model requires Boiler Maintenance .18 or newer')
     if firmware_ids and any(manifest.get(identity, {}).get('delivery') == 'on-demand' for identity in firmware_ids):
         import hashlib
         plan_path = payload / 'firmware-plan.json'

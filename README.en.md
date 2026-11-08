@@ -24,7 +24,7 @@ Boiler Installer is a Windows assistant for preparing and installing SteamOS. Ch
 
 Browse the [Boiler adaptations repository](https://github.com/FlightDan/Boiler-adaptations) for device support, its validation status, and ways to contribute.
 
-The current source version is **0.2.1 preview**. See the relevant [Release](https://github.com/FlightDan/Boiler-installer/releases) for available downloads, known issues, and validation scope.
+The current source version is **0.2.2 preview**. See the relevant [Release](https://github.com/FlightDan/Boiler-installer/releases) for available downloads, known issues, and validation scope.
 
 ## 2. Features
 

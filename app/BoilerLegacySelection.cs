@@ -213,7 +213,14 @@ public partial class MainWindow
     {
         if (deviceLegacyBridge == null) return;
         updatingDeviceAdaptations = true;
-        try { deviceComponentChoices[deviceLegacyBridge].IsChecked = deviceLegacyChoices.Values.Any(box => box.IsChecked == true); }
+        try
+        {
+            bool selected = deviceLegacyChoices.Values.Any(box => box.IsChecked == true);
+            deviceComponentChoices[deviceLegacyBridge].IsChecked = selected;
+            if (selected && deviceUsesProjectMaintenance &&
+                optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var maintenance))
+                maintenance.IsChecked = true;
+        }
         finally { updatingDeviceAdaptations = false; }
     }
 

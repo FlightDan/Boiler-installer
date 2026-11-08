@@ -21,6 +21,10 @@ internal static class BoilerCustomComponentHardware
         @"^HDAUDIO\\FUNC_01&VEN_10EC&DEV_0245(?:&|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
     private static readonly Regex Acpi10Ec5280 = new(
         @"^ACPI\\(?:10EC5280(?:\\|$)|VEN_10EC&DEV_5280(?:&|\\|$))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex AcpiBf63112Sensor = new(
+        @"^ACPI\\BF63112(?:\\|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex AcpiFte3600Sensor = new(
+        @"^ACPI\\FTE3600(?:\\|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     internal static Detection Match(IEnumerable<BoilerWirelessHardware.Device> devices)
     {
@@ -31,6 +35,8 @@ internal static class BoilerCustomComponentHardware
         var connectivity = Find(inventory, IntelConnectivity);
         var alc245 = Find(inventory, Alc245);
         var bmi260Candidate = Find(inventory, Acpi10Ec5280);
+        var bfSensor = Find(inventory, AcpiBf63112Sensor);
+        var fteSensor = Find(inventory, AcpiFte3600Sensor);
         return new([
             g3Extreme is not null ? new("intel-xevma", MatchState.Matched, g3Extreme, "exact-intel-g3-extreme-pci")
                 : intelDisplay is not null ? new("intel-xevma", MatchState.Candidate, intelDisplay, "intel-display-driver-unconfirmed") : Missing("intel-xevma"),
@@ -38,7 +44,16 @@ internal static class BoilerCustomComponentHardware
             connectivity is null ? Missing("intel-be201-firmware") : new("intel-be201-firmware", MatchState.Candidate, connectivity, "shared-intel-connectivity-pci"),
             alc245 is null ? Missing("realtek-alc245-speaker") : new("realtek-alc245-speaker", MatchState.Matched, alc245, "exact-alc245-codec-speaker-route-unproven"),
             // This ACPI ID alone is not an actual BMI260 chip fact.
-            bmi260Candidate is null ? Missing("bmi260-gyro") : new("bmi260-gyro", MatchState.Candidate, bmi260Candidate, "acpi-id-ambiguous-not-chip-proof")
+            bmi260Candidate is null ? Missing("bmi260-gyro") : new("bmi260-gyro", MatchState.Candidate, bmi260Candidate, "acpi-id-ambiguous-not-chip-proof"),
+            // A sensor ACPI HID is only an identity observation. It does not prove the
+            // chip variant, Linux driver runtime, or capture support (a FTE3600 HID
+            // device on X2 hardware presented itself as an FT9365 backend at runtime).
+            // BF63112 and FTE3600 are reported separately and never collapsed into one
+            // another, and neither is mapped to an installable component here.
+            bfSensor is null ? Missing("fingerprint-bf63112")
+                : new("fingerprint-bf63112", MatchState.Candidate, bfSensor, "sensor-acpi-hid-candidate-runtime-unverified"),
+            fteSensor is null ? Missing("fingerprint-fte3600")
+                : new("fingerprint-fte3600", MatchState.Candidate, fteSensor, "sensor-acpi-hid-candidate-runtime-unverified")
         ]);
     }
 

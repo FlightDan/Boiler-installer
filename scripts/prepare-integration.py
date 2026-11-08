@@ -115,7 +115,7 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
     ui_launcher = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
                    b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
                    b'from maintenance.model_ui import main; raise SystemExit(main())\' "$@"\n')
-    desktop = ('[Desktop Entry]\nType=Application\nName=Boiler Maintenance\nName[zh_CN]=Boiler 维护工具\n'
+    desktop = ('[Desktop Entry]\nType=Application\nName=Boiler Repairs and Project Updates\nName[zh_CN]=Boiler 修复与项目更新\n'
                'Comment=Review, install and restore device adaptations\n'
                'Exec=/usr/local/bin/boiler-maintenance-ui\nIcon=preferences-system\nTerminal=false\nCategories=System;Settings;\n').encode('utf-8')
     for name, data, target, mode in (

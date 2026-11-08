@@ -52,7 +52,7 @@ def download(url,path,*,maximum,expected=None,timeout=60):
     return {"sha256":digest.hexdigest(),"size":size}
 
 
-def fetch_index(url,signature_url,cache,*,public_key=None,openssl="openssl",timeout=60):
+def fetch_index(url,signature_url,cache,*,public_key=None,openssl="openssl",timeout=60,expected_id=None):
     cache=Path(cache); cache.mkdir(parents=True,exist_ok=True)
     # A directory rename publishes an immutable generation. `current.json` is
     # the sole atomic pointer, so crashes never pair a new index with old sig.
@@ -60,6 +60,8 @@ def fetch_index(url,signature_url,cache,*,public_key=None,openssl="openssl",time
         temp=Path(temp); download(url,temp/"index.json",maximum=8*1024**2,timeout=timeout)
         download(signature_url,temp/"index.sig",maximum=64,timeout=timeout)
         index=verify_signed_index(temp/"index.json",temp/"index.sig",public_key,openssl=openssl)
+        if expected_id is not None and index["id"] != expected_id:
+            raise ProtocolError("Signed index belongs to a different update channel")
         digest=hashlib.sha256((temp/"index.json").read_bytes()).hexdigest()
         pointer=cache/"current.json"
         if pointer.exists():

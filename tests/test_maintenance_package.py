@@ -123,8 +123,17 @@ class MaintenancePackageTests(unittest.TestCase):
         environment = dict(os_id='steamos', os_version='3.10', architecture='x86_64', kernels=[])
         old = copy.deepcopy(component)
         old['version'] = '0.0.0'
+        old.pop('retain_owned_paths')
+        legacy_catalog = 'usr/local/lib/boiler/components/model-catalog/snapshot/adaptations.json'
+        legacy_bytes = b'{"historical":true}'
+        legacy_source = payload/'legacy-catalog.json'
+        legacy_source.write_bytes(legacy_bytes)
+        old['files'].append(dict(source=legacy_source.name, target=legacy_catalog,
+                                 mode=0o644, size=len(legacy_bytes),
+                                 sha256=hashlib.sha256(legacy_bytes).hexdigest()))
         engine = Engine(root)
         engine.apply(old, payload, environment=environment)
+        legacy_source.unlink()
         index = dict(packages=[result['index_entry']], revocations=[])
         anchor = dict(id='registry:boiler-maintenance', version='0.1.0', sequence=1,
                       sha256='a'*64, trusted_public_key_sha256=builder.PUBLIC_KEY_SHA256)
@@ -139,6 +148,7 @@ class MaintenancePackageTests(unittest.TestCase):
             receipt = updates.execute_plan(root, plan, self.work/'cache', payload, reviewed_sha256=plan['review_sha256'])
         self.assertEqual(receipt['status'], 'committed')
         self.assertTrue(engine.verify('core:maintenance')['ok'])
+        self.assertEqual((root/legacy_catalog).read_bytes(), legacy_bytes)
 
     def test_reject_dirty_wrong_commit_and_parent_repository(self):
         with self.assertRaisesRegex(ValueError, 'HEAD'):

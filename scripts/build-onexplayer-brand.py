@@ -131,10 +131,12 @@ def equivalent_resource(resource, old_rows, old_sources):
 
 def fixed_provider_files(project, package_dir, identity, rows):
     if identity == 'device:oxp3':
-        path = project / 'components/oxp3_full_efi_provider.lock.json'
+        manifest = json_document((package_dir/'manifest.json').read_bytes())
+        path = oxp3_full_efi_provider.lock_for(manifest, project / 'components/oxp3_full_efi_provider.lock.json')
         verifier = oxp3_full_efi_provider.verify
     elif identity == 'device:x2-mini':
-        path = project / 'components/x2_efi_provider.lock.json'
+        manifest = json_document((package_dir/'manifest.json').read_bytes())
+        path = x2_efi_provider.lock_for(manifest, project / 'components/x2_efi_provider.lock.json')
         verifier = x2_efi_provider.verify
     else:
         raise ValueError('Unsupported brand provider identity: ' + identity)
