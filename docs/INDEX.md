@@ -4,6 +4,10 @@
 
 ## 当前入口
 
+- [安装指南](install/README.md) — 安装准备、操作步骤和界面示例
+- [开发与构建](DEVELOPMENT.md) — 依赖、构建与检查入口
+- [README 与安装指南更新记录](README_REDESIGN_20261108.md) — 素材来源及本次文档交付边界
+
 - [0.2.1 slim Preview 发布记录](RELEASE_SLIM_20261108.md) — SteamOS 删除与导航修复、白名单公开源码和分离验收门
 - [交付记录 0.2.0-preview.20261105.11](MERGED_FIXES_DELIVERY_20261105.md) — 当前 `main` 对应的本地候选构建与验收边界
 - [首次安装提速与重复校验收敛 20261106](INSTALL_SPEED_20261106.md) — 客户机资源分配、重复哈希去除、vanilla 组件可用性

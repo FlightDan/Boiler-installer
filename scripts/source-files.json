@@ -7,6 +7,7 @@
     ".gitignore",
     "LICENSE",
     "README.md",
+    "README.en.md",
     "THIRD_PARTY_NOTICES.md",
     "adaptations/.gitattributes",
     "adaptations/.gitignore",
@@ -1085,7 +1086,18 @@
     "docs/INSTALL_SESSION_FIXTURES_20261107.md",
     "docs/STEAMOS_PARTITION_DELETE_20261107.md",
     "docs/RELEASE_SLIM_20261108.md",
-    "docs/SOURCE_PUBLICATION_PRIVACY_20261107.md"
+    "docs/SOURCE_PUBLICATION_PRIVACY_20261107.md",
+    "docs/DEVELOPMENT.md",
+    "docs/README_REDESIGN_20261108.md",
+    "docs/install/README.md",
+    "docs/images/boiler-installer-cover.png",
+    "docs/images/install-home.png",
+    "docs/images/install-source.png",
+    "docs/images/install-target.png",
+    "docs/images/install-options.png",
+    "docs/images/install-boot.png",
+    "docs/images/install-review.png",
+    "docs/images/install-progress.png"
   ],
   "excluded": [
     "BoilerInstaller.exe",
