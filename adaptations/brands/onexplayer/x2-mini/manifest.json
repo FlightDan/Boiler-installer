@@ -90,7 +90,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"
@@ -102,7 +102,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py",
+        "brands/onexplayer/x2-mini/scripts/integration.py",
         "brands/onexplayer/oxp3/scripts/flathub.flatpakrepo"
       ],
       "status": "shared_oxp3_implementation",
@@ -116,7 +116,7 @@
       "dependencies": [],
       "sources": [
         "brands/onexplayer/oxp3/scripts/hdr/upstream.lua",
-        "scripts/build-x2-hdr-overlay.py"
+        "brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py"
       ],
       "status": "model_implementation_unverified",
       "notes": "复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。"
@@ -128,7 +128,11 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "scripts/build-x2-hdr-overlay.py"
+        "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
+        "brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh",
+        "brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh",
+        "brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
+        "brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py"
       ],
       "status": "external_runtime_required",
       "notes": "复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。"
@@ -140,7 +144,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"
@@ -194,7 +198,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"
@@ -242,7 +246,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py",
+        "brands/onexplayer/x2-mini/scripts/integration.py",
         "brands/onexplayer/oxp3/scripts/controls/compatibility.py"
       ],
       "status": "shared_oxp3_implementation",
@@ -282,7 +286,7 @@
       "default": false,
       "dependencies": [],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"
@@ -297,7 +301,7 @@
         "decky"
       ],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"
@@ -327,7 +331,7 @@
         "decky"
       ],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/integration.py"
+        "brands/onexplayer/x2-mini/scripts/integration.py"
       ],
       "status": "shared_oxp3_implementation",
       "notes": "完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。"

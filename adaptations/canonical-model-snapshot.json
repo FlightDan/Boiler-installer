@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "41045d803863dca6ff1a72d2bfa87fc2973f4ebc",
+  "commit": "e2aeb1477cdc648679d815369ba5917eae54db04",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -731,13 +731,18 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
-      "size": 16631,
-      "sha256": "02c55d7ab9187e4a2ae71990ba47eac6d96b3ffed597bd7a736023ffb1de816d"
+      "size": 16997,
+      "sha256": "f80e5479ddae0619340c5f30c7e0f8dddf2e0899ce142980d835c013b5e19aa7"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/model.md",
       "size": 9373,
       "sha256": "79c65fc93e4f5083e22bcaedb9d2dbb8dd01e0a9edb4fb12b3aef244fb391baf"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
+      "size": 10218,
+      "sha256": "21abb1dde3c205296214abeea21bfa7572a0a6e6685f8b2e8e86beb3d565d3fb"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
@@ -758,6 +763,11 @@
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py",
       "size": 39391,
       "sha256": "92460af960e53974a603018af396475a82c151eb85a0d40f7e99b95e1846ac42"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/scripts/integration.py",
+      "size": 57360,
+      "sha256": "08be17862b5c383bd9560704ada2a8daae0e9a0807a90a749776445679a5d2ff"
     },
     {
       "path": "adaptations/common-device-source-index.json",
@@ -1456,8 +1466,8 @@
     },
     {
       "path": "adaptations/devices/onexplayer/x2-mini.toon",
-      "size": 17708,
-      "sha256": "55f15236dbf44c42d75ec75d99391fd146967a80746ab13a93a8a9e046eff985"
+      "size": 18030,
+      "sha256": "7dae61f305ccfb456252761c5f2c44c0707aed80e16a51e1262d653802b3e023"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
@@ -1800,11 +1810,6 @@
       "sha256": "86ea163440412ce97763e18b179c71226e4bf226a17cead9777ba2028eb4307b"
     },
     {
-      "path": "adaptations/scripts/build-x2-hdr-overlay.py",
-      "size": 10218,
-      "sha256": "21abb1dde3c205296214abeea21bfa7572a0a6e6685f8b2e8e86beb3d565d3fb"
-    },
-    {
       "path": "adaptations/scripts/common-device-sources.py",
       "size": 10443,
       "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
@@ -1841,8 +1846,8 @@
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 53237,
-      "sha256": "6d65fce3cbd59d297ce89949c63c91315cbc4b9ffba0cbc7d175e10f71d5273e"
+      "size": 53312,
+      "sha256": "20768213a3bcde363bb0f4073585ca51748a01b5e4e87f7409dd50a13d1dc86d"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1856,8 +1861,8 @@
     },
     {
       "path": "adaptations/tests/test_adaptations.py",
-      "size": 19752,
-      "sha256": "b22849b1244b682d6de07444047c87f472505f3d7f249df2e5247f31569304a6"
+      "size": 20222,
+      "sha256": "d4a2b9321a0f6c0c8cd08b6faf699ed7e06204863128286d47e40b3a62a46f2d"
     },
     {
       "path": "adaptations/tests/test_common_device_sources.py",
@@ -1906,8 +1911,8 @@
     },
     {
       "path": "adaptations/tests/test_x2_hdr_overlay.py",
-      "size": 4192,
-      "sha256": "28400e84cc0e279ec054e9f57d355d6c9aa2f44b194ae30c7ab97b0c79d2266e"
+      "size": 4230,
+      "sha256": "a3fe613a0ac3fb8ee3ef6a56e93a8dba23317ebf03a1fecef989000690fd3e5b"
     },
     {
       "path": "adaptations/toon-parser-lock.json",
@@ -1991,8 +1996,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 71853,
-      "sha256": "d3d4a347e247cdf6720ec03ca99619aa864d79ddfafa2bdf924d5ffd3b840c58"
+      "size": 72062,
+      "sha256": "8e95ee8d649b88f7363a1370118b8177d3a6dc0a80456bad2c9c98f84743eb0c"
     }
   ]
 }

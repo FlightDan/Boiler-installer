@@ -55,7 +55,7 @@ components[34]:
     recommendation: optional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: flathub-ustc
@@ -63,7 +63,7 @@ components[34]:
     recommendation: optional
     default: false
     dependencies: []
-    sources[2]: brands/onexplayer/oxp3/scripts/integration.py,brands/onexplayer/oxp3/scripts/flathub.flatpakrepo
+    sources[2]: brands/onexplayer/x2-mini/scripts/integration.py,brands/onexplayer/oxp3/scripts/flathub.flatpakrepo
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: hdr
@@ -71,7 +71,7 @@ components[34]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources[2]: brands/onexplayer/oxp3/scripts/hdr/upstream.lua,scripts/build-x2-hdr-overlay.py
+    sources[2]: brands/onexplayer/oxp3/scripts/hdr/upstream.lua,brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py
     status: model_implementation_unverified
     notes: 复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。
   - id: desktop-hdr
@@ -79,7 +79,7 @@ components[34]:
     recommendation: recommended
     default: false
     dependencies: []
-    sources[1]: scripts/build-x2-hdr-overlay.py
+    sources[5]: brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py,brands/onexplayer/x2-mini/scripts/desktop-hdr/install-x2mini-hdr.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/launch.sh,brands/onexplayer/x2-mini/scripts/desktop-hdr/x2mini_device.py,brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py
     status: external_runtime_required
     notes: 复用 OXP3 HDR 机制及运行时，X2 使用 gamma22 映射，峰值 1100、全屏平均 472；游戏与桌面分别验收。
   - id: keyboard
@@ -87,7 +87,7 @@ components[34]:
     recommendation: optional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: input
@@ -119,7 +119,7 @@ components[34]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: gm7-resume
@@ -151,7 +151,7 @@ components[34]:
     recommendation: recommended
     default: false
     dependencies: []
-    sources[2]: brands/onexplayer/oxp3/scripts/integration.py,brands/onexplayer/oxp3/scripts/controls/compatibility.py
+    sources[2]: brands/onexplayer/x2-mini/scripts/integration.py,brands/onexplayer/oxp3/scripts/controls/compatibility.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: native-tdp
@@ -175,7 +175,7 @@ components[34]:
     recommendation: conditional
     default: false
     dependencies: []
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: oxp3-fan
@@ -183,7 +183,7 @@ components[34]:
     recommendation: optional
     default: false
     dependencies[2]: fan-driver,decky
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: oxp3-cpu
@@ -199,7 +199,7 @@ components[34]:
     recommendation: optional
     default: false
     dependencies[2]: fan-driver,decky
-    sources[1]: brands/onexplayer/oxp3/scripts/integration.py
+    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: oxp3-light

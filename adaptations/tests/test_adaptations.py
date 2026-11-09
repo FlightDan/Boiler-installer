@@ -49,8 +49,14 @@ class AdaptationCollectionTests(unittest.TestCase):
         self.assertEqual(x2['pl4-175w']['status'], 'implementation_missing')
         self.assertEqual(x2['pl4-175w']['sources'], [])
         self.assertEqual(x2['desktop-hdr']['status'], 'external_runtime_required')
-        self.assertEqual(len(x2['desktop-hdr']['sources']), 4)
-        self.assertEqual(x2['hdr']['sources'], [])
+        # desktop-hdr ships the four model deployment scripts plus the overlay builder;
+        # hdr (game mode) reuses the OXP3 lua shim and that same builder.
+        self.assertEqual(len(x2['desktop-hdr']['sources']), 5)
+        self.assertTrue(all(s.startswith('brands/onexplayer/x2-mini/scripts/')
+                            for s in x2['desktop-hdr']['sources']))
+        self.assertEqual(x2['hdr']['sources'],
+                         ['brands/onexplayer/oxp3/scripts/hdr/upstream.lua',
+                          'brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py'])
         self.assertTrue(x2['fingerprint-unlock']['default'])
         self.assertEqual(x2['gyro']['sources'], ['brands/onexplayer/x2-mini/common-device-sources.toon'])
 

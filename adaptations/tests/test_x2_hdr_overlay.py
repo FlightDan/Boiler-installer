@@ -8,7 +8,7 @@ import sys
 import types
 from unittest import mock
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'build-x2-hdr-overlay.py'
+SCRIPT = Path(__file__).resolve().parents[1] / 'brands' / 'onexplayer' / 'x2-mini' / 'scripts' / 'build-x2-hdr-overlay.py'
 spec = importlib.util.spec_from_file_location('x2_overlay', SCRIPT)
 overlay = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(overlay)
