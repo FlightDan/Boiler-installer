@@ -1,0 +1,17 @@
+schema_version: 1
+kind: BoilerFingerprintProviderSource
+id: "fingerprint:bf63112"
+source_only: true
+installable: false
+matching:
+  bus: spi
+  acpi_hid: BF63112
+upstream:
+  repository: pythontyphon/libfprint-bf63112-oxp3
+  commit: 6a19d67d2a072dac4b6a467434966c55af76b602
+  source_license: LGPL-2.1-or-later
+  input_validation: scripts/validate-fingerprint-native.py
+lifecycle:
+  status: legacy_native_runtime_external
+  limitation: Existing native runtime is combined with the bridge in the legacy component; a separate installable provider is not yet available.
+  board_configuration: Reset GPIO and polarity are board-specific and are not supplied by this record.

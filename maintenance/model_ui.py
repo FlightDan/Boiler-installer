@@ -1051,7 +1051,7 @@ class GtkMaintenance:
                 self.details(self.tr('Opti2XMX 上游检查', 'Opti2XMX upstream check'), plugin['message'])
             elif plugin.get('newer'):
                 self.details(self.tr('Opti2XMX 上游有新版', 'New upstream Opti2XMX release'),
-                             plugin['repository'] + ' · ' + plugin['version'])
+                             plugin['repository'] + ' · ' + plugin['installed_version'] + ' → ' + plugin['version'])
                 self.text(self.tr('此处显示上游版本；可应用版本以 Boiler 签名包为准。',
                                   'This is the upstream version. Installable updates come from signed Boiler packages.'))
 

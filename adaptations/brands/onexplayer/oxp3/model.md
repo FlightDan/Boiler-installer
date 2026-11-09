@@ -9,7 +9,7 @@
 <!-- BEGIN GENERATED INSTALL LIST -->
 | 组件 ID | 适配项目 | 建议 | 验证与适用边界 |
 | --- | --- | --- | --- |
-| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json.；依赖：decky |
+| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Generic bridge and BF63112 provider source reference; sensor identity and board-specific reset must be verified. The existing installable component remains legacy BF-only, not a hardware-selected provider. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json.；依赖：decky |
 | slot-switch | KDE 槽位切换 / 系统回退 | 可选 | A/B 布局及系统工具满足时可选；真实切换与重启分别验证。 |
 | partition-mount | KDE 图形分区持久挂载 | 可选 | 共享 home/NTFS 布局核对后可选；本次归档基线不代表工作区后续 NTFS 修复。 |
 | refind | rEFInd · 双系统图形启动菜单 | 可选 | 独立启动管理器入口；脚本不归机型适配所有，核对 EFI 与双系统布局。 |

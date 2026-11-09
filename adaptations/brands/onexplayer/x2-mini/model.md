@@ -9,7 +9,7 @@
 <!-- BEGIN GENERATED INSTALL LIST -->
 | 组件 ID | 适配项目 | 建议 | 验证与适用边界 |
 | --- | --- | --- | --- |
-| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. X2 reset electrical behavior is not verified; no reset GPIO is configured.；依赖：decky |
+| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Generic bridge and BF63112/FTE3600 provider source references; the target sensor is matched by its SPI ACPI HID, not by model name. FTE3600 on this model is enrolled, verified and unlocks the Plasma lock screen on tested hardware; BF63112 remains a source reference and is not installable here. Boot-time installation and maintenance payloads for the FTE3600 runtime are still not implemented in the installer. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. Do not guess reset GPIO wiring.；依赖：decky |
 | slot-switch | KDE 槽位切换 / 系统回退 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | partition-mount | KDE 图形分区持久挂载 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | refind | rEFInd · 双系统图形启动菜单 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |

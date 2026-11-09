@@ -172,6 +172,9 @@ common/fingerprint/bridge/package.json
 common/fingerprint/bridge/plugin.json
 common/fingerprint/public-COPYING
 common/fingerprint/public-bridge-lock.json
+common/fingerprint/providers/bf63112/source.toon
+common/fingerprint/providers/fte3600/source.toon
+common/fingerprint/providers/identity.py
 common/fingerprint/runtime-profile/COPYING
 common/fingerprint/runtime-profile/boiler-fprintd.service
 common/fingerprint/runtime-profile/net.reactivated.Fprint.service
@@ -620,6 +623,8 @@ records/migrations/bmi260-source-relocation-20261103.json
 records/migrations/branded-model-identity-20261104.md
 records/migrations/common-bmi260-inputplumber-20261103.json
 records/migrations/common-device-resource-ownership-20261103.json
+records/migrations/fingerprint-provider-separation-20261108.md
+records/migrations/fingerprint-dual-libfprint-20261109.md
 records/migrations/generic-model-candidate-20261104.md
 records/migrations/x2-installer-catalog-entrypoints-20261104.json
 records/oxp3-shared-base/opti031-inputs.json
@@ -688,6 +693,8 @@ tests/test_adaptations.py
 tests/test_common_device_sources.py
 tests/test_consolidation.py
 tests/test_fingerprint_overlay.py
+tests/test_fingerprint_providers.py
+tests/test_fingerprint_runtime_profile.py
 tests/test_index_models.py
 tests/test_maintenance_tool_split.py
 tests/test_model_identity.py

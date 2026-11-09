@@ -15,9 +15,9 @@ components[29]:
     recommendation: optional
     default: true
     dependencies[1]: decky
-    sources[3]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules
+    sources[7]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md
     status: external_runtime_required
-    notes: "Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json."
+    notes: "Generic bridge and BF63112 provider source reference; sensor identity and board-specific reset must be verified. The existing installable component remains legacy BF-only, not a hardware-selected provider. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional

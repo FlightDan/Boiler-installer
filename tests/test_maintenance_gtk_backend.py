@@ -3,9 +3,12 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from maintenance import project
 from maintenance.model_ui import Backend, GtkMaintenance, MAINTENANCE, PKEXEC
 
 
@@ -121,6 +124,48 @@ class GtkBackendTests(unittest.TestCase):
         self.assertNotIn('Verify: scripted', buttons)
         self.assertNotIn('Restore: scripted', buttons)
         self.assertIn('Verify: plain', buttons)
+
+    def _project_details(self, upstream_plugin):
+        class Widget:
+            def __init__(self, **kwargs): pass
+            def set_size_request(self, *args): pass
+            def set_shadow_type(self, *args): pass
+            def get_style_context(self): return self
+            def add_class(self, *args): pass
+            def pack_start(self, *args): pass
+        class Gtk:
+            Box = Frame = Widget
+            Orientation = type('Orientation', (), {'VERTICAL': 0, 'HORIZONTAL': 1})
+            ShadowType = type('ShadowType', (), {'NONE': 0})
+        ui = GtkMaintenance.__new__(GtkMaintenance)
+        ui.gtk, ui.body, ui.lang = Gtk(), Widget(), 'en-US'
+        ui.check_error = None
+        ui.result = {'match': {'status': 'matched'}, 'streams': [], 'upstream_plugin': upstream_plugin}
+        messages = []
+        ui.text = messages.append
+        ui.project_details()
+        return messages
+
+    def test_upstream_plugin_shows_installed_to_available_version(self):
+        messages = self._project_details({'id': 'opti2xmx', 'repository': 'FlightDan/Opti2XMX',
+                                          'installed_version': '0.3.1', 'version': '0.3.2',
+                                          'newer': True})
+        self.assertTrue(any('FlightDan/Opti2XMX · 0.3.1 → 0.3.2' in message for message in messages))
+
+    def test_uninstalled_plugin_render_survives_the_real_uninstalled_result(self):
+        # The renderer concatenates installed_version unconditionally, so it raises TypeError
+        # when newer is true and installed_version is None. Only the producer's early return
+        # keeps that unreachable; render its actual output rather than a hand-built dict.
+        with tempfile.TemporaryDirectory() as temporary, \
+                mock.patch.object(project, '_releases') as releases:
+            upstream = project._upstream_plugin(
+                temporary, {'components': [{'id': 'opti2xmx'}]})
+        releases.assert_not_called()
+        self.assertIsNone(upstream['installed_version'])
+        self.assertFalse(upstream['newer'])
+        messages = self._project_details(upstream)
+        self.assertTrue(any('no version comparison is available' in message for message in messages))
+        self.assertFalse(any('→' in message for message in messages))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,17 @@
+schema_version: 1
+kind: BoilerFingerprintProviderSource
+id: "fingerprint:fte3600"
+source_only: true
+installable: false
+matching:
+  bus: spi
+  acpi_hid: FTE3600
+upstream:
+  repository: SamSeven777/libfprint-fte3600
+  commit: 6efa37679265f97973f6af15a18b375e3c5020a5
+  userspace_license: LGPL-2.1-or-later
+  kernel_glue_license: GPL-2.0-only
+lifecycle:
+  status: source_reference_only
+  limitation: Source reference only; no locked installable driver, native runtime, kernel module or maintenance payload is supplied by this record.
+  board_configuration: ACPI GPIO and interrupt resources require independent validation; the ACPI HID alone does not establish the sensor chip variant.

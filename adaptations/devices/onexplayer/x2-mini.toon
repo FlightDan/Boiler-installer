@@ -15,9 +15,9 @@ components[34]:
     recommendation: optional
     default: true
     dependencies[1]: decky
-    sources[3]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules
+    sources[8]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,common/fingerprint/providers/fte3600/source.toon,brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md
     status: external_runtime_required
-    notes: "Default enabled for the confirmed BF63112 module; preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. X2 reset electrical behavior is not verified; no reset GPIO is configured."
+    notes: "Generic bridge and BF63112/FTE3600 provider source references; the target sensor is matched by its SPI ACPI HID, not by model name. FTE3600 on this model is enrolled, verified and unlocks the Plasma lock screen on tested hardware; BF63112 remains a source reference and is not installable here. Boot-time installation and maintenance payloads for the FTE3600 runtime are still not implemented in the installer. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. Do not guess reset GPIO wiring."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional

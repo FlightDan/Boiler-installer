@@ -15,8 +15,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
-      "size": 297,
-      "sha256": "7c34339bc2c51b37bc3e397a5ef57e2a7936300f6820ea55a3f49c5a87fb49fa"
+      "size": 550,
+      "sha256": "a49bf9d5718f6e2daceb89619aaa72212e61ea662667d7f8ce361e63c5abcde4"
     },
     {
       "path": "common/fingerprint/runtime-profile/COPYING",
@@ -35,8 +35,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/spidev.conf",
-      "size": 29,
-      "sha256": "4fa71ac24903901425aa99ffb1d669569e7858044dbabbe22303183a845269dc"
+      "size": 494,
+      "sha256": "1bce8ac18b921547ce2518ebf53628d1d90651f32ba83049b3e4f0928df71c90"
     },
     {
       "path": "common/fingerprint/bridge/index.js",
@@ -60,8 +60,8 @@
     },
     {
       "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
-      "size": 356,
-      "sha256": "808e72d3f63ed9453374f70510a8641f55a367dfa805adb3f89d895244e3668d"
+      "size": 1520,
+      "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
     }
   ],
   "upstream_lock_sha256": "bfbb3d6f5c541936b61fea648be230f0f8760e7020625d5b48eab0b13ffd8b73",

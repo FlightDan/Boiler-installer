@@ -199,11 +199,6 @@
       "sha256": "dd7aae623f2196c93824179b012cc65cb66603c1dc02fde799fbcd58d02ef052"
     },
     {
-      "path": "brands/onexplayer/oxp3/bridge/embedded-maintenance-tool.py",
-      "size": 2401,
-      "sha256": "cc8a654b451895efb33a4e036c690feae87e3b1ebd0ab9e3e1a9c9098a3dacf4"
-    },
-    {
       "path": "brands/onexplayer/oxp3/bridge/full_efi_sources.py",
       "size": 1088,
       "sha256": "64fc948c584ba497ba9df419996c93feaf5120d3d64a17287a502729c3e50d0f"
@@ -425,13 +420,13 @@
     },
     {
       "path": "brands/onexplayer/oxp3/manifest.json",
-      "size": 13507,
-      "sha256": "d11df2dff1794dd191982f8b15aedb46a4087baf84c275b880139579cc147be5"
+      "size": 13872,
+      "sha256": "c2355209595963c6c0b4b26c392f340175be66760b095b762b9dd07b22c3f85f"
     },
     {
       "path": "brands/onexplayer/oxp3/model.md",
-      "size": 7103,
-      "sha256": "21054949179aae35090f2dc879885139cfd84420bdd6b1fb1f6dc184641b3d43"
+      "size": 7259,
+      "sha256": "540a54810bab4e6c116b9f2fa232a6008db0e87e94316d2ceadfe610d22f15a9"
     },
     {
       "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -730,18 +725,18 @@
     },
     {
       "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
-      "size": 356,
-      "sha256": "808e72d3f63ed9453374f70510a8641f55a367dfa805adb3f89d895244e3668d"
+      "size": 1520,
+      "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
     },
     {
       "path": "brands/onexplayer/x2-mini/manifest.json",
-      "size": 16044,
-      "sha256": "65edf9fb84fbae5a0d3023dca81a788f072e890937fb5a513be58569b1b04e0c"
+      "size": 16631,
+      "sha256": "02c55d7ab9187e4a2ae71990ba47eac6d96b3ffed597bd7a736023ffb1de816d"
     },
     {
       "path": "brands/onexplayer/x2-mini/model.md",
-      "size": 9055,
-      "sha256": "eb7512dc8d57f56219a27c57e4bf8f61e8113f5d4031128ea95e45cc0cb3165d"
+      "size": 9373,
+      "sha256": "79c65fc93e4f5083e22bcaedb9d2dbb8dd01e0a9edb4fb12b3aef244fb391baf"
     },
     {
       "path": "brands/onexplayer/x2-mini/scripts/desktop-hdr/hdr_trial.py",
@@ -864,6 +859,31 @@
       "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7"
     },
     {
+      "path": "common/fingerprint/kde/README.md",
+      "size": 4539,
+      "sha256": "cb0ea91640f446c89fae2f1337dceb3ac67591718ae787c9267c91f33620536a"
+    },
+    {
+      "path": "common/fingerprint/kde/install-kde-pam.py",
+      "size": 7020,
+      "sha256": "78dd2617e135b57b93650c7c10834920729dbee7373db9438e35381df872eebb"
+    },
+    {
+      "path": "common/fingerprint/providers/bf63112/source.toon",
+      "size": 666,
+      "sha256": "daeef533898e107e132136f01c4177c78cbed3f606ac9138ef3c954d65567a5a"
+    },
+    {
+      "path": "common/fingerprint/providers/fte3600/source.toon",
+      "size": 683,
+      "sha256": "e321b11571b94a7455fb754496a238078026073295fbee6202687644a9012a71"
+    },
+    {
+      "path": "common/fingerprint/providers/identity.py",
+      "size": 3171,
+      "sha256": "618e043890fd6607407e90dbe61f2dbc34094e72c3df971ffeb17823b204a697"
+    },
+    {
       "path": "common/fingerprint/public-COPYING",
       "size": 34523,
       "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
@@ -880,8 +900,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
-      "size": 297,
-      "sha256": "7c34339bc2c51b37bc3e397a5ef57e2a7936300f6820ea55a3f49c5a87fb49fa"
+      "size": 550,
+      "sha256": "a49bf9d5718f6e2daceb89619aaa72212e61ea662667d7f8ce361e63c5abcde4"
     },
     {
       "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
@@ -895,8 +915,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/spidev.conf",
-      "size": 29,
-      "sha256": "4fa71ac24903901425aa99ffb1d669569e7858044dbabbe22303183a845269dc"
+      "size": 494,
+      "sha256": "1bce8ac18b921547ce2518ebf53628d1d90651f32ba83049b3e4f0928df71c90"
     },
     {
       "path": "common/fingerprint/source-lock.json",
@@ -1430,13 +1450,13 @@
     },
     {
       "path": "devices/onexplayer/oxp3.toon",
-      "size": 20712,
-      "sha256": "001cda218934eb47a242355b969279c25ad6f4c983a9206b357ba6e1b96c35cf"
+      "size": 21033,
+      "sha256": "1d43fef9bc172f53fd56ff37303f13433741140863b610a133f1537272bbdfbe"
     },
     {
       "path": "devices/onexplayer/x2-mini.toon",
-      "size": 17176,
-      "sha256": "4ca702b3a9eb6c935c7230f27ea0caeffbd7e7d0f89f305ff30516f60e788e67"
+      "size": 17708,
+      "sha256": "55f15236dbf44c42d75ec75d99391fd146967a80746ab13a93a8a9e046eff985"
     },
     {
       "path": "docs/ADAPTATIONS.md",
@@ -1490,8 +1510,8 @@
     },
     {
       "path": "fingerprint-source-lock.json",
-      "size": 2604,
-      "sha256": "9f42a57dc5bd823e02d85b390a82780be8b937ad853215988ca39ea0b2e42232"
+      "size": 2606,
+      "sha256": "de8b96986ab963a8298ad0d6b99b779f07b08311aa1a63b69b268504e379cc75"
     },
     {
       "path": "licenses/GPL-2.0.txt",
@@ -1527,6 +1547,21 @@
       "path": "records/migrations/common-device-resource-ownership-20261103.json",
       "size": 26319,
       "sha256": "7b56b449ea011d8c0677bc72e8a41ed3c9c0216e3da2803eaa36fc83314946b8"
+    },
+    {
+      "path": "records/migrations/fingerprint-dual-libfprint-20261109.md",
+      "size": 5354,
+      "sha256": "df31fc7b2e71bc9629d63d38a707233d750c92be4906a41936aa17d76550c74a"
+    },
+    {
+      "path": "records/migrations/fingerprint-kde-unlock-20261110.md",
+      "size": 5064,
+      "sha256": "b674c9a8b37e7c5826922aeb44e120514bce36a61747f97bedea34e90bc76590"
+    },
+    {
+      "path": "records/migrations/fingerprint-provider-separation-20261108.md",
+      "size": 3699,
+      "sha256": "b872dcd563e851fefc863eb6549bbc21c1987cedd71c10b831562c1501c98764"
     },
     {
       "path": "records/migrations/generic-model-candidate-20261104.md",
@@ -1774,11 +1809,6 @@
       "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
     },
     {
-      "path": "scripts/derive-legacy-maintenance.py",
-      "size": 5732,
-      "sha256": "26724decbeaab2f8cd84f52534b36965bec75183a7c087ff5a7ed4eeaa01134f"
-    },
-    {
       "path": "scripts/fingerprint_provenance.py",
       "size": 2313,
       "sha256": "607f96c809650fd4f4669e7f897ed02224a88b3b10cd0be565f4b169b1e3ef3f"
@@ -1799,11 +1829,6 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
-      "path": "scripts/rebase-x2-hdr.py",
-      "size": 8206,
-      "sha256": "dce11b3dabf8627a59fbd935df5fc258d46559ec1fef5ef192fde86dbc473a0f"
-    },
-    {
       "path": "scripts/refresh-model-source-inventory.py",
       "size": 3039,
       "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
@@ -1815,8 +1840,8 @@
     },
     {
       "path": "source-files.txt",
-      "size": 52899,
-      "sha256": "5c705a4002a48732b3978a2b9055e5c9f5866c7e52509b6b19f9fd372c92f557"
+      "size": 53237,
+      "sha256": "6d65fce3cbd59d297ce89949c63c91315cbc4b9ffba0cbc7d175e10f71d5273e"
     },
     {
       "path": "source-lock.json",
@@ -1829,16 +1854,6 @@
       "sha256": "5d40dc14731ba10a382991d3bbf9080ec2b4d9f104e9af9c0c710bc47340905b"
     },
     {
-      "path": "tests/fixtures/model-identity-aea9ee/oxp3.json",
-      "size": 3996,
-      "sha256": "c14b43b80069c50846418287a61cf7d88f4d74d48e7c2f8b3c5aa2f476f4d651"
-    },
-    {
-      "path": "tests/fixtures/model-identity-aea9ee/x2-mini.json",
-      "size": 724,
-      "sha256": "74ce19feec692f336ac67e66b7161fb268c523fc6845a6964039e2869258ba08"
-    },
-    {
       "path": "tests/test_adaptations.py",
       "size": 19752,
       "sha256": "b22849b1244b682d6de07444047c87f472505f3d7f249df2e5247f31569304a6"
@@ -1849,9 +1864,24 @@
       "sha256": "1685259401f90040500738131e5f81d7d1c3aa9e8aca737098cc98f0f483c7ed"
     },
     {
+      "path": "tests/test_fingerprint_kde_pam.py",
+      "size": 6239,
+      "sha256": "32c09cb1b77917524016c46a73a51378a4c8e8c6f22bc7e2c389df980975d299"
+    },
+    {
       "path": "tests/test_fingerprint_overlay.py",
       "size": 11381,
       "sha256": "334c833e2a0cbd67454bd1736853619dea310615fc5d151b1fec969476ad119d"
+    },
+    {
+      "path": "tests/test_fingerprint_providers.py",
+      "size": 4575,
+      "sha256": "0b7eec160ed37b9f738843ea81ded31fdf319760962cdd1b85a7348c5942f048"
+    },
+    {
+      "path": "tests/test_fingerprint_runtime_profile.py",
+      "size": 3257,
+      "sha256": "fe5b82c25f895d9aa0a45a6af46eb8c66f044af122eb89004b16b01ea7c14a1d"
     },
     {
       "path": "tests/test_index_models.py",

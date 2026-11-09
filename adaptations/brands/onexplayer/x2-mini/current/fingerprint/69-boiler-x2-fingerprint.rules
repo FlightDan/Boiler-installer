@@ -1,1 +1,13 @@
-ACTION=="add|change", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER X2 Mini|ONEXPLAYER X2 Mini PRO", RUN{builtin}+="kmod load spi:spidev", RUN+="/bin/sh -c 'test -e %S%p/driver || { echo spidev > %S%p/driver_override && echo %k > %S%p/subsystem/drivers/spidev/bind; }'"
+# X2 Mini fingerprint sensor bring-up.
+#
+# Two sensor variants are covered: the shipped BF63112 present on the reference
+# unit, and the FTE3600 observed on tested X2 Mini hardware. They are matched by
+# their own SPI ACPI HID, never by the model name alone.
+#
+# The DMI product string on this board is "ONEXPLAYER X2Mini" (no space). An
+# earlier revision of this rule only matched "ONEXPLAYER X2 Mini", so it never
+# fired on the tested unit and spidev was never bound.
+ACTION=="add|change", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER X2Mini|ONEXPLAYER X2 Mini|ONEXPLAYER X2 Mini PRO", RUN{builtin}+="kmod load spi:spidev", RUN+="/bin/sh -c 'test -e %S%p/driver || { echo spidev > %S%p/driver_override && echo %k > %S%p/subsystem/drivers/spidev/bind; }'"
+ACTION=="add|change", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:FTE3600:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER X2Mini|ONEXPLAYER X2 Mini|ONEXPLAYER X2 Mini PRO", RUN{builtin}+="kmod load spi:spidev", RUN+="/bin/sh -c 'test -e %S%p/driver || { echo spidev > %S%p/driver_override && echo %k > %S%p/subsystem/drivers/spidev/bind; }'"
+# BF63112 reset line on this board.
+ACTION!="remove", SUBSYSTEM=="spi", ENV{MODALIAS}=="acpi:BF63112:*", ATTR{[dmi/id]sys_vendor}=="ONE-NETBOOK", ATTR{[dmi/id]product_name}=="ONEXPLAYER X2Mini|ONEXPLAYER X2 Mini|ONEXPLAYER X2 Mini PRO", ENV{LIBFPRINT_BF63112_RESET_GPIO}="INTC10BC:01 16 active-high"

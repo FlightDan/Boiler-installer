@@ -33,6 +33,8 @@ DMI = Path('/sys/class/dmi/id')
 VERSION = re.compile(r'maintenance-v(\d+\.\d+\.\d+)(?:[+-]maintenance\.(\d+))?\Z')
 SHA256 = re.compile(r'[0-9a-f]{64}\Z')
 OPTI_LOCK = 'adaptations/records/oxp3-shared-base/opti031-inputs.json'
+OPTI_PLUGIN_DIR = 'home/deck/homebrew/plugins/opti2xmx'
+OPTI_METADATA_LIMIT = 64 * 1024
 
 
 def hardware_match(*, dmi=DMI, catalog=None):
@@ -115,7 +117,27 @@ def _fallback(match, offline):
     return result
 
 
-def _upstream_plugin(model):
+def _installed_opti_version(root):
+    root = Path(root).resolve()
+    plugin_path = updates._guest_path(root, OPTI_PLUGIN_DIR + '/plugin.json')
+    package_path = updates._guest_path(root, OPTI_PLUGIN_DIR + '/package.json')
+    present = (plugin_path.is_file(), package_path.is_file())
+    if not any(present):
+        return None
+    if not all(present):
+        raise MaintenanceError('Installed Opti2XMX source metadata is incomplete')
+    plugin = _decode_json(_read(plugin_path, OPTI_METADATA_LIMIT))
+    package = _decode_json(_read(package_path, OPTI_METADATA_LIMIT))
+    if not isinstance(plugin, dict) or plugin.get('name') != 'Opti2XMX':
+        raise MaintenanceError('Installed plugin metadata does not identify Opti2XMX')
+    if not isinstance(package, dict) or not isinstance(package.get('version'), str):
+        raise MaintenanceError('Installed Opti2XMX package version is missing')
+    version = package['version']
+    updates._version_key(version)
+    return version
+
+
+def _upstream_plugin(root, model):
     if not model or 'opti2xmx' not in {row['id'] for row in model['components']}:
         return None
     try:
@@ -126,14 +148,17 @@ def _upstream_plugin(model):
         repository, separator, _ = source.path.lstrip('/').partition('/releases/tag/')
         if not separator or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
             raise MaintenanceError('Invalid pinned plugin repository')
+        current = _installed_opti_version(root)
+        if current is None:
+            return dict(id='opti2xmx', repository=repository, status='not-installed', installed_version=None,
+                        newer=False, message='Opti2XMX is not installed; no version comparison is available')
         versions = []
         for release in _releases(repository):
             tag = release.get('tag_name', '')
             if isinstance(tag, str) and re.fullmatch(r'v\d+\.\d+\.\d+', tag):
                 versions.append(tag[1:])
-        current = reference['plugin_version']
         newest = max(versions, key=updates._version_key, default=current)
-        return dict(id='opti2xmx', repository=repository, reference_version=current,
+        return dict(id='opti2xmx', repository=repository, installed_version=current,
                     version=newest, newer=updates._version_key(newest) > updates._version_key(current))
     except (OSError, ValueError, MaintenanceError, KeyError) as error:
         return dict(id='opti2xmx', message=str(error))
@@ -211,7 +236,7 @@ def check(root, session, *, offline=False):
         streams.append(_stream(session, 'device', model['id'], environment, offline))
     return dict(match=match, streams=streams, fallback=_fallback(match, offline),
                 components=model['components'] if model else [],
-                upstream_plugin=None if offline else _upstream_plugin(model))
+                upstream_plugin=None if offline else _upstream_plugin(root, model))
 
 
 def _identity(stream, identity):

@@ -5,6 +5,11 @@ workspace.json
 output/
 dist/
 logs/
+
+# pnpm working trees from local model-catalog tooling
+_work/
+.pnpm-store/
+
 **/bin/
 **/obj/
 **/__pycache__/

@@ -7,5 +7,9 @@ UnsetEnvironment=LD_LIBRARY_PATH
 ExecStart=/var/lib/oxp3-installer/fingerprint/libexec/fprintd
 DeviceAllow=char-spi rw
 DeviceAllow=char-gpiochip rw
+# The FTE3600 backend polls its ACPI glue UIO node for the interrupt that signals
+# a completed capture; without this it opens the device and then fails closed.
+# BF63112 does not use UIO and is unaffected by the extra allowance.
+DeviceAllow=char-uio rw
 StateDirectory=fprint
 StateDirectoryMode=0700
