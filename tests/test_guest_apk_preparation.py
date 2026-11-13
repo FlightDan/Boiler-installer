@@ -15,10 +15,9 @@ class GuestApkPreparationTests(unittest.TestCase):
         self.assertIn('BOILER_TIMING=common:apk', text)
 
     def test_multi_volume_payload_marks_the_packages_it_installed(self):
-        source = (ROOT / 'app/PayloadVolumes.cs').read_text(encoding='utf-8')
-        self.assertIn('touch /var/cache/apk/.boiler-apk-prepared', source)
-        # The marker only follows a successful install in the same command chain.
-        self.assertRegex(source, r'apk --cache-dir /var/cache/apk add[^"]*&& touch /var/cache/apk/\.boiler-apk-prepared')
+        source = (ROOT / 'guest/payload-launcher.sh').read_text(encoding='utf-8')
+        self.assertRegex(source, r'(?m)^set -eu$')
+        self.assertRegex(source, r'apk --cache-dir /var/cache/apk add[^\n]*\n\s*touch /var/cache/apk/\.boiler-apk-prepared')
 
 
 if __name__ == '__main__':
