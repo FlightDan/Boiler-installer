@@ -215,6 +215,7 @@ class BrandBuilderTests(unittest.TestCase):
             lock.parent.mkdir(parents=True)
             entry = {'path': 'payload/a.py', 'size': 3, 'sha256': 'a' * 64}
             lock.write_text(json.dumps({'files': [entry]}))
+            (root / 'manifest.json').write_text('{}', encoding='utf-8')
             with patch.object(builder.oxp3_full_efi_provider, 'verify') as verify:
                 self.assertEqual(builder.fixed_provider_files(root, root, 'device:oxp3',
                                                              {'payload/a.py': entry}), {'payload/a.py'})
