@@ -82,7 +82,7 @@ def verify_model_catalog(root, files):
         if model['build']['adapter']=='oxp3-current-v1':
             required.update(('adaptations/scripts/build-upstream-repairs.py','adaptations/scripts/build-shared-base.py'))
         if model['build']['adapter']=='x2-complete-v1':
-            required.update(('adaptations/scripts/build-complete-bridge.py','adaptations/scripts/build-x2-hdr-overlay.py'))
+            required.update(('adaptations/scripts/build-complete-bridge.py','adaptations/brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py'))
         required.update(row['lock'] for row in model['build']['materials'])
         catalog.check_sources(root,model)
         for material in model['build']['materials']:

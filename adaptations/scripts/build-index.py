@@ -365,8 +365,10 @@ def validate_fingerprint_release(manifest):
         allowed_native=item.startswith(native) and (item in required or relative.startswith('lib/') and '/' not in relative[4:])
         if item not in fixed and item!=target and not allowed_native: raise ValueError('Unexpected fingerprint target')
     if fingerprint.get('compatibility',{}).get('device_ids') != [identity.removeprefix('device:')]: raise ValueError('Fingerprint model compatibility required')
-    legacy=manifest.get('legacy_capabilities',[]); decky=[x for x in legacy if x.get('id')=='oxp3:decky']; wifi=[x for x in legacy if x.get('id')=='oxp3:wifi']
-    if (len(decky)!=1 or decky[0].get('available') is not True or len(wifi)!=1 or wifi[0].get('available') is not False or wifi[0].get('default') is not False
+    legacy=manifest.get('legacy_capabilities',[]); decky=[x for x in legacy if x.get('id')=='oxp3:decky']
+    # BE201 ownership is decided by the installer's protocol.manifest resource
+    # conflict check, not here. Duplicating it made the same rule exist twice.
+    if (len(decky)!=1 or decky[0].get('available') is not True
         or manifest.get('selection_contract')!={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'}
         or sum(c.get('id')=='oxp3:legacy-adaptation' for c in components)!=1
         or 'oxp3:fingerprint-unlock' not in manifest.get('shared_adaptations',{}).get('components',[])):

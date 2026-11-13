@@ -46,6 +46,11 @@ internal static class SteamOsPartitions
         if (disk.GetProperty("style").GetString() != "GPT" || disk.GetProperty("bus").GetString() is not ("NVMe" or "SATA" or "USB" or "SD" or "MMC")
             || !False("isOffline") || !False("isReadOnly") || disk.GetProperty("sectorSize").GetInt32() != 512
             || disk.TryGetProperty("partitionReadError", out var error) && !string.IsNullOrEmpty(error.GetString())) return result;
+        // Recognition contract: exact role names, a contiguous run, and nothing
+        // else. Partition type, size and native-attribute proof are no longer
+        // ownership gates; the live deletion policy still binds GUID, offset and
+        // size and refuses partitions that carry another operating system's boot
+        // files.
         var parts = disk.GetProperty("partitions").EnumerateArray().OrderBy(p => p.GetProperty("offset").GetInt64()).ToArray();
         for (var start = 0; start <= parts.Length - Roles.Length; start++)
         {
@@ -53,9 +58,7 @@ internal static class SteamOsPartitions
             for (var i = 0; i < Roles.Length; i++)
             {
                 var part = parts[start + i];
-                if (!part.TryGetProperty("nativeGptVerified", out var verified) || verified.ValueKind != JsonValueKind.True
-                    || !part.TryGetProperty("gptName", out var name) || name.GetString() != Roles[i].name
-                    || !Guid.TryParse(part.GetProperty("gptType").GetString(), out var type) || type != Roles[i].gptType
+                if (!part.TryGetProperty("gptName", out var name) || name.GetString() != Roles[i].name
                     || i > 0 && part.GetProperty("offset").GetInt64() != checked(parts[start + i - 1].GetProperty("offset").GetInt64() + parts[start + i - 1].GetProperty("size").GetInt64()))
                 { matches = false; break; }
             }
@@ -65,7 +68,8 @@ internal static class SteamOsPartitions
     }
 
     // A residual boot trio is only an ownership candidate. The live deletion
-    // policy must additionally inspect its boot files and exclude host volumes.
+    // policy must additionally bind its native range and exclude another
+    // operating system's boot content.
     internal static Dictionary<long, string> DeletionCandidates(JsonElement disk)
     {
         var result = Detect(disk);
@@ -81,10 +85,7 @@ internal static class SteamOsPartitions
         for (var i = 0; i < 3; i++)
         {
             var part = named[i];
-            if (!part.TryGetProperty("nativeGptVerified", out var verified) || verified.ValueKind != JsonValueKind.True
-                || part.GetProperty("gptName").GetString() != Roles[i].name
-                || !Guid.TryParse(part.GetProperty("gptType").GetString(), out var type) || type != Roles[i].gptType
-                || Roles[i].bootSize <= 0 || part.GetProperty("size").GetInt64() != Roles[i].bootSize
+            if (part.GetProperty("gptName").GetString() != Roles[i].name
                 || i > 0 && part.GetProperty("offset").GetInt64() != checked(named[i - 1].GetProperty("offset").GetInt64() + named[i - 1].GetProperty("size").GetInt64())) return result;
         }
         for (var i = 0; i < 3; i++) result.Add(named[i].GetProperty("offset").GetInt64(), Roles[i].name);

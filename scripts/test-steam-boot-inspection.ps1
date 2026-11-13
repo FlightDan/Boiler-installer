@@ -189,30 +189,45 @@ foreach ($role in @('efi-A','efi-B')) {
 }
 $esp=New-BootFixture 'esp' @{'SteamOS/conf/fixture.conf'='title SteamOS'}
 Assert-Check ((Get-SteamOsBootContentBlockReason $esp 'esp') -ceq '') 'positive-guest-esp-conf-namespace-evidence'
+# An empty partition is no longer blocked: recognition is name + count +
+# contiguity, and only another system's boot content is a deletion barrier.
 $empty=New-BootFixture 'empty' @{}
-foreach ($role in @('esp','efi-A','efi-B')) { Assert-Check ([bool](Get-SteamOsBootContentBlockReason $empty $role)) ('empty-root-never-proves-ownership:'+ $role) }
+foreach ($role in @('esp','efi-A','efi-B')) { Assert-Check ((Get-SteamOsBootContentBlockReason $empty $role) -ceq '') ('empty-root-is-not-an-ownership-gate:'+ $role) }
 $efiOnly=New-BootFixture 'efi-only' @{'EFI/empty-note'='fixture'}
-Assert-Check ([bool](Get-SteamOsBootContentBlockReason $efiOnly 'efi-A')) 'efi-directory-alone-is-not-ownership-evidence'
+Assert-Check ((Get-SteamOsBootContentBlockReason $efiOnly 'efi-A') -ceq '') 'efi-directory-alone-is-not-a-deletion-barrier'
 $noMarkers=New-BootFixture 'grub-no-steamos-entry' @{'EFI/steamos/grub.cfg'="menuentry 'generic' {}"}
-Assert-Check ((Get-SteamOsBootContentBlockReason $noMarkers 'efi-A') -match 'evidence is missing') 'named-grub-file-without-generated-entry-is-blocked'
-foreach ($entry in @('EFI/Microsoft/Boot/bootmgfw.efi','EFI/ubuntu/grubx64.efi','EFI/BOOT/BOOTX64.EFI','EFI/OXP3-rEFInd/refind_x64.efi','EFI/unknown/other.efi','EFI/steamos/bootmgfw.efi','EFI/steamos/BCD','bootmgr')) {
+Assert-Check ((Get-SteamOsBootContentBlockReason $noMarkers 'efi-A') -ceq '') 'named-grub-file-without-generated-entry-is-not-a-barrier'
+foreach ($entry in @('EFI/Microsoft/Boot/bootmgfw.efi','EFI/ubuntu/grubx64.efi','EFI/unknown/other.efi','EFI/steamos/bootmgfw.efi','EFI/steamos/BCD','bootmgr')) {
     $files=@{'EFI/steamos/grub.cfg'=$grub}; $files[$entry]='synthetic unrelated loader'
     $fixture=New-BootFixture 'shared-slot' $files
     Assert-Check ([bool](Get-SteamOsBootContentBlockReason $fixture 'efi-A')) ('shared-or-unknown-boot-content-protected:'+ $entry)
 }
+# Project files can be recognized without a current installation journal.
+$ownRefind=New-BootFixture 'own-refind' @{'EFI/steamos/grub.cfg'=$grub;'EFI/OXP3-rEFInd/refind_x64.efi'='synthetic managed loader'}
+Assert-Check ((Get-SteamOsBootContentBlockReason $ownRefind 'efi-A') -ceq '') 'own-refind-directory-is-not-a-deletion-barrier'
+# Both boot slots can use a fallback that matches their SteamOS loader.
+$genericFallback=New-BootFixture 'slot-fallback' @{'EFI/steamos/grubx64.efi'='synthetic loader';'EFI/BOOT/BOOTX64.EFI'='synthetic loader'}
+foreach ($role in @('efi-A','efi-B')) { Assert-Check ((Get-SteamOsBootContentBlockReason $genericFallback $role) -ceq '') ('same-volume-slot-fallback-allowed:'+ $role) }
 $espFallback=New-BootFixture 'esp-shared-fallback' @{'SteamOS/conf/fixture.conf'='title SteamOS';'EFI/BOOT/BOOTX64.EFI'='not-proof-of-SteamOS'}
-Assert-Check ((Get-SteamOsBootContentBlockReason $espFallback 'esp') -match 'ownership evidence is missing') 'ordinary-fallback-name-remains-protected-even-with-steamos-conf'
+Assert-Check ((Get-SteamOsBootContentBlockReason $espFallback 'esp') -match 'fallback ownership evidence') 'standalone-fallback-stays-protected'
 $officialFiles=@{'SteamOS/conf/fixture.conf'='title SteamOS';'EFI/steamos/steamcl.efi'='synthetic-official-loader';'EFI/BOOT/BOOTX64.EFI'='synthetic-official-loader'}
 $officialEsp=New-BootFixture 'steamcl-byte-bound-fallback' $officialFiles
-Assert-Check ((Get-SteamOsBootContentBlockReason $officialEsp 'esp') -ceq '') 'steamcl-fallback-same-volume-sha256-binding-positive'
+Assert-Check ((Get-SteamOsBootContentBlockReason $officialEsp 'esp') -ceq '') 'steamcl-fallback-still-allowed'
 $officialFiles['EFI/BOOT/BOOTX64.EFI']='synthetic-different-loader'
 $fixture=New-BootFixture 'unbound-fallback' $officialFiles
-Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -match 'not bound') 'steamcl-fallback-different-bytes-blocked'
+Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -match 'Fallback loader is not bound') 'different-fallback-stays-protected'
 $officialFiles['EFI/BOOT/BOOTX64.EFI']='synthetic-official-loader'; $officialFiles['EFI/BOOT/other.efi']='unknown-extra'
 $fixture=New-BootFixture 'extra-fallback-content' $officialFiles
-Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -match 'unrecognized') 'boot-directory-extra-file-still-blocked'
-foreach ($role in @('esp','efi-A','efi-B')) { Assert-Check ((Get-SteamOsBootContentBlockReason $empty $role $false) -ceq '') ('complete-native-layout-may-relax-positive-evidence:'+ $role) }
-Assert-Check ([bool](Get-SteamOsBootContentBlockReason $espFallback 'esp' $false)) 'relaxed-evidence-does-not-relax-fallback-binding'
+Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -match 'Shared or unrecognized') 'unknown-efi-fallback-sibling-stays-protected'
+foreach ($role in @('esp','efi-A','efi-B')) { Assert-Check ((Get-SteamOsBootContentBlockReason $empty $role $false) -ceq '') ('relaxed-caller-flag-is-compatible:'+ $role) }
+Assert-Check ((Get-SteamOsBootContentBlockReason $espFallback 'esp' $false) -match 'fallback ownership evidence') 'relaxed-caller-flag-cannot-bypass-fallback-check'
+# A vendor directory this project does not own is another system's namespace.
+$foreignVendor=New-BootFixture 'foreign-vendor' @{'EFI/Fedora/shimx64.efi'='other OS'}
+Assert-Check ((Get-SteamOsBootContentBlockReason $foreignVendor 'esp') -match 'Other operating-system') 'unknown-efi-vendor-directory-protected'
+$notBcd=New-BootFixture 'not-bcd' @{'EFI/not-bcd-file'='plain file'}
+Assert-Check ((Get-SteamOsBootContentBlockReason $notBcd 'esp') -ceq '') 'near-miss-name-is-not-a-barrier'
+$unknownEfi=New-BootFixture 'unknown-efi' @{'EFI/unrecognized.efi'='unknown loader'}
+Assert-Check ((Get-SteamOsBootContentBlockReason $unknownEfi 'esp') -match 'Shared or unrecognized') 'efi-root-loader-protected'
 # Match the actual current manage.py FILES layout and byte-journal contract.
 # These are ordinary text stand-ins for binaries, not executable validation.
 $managedFiles=@(Get-SteamOsBootRefindFiles)
@@ -234,6 +249,7 @@ function New-RefindFixture([string]$Variant) {
         'same-esp-windows' { $state.windows=$state.esp }
         'same-volume-microsoft' { $files['EFI/Microsoft/Boot/bootmgfw.efi']='other OS on same ESP' }
         'unknown-extra' { $files['EFI/OXP3-rEFInd/extra.efi']='unknown' }
+        'unknown-menu' { $files['EFI/OXP3-rEFInd/refind.conf']="scanfor manual`nloader /other.efi`n" }
         'bad-journal' { $desired['efi/boot/bootx64.efi']='not-base64!' }
     }
     $files['efi/oxp3-refind/state.json']=$state | ConvertTo-Json -Depth 6
@@ -241,12 +257,19 @@ function New-RefindFixture([string]$Variant) {
 }
 $managedEsp=New-RefindFixture 'installed'
 Assert-Check ((Get-SteamOsBootContentBlockReason $managedEsp 'esp') -ceq '') 'managed-refind-fallback-with-cross-volume-windows-menu-positive'
-foreach ($variant in @('changed','interrupted','same-esp-windows','same-volume-microsoft','unknown-extra')) {
+# The project rEFInd journal is no longer an ownership gate. Variants are now
+# judged only by whether they carry another system's boot content.
+foreach ($variant in @('interrupted','same-esp-windows')) {
     $fixture=New-RefindFixture $variant
-    Assert-Check ([bool](Get-SteamOsBootContentBlockReason $fixture 'esp')) ('managed-refind-unsafe-or-unclean-variant-blocked:'+ $variant)
+    Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -ceq '') ('managed-refind-variant-no-longer-blocked:'+ $variant)
 }
+foreach ($variant in @('changed','unknown-extra','unknown-menu')) {
+    Assert-Check ([bool](Get-SteamOsBootContentBlockReason (New-RefindFixture $variant) 'esp')) ('unrecognized-refind-loader-or-menu-protected:'+ $variant)
+}
+$fixture=New-RefindFixture 'same-volume-microsoft'
+Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -match 'Other operating-system') 'managed-refind-same-volume-microsoft-protected'
 $fixture=New-RefindFixture 'bad-journal'
-Assert-Refused { Get-SteamOsBootContentBlockReason $fixture 'esp' } 'malformed-refind-journal-fails-closed'
+Assert-Check ((Get-SteamOsBootContentBlockReason $fixture 'esp') -ceq '') 'malformed-refind-journal-is-not-an-ownership-gate'
 $sharedConfig=New-BootFixture 'shared-grub' @{'EFI/steamos/grub.cfg'=($grub+"`nchainloader /EFI/Microsoft/Boot/bootmgfw.efi")}
 Assert-Check ((Get-SteamOsBootContentBlockReason $sharedConfig 'efi-A') -match 'Shared operating-system') 'shared-grub-chainloader-protected'
 $sharedConf=New-BootFixture 'shared-esp-conf' @{'SteamOS/conf/fixture.conf'='title Windows'}
@@ -288,7 +311,7 @@ foreach ($mode in @('root-reparse','child-reparse')) {
     Assert-Check ((Get-SteamOsBootContentBlockReason $esp 'esp') -match 'reparse point') ('reparse-attribute-is-protected:'+ $mode)
 }
 $script:fileMode='hash-denied'
-Assert-Refused { Get-SteamOsBootContentBlockReason $officialEsp 'esp' } 'unreadable-fallback-hash-fails-closed' 'Synthetic'
+Assert-Refused { Get-SteamOsBootContentBlockReason $officialEsp 'esp' } 'unreadable-fallback-cannot-pass' 'Synthetic'
 $script:fileMode='normal'
 $report=Join-Path $run 'checks.json'
 [ordered]@{
@@ -296,6 +319,6 @@ $report=Join-Path $run 'checks.json'
     module_sha256=(Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'steam-boot-inspection.ps1') -Algorithm SHA256).Hash
     test_sha256=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
     scope='Synthetic native byte/path parsers; throwing-default device/native seams; mocked handle binding and ordinary tool-owned content fixtures. No disk queries, real volume opens/enumeration, mounts, deletion, registry or hardware acceptance.'
-    compatibility='Guest-documented SteamOS namespace evidence; official steamcl fallback requires same-volume SHA256 equality. Current 24-file installed project rEFInd variant is journal-verified, including separate-Windows-ESP menus. Legacy/edited/interrupted variants, same-volume Microsoft, unknown EFI/BOOT extras and unbound fallback remain protected. Conf filenames and loader bytes are synthetic, not claims about prepared media.'
+    compatibility='Named SteamOS roles support empty volumes, same-volume SteamOS or project fallback, and project menus with a separate Windows ESP. Foreign and ambiguous EFI loaders remain protected.'
 } | ConvertTo-Json -Depth 5 | Microsoft.PowerShell.Management\Set-Content -LiteralPath $report -Encoding UTF8
 $report

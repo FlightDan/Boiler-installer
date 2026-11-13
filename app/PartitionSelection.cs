@@ -129,7 +129,7 @@ public static class PartitionInventory
             "Volume contains operating-system or boot files." => "此卷包含操作系统或启动文件。",
             "Volume protection checks failed; refresh or unlock the volume first." => "卷保护检查失败；请先刷新或解锁卷。",
             "SteamOS boot partition ownership could not be verified." => "无法核验 SteamOS 启动分区归属。",
-            "SteamOS boot partition native identity or protection attributes changed." => "SteamOS 启动分区原生标识或保护属性已改变。",
+            "SteamOS boot partition native identity changed." or "SteamOS boot partition native identity or protection attributes changed." => "SteamOS 启动分区原生标识或保护属性已改变。",
             "SteamOS boot volume could not be inspected safely." => "无法安全检查 SteamOS 启动卷。",
             "SteamOS ESP boot configuration evidence is missing." => "缺少 SteamOS ESP 启动配置证据。",
             "SteamOS slot GRUB evidence is missing." or "SteamOS generated slot boot entry evidence is missing." => "缺少 SteamOS 槽位启动配置证据。",

@@ -68,6 +68,10 @@ function Get-SteamOsNativeMetadata($Disk, $Partitions) {
     return $result
 }
 # Pure snapshot recognizer, also used by the privileged batch-deletion preflight.
+# Recognition is exact role names, the required count, and a contiguous run.
+# Partition type, size and native-attribute proof are not ownership gates here;
+# the live deletion policy still binds native range and refuses another
+# operating system's boot content.
 function Get-SteamOsPartitionStarts($Disk, [switch]$IncludeBootRemnants) {
     if ($Disk.style -cne 'GPT' -or $Disk.bus -notin @('NVMe','SATA','USB','SD','MMC') -or $Disk.sectorSize -ne 512 -or
         $Disk.isOffline -ne $false -or $Disk.isReadOnly -ne $false -or $Disk.partitionReadError) { return }
@@ -79,7 +83,7 @@ function Get-SteamOsPartitionStarts($Disk, [switch]$IncludeBootRemnants) {
         $matches = $true
         for ($i = 0; $i -lt $roles.Count; $i++) {
             $part = $parts[$start + $i]
-            if ($part.nativeGptVerified -ne $true -or $part.gptName -cne $roles[$i].name -or [guid]$part.gptType -ne [guid]$roles[$i].gptType) { $matches = $false; break }
+            if ($part.gptName -cne $roles[$i].name) { $matches = $false; break }
             if ($i -gt 0 -and [long]$part.offset -ne [long]$parts[$start + $i - 1].offset + [long]$parts[$start + $i - 1].size) { $matches = $false; break }
         }
         if ($matches) { for ($i = 0; $i -lt $roles.Count; $i++) { $complete += [long]$parts[$start + $i].offset } }
@@ -92,8 +96,7 @@ function Get-SteamOsPartitionStarts($Disk, [switch]$IncludeBootRemnants) {
     if ($named.Count -ne 3) { return }
     for ($i=0; $i -lt 3; $i++) {
         $part=$named[$i]
-        if ($part.nativeGptVerified -ne $true -or $part.gptName -cne $roles[$i].name -or [guid]$part.gptType -ne [guid]$roles[$i].gptType -or
-            [long]$roles[$i].bootSize -le 0 -or [long]$part.size -ne [long]$roles[$i].bootSize) { return }
+        if ($part.gptName -cne $roles[$i].name) { return }
         if ($i -gt 0 -and [long]$part.offset -ne [long]$named[$i-1].offset + [long]$named[$i-1].size) { return }
     }
     $named | ForEach-Object { [long]$_.offset }

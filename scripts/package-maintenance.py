@@ -70,7 +70,7 @@ def committed_sources(root, source_commit):
     root = Path(root).resolve()
 
     def git(*args):
-        return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+        return subprocess.check_output([os.environ.get('BOILER_GIT_EXE', 'git'), '-C', str(root), *args], stderr=subprocess.PIPE)
 
     if Path(git('rev-parse', '--show-toplevel').decode().strip()).resolve() != root:
         raise ValueError('An independent public checkout rooted at --root is required')

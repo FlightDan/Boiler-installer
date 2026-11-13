@@ -299,6 +299,16 @@ def validate_manifest(obj, kind=None):
             if any(c.get('id') == 'oxp3:wifi' and (c.get('available') or c.get('default'))
                    for c in obj.get('legacy_capabilities', [])):
                 _fail('BE201 descriptor conflicts with legacy Wi-Fi handler')
+        if 'capability_gates' in obj:
+            from .capability_gates import assert_gates, validate_evidence
+            try:
+                validate_evidence(obj['capability_gates'])
+                # A package that names a gate must honour it. Evidence is not
+                # required to *load*: packages published before this table
+                # existed cannot acquire it, and rewriting their bytes is
+                # impossible. Producers assert evidence themselves.
+                assert_gates(obj, require_evidence=False)
+            except ValueError as error: _fail(str(error))
         if "maintenance_entry" in obj:
             entry = obj["maintenance_entry"]
             if isinstance(entry, dict):

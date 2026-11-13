@@ -20,9 +20,9 @@ public static class PartitionDeletion
         bool IsFalse(JsonElement value, string key) => value.TryGetProperty(key, out var flag) && flag.ValueKind == JsonValueKind.False;
         // This only consumes the live policy's allow result, never substitutes
         // role recognition for its host/content checks. The helper rechecks it.
-        var ownBoot = steamOsRole is "esp" or "efi-A" or "efi-B"
-            && part.TryGetProperty("nativeGptVerified", out var verified) && verified.ValueKind == JsonValueKind.True
-            && part.TryGetProperty("gptAttributes", out var attributes) && attributes.GetString() == "0";
+        // Recognition is name + count + contiguity; the native attribute proof is
+        // no longer required here, while the live policy still binds the range.
+        var ownBoot = steamOsRole is "esp" or "efi-A" or "efi-B";
         return disk.GetProperty("style").GetString() == "GPT"
             && disk.TryGetProperty("guid", out var diskId) && Guid.TryParse(diskId.GetString(), out var diskGuid) && diskGuid != Guid.Empty
             && part.TryGetProperty("guid", out var partId) && Guid.TryParse(partId.GetString(), out var partGuid) && partGuid != Guid.Empty
@@ -34,7 +34,7 @@ public static class PartitionDeletion
                 && part.GetProperty("filesystem").GetString() is "" or "Unknown" or "RAW"
                 && part.GetProperty("gptType").GetString()?.Trim('{','}').ToUpperInvariant() != "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7")
             && Guid.TryParse(part.GetProperty("gptType").GetString(), out var type)
-            && type != Guid.Empty && (!ProtectedTypes.Contains(type) || ownBoot && steamOsRole == "esp" && type == new Guid("C12A7328-F81F-11D2-BA4B-00A0C93EC93B"));
+            && type != Guid.Empty && (!ProtectedTypes.Contains(type) || ownBoot && type == new Guid("C12A7328-F81F-11D2-BA4B-00A0C93EC93B"));
     }
 
     private static readonly HashSet<Guid> ProtectedTypes = [

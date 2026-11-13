@@ -91,11 +91,16 @@ internal static class InstallSessionFixtureChecks
         Require(retained.Length == 6 && retained.SequenceEqual(reviewedDisk.Rows.Where(r => r.Type != "—" && r.SteamOsRole == null)),
             "gm7-all-eight-deletion-keeps-six-original-partitions");
         var changed = JsonNode.Parse(after.RootElement.GetRawText())!;
-        changed["partitions"]!.AsArray().Single(part => (string?)part!["gptName"] == "rootfs-A")!["gptType"] =
-            "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7";
+        changed["partitions"]!.AsArray().Single(part => (string?)part!["gptName"] == "rootfs-A")!["gptName"] = "rootfs-a";
         using var invalid = JsonDocument.Parse(changed.ToJsonString());
         Require(SteamOsPartitions.Detect(invalid.RootElement).Count == 0,
-            "gm7-role-name-with-wrong-type-is-not-recognized");
+            "gm7-role-name-mismatch-is-not-recognized");
+        var retyped = JsonNode.Parse(after.RootElement.GetRawText())!;
+        retyped["partitions"]!.AsArray().Single(part => (string?)part!["gptName"] == "rootfs-A")!["gptType"] =
+            "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7";
+        using var retypedDoc = JsonDocument.Parse(retyped.ToJsonString());
+        Require(SteamOsPartitions.Detect(retypedDoc.RootElement).Count == 8,
+            "gm7-role-type-is-no-longer-a-recognition-gate");
         return checks.ToArray();
     }
 }

@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import stat
 import subprocess
@@ -58,7 +59,7 @@ def assert_public_checkout(root: Path, source_commit: str) -> None:
         raise ValueError('An exact lowercase public source commit is required')
 
     def git(*args: str) -> str:
-        return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE).decode().strip()
+        return subprocess.check_output([os.environ.get('BOILER_GIT_EXE', 'git'), '-C', str(root), *args], stderr=subprocess.PIPE).decode().strip()
 
     if Path(git('rev-parse', '--show-toplevel')).resolve() != root:
         raise ValueError('Release packaging requires an independent public checkout rooted at --root')

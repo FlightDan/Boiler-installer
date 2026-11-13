@@ -30,25 +30,46 @@ internal static class SteamOsPartitionChecks
         Require(steam.Length == 8 && deletable.Length == 8 && steam[0].SteamOsRole == "esp", "all-eight-steamos-roles-including-own-boot-are-deletable");
         using (var roles = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(Backend.Root, "scripts/steam-partition-roles.json"))))
             Require(roles.RootElement.EnumerateArray().Take(3).All(role => role.GetProperty("bootSize").GetInt64()
-                == steam.Single(row => row.SteamOsRole == role.GetProperty("name").GetString()).Size), "residual-boot-policy-sizes-match-production-layout");
+                == steam.Single(row => row.SteamOsRole == role.GetProperty("name").GetString()).Size), "example-layout-matches-production-boot-sizes");
         var starts = deletable.Select(r => r.Start).Order().ToArray();
         var request = new PartitionDeleteRequest(json, true, disk.Number, starts[0], "zh-CN", starts);
         Require(PartitionDeletion.ValidateTargets(request).Rows.Length == 8, "batch-includes-all-steamos-boot-and-linux-roles");
-        foreach (var mutation in new[] { "gptName", "gptType", "nativeGptVerified", "missing-role", "gap", "label-only", "duplicate-role" })
+        foreach (var mutation in new[] { "gptName", "missing-role", "gap", "label-only", "duplicate-role" })
         {
             var changed = JsonNode.Parse(json)!; var parts = changed[0]!["partitions"]!.AsArray();
             var part = parts.Single(p => (int)p!["number"]! == 13)!;
             switch (mutation)
             {
                 case "gptName": part["gptName"] = "rootfs-a"; break;
-                case "gptType": part["gptType"] = "0fc63daf-8483-4772-8e79-3d69d8477de4"; break;
-                case "nativeGptVerified": part["nativeGptVerified"] = false; break;
                 case "missing-role": parts.Remove(part); break;
                 case "gap": part["size"] = (long)part["size"]! - PartitionInventory.MiB; break;
                 case "label-only": foreach (var p in parts) { p!["label"] = p["gptName"]!.DeepClone(); p["gptName"] = ""; } break;
                 case "duplicate-role": part["gptName"] = "rootfs-B"; break;
             }
             Require(PartitionInventory.Read(changed.ToJsonString()).Single().Rows.All(r => r.SteamOsRole == null), "reject-unverified-layout-" + mutation);
+        }
+        // Recognition is name + count + contiguity only. Partition type and the
+        // native GPT attribute proof no longer decide ownership.
+        foreach (var tolerated in new[] { "gptType", "nativeGptVerified", "boot-size" })
+        {
+            var changed = JsonNode.Parse(json)!;
+            // The last role keeps contiguity intact; resizing a middle role
+            // legitimately breaks the contiguous run.
+            var part = changed[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "home")!;
+            switch (tolerated)
+            {
+                case "gptType": part["gptType"] = "0fc63daf-8483-4772-8e79-3d69d8477de4"; break;
+                case "nativeGptVerified": part["nativeGptVerified"] = false; break;
+                case "boot-size": part["size"] = (long)part["size"]! - PartitionInventory.MiB; break;
+            }
+            Require(PartitionInventory.Read(changed.ToJsonString()).Single().Rows.Count(r => r.SteamOsRole != null) == 8, "name-count-contiguity-only-recognition-" + tolerated);
+        }
+        foreach (var broken in new[] { "gptType-middle", "boot-size-middle" })
+        {
+            var changed = JsonNode.Parse(json)!; var part = changed[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "rootfs-A")!;
+            if (broken == "boot-size-middle") part["size"] = (long)part["size"]! - PartitionInventory.MiB;
+            else part["gptName"] = "rootfs-a";
+            Require(PartitionInventory.Read(changed.ToJsonString()).Single().Rows.All(r => r.SteamOsRole == null), "middle-role-breaks-recognition-" + broken);
         }
         Require(PartitionInventory.Read(PartitionInventory.ExampleJson).Single().Rows.All(r => r.SteamOsRole == null), "ordinary-data-and-steam-library-not-auto-detected");
         foreach (var row in disk.Rows.Where(r => r.Type != "—" && (!r.CanDelete || r.SteamOsRole == null)))
@@ -64,20 +85,26 @@ internal static class SteamOsPartitionChecks
         var remnants = PartitionDeletion.Simulate(request with { Start = linuxStarts.Min(), SteamOsStarts = linuxStarts });
         var bootRows = PartitionInventory.Read(remnants).Single().Rows.Where(r => r.SteamOsRole != null).ToArray();
         Require(bootRows.Length == 3 && bootRows.All(r => r.CanDelete), "previous-five-deleted-leaves-three-selectable-boot-roles");
+        var retypedSlot = JsonNode.Parse(remnants)!;
+        var efiA = retypedSlot[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "efi-A")!;
+        efiA["gptType"] = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b";
+        efiA["gptAttributes"] = "9223372036854775808";
+        Require(PartitionInventory.Read(retypedSlot.ToJsonString()).Single().Rows.Where(r => r.SteamOsRole != null).All(r => r.CanDelete),
+            "reviewed-efi-type-slot-with-nondefault-attributes-is-selectable");
+        efiA["isSystem"] = true;
+        Require(!PartitionInventory.Read(retypedSlot.ToJsonString()).Single().Rows.Single(r => r.SteamOsRole == "efi-A").CanDelete,
+            "efi-type-slot-in-use-by-windows-stays-protected");
         var bootStarts = bootRows.Select(r => r.Start).ToArray();
         var residualRequest = request with { Snapshot = remnants, Start = bootStarts.Min(), SteamOsStarts = bootStarts };
         Require(PartitionDeletion.Simulate(residualRequest) == result, "residual-three-deletion-reaches-identical-preserved-layout");
-        foreach (var mutation in new[] { "gptAttributes", "isSystem", "deletionAllowed", "boot-size", "nativeGptVerified" })
+        foreach (var mutation in new[] { "isSystem", "deletionAllowed" })
         {
             var changed = JsonNode.Parse(remnants)!;
             var part = changed[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!;
             switch (mutation)
             {
-                case "gptAttributes": part[mutation] = "1"; break;
                 case "isSystem": part[mutation] = true; break;
                 case "deletionAllowed": part[mutation] = false; break;
-                case "boot-size": part["size"] = (long)part["size"]! - PartitionInventory.MiB; break;
-                case "nativeGptVerified": part[mutation] = false; break;
             }
             Reject(() => PartitionDeletion.ValidateTargets(residualRequest with { Snapshot = changed.ToJsonString() }), "residual-protection-not-bypassed-" + mutation);
         }

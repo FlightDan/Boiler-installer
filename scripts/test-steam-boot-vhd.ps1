@@ -1,8 +1,9 @@
 param([Parameter(Mandatory=$true)][string]$ReportDirectory)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'steam-boot-inspection.ps1')
-# Only the newly created, randomly named VHD below may be initialized/formatted.
-# Production deletion is NOT invoked; its bus policy rejects file-backed VHDs.
+# Only the newly created, randomly named VHD below may be modified.
+# The production workflow rejects its bus type, so test the Windows delete
+# primitive directly after verifying that each target belongs to this image.
 if (-not [IO.Path]::IsPathRooted($ReportDirectory)) { throw 'Absolute dedicated RAID report directory required.' }
 $parent=Get-Item -LiteralPath $ReportDirectory -ErrorAction Stop
 if (-not $parent.PSIsContainer -or ($parent.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Ordinary report directory required.' }
@@ -64,7 +65,16 @@ try {
     Assert-Check (-not $first.DriveLetter -and -not $first.IsBoot -and -not $first.IsSystem) 'fixture-esp-has-no-drive-letter-or-host-use'
     $root=Get-SteamOsBootRoot $disk $first $null
     Assert-Check ((Get-SteamOsBootContentBlockReason $root 'esp') -eq '') 'efi-type-native-guid-content-readable'
-    [ordered]@{passed=$true;checks=$checks.ToArray();scope='Native volume extent/host binding and Windows PowerShell GUID-root content inspection on a newly created owned VHD only. Not production deletion, VM, physical hardware, or installer acceptance.'} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $run 'checks.json') -Encoding UTF8
+    for ($i=2;$i -ge 0;$i--) {
+        $disk=Get-OwnedDisk
+        $reviewed=$parts[$i]
+        $bound=@(Get-Partition -DiskNumber $disk.Number -ErrorAction Stop | Where-Object { $_.Guid -eq $reviewed.Guid })
+        if ($bound.Count -ne 1 -or $bound[0].Offset -ne $reviewed.Offset -or $bound[0].Size -ne $reviewed.Size -or $bound[0].IsSystem -or $bound[0].IsBoot) { throw 'Owned VHD partition binding changed.' }
+        $bound[0] | Remove-Partition -Confirm:$false -ErrorAction Stop
+        $after=Get-OwnedDisk
+        Assert-Check ($after.NumberOfPartitions -eq $disk.NumberOfPartitions - 1) (@('esp','efi-A','efi-B')[$i]+'-windows-remove-partition')
+    }
+    [ordered]@{passed=$true;checks=$checks.ToArray();scope='Native volume inspection and Windows Remove-Partition on a newly created owned file-backed VHD. The production bus gate and physical hardware are outside this check.'} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $run 'checks.json') -Encoding UTF8
     Join-Path $run 'checks.json'
 } catch {
     [ordered]@{passed=$false;checks=$checks.ToArray();error=$_.Exception.ToString();scope='Owned VHD native read integration; no production deletion.'} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $run 'blocked.json') -Encoding UTF8

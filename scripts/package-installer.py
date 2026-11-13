@@ -1,5 +1,5 @@
 """Package an independently built installer using explicit source/runtime inventories."""
-import argparse, hashlib, json, shutil, subprocess, sys, tempfile, zipfile
+import argparse, hashlib, json, os, shutil, subprocess, sys, tempfile, zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -147,7 +147,7 @@ def package(root, output, source_commit, configuration='Release', *, local_test=
     if output.exists() or output.with_suffix(output.suffix+'.partial').exists():raise ValueError('Package destination already exists')
     whitelist=json.loads((root/'scripts/source-files.json').read_text(encoding='utf-8'))
     def git(*args):
-        return subprocess.check_output(['git','-C',str(root),*args])
+        return subprocess.check_output([os.environ.get('BOILER_GIT_EXE', 'git'),'-C',str(root),*args])
     if git('rev-parse','HEAD').decode().strip()!=source_commit:
         raise ValueError('Package must be built from the specified independent public checkout')
     tracked=set(git('ls-tree','-r','--name-only',source_commit).decode().splitlines())

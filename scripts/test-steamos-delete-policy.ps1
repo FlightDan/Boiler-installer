@@ -30,9 +30,12 @@ foreach ($key in @('IsBoot','IsSystem','IsOffline','IsReadOnly')) {
     $part.$key=$false
 }
 $script:native.Attributes='1'
-Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -ne '') 'native-required-attribute-protected'
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -match 'native identity changed') 'live-attributes-must-match-reviewed-value'
+$evidence.gptAttributes='1'
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -eq '') 'reviewed-nonzero-attributes-allowed'
+$evidence.gptAttributes='0'
 $script:native.Attributes='0'; $script:native.Name='foreign'
-Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -ne '') 'native-name-replacement-refused'
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -match 'native identity changed') 'live-role-must-match-reviewed-name'
 $script:native.Name='esp'; $script:hostHit=$true
 Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -ne '') 'host-volume-protected'
 $script:hostHit=$false; $script:rootFailure=$true
@@ -47,6 +50,17 @@ foreach ($role in @('efi-A','efi-B')) {
     Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -eq '') ($role+'-hidden-with-zero-native-attributes-deletable')
     Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume) -ne '') ($role+'-without-reviewed-role-stays-protected')
 }
+# The live range must still match the reviewed snapshot exactly.
+$part.GptType='ebd0a0a2-b9e5-4433-87c0-68b6b72699c7'; $part.Type='Basic'; $part.Size=64MB; $part.IsHidden=$true; $part.IsReadOnly=$null
+$evidence.gptType=$part.GptType; $evidence.gptName='efi-A'; $evidence.size=$part.Size
+$script:native.Type=[guid]$part.GptType; $script:native.Name='efi-A'; $script:native.Size=$part.Size
+$evidence.size=32MB
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -ne '') 'reviewed-size-mismatch-refused'
+$evidence.size=$part.Size
+$evidence.gptName='rootfs-A'
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -ne '') 'non-boot-role-cannot-use-boot-path'
+# Restore the reviewed boot evidence for the final-rebind checks below.
+$evidence.gptName='efi-A'
 # Exercise the REAL final target rebind too, not only the orchestration stub.
 . (Join-Path $PSScriptRoot 'partition-delete-snapshot.ps1')
 function Get-Disk { [CmdletBinding()]param([int]$Number); return $script:disk }

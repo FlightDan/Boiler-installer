@@ -12,22 +12,108 @@ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 
 class FinalizeCanonicalModelTests(unittest.TestCase):
-    def test_unknown_target_cannot_select_legacy_wifi_and_other_defaults_remain(self):
+    def test_declared_resource_closes_the_legacy_handler_and_other_defaults_remain(self):
         from protocol.model_options import validated_selection
         from protocol.manifest import ProtocolError
         def package():
-            return dict(id='device:oxp3',selection_contract={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'},legacy_capabilities=[
+            return dict(id='device:oxp3',selection_contract={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'},
+                resources=[{'id':'resource:intel-be201-firmware','path':'common/network/intel/be201/resource.toon'}],
+                legacy_capabilities=[
                 dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
                 dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,default=False,reason={})])
-        previous=dict(repairs=['oxp3:input'],plugins=[]);reviewed=dict(repairs=['oxp3:input','oxp3:wifi'],plugins=[])
-        value=package();choice=module.configure_wifi_selection(value,previous,reviewed,canonical=True)
+        previous=dict(repairs=['oxp3:input'],plugins=[]);reviewed=dict(repairs=['oxp3:input'],plugins=[])
+        value=package();choice=module.configure_wifi_selection(value,previous,reviewed)
         self.assertEqual(choice,previous);self.assertTrue(value['legacy_capabilities'][0]['default'])
-        wifi=value['legacy_capabilities'][1];self.assertFalse(wifi['available']);self.assertFalse(wifi['default']);self.assertIn('target BE201',wifi['reason']['en'])
+        wifi=value['legacy_capabilities'][1];self.assertFalse(wifi['available']);self.assertFalse(wifi['default'])
+        # Ownership, not policy: the reason names the resource, and no gate
+        # evidence is recorded for a capability the table does not own.
+        self.assertIn('resource',wifi['reason']['en'])
+        self.assertNotIn('capability_gates',value)
         with self.assertRaisesRegex(ProtocolError,'Unavailable or unknown'):
             validated_selection(value,['oxp3:input','oxp3:wifi'],[],acknowledge_update_hold=True)
         self.assertEqual(validated_selection(value,['oxp3:input'],[],acknowledge_update_hold=True)['repairs'],['oxp3:input'])
-        historical=package();self.assertEqual(module.configure_wifi_selection(historical,previous,reviewed,canonical=False),reviewed)
-        self.assertTrue(historical['legacy_capabilities'][1]['default']);self.assertTrue(historical['legacy_capabilities'][1]['available'])
+
+    def test_empty_or_blank_placeholder_reason_is_replaced(self):
+        # Two shapes reach this code: {} and {'en': '', 'zh': ''}. ``all()`` over
+        # an empty mapping is True, so an emptiness check is required or the user
+        # sees a capability with no explanation at all.
+        for placeholder in ({}, {'en': '', 'zh': ''}, {'en': '  ', 'zh': ''}):
+            with self.subTest(placeholder=placeholder):
+                value={'id':'device:oxp3',
+                    'resources':[{'id':'resource:intel-be201-firmware',
+                                  'path':'common/network/intel/be201/resource.toon'}],
+                    'legacy_capabilities':[
+                    dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+                    dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,
+                         default=False,reason=dict(placeholder))]}
+                module.configure_wifi_selection(value,{'repairs':['oxp3:input'],'plugins':[]},
+                                                {'repairs':['oxp3:input'],'plugins':[]})
+                reason=value['legacy_capabilities'][1]['reason']
+                self.assertIn('resource',reason['en'])
+                self.assertIn('BE201',reason['zh'])
+
+    def test_reviewed_reason_is_preserved(self):
+        reviewed={'en':'Reviewed wording.','zh':'已审阅的说明。'}
+        value={'id':'device:oxp3',
+            'resources':[{'id':'resource:intel-be201-firmware',
+                          'path':'common/network/intel/be201/resource.toon'}],
+            'legacy_capabilities':[
+            dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+            dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,
+                 default=False,reason=dict(reviewed))]}
+        module.configure_wifi_selection(value,{'repairs':['oxp3:input'],'plugins':[]},
+                                        {'repairs':['oxp3:input'],'plugins':[]})
+        self.assertEqual(value['legacy_capabilities'][1]['reason'],reviewed)
+
+    def test_undeclared_resource_leaves_the_handler_alone(self):
+        # Without the resource record there is no second owner, so nothing here
+        # may silently disable the legacy handler. Ownership is derived from the
+        # declaration, not asserted unconditionally.
+        value={'id':'device:oxp3','legacy_capabilities':[
+            dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,default=True)]}
+        choice=module.configure_wifi_selection(value,{'repairs':['oxp3:wifi'],'plugins':[]},
+                                               {'repairs':['oxp3:wifi'],'plugins':[]})
+        self.assertEqual(choice,{'repairs':['oxp3:wifi'],'plugins':[]})
+        self.assertIs(value['legacy_capabilities'][0]['available'],True)
+        self.assertNotIn('capability_gates',value)
+
+    def test_gate_application_is_the_only_path_and_has_no_canonical_switch(self):
+        # The historical branch re-enabled BE201 and re-added it to the selection
+        # whenever the preparation proof lacked a source commit. That fail-open
+        # path must not come back in any form.
+        import inspect
+        signature = inspect.signature(module.configure_wifi_selection)
+        self.assertEqual(list(signature.parameters), ['manifest', 'previous', 'reviewed'])
+        self.assertNotIn('source_commit', inspect.getsource(module.configure_wifi_selection))
+
+    def test_selection_that_includes_a_gated_capability_is_rejected(self):
+        value={'id':'device:oxp3','legacy_capabilities':[
+            dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+            dict(id='oxp3:gm7-resume',category='repairs',dependencies=[],available=True,default=False)]}
+        with self.assertRaisesRegex(ValueError,'keeps unavailable'):
+            module.configure_wifi_selection(value,{'repairs':['oxp3:input','oxp3:gm7-resume'],'plugins':[]},
+                                            {'repairs':['oxp3:input'],'plugins':[]})
+
+    def test_reviewed_example_naming_a_resource_owned_capability_is_accepted(self):
+        # The TOON asks for BE201 through the resource; the frozen example
+        # selection still names the legacy identity. That is the request being
+        # served, not an unavailable capability.
+        value={'id':'device:oxp3',
+            'resources':[{'id':'resource:intel-be201-firmware','path':'common/network/intel/be201/resource.toon'}],
+            'legacy_capabilities':[
+            dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+            dict(id='oxp3:wifi',category='repairs',dependencies=[],available=True,default=False)]}
+        choice=module.configure_wifi_selection(value,{'repairs':['oxp3:input'],'plugins':[]},
+                                               {'repairs':['oxp3:input','oxp3:wifi'],'plugins':[]})
+        self.assertEqual(choice,{'repairs':['oxp3:input'],'plugins':[]})
+
+    def test_reviewed_example_naming_an_unrelated_unavailable_capability_is_rejected(self):
+        value={'id':'device:oxp3','legacy_capabilities':[
+            dict(id='oxp3:input',category='repairs',dependencies=[],available=True,default=True),
+            dict(id='oxp3:gm7-resume',category='repairs',dependencies=[],available=False,default=False)]}
+        with self.assertRaisesRegex(ValueError,'unavailable capability'):
+            module.configure_wifi_selection(value,{'repairs':['oxp3:input'],'plugins':[]},
+                                            {'repairs':['oxp3:input','oxp3:gm7-resume'],'plugins':[]})
 
     def test_legacy_version_targets_id_independent_of_component_order(self):
         value={'components':[{'id':'oxp3:microphone','version':'1.0.0'},
@@ -82,9 +168,11 @@ class FinalizeCanonicalModelTests(unittest.TestCase):
         gyro=value['legacy_capabilities'][1]
         self.assertEqual(gyro['targets'],['var/lib/oxp3-gyro-v1/binding.py'])
         self.assertIn('not been independently measured',gyro['notes']['en'])
+        # GM7 ownership is now enforced by the shared table, not by a local check.
+        from protocol.capability_gates import assert_gates
         value['legacy_capabilities'][0]['available']=True
-        with self.assertRaisesRegex(ValueError,'GM7 ownership'):
-            module.update_capabilities(value,'device:x2-mini',[])
+        with self.assertRaisesRegex(ValueError,'still available: oxp3:gm7-resume'):
+            assert_gates(value)
 
     def test_stage_snapshot_rejects_changed_bytes_and_uses_captured_values(self):
         with tempfile.TemporaryDirectory() as temp:

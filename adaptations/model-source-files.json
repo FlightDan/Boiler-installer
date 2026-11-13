@@ -199,6 +199,11 @@
       "sha256": "dd7aae623f2196c93824179b012cc65cb66603c1dc02fde799fbcd58d02ef052"
     },
     {
+      "path": "brands/onexplayer/oxp3/bridge/embedded-maintenance-tool.py",
+      "size": 2401,
+      "sha256": "cc8a654b451895efb33a4e036c690feae87e3b1ebd0ab9e3e1a9c9098a3dacf4"
+    },
+    {
       "path": "brands/onexplayer/oxp3/bridge/full_efi_sources.py",
       "size": 1088,
       "sha256": "64fc948c584ba497ba9df419996c93feaf5120d3d64a17287a502729c3e50d0f"
@@ -1461,12 +1466,12 @@
     {
       "path": "devices/onexplayer/oxp3.toon",
       "size": 21033,
-      "sha256": "1d43fef9bc172f53fd56ff37303f13433741140863b610a133f1537272bbdfbe"
+      "sha256": "d85e5cbe2162913ab2756d597862c0fbdc5eb2d559f5294bd7e592263f0b26b1"
     },
     {
       "path": "devices/onexplayer/x2-mini.toon",
       "size": 18030,
-      "sha256": "7dae61f305ccfb456252761c5f2c44c0707aed80e16a51e1262d653802b3e023"
+      "sha256": "f4100a104e695682479eecf27034e3272fb8a9421203df7fb51bbdfd51885bfe"
     },
     {
       "path": "docs/ADAPTATIONS.md",
@@ -1780,13 +1785,13 @@
     },
     {
       "path": "scripts/build-fingerprint-overlay.py",
-      "size": 19485,
-      "sha256": "4012b3b4b8e0eb4222b96e3f433deac1c3da50036d2554c4a2196f94dae4f78f"
+      "size": 20675,
+      "sha256": "4018ce6ef3e321a7ada6e53e1c86f49099a1dde330be8dc660e3d9b9c8a916bc"
     },
     {
       "path": "scripts/build-index.py",
-      "size": 35125,
-      "sha256": "af3de3eeee38e633ad05650935e3e4137589cc3f62fa6b8379767969e68ec0de"
+      "size": 35133,
+      "sha256": "040d9c67a20af1af177f9d263c900dceb2a90500aaa0570312f1bb8dc20d2074"
     },
     {
       "path": "scripts/build-keyboard-runtime.py",
@@ -1814,6 +1819,11 @@
       "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
     },
     {
+      "path": "scripts/derive-legacy-maintenance.py",
+      "size": 5732,
+      "sha256": "26724decbeaab2f8cd84f52534b36965bec75183a7c087ff5a7ed4eeaa01134f"
+    },
+    {
       "path": "scripts/fingerprint_provenance.py",
       "size": 2313,
       "sha256": "607f96c809650fd4f4669e7f897ed02224a88b3b10cd0be565f4b169b1e3ef3f"
@@ -1834,6 +1844,11 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
+      "path": "scripts/rebase-x2-hdr.py",
+      "size": 8206,
+      "sha256": "dce11b3dabf8627a59fbd935df5fc258d46559ec1fef5ef192fde86dbc473a0f"
+    },
+    {
       "path": "scripts/refresh-model-source-inventory.py",
       "size": 3039,
       "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
@@ -1842,11 +1857,6 @@
       "path": "scripts/validate-fingerprint-native.py",
       "size": 6086,
       "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
-    },
-    {
-      "path": "source-files.txt",
-      "size": 53312,
-      "sha256": "20768213a3bcde363bb0f4073585ca51748a01b5e4e87f7409dd50a13d1dc86d"
     },
     {
       "path": "source-lock.json",
@@ -1875,8 +1885,8 @@
     },
     {
       "path": "tests/test_fingerprint_overlay.py",
-      "size": 11381,
-      "sha256": "334c833e2a0cbd67454bd1736853619dea310615fc5d151b1fec969476ad119d"
+      "size": 12371,
+      "sha256": "79acdaabc5d867bc60bc5814511c05d1bac39db66b698c2d09050c05e9751fad"
     },
     {
       "path": "tests/test_fingerprint_providers.py",

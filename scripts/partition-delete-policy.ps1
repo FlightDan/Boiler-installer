@@ -54,17 +54,20 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume, $SteamOsEv
     $steamBoot = $null -ne $SteamOsEvidence
     if ($steamBoot) {
         try {
+            # Bind the reviewed role to the live partition. Its GPT type and
+            # attributes may differ from the prepared layout but must stay stable.
             $role = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'steam-partition-roles.json') -Raw | ConvertFrom-Json) |
-                Where-Object { $_.name -ceq $SteamOsEvidence.gptName -and [long]$_.bootSize -gt 0 })
-            if ($role.Count -ne 1 -or $SteamOsEvidence.nativeGptVerified -ne $true -or [string]$SteamOsEvidence.gptAttributes -cne '0' -or
+                Where-Object { $_.name -ceq $SteamOsEvidence.gptName -and $_.name -match '^(esp|efi-)' })
+            if ($role.Count -ne 1 -or
                 [guid]$SteamOsEvidence.guid -ne [guid]$Partition.Guid -or [long]$SteamOsEvidence.offset -ne [long]$Partition.Offset -or
-                [long]$SteamOsEvidence.size -ne [long]$Partition.Size -or [guid]$SteamOsEvidence.gptType -ne $type -or [guid]$role[0].gptType -ne $type) {
+                [long]$SteamOsEvidence.size -ne [long]$Partition.Size) {
                 return 'SteamOS boot partition ownership could not be verified.'
             }
             $native = Get-SteamOsDeletionMetadata $Disk $Partition
-            if ($native.Id -ne [guid]$Partition.Guid -or $native.Type -ne $type -or $native.Offset -ne $Partition.Offset -or
-                $native.Size -ne $Partition.Size -or $native.Name -cne $SteamOsEvidence.gptName -or [string]$native.Attributes -cne '0') {
-                return 'SteamOS boot partition native identity or protection attributes changed.'
+            if ($native.Id -ne [guid]$Partition.Guid -or $native.Offset -ne $Partition.Offset -or
+                $native.Size -ne $Partition.Size -or $native.Type -ne $type -or
+                $native.Name -cne $SteamOsEvidence.gptName -or $native.Attributes -cne $SteamOsEvidence.gptAttributes) {
+                return 'SteamOS boot partition native identity changed.'
             }
             if ($Partition.IsReadOnly -eq $true) { return 'Hidden, read-only or unavailable partition protection metadata.' }
             $Partition.NativeUnrecognizedSafe = $true

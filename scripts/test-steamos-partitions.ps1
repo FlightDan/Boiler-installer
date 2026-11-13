@@ -23,18 +23,25 @@ Assert-Check (@($expected.partitions | Where-Object { $recognized -contains [lon
 foreach ($p in $expected.partitions) { if ($recognized -contains [long]$p.offset) { $p.deletionAllowed=$true; $p.deletionBlockReason='' } }
 $targets = @($expected.partitions | Where-Object { $recognized -contains [long]$_.offset })
 Assert-Check ($targets.Count -eq 8) 'new-policy-result-selects-all-eight'
-foreach ($key in @('gptName','gptType','nativeGptVerified','missing','gap','label-only')) {
+foreach ($key in @('gptName','missing','gap','label-only')) {
     $changed = Copy-Snapshot $expected
     $part = @($changed.partitions | Where-Object { $_.gptName -eq 'rootfs-A' })[0]
     switch ($key) {
         'gptName' { $part.gptName='rootfs-a' }
-        'gptType' { $part.gptType='0fc63daf-8483-4772-8e79-3d69d8477de4' }
-        'nativeGptVerified' { $part.nativeGptVerified=$false }
         'missing' { $changed.partitions=@($changed.partitions | Where-Object { $_.guid -ne $part.guid }) }
         'gap' { $part.size-=1MB }
         'label-only' { foreach ($p in $changed.partitions) { $p.label=$p.gptName; $p.gptName='' } }
     }
     Assert-Check (@(Get-SteamOsPartitionStarts $changed).Count -eq 0) ('rejects-incomplete-or-unverified:'+$key)
+}
+foreach ($key in @('gptType','nativeGptVerified')) {
+    $changed = Copy-Snapshot $expected
+    $part = @($changed.partitions | Where-Object { $_.gptName -eq 'home' })[0]
+    switch ($key) {
+        'gptType' { $part.gptType='0fc63daf-8483-4772-8e79-3d69d8477de4' }
+        'nativeGptVerified' { $part.nativeGptVerified=$false }
+    }
+    Assert-Check (@(Get-SteamOsPartitionStarts $changed).Count -eq 8) ('recognizes-name-count-contiguity-only:'+$key)
 }
 foreach ($key in @('guid','size','gptName','gptAttributes','nativeGptVerified','isSystem','filesystem')) {
     $changed=Copy-Snapshot $expected
@@ -120,17 +127,33 @@ $residual=Copy-Snapshot $expected
 $residual.partitions=@($residual.partitions | Where-Object { $_.gptName -cnotin @('rootfs-A','rootfs-B','var-A','var-B','home') })
 Assert-Check (@(Get-SteamOsPartitionStarts $residual).Count -eq 0 -and @(Get-SteamOsPartitionStarts $residual -IncludeBootRemnants).Count -eq 3) 'residual-three-candidates-are-not-a-complete-layout'
 $bootTargets=@($residual.partitions | Where-Object { $_.gptName -cin @('esp','efi-A','efi-B') })
-foreach ($key in @('size','gptName','nativeGptVerified','gptType')) {
+foreach ($key in @('gptName')) {
     $changed=Copy-Snapshot $residual
     $p=@($changed.partitions | Where-Object { $_.gptName -ceq 'efi-A' })[0]
     switch ($key) {
-        'size' { $p.size-=1MB }
         'gptName' { $p.gptName='efi-a' }
-        'nativeGptVerified' { $p.nativeGptVerified=$false }
-        'gptType' { $p.gptType='0fc63daf-8483-4772-8e79-3d69d8477de4' }
     }
     Assert-Check (@(Get-SteamOsPartitionStarts $changed -IncludeBootRemnants).Count -eq 0) ('residual-rejects:'+ $key)
 }
+# Recognition is name + count + contiguity. Type, declared size and the native
+# attribute proof no longer decide ownership; the live policy still binds range.
+foreach ($key in @('size','gptType','nativeGptVerified')) {
+    $changed=Copy-Snapshot $residual
+    # Resize the last boot role so contiguity is untouched; a size change in the
+    # middle of the trio legitimately breaks the contiguous run.
+    $p=@($changed.partitions | Where-Object { $_.gptName -ceq 'efi-B' })[0]
+    switch ($key) {
+        'size' { $p.size-=1MB }
+        'gptType' { $p.gptType='0fc63daf-8483-4772-8e79-3d69d8477de4' }
+        'nativeGptVerified' { $p.nativeGptVerified=$false }
+    }
+    Assert-Check (@(Get-SteamOsPartitionStarts $changed -IncludeBootRemnants).Count -eq 3) ('residual-tolerates:'+ $key)
+}
+# A size change in the middle of the trio breaks the contiguous run and is
+# therefore still not recognized.
+$broken=Copy-Snapshot $residual
+$p=@($broken.partitions | Where-Object { $_.gptName -ceq 'efi-A' })[0]; $p.size-=1MB
+Assert-Check (@(Get-SteamOsPartitionStarts $broken -IncludeBootRemnants).Count -eq 0) 'residual-rejects-broken-contiguity'
 Reset-Mock $residual
 Invoke-ReviewedPartitionDeletion $residual $script:current $bootTargets $true
 Assert-Check ($script:deleted.Count -eq 3 -and $script:preflights -eq 6 -and $script:retainedContextChecks -eq 2) 'residual-three-complete-despite-incomplete-intermediate-layouts'

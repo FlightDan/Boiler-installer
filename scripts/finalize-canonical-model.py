@@ -17,6 +17,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from protocol.manifest import confined, validate_package
+from protocol.capability_gates import assert_gates
 from protocol.local import import_local
 from protocol.resource_pool import decoder
 from scripts.resources import bmi260, canonical_stage
@@ -27,6 +28,13 @@ MODEL_REFS = {
 }
 RESOURCE_IDS = {'resource:intel-xevmafix-724', 'resource:intel-be201-firmware',
                 'resource:oxp3-speaker-route', 'resource:bmi260-gyro'}
+# A legacy handler whose firmware a declared model resource owns. It is closed
+# here for the same reason ``protocol.manifest`` rejects the combination: two
+# writers for one target set cannot agree on restore.
+RESOURCE_OWNED = {'oxp3:wifi': 'resource:intel-be201-firmware'}
+RESOURCE_OWNED_REASON = {
+    'en': 'Owned by the Intel BE201 firmware resource; the legacy handler is not used.',
+    'zh': '由 Intel BE201 固件资源负责；不再使用旧版处理程序。'}
 POLICY = 'common/ssd/acer/gm7/components.toon'
 VERSION = '0.1.0-localtest.20261103.canonical-common.3'
 COMPONENT_VERSIONS = {'oxp3:xevmafix':'2026.10.30', 'oxp3:speaker-route':'2026.10.30'}
@@ -152,22 +160,55 @@ def update_gyro(directory, identity, files, profiles):
     return sorted(by_target)
 
 
-def configure_wifi_selection(manifest, previous, reviewed, *, canonical):
-    """Do not offer legacy BE201 writes before trusted target matching exists."""
-    wifi=[cap for cap in manifest.get('legacy_capabilities',[]) if cap.get('id')=='oxp3:wifi']
-    if len(wifi)!=1 or wifi[0].get('available') is not True:
-        raise ValueError('Expected the available legacy BE201 firmware handler')
-    if 'oxp3:wifi' in previous['repairs']:
-        raise ValueError('Base selection unexpectedly includes BE201 firmware')
-    expected=copy.deepcopy(previous);expected['repairs'].append('oxp3:wifi')
-    if reviewed!=expected:raise ValueError('Reviewed selection differs from the base plus BE201 firmware')
-    if canonical:
-        wifi[0]['default']=False;wifi[0]['available']=False
-        wifi[0]['reason']={'en':'Unavailable until trusted target BE201 identity is established.',
-                           'zh':'在可信确认目标设备为 BE201 之前不可用。'}
-        choice=copy.deepcopy(previous)
-    else:
-        wifi[0]['default']=True;choice=copy.deepcopy(reviewed)
+def configure_wifi_selection(manifest, previous, reviewed):
+    """Close resource-owned handlers, then enforce the shared gates.
+
+    ``oxp3:wifi`` is no longer a policy gate. The TOON asks for BE201 through
+    ``resource:intel-be201-firmware``, and that resource owns the firmware: it
+    carries the missing-only c106 policy and the transaction restore. The legacy
+    handler is closed *because this package declares the resource*, which is the
+    same boundary ``protocol.manifest`` enforces. ``oxp3:gm7-resume`` is still a
+    reviewed gate and is applied through the shared table.
+    """
+    from protocol.capability_gates import apply_gates
+    gated, choice = apply_gates(manifest, previous)
+    manifest['legacy_capabilities'] = gated['legacy_capabilities']
+    if 'capability_gates' in gated:
+        manifest['capability_gates'] = gated['capability_gates']
+    declared = {row['id'] for row in manifest.get('resources', []) if isinstance(row, dict)}
+    declared |= {row['id'] for row in manifest.get('common_device_sources', {}).get('resources', [])
+                 if isinstance(row, dict)}
+    # Only a handler whose owning resource is actually declared in this package
+    # is closed. Without the declaration there is no second owner, so nothing
+    # here may silently withdraw the capability.
+    owned = {identity for identity, resource in RESOURCE_OWNED.items() if resource in declared}
+    for capability in manifest['legacy_capabilities']:
+        if capability['id'] not in owned:
+            continue
+        capability['available'] = False
+        capability['default'] = False
+        # The base carries a placeholder ``{'en': '', 'zh': ''}`` and some
+        # candidates carry ``{}``. Both are empty for the user, so they are
+        # replaced like a missing reason. ``all()`` over an empty mapping is
+        # True, so emptiness is checked before the per-value test.
+        current = capability.get('reason')
+        readable = (isinstance(current, dict) and bool(current)
+                    and all(isinstance(value, str) and value.strip()
+                            for value in current.values()))
+        if not readable:
+            capability['reason'] = dict(RESOURCE_OWNED_REASON)
+    if choice is not None:
+        for category in ('repairs', 'plugins'):
+            values = choice.get(category)
+            if isinstance(values, list):
+                choice[category] = [value for value in values if value not in owned]
+    if choice != previous:
+        raise ValueError('Base selection includes a capability the reviewed policy keeps unavailable')
+    # The reviewed example may still name a resource-owned capability: the TOON
+    # request is now served by the resource, so it is not "unavailable".
+    remaining = {cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('available') is True}
+    if set(reviewed['repairs']) - remaining - owned:
+        raise ValueError('Reviewed example selection names an unavailable capability')
     selected=set(choice['repairs']+choice['plugins'])
     defaults={cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('default')}
     available={cap['id'] for cap in manifest['legacy_capabilities'] if cap.get('available')}
@@ -176,10 +217,42 @@ def configure_wifi_selection(manifest, previous, reviewed, *, canonical):
     return choice
 
 
+def materialize_resources(directory, manifest, reference):
+    """Write the installable BE201 resource record a model TOON asked for.
+
+    The TOON's ``common_references`` names the canonical source record; the
+    package still needs the relocated ``resource.toon`` plus its nine firmware
+    files, both licences and the provenance lock, and a top-level ``resources``
+    entry pointing at it. The pool builder owns that transformation and its
+    input mapping, so it is reused rather than re-implemented here.
+    """
+    declared = {row['id']: row['source'] for row in reference.get('resources', [])
+                if isinstance(row, dict) and isinstance(row.get('id'), str)}
+    if declared.get('resource:intel-be201-firmware') != 'common/network/intel/be201/source.toon':
+        return
+    from scripts.resources import build_wifi_pool
+    pool = directory/'.be201-pool'
+    if pool.exists():
+        raise ValueError('BE201 pool staging path already exists')
+    try:
+        build_wifi_pool.build(ROOT, pool)
+        names = [name for name in pool.rglob('*') if name.is_file()
+                 and name.relative_to(pool).as_posix().startswith(build_wifi_pool.PREFIX)]
+        if not names:
+            raise ValueError('BE201 pool produced no resource members')
+        for source in names:
+            relative = source.relative_to(pool).as_posix()
+            target = confined(directory, relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read_bytes())
+    finally:
+        shutil.rmtree(pool, ignore_errors=True)
+    manifest['resources'] = [{'id': 'resource:intel-be201-firmware',
+                              'path': build_wifi_pool.PREFIX + 'resource.toon'}]
+
+
 def update_capabilities(manifest, identity, gyro_targets):
     for cap in manifest.get('legacy_capabilities',[]):
-        if cap['id']=='oxp3:gm7-resume' and cap.get('available') is not False:
-            raise ValueError('Legacy GM7 ownership must remain unavailable')
         if cap['id']=='oxp3:gyro':
             cap['targets']=gyro_targets
             if identity=='device:x2-mini':
@@ -251,9 +324,15 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
         be201='source and firmware preparation only; fixed matching handler integration pending',
         physical_hardware_accepted=False)
     update_capabilities(manifest,identity,gyro_targets)
+    # A model TOON that asks for BE201 through common_references gets an
+    # installable resource record, not just staged sources. Without this the
+    # package would close oxp3:wifi and declare no owner at all, which makes the
+    # firmware silently uninstallable. The resource record is built from the
+    # same locked inputs the stage already verified.
+    materialize_resources(directory, manifest, reference)
     previous = json.loads(confined(directory, 'selection.json').read_bytes())
     reviewed = json.loads(confined(ROOT, 'adaptations/brands/onexplayer/oxp3/bridge/selection.example.json').read_bytes())
-    choice = configure_wifi_selection(manifest, previous, reviewed, canonical=('source_commit' in proof))
+    choice = configure_wifi_selection(manifest, previous, reviewed)
     confined(directory, 'selection.json').write_bytes(json_bytes(choice))
     # Neither the verified EFI code closure nor unrelated legacy payloads are
     # modified by this finalization. Verify again after all generated writes.
@@ -262,6 +341,7 @@ def build(base, base_sha256, stage, public_archive, output, *, version=VERSION):
     (directory/'manifest.json').write_bytes(json_bytes(manifest))
     digest=sha((directory/'manifest.json').read_bytes())
     validate_package(directory,expected_manifest_sha256=digest); verify(directory,lock)
+    assert_gates(manifest,'the canonical model candidate')
     archive=output/('boiler-'+identity.replace(':','-')+'-'+version+'.zip')
     with zipfile.ZipFile(archive,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as bundle:
         for name in ['manifest.json']+[r['path'] for r in manifest['files']]:

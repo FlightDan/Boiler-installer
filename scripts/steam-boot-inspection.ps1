@@ -222,76 +222,21 @@ function Get-SteamOsBootRefindFiles {
     $files+=@($own+'drivers_x64/usbxbox360dxe.efi';$own+'gamepad.ini';'efi/xbox360/config.ini';$own+'refind.conf';'efi/boot/refind.conf';'efi/boot/bootx64.efi')
     return $files
 }
-function Get-SteamOsBootRefindBlockReason($Files) {
-    # The installed journal records exact bytes. Checking it does NOT confer
-    # executable trust; it identifies this project's deployment and refuses an
-    # edited/interrupted/unknown variant rather than deleting its recovery data.
-    $statePath='efi/oxp3-refind/state.json'
-    if (-not $Files.ContainsKey($statePath)) { return 'Project rEFInd ownership journal is missing.' }
-    $state=Get-Content -LiteralPath $Files[$statePath].FullName -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-    if ($state.schema -ne 1 -or $state.phase -cne 'installed') { return 'Project rEFInd journal is unsupported or recovery is incomplete.' }
-    $esp=[guid]::Empty; $windows=[guid]::Empty
-    if (-not [guid]::TryParse([string]$state.esp,[ref]$esp) -or $esp -eq [guid]::Empty) { return 'Project rEFInd ESP identity is invalid.' }
-    if ($null -ne $state.windows -and (-not [guid]::TryParse([string]$state.windows,[ref]$windows) -or $windows -eq [guid]::Empty -or $windows -eq $esp)) { return 'Project rEFInd Windows target is not a separate ESP.' }
-    $expected=@(Get-SteamOsBootRefindFiles)
-    $properties=@($state.desired.PSObject.Properties)
-    if ($properties.Count -ne $expected.Count) { return 'Project rEFInd ownership inventory is unsupported.' }
-    $seen=@{}
-    foreach ($property in $properties) {
-        $relative=$property.Name.ToLowerInvariant()
-        if ($relative -cnotin $expected -or $seen.ContainsKey($relative) -or -not $Files.ContainsKey($relative) -or $null -eq $property.Value) { return 'Project rEFInd ownership inventory is incomplete or changed.' }
-        $seen[$relative]=$true
-        $bytes=[Convert]::FromBase64String([string]$property.Value)
-        $sha=[Security.Cryptography.SHA256]::Create()
-        try { $digest=([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-','') } finally { $sha.Dispose() }
-        $actual=Get-FileHash -LiteralPath $Files[$relative].FullName -Algorithm SHA256 -ErrorAction Stop
-        if ($actual.Hash -ine $digest) { return ('Project rEFInd managed file changed: '+$relative+'.') }
-    }
-    foreach ($relative in @('efi/oxp3-refind/refind.conf','efi/boot/refind.conf')) {
-        $config=Get-Content -LiteralPath $Files[$relative].FullName -Raw -ErrorAction Stop
-        # The generated menu may point to an independently identified Windows
-        # ESP; that does not make this SteamOS ESP a shared Windows filesystem.
-        if ($config -notmatch '(?im)^\s*scanfor\s+manual\s*$') { return 'Project rEFInd has an unrecognized scanning policy.' }
-        $menus=[regex]::Matches($config,'(?is)menuentry\s+"[^"]+"\s*\{(?<body>[^{}]*)\}')
-        $steamMenu=$false
-        foreach ($menu in $menus) {
-            $body=$menu.Groups['body'].Value
-            $volumes=[regex]::Matches($body,'(?im)^\s*volume\s+(\S+)\s*$')
-            $loaders=[regex]::Matches($body,'(?im)^\s*loader\s+(\S+)\s*$')
-            if ($volumes.Count -ne 1 -or $loaders.Count -ne 1) { return 'Project rEFInd menu target is ambiguous.' }
-            $volume=[guid]::Empty
-            if (-not [guid]::TryParse($volumes[0].Groups[1].Value,[ref]$volume)) { return 'Project rEFInd menu volume is invalid.' }
-            $loader=$loaders[0].Groups[1].Value
-            if ($loader -ieq '/EFI/steamos/steamcl.efi' -and $volume -eq $esp) { $steamMenu=$true; continue }
-            if ($loader -ieq '/EFI/Microsoft/Boot/bootmgfw.efi' -and $windows -ne [guid]::Empty -and $volume -eq $windows) { continue }
-            return 'Project rEFInd menu refers to an unrecognized boot target.'
-        }
-        if (-not $steamMenu -or [regex]::Matches($config,'(?im)^\s*loader\s+').Count -ne $menus.Count) { return 'Project rEFInd SteamOS menu evidence is missing or shared.' }
-    }
-    return ''
-}
 function Get-SteamOsBootContentBlockReason([string]$Root, [string]$Role, [bool]$RequireOwnership=$true) {
     if ($Role -cnotin @('esp','efi-A','efi-B')) { throw 'Unsupported SteamOS boot partition role.' }
     if ([string]::IsNullOrWhiteSpace($Root)) { throw 'Missing boot inspection root.' }
-    # Ownership evidence, NOT executable authentication. Prepared paths come
-    # from guest/deployment.py: EFI/steamos/grub.cfg with steamenv_boot and
-    # /boot/vmlinuz-, SteamOS/partsets, and esp/SteamOS/conf. The official
-    # EFI/steamos/steamcl.efi is retained by components/refind/manage.py:200;
-    # test_gamepad.py:30-33 models its byte-identical removable fallback.
-    # Accept ONLY that same-volume equality, not the generic BOOTX64 name.
-    # Managed EFI/OXP3-rEFInd is also recognized using its exact current
-    # deployment inventory and installed byte journal. Cross-volume Windows
-    # menu entries are allowed; same-volume Microsoft/unknown OS files are not.
-    # RequireOwnership=false is only for the caller's complete native-GPT
-    # layout: it relaxes missing positive evidence, never shared-content or
-    # fallback ownership checks. The default is strict for residual layouts.
+    # Positive SteamOS ownership evidence is no longer required: recognition is
+    # name + count + contiguity. What remains is the destructive-action guard —
+    # another operating system's boot content on this partition means deleting it
+    # can break that system, and the erase is not reversible.
+    # $RequireOwnership is retained for call compatibility and has no effect.
     $rootItem=Get-Item -LiteralPath $Root -Force -ErrorAction Stop
     if (-not $rootItem.PSIsContainer) { throw 'Boot inspection root is not a directory.' }
     if (($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return 'Boot root is a reparse point.' }
     $queue=New-Object 'System.Collections.Generic.Queue[object]'
     $queue.Enqueue([pscustomobject]@{FullName=$rootItem.FullName;Relative=''})
-    $grub=$null; $configFiles=@(); $fallback=$null; $steamcl=$null
-    $files=@{}; $hasRefind=$false; $refindFiles=@(Get-SteamOsBootRefindFiles)+@('efi/oxp3-refind/state.json'); $refindDirectories=@{}
+    $fallback=$null; $loaders=@()
+    $refindFiles=@(Get-SteamOsBootRefindFiles)+@('efi/oxp3-refind/state.json'); $refindDirectories=@{}
     foreach ($file in $refindFiles) {
         $parent=$file
         while ($parent.Contains('/')) { $parent=$parent.Substring(0,$parent.LastIndexOf('/')); $refindDirectories[$parent]=$true }
@@ -301,60 +246,53 @@ function Get-SteamOsBootContentBlockReason([string]$Root, [string]$Role, [bool]$
         foreach ($item in @(Get-ChildItem -LiteralPath $directory.FullName -Force -ErrorAction Stop)) {
             $relative=([string]$directory.Relative + [string]$item.Name).ToLowerInvariant()
             if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return ('Boot content contains a reparse point: '+$relative+'.') }
-            if ($relative -match '(^|/)(microsoft|windows|ubuntu|debian|fedora|opensuse|refind|systemd)(/|$)' -or
-                $item.Name -match '^(bootmgfw|bootmgr|memtest)\.(efi|exe)$' -or $item.Name -ieq 'BCD') { return ('Other operating-system boot content: '+$relative+'.') }
-            $owned=$relative -eq 'efi' -or $relative -eq 'efi/steamos' -or $relative.StartsWith('efi/steamos/') -or $relative -eq 'steamos'
-            if ($Role -ceq 'esp') { $owned=$owned -or $relative -eq 'steamos/conf' -or $relative.StartsWith('steamos/conf/') -or $relative -eq 'efi/boot' -or $relative -eq 'efi/boot/bootx64.efi' }
-            else { $owned=$owned -or $relative -eq 'steamos/partsets' -or $relative.StartsWith('steamos/partsets/') }
+            if ($relative -match '(^|/)(microsoft|windows|ubuntu|debian|fedora|opensuse|systemd)(/|$)' -or
+                $item.Name -match '^(bootmgfw|bootmgr|memtest)(\.(efi|exe))?$' -or $item.Name -ieq 'BCD') { return ('Other operating-system boot content: '+$relative+'.') }
+            # Any EFI vendor directory other than the ones this project owns is
+            # another system's boot namespace. Erasing it breaks that system.
+            # A stray file directly under EFI/ is not a vendor namespace.
+            if ($item.PSIsContainer -and $relative -match '^efi/([^/]+)$') {
+                $vendor=$Matches[1]
+                if (@('steamos','boot','oxp3-refind','xbox360') -notcontains $vendor -and
+                    -not ($Role -ceq 'esp' -and $refindDirectories.ContainsKey('efi/'+$vendor))) {
+                    return ('Other operating-system boot content: '+$relative+'.')
+                }
+            }
             $managedRefind=$Role -ceq 'esp' -and ($relative -cin $refindFiles -or $refindDirectories.ContainsKey($relative))
-            if ($managedRefind) { $owned=$true }
-            if ($relative -eq 'efi/oxp3-refind' -or $relative.StartsWith('efi/oxp3-refind/') -or $relative -eq 'efi/xbox360' -or $relative.StartsWith('efi/xbox360/') -or $relative -eq 'efi/boot/refind.conf') { $hasRefind=$true }
-            if (-not $owned) { return ('Shared or unrecognized boot content: '+$relative+'.') }
             if ($item.PSIsContainer) {
                 if ($relative -in @('efi/boot/bootx64.efi','efi/steamos/steamcl.efi','efi/steamos/grub.cfg') -or $relative -cin $refindFiles) { return ('Expected a boot file: '+$relative+'.') }
                 $queue.Enqueue([pscustomobject]@{FullName=$item.FullName;Relative=$relative+'/'})
-            } else {
-                if ($relative -eq 'efi' -or $relative -eq 'steamos' -or $relative -eq 'efi/steamos' -or $relative -eq 'efi/boot' -or $relative -eq 'steamos/conf' -or $relative -eq 'steamos/partsets' -or $refindDirectories.ContainsKey($relative)) { return ('Expected a boot directory: '+$relative+'.') }
-                $files[$relative]=$item
-                if ($relative -eq 'efi/steamos/grub.cfg') { $grub=$item }
-                if ($relative -eq 'efi/steamos/steamcl.efi') { $steamcl=$item }
-                if ($relative -eq 'efi/boot/bootx64.efi') { $fallback=$item }
-                if ($relative.StartsWith('steamos/conf/')) { $configFiles+=@($item) }
-                # Text boot settings can explicitly share another OS even in
-                # the SteamOS namespace. No command/file found here is run.
-                if (-not $managedRefind -and ($item.Extension -in @('.cfg','.conf') -or $relative.StartsWith('steamos/conf/'))) {
-                    $text=Get-Content -LiteralPath $item.FullName -Raw -ErrorAction Stop
-                    if ($text -match '(?i)\b(chainloader|microsoft|windows|ubuntu|debian|fedora|refind|systemd-boot)\b') { return ('Shared operating-system boot configuration: '+$relative+'.') }
+            } elseif ($relative -eq 'efi/boot/bootx64.efi') {
+                $fallback=$item
+            } elseif ($relative -in @('efi/steamos/steamcl.efi','efi/steamos/grubx64.efi','efi/oxp3-refind/refind_x64.efi')) {
+                $loaders+=@($item)
+            } elseif ($item.Extension -ieq '.efi' -and -not $relative.StartsWith('efi/steamos/') -and $relative -cnotin $refindFiles) {
+                return ('Shared or unrecognized boot content: '+$relative+'.')
+            } elseif ($relative -in @('efi/oxp3-refind/refind.conf','efi/boot/refind.conf')) {
+                # The project menu may refer to Windows on another ESP. Any
+                # local Windows loader would already block by path above.
+                $config=Get-Content -LiteralPath $item.FullName -Raw -ErrorAction Stop
+                if ($config -match '(?im)^\s*(chainloader|include)\s+' -or
+                    $config -match '(?im)^\s*loader\s+(?!/EFI/(?:steamos/steamcl\.efi|Microsoft/Boot/bootmgfw\.efi)\s*$)\S') {
+                    return ('Shared operating-system boot configuration: '+$relative+'.')
                 }
+            } elseif (-not $managedRefind -and ($item.Extension -in @('.cfg','.conf') -or $relative.StartsWith('steamos/conf/'))) {
+                # Text boot settings can explicitly share another OS. No command or
+                # file found here is run.
+                $text=Get-Content -LiteralPath $item.FullName -Raw -ErrorAction Stop
+                if ($text -match '(?i)\b(chainloader|microsoft|windows|ubuntu|debian|fedora|refind|systemd-boot)\b') { return ('Shared operating-system boot configuration: '+$relative+'.') }
             }
         }
     }
-    $espEvidence=@($configFiles | Where-Object { $_.Length -gt 0 }).Count -gt 0
-    if ($hasRefind) {
-        $reason=Get-SteamOsBootRefindBlockReason $files
-        if ($reason) { return $reason }
-    }
     if ($null -ne $fallback) {
-        if (-not $espEvidence -or $null -eq $steamcl -or $steamcl.Length -le 0 -or $fallback.Length -le 0) { return 'SteamOS fallback ownership evidence is missing.' }
-        $source=$steamcl
-        if ($hasRefind) {
-            $originalHash=Get-FileHash -LiteralPath $files['efi/oxp3-refind/steamcl-original.efi'].FullName -Algorithm SHA256 -ErrorAction Stop
-            $officialHash=Get-FileHash -LiteralPath $steamcl.FullName -Algorithm SHA256 -ErrorAction Stop
-            if ($originalHash.Hash -ine $officialHash.Hash) { return 'Project rEFInd original fallback is not bound to the SteamOS loader.' }
-            $source=$files['efi/oxp3-refind/refind_x64.efi']
+        # A standalone fallback may be another OS's only loader. Compare it
+        # with a loader already present in a SteamOS or project namespace.
+        if ($fallback.Length -le 0 -or $loaders.Count -eq 0) { return 'SteamOS fallback ownership evidence is missing.' }
+        $digest=(Get-FileHash -LiteralPath $fallback.FullName -Algorithm SHA256 -ErrorAction Stop).Hash
+        foreach ($loader in $loaders) {
+            if ($loader.Length -eq $fallback.Length -and (Get-FileHash -LiteralPath $loader.FullName -Algorithm SHA256 -ErrorAction Stop).Hash -eq $digest) { return '' }
         }
-        $sourceHash=Get-FileHash -LiteralPath $source.FullName -Algorithm SHA256 -ErrorAction Stop
-        $fallbackHash=Get-FileHash -LiteralPath $fallback.FullName -Algorithm SHA256 -ErrorAction Stop
-        if ($sourceHash.Hash -ine $fallbackHash.Hash) { return 'Fallback loader is not bound to this volume SteamOS deployment.' }
-    }
-    if ($RequireOwnership) {
-        if ($Role -ceq 'esp') {
-            if (-not $espEvidence) { return 'SteamOS ESP boot configuration evidence is missing.' }
-        } else {
-            if ($null -eq $grub -or $grub.Length -le 0) { return 'SteamOS slot GRUB evidence is missing.' }
-            $text=Get-Content -LiteralPath $grub.FullName -Raw -ErrorAction Stop
-            if ($text -notmatch '\bsteamenv_boot\b' -or $text -notmatch '/boot/vmlinuz-') { return 'SteamOS generated slot boot entry evidence is missing.' }
-        }
+        return 'Fallback loader is not bound to this volume SteamOS deployment.'
     }
     return ''
 }

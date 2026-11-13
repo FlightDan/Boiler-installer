@@ -16,6 +16,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'scripts')]
 from protocol.manifest import confined, validate_manifest, validate_package
+from protocol.capability_gates import apply_gates, assert_gates
 from protocol.firmware_contract import validate_contract as validate_firmware_contract
 from components import oxp3_full_efi_provider, x2_efi_provider
 from maintenance.updates import _version_key
@@ -713,7 +714,16 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
             generated['resources'] = [resource_row]
         generated['components'] = components
         generated['files'] = [rows[name] for name in sorted(chosen)]
+        # A brand candidate inherits its base selection contract. Re-assert the
+        # shared gates here so a package built from one base cannot ship a
+        # selectable handler another base had already gated. The table now owns
+        # only oxp3:gm7-resume; BE201 is owned by the resource below.
+        gated, _ = apply_gates(generated, None)
+        if 'capability_gates' in gated:
+            generated['capability_gates'] = gated['capability_gates']
+        generated['legacy_capabilities'] = gated['legacy_capabilities']
         validate_manifest(generated, 'DevicePackage')
+        assert_gates(generated, 'the brand candidate for ' + identity)
         models.append({'id': identity, 'guide': guide_path, 'generated': generated,
                        'package_dir': package_dir, 'rows': rows,
                        'resource_mappings': resource_mappings, 'resource_extras': resource_extras,

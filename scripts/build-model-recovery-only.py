@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 from components import oxp3_full_efi_provider, x2_efi_provider
 from maintenance.updates import _version_key
 from protocol import validate_package
+from protocol.capability_gates import apply_gates, assert_gates
 from protocol.local import import_local
 from protocol.manifest import confined
 
@@ -122,6 +123,9 @@ def build(base, base_sha256, output, version, checkout, revision, *, release=Fal
             file.update(size=row['size'], sha256=row['sha256'])
         if component['id'] == 'oxp3:legacy-adaptation':
             component['version'] = version
+    # A derived candidate must not inherit a selectable gated handler from its
+    # base. The shared table owns that decision; this stage records the evidence.
+    manifest, _ = apply_gates(manifest, None)
     contract = {'kind': 'boiler-embedded-recovery-v1', 'source_revision': revision, 'source_kind': source_kind}
     manifest['legacy_recovery_contract'] = contract
     if release:
@@ -138,6 +142,7 @@ def build(base, base_sha256, output, version, checkout, revision, *, release=Fal
     (package / 'manifest.json').write_bytes(raw_manifest)
     anchor = digest(raw_manifest)
     validate_package(package, expected_manifest_sha256=anchor)
+    assert_gates(manifest, 'the derived recovery candidate')
     new_lock = json.loads(lock.read_bytes())
     new_lock['provenance']['embedded_recovery'] = contract
     new_lock['provenance']['base_provider_lock_sha256'] = original_lock_sha256
