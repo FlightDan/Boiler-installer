@@ -347,6 +347,7 @@ public static partial class InstallationController
             if (ssdSelected)
             {
                 // Recheck the final image after all later boot/capacity edits.
+                Phase("preparing", PartitionInventory.L("正在复核扩容后的 A/B 系统槽与 SSD 启动修复…", "Verifying both resized SteamOS slots and the SSD boot repair…"), "01.06.01");
                 await Backend.GuestAsync("integration-verify", image, false, log, token,
                     selection: ssdSelection!, integrationPayload: ssdPayload!);
             }

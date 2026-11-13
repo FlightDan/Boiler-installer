@@ -1,6 +1,11 @@
 #!/bin/sh
 set -eu
 # Isolated regression: no system image or physical disk attached.
+if test -f /mnt/payload/transport-probe.bin; then
+    test "$(stat -c '%s' /mnt/payload/transport-probe.bin)" = 12582912
+    grep -q ' /mnt/payload ext4 ro[, ]' /proc/mounts
+    printf '\nOXP_SPLIT_PAYLOAD_CHECK=passed\n'
+fi
 if test -f /tmp/oxp-deck-initial-password; then
     test "$(stat -c '%a' /tmp/oxp-deck-initial-password)" = 600
     expected='Handshake-r-中文-42!'

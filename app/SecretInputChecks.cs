@@ -20,6 +20,14 @@ internal static class SecretInputChecks
             _ => { }, CancellationToken.None);
         if (!withoutPassword.Contains("OXP_TASK_PERMISSIONS=passed") || withoutPassword.Contains("OXP_SECRET_CHECK=passed"))
             throw new IOException("Task permissions differ without password input.");
-        return "SECRET_INPUT_CHECK=passed (real QEMU with/without password; private secret/state; unprivileged access to task-created 755 directories and 644 files; no console disclosure)";
+        foreach (var value in new[] { null, secret })
+        {
+            var split = await Backend.CheckSplitGuestPayloadAsync(value, CancellationToken.None);
+            if (!split.Contains("OXP_PAYLOAD_VOLUMES=2") || !split.Contains("OXP_SPLIT_PAYLOAD_CHECK=passed")
+                || split.Contains("OXP_SECRET_CHECK=passed") != (value != null)
+                || split.Contains(secret) || split.Contains(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(secret))))
+                throw new IOException("Two-volume payload launch or secret input check failed.");
+        }
+        return "SECRET_INPUT_CHECK=passed (real QEMU with one and two payload volumes, each with and without password; read-only transport and private secret input)";
     }
 }

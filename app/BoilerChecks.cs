@@ -81,18 +81,14 @@ internal static class BoilerChecks
         var delivered = volumes.SelectMany(volume => Directory.GetFiles(volume, "*", SearchOption.AllDirectories).Select(file => (file, relative: Path.GetRelativePath(volume, file)))).ToArray();
         Require(delivered.Length == 5 && delivered.Select(file => file.relative).Distinct().Count() == 5
             && delivered.All(file => File.ReadAllBytes(file.file).SequenceEqual(File.ReadAllBytes(Path.Combine(transport, file.relative)))), "payload-volumes-preserve-every-file-and-source");
-        Require(PayloadVolumes.MountCommand(3).Contains("remount,ro") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-merge") && PayloadVolumes.MountCommand(3).Contains("boiler-payload-2"), "payload-volumes-use-readonly-identified-mounts");
-        Require(PayloadVolumes.MountCommand(3).Contains("touch /var/cache/apk/.boiler-apk-prepared")
-            && !PayloadVolumes.MountCommand(1).Contains(".boiler-apk-prepared"), "payload-volumes-mark-packages-already-installed");
         foreach (var count in new[] { 1, 3, 8 })
         foreach (var secret in new[] { false, true })
         {
-            var mount = PayloadVolumes.MountCommand(count);
-            var command = Backend.GuestCommand("integration", mount, secret);
-            Require(command.Split('\n').All(line => System.Text.Encoding.UTF8.GetByteCount(line) < 1024)
+            var command = Backend.GuestCommand("integration-verify", count, secret);
+            Require(command.Count(c => c == '\n') == 1 && System.Text.Encoding.UTF8.GetByteCount(command) <= 320
                 && command.EndsWith("; poweroff\n", StringComparison.Ordinal)
-                && command.Replace(" &&\n", " && ", StringComparison.Ordinal).Contains(mount),
-                $"guest-command-fits-interactive-lines-{count}-volumes-secret-{secret}");
+                && command.Contains($"launcher.sh\" {count} integration-verify {(secret ? 1 : 0)}", StringComparison.Ordinal),
+                $"guest-command-uses-short-launcher-{count}-volumes-secret-{secret}");
         }
         await Reject(async () => { await PayloadVolumes.PrepareAsync(transport, Path.Combine(directory, "too-small"), CancellationToken.None, 8192); }, "oversized-payload-file-refused");
         if (OperatingSystem.IsWindows())

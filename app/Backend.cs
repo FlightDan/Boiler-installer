@@ -330,7 +330,9 @@ public static class Backend
         GuestCoreAsync("vm-boot-serial", null, false, log, token, vmSerial: descriptor);
     public static Task<string> GuestAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null) =>
         GuestCoreAsync(task, image, writable, log, token, selection, fixture, stateDisk, faultBoundary, updateRoot, secureInput, integrationPayload);
-    private static async Task<string> GuestCoreAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null, VmSerialOverlay? vmSerial = null)
+    internal static Task<string> CheckSplitGuestPayloadAsync(string? secret, CancellationToken token) =>
+        GuestCoreAsync("secret-input-check", null, false, _ => { }, token, secureInput: secret, checkSplitPayload: true);
+    private static async Task<string> GuestCoreAsync(string task, string? image, bool writable, Action<string> log, CancellationToken token, string? selection = null, string? fixture = null, string? stateDisk = null, string? faultBoundary = null, string? updateRoot = null, string? secureInput = null, string? integrationPayload = null, VmSerialOverlay? vmSerial = null, bool checkSplitPayload = false)
     {
         if ((task == "vm-boot-serial") != (vmSerial != null)) throw new ArgumentException("VM serial preparation requires its owned overlay descriptor.");
         if (secureInput != null && (task is not ("integration" or "secret-input-check") || string.IsNullOrEmpty(secureInput))) throw new ArgumentException("Secure input is available only for integration or its isolated handshake check.", nameof(secureInput));
@@ -379,6 +381,7 @@ public static class Backend
             }
         }
         CopyDirectory(Path.Combine(Root, "guest"), Path.Combine(payload, "tasks"));
+        File.Copy(Path.Combine(Root, "guest/payload-launcher.sh"), Path.Combine(payload, "launcher.sh"));
         if (task is "firmware-plan" or "integration" or "integration-verify" or "integration-check" or "integration-delta-check" or "physical-readiness")
         {
             CopyDirectory(Path.Combine(Root, "protocol"), Path.Combine(payload, "protocol"));
@@ -466,10 +469,16 @@ public static class Backend
             }
         }
         var transport = InstallationTemporaryFiles.NewTransportDirectory();
-        var payloadVolumes = await PayloadVolumes.PrepareAsync(payload, transport, token);
+        if (checkSplitPayload)
+        {
+            using var probe = File.Create(Path.Combine(payload, "transport-probe.bin"));
+            probe.SetLength(12L * 1024 * 1024);
+        }
+        var payloadVolumes = checkSplitPayload
+            ? await PayloadVolumes.PrepareAsync(payload, transport, token, 24L * 1024 * 1024)
+            : await PayloadVolumes.PrepareAsync(payload, transport, token);
         await File.WriteAllTextAsync(Path.Combine(work, "payload-transport.json"),
             System.Text.Json.JsonSerializer.Serialize(new { source = payload, volumes = payloadVolumes }), token);
-        var payloadMount = PayloadVolumes.MountCommand(payloadVolumes.Length);
         var scratch = Path.Combine(work, "scratch.raw");
         using (var disk = new FileStream(scratch, FileMode.CreateNew)) disk.SetLength(task is "home-copy-plan-checks" or "integration-check" or "integration-delta-check" ? 4L * 1024 * 1024 * 1024 : 256L * 1024 * 1024);
         static string Option(string value) => value.Replace('\\', '/').Replace(",", ",,");
@@ -593,12 +602,12 @@ public static class Backend
                         lock (transcript) { transcript.Append(chunk); liveLog.Write(chunk); text = transcript.ToString(); }
                         log(chunk);
                         var terminal = Regex.Replace(text, @"\x1b\[[0-9;?]*[A-Za-z]", "");
+                        if (phase >= 2 && Regex.IsMatch(terminal, @"(?:^|[\r\n])-sh: syntax error: [^\r\n]+[\r\n]"))
+                            throw new IOException($"构建环境任务 {task} 启动命令不完整，参见日志：{logPath}");
                         if (Regex.IsMatch(terminal, @"login:\s*$") && Interlocked.CompareExchange(ref phase, 1, 0) == 0) await process.StandardInput.WriteAsync("root\n");
                         else if (Regex.IsMatch(terminal, @"~\s*#\s*$") && Interlocked.CompareExchange(ref phase, 2, 1) == 1)
                         {
-                            // Only the secret file uses 077. Applying it to the task also makes
-                            // public runtime directories root-only and breaks the deck session.
-                            var command = GuestCommand(task, payloadMount, secureInput != null);
+                            var command = GuestCommand(task, payloadVolumes.Length, secureInput != null);
                             for (var offset = 0; offset < command.Length; offset += 8)
                             {
                                 await process.StandardInput.WriteAsync(command.AsMemory(offset, Math.Min(8, command.Length - offset)), combined.Token);
@@ -648,7 +657,9 @@ public static class Backend
                 await Task.WhenAll(ReadAsync(process.StandardOutput), ReadAsync(process.StandardError), process.WaitForExitAsync(combined.Token));
                 combined.Token.ThrowIfCancellationRequested();
                 var result = transcript.ToString();
-                if (process.ExitCode != 0 || !Regex.IsMatch(result, @"(?:^|[\r\n])OXP_TASK_RESULT=passed[\r\n]")) throw new InvalidOperationException("构建环境任务失败，参见日志：" + logPath);
+                if (process.ExitCode != 0 || Regex.IsMatch(result, @"(?:^|[\r\n])OXP_TASK_LAUNCH_FAILED[\r\n]")
+                    || !Regex.IsMatch(result, @"(?:^|[\r\n])OXP_TASK_RESULT=passed[\r\n]"))
+                    throw new InvalidOperationException($"构建环境任务 {task} 失败，参见日志：{logPath}");
                 RecordHostExit("ok");
                 return result;
             }
@@ -677,15 +688,10 @@ public static class Backend
         }
         throw new InvalidOperationException("QEMU accelerator attempts did not complete.");
     }
-    internal static string GuestCommand(string task, string payloadMount, bool secureInput)
+    internal static string GuestCommand(string task, int volumeCount, bool secureInput)
     {
-        // BusyBox ash's interactive line editor truncates a long physical line.
-        // Split at shell continuations, inside the enclosing subshell, so the
-        // complete command is parsed before the password handshake executes.
-        var mount = payloadMount.Replace(" && ", " &&\n", StringComparison.Ordinal);
-        return !secureInput
-            ? $"( umask 022; {mount} && sh /mnt/payload/tasks/{task}.sh ); poweroff\n"
-            : $"( umask 022; stty sane -echo || exit 1; printf '\\nOXP_SECRET_INPUT_READY\\n'; IFS= read -r oxp_setup_input || exit 1; ( umask 077; printf '%s' \"$oxp_setup_input\" | tr -d '\\r' | base64 -d > /tmp/oxp-deck-initial-password ) || exit 1; unset oxp_setup_input; ( {mount} && sh /mnt/payload/tasks/{task}.sh ); task_status=$?; rm -f /tmp/oxp-deck-initial-password; stty echo; exit \"$task_status\" ); poweroff\n";
+        if (volumeCount is < 1 or > 8) throw new ArgumentOutOfRangeException(nameof(volumeCount));
+        return $"p=/mnt/boiler-volume-0; {{ [ \"$(cat /sys/block/vdb/serial 2>/dev/null || cat /sys/block/vdb/device/serial)\" = boiler-payload-0 ] && mkdir -p \"$p\" && mount -t vfat -o ro /dev/vdb1 \"$p\" && sh \"$p/launcher.sh\" {volumeCount} {task} {(secureInput ? 1 : 0)}; }} || echo OXP_TASK_LAUNCH_FAILED; poweroff\n";
     }
 
     internal static void CopyIntegrationPayload(string? privatePayload, string payload, bool metadataOnly = false)

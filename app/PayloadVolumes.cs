@@ -8,12 +8,14 @@ internal static class PayloadVolumes
     internal static async Task<string[]> PrepareAsync(string source, string destination, CancellationToken token, long limit = 400L * 1024 * 1024)
     {
         var root = Path.GetFullPath(source);
-        var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories).OrderBy(path => Path.GetRelativePath(root, path).StartsWith("apks" + Path.DirectorySeparatorChar, StringComparison.Ordinal) ? 0 : 1).ThenBy(path => path, StringComparer.Ordinal).ToArray();
+        var launcher = Path.Combine(root, "launcher.sh");
+        bool Bootstrap(string path) => path == launcher || Path.GetRelativePath(root, path).StartsWith("apks" + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+        var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories).OrderBy(path => Bootstrap(path) ? 0 : 1).ThenBy(path => path, StringComparer.Ordinal).ToArray();
         foreach (var path in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories).Prepend(root))
             if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Payload volumes cannot contain links.");
         long Weight(string path) => checked(((new FileInfo(path).Length + 8191) / 8192 + 1) * 8192);
-        if (files.Where(path => Path.GetRelativePath(root, path).StartsWith("apks" + Path.DirectorySeparatorChar, StringComparison.Ordinal)).Sum(Weight) > limit)
-            throw new IOException("Bootstrap packages exceed one readonly transport volume.");
+        if (files.Where(Bootstrap).Sum(Weight) > limit)
+            throw new IOException("Bootstrap files exceed one readonly transport volume.");
         if (files.Any(path => Weight(path) > limit)) throw new IOException("A payload file exceeds the readonly transport limit; split the package's large payload file.");
         // Windows QEMU vvfat can silently omit files at MAX_PATH even when
         // .NET and Python can read them. Relocate deep roots before export.
@@ -44,25 +46,4 @@ internal static class PayloadVolumes
         return volumes.ToArray();
     }
 
-    internal static string MountCommand(int count)
-    {
-        if (count == 1) return "mkdir -p /mnt/payload && mount -t vfat -o ro /dev/vdb1 /mnt/payload";
-        if (count is < 1 or > 8) throw new ArgumentOutOfRangeException(nameof(count));
-        var commands = new List<string> { "mkdir -p /mnt/payload" };
-        for (var i = 0; i < count; i++)
-        {
-            // Match the explicit transport serial; never infer a target disk from size or labels.
-            commands.Add($"d=; for p in /sys/block/vd*; do s=$(cat \"$p/serial\" 2>/dev/null || cat \"$p/device/serial\" 2>/dev/null); if [ \"$s\" = boiler-payload-{i} ]; then [ -z \"$d\" ] || exit 1; d=/dev/${{p##*/}}1; fi; done; [ -n \"$d\" ] || exit 1");
-            commands.Add($"mkdir -p /mnt/boiler-volume-{i} && mount -t vfat -o ro \"$d\" /mnt/boiler-volume-{i}");
-        }
-        // FAT cannot be an overlayfs lower layer. Assemble only on a dedicated,
-        // disposable disk, then make the complete payload readonly before scripts run.
-        commands.Add("printf '%s\\n' /media/sr0/apks > /etc/apk/repositories; mkdir -p /var/cache/apk && apk --cache-dir /var/cache/apk add --no-network --no-progress /mnt/boiler-volume-0/apks/*.apk && touch /var/cache/apk/.boiler-apk-prepared");
-        commands.Add("modprobe ext4");
-        commands.Add("d=; for p in /sys/block/vd*; do s=$(cat \"$p/serial\" 2>/dev/null || cat \"$p/device/serial\" 2>/dev/null); if [ \"$s\" = boiler-payload-merge ]; then [ -z \"$d\" ] || exit 1; d=/dev/${p##*/}; fi; done; [ -n \"$d\" ] || exit 1");
-        commands.Add("mkfs.ext4 -q -F \"$d\" && mount -t ext4 \"$d\" /mnt/payload");
-        for (var i = 0; i < count; i++) commands.Add($"cp -R /mnt/boiler-volume-{i}/. /mnt/payload/");
-        commands.Add("sync && mount -o remount,ro /mnt/payload");
-        return "( " + string.Join(" && ", commands.Select(command => "{ " + command + "; }")) + " )";
-    }
 }
