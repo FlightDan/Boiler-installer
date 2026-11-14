@@ -39,11 +39,12 @@ function Get-SteamOsBootNativeVolumePaths {
     if ($script:pathsMode -ne 'mock') { throw 'Real native volume enumeration forbidden in synthetic checks.' }
     return $script:paths
 }
-function Get-SteamOsBootNativeHostVolume([string]$Path) {
+function Get-SteamOsBootNativeHostVolume([string]$Path, [bool]$ActivePageFile=$false) {
     if ($script:hostMode -eq 'forbidden') { throw 'Real native host-path read forbidden in synthetic checks.' }
     $script:opened+=@($Path)
     if ($script:hostMode -eq 'denied') { throw (New-Object ComponentModel.Win32Exception 5) }
     if ($script:hostMode -eq 'sharing') { throw (New-Object ComponentModel.Win32Exception 32) }
+    if ($script:hostMode -eq 'active-pagefile' -and -not $ActivePageFile) { throw (New-Object ComponentModel.Win32Exception 32) }
     if ($script:hostMode -eq 'missing') { return $null }
     if ($script:hostMode -eq 'ancestor' -and $Path -ne 'Q:\host') { return $null }
     return $script:hostResult
@@ -65,11 +66,11 @@ Assert-Refused { [BoilerSteamBootNative]::VolumeFromFinalPath('\\?\UNC\server\sh
 foreach ($invalid in @('relative.dmp','Q:relative.dmp','\Windows\file','\\server\share\file','\\.\PhysicalDrive0','\\?\GLOBALROOT\Device\HarddiskVolume1\file')) {
     Assert-Refused { [BoilerSteamBootNative]::LocalHostPath($invalid) } ('reject-nonlocal-or-relative-host-path:'+ $invalid)
 }
-Assert-Check ([BoilerSteamBootNative]::MissingPathParent('Q:\host\future\dump.dmp') -eq 'Q:\host\future') 'missing-file-parent'
-Assert-Check ([BoilerSteamBootNative]::MissingPathParent('Q:\host') -eq 'Q:\') 'missing-child-reaches-drive-root'
-Assert-Check ([BoilerSteamBootNative]::MissingPathParent($root+'host') -ceq $root) 'missing-child-reaches-native-root'
-Assert-Refused { [BoilerSteamBootNative]::MissingPathParent('Q:\') } 'missing-drive-root-is-not-safe'
-Assert-Refused { [BoilerSteamBootNative]::MissingPathParent($root) } 'missing-volume-root-is-not-safe'
+Assert-Check ([BoilerSteamBootNative]::HostPathParent('Q:\host\future\dump.dmp') -eq 'Q:\host\future') 'missing-file-parent'
+Assert-Check ([BoilerSteamBootNative]::HostPathParent('Q:\host') -eq 'Q:\') 'missing-child-reaches-drive-root'
+Assert-Check ([BoilerSteamBootNative]::HostPathParent($root+'host') -ceq $root) 'missing-child-reaches-native-root'
+Assert-Refused { [BoilerSteamBootNative]::HostPathParent('Q:\') } 'missing-drive-root-is-not-safe'
+Assert-Refused { [BoilerSteamBootNative]::HostPathParent($root) } 'missing-volume-root-is-not-safe'
 # Synthetic VOLUME_DISK_EXTENTS buffers only; no FindForDisk/device call exists.
 function New-ExtentBytes([uint32]$Count=1) {
     $bytes=New-Object byte[] (8+24*$Count)
@@ -160,6 +161,9 @@ foreach ($mode in @('denied','sharing')) {
     Assert-Refused { Test-SteamOsBootHostPath $disk $part 'Q:\host\dump.dmp' } ('host-error-is-not-nonexistence:'+ $mode)
     Assert-Check ($script:opened.Count -eq 1) ('host-error-does-not-walk-to-parent:'+ $mode)
 }
+$script:hostMode='active-pagefile'
+Assert-Check (Test-SteamOsBootHostPath $disk $part 'Q:\host\pagefile.sys' -ActivePageFile) 'active-pagefile-still-protects-exactly-bound-host-volume'
+Assert-Refused { Test-SteamOsBootHostPath $disk $part 'Q:\host\pagefile.sys' } 'pagefile-name-alone-does-not-authorize-sharing-fallback'
 $script:hostMode='missing'
 Assert-Refused { Test-SteamOsBootHostPath $disk $part 'Q:\host\dump.dmp' } 'missing-all-host-ancestors-refused'
 $script:hostMode='mock'; $script:hostResult=New-NativeVolume $root $multi

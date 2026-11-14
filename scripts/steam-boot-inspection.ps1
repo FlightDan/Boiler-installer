@@ -114,9 +114,7 @@ public static class BoilerSteamBootNative {
         }
         return System.IO.Path.GetFullPath(path);
     }
-    public static string MissingPathParent(string path) {
-        // Called only for Win32 FILE_NOT_FOUND / PATH_NOT_FOUND, never for
-        // ACCESS_DENIED, sharing errors or an unsupported final-path format.
+    public static string HostPathParent(string path) {
         path=LocalHostPath(path); int root=path.StartsWith(@"\\?\",StringComparison.Ordinal) ? 49 : 3;
         string trimmed=path.TrimEnd('\\');
         if (trimmed.Length<root) throw new IOException("No existing host-path ancestor.");
@@ -124,7 +122,7 @@ public static class BoilerSteamBootNative {
         if (at<root-1) throw new IOException("No existing host-path ancestor.");
         return at==root-1 ? path.Substring(0,root) : trimmed.Substring(0,at);
     }
-    public static BoilerSteamBootVolume FromHostPath(string path) {
+    public static BoilerSteamBootVolume FromHostPath(string path, bool activePageFile) {
         path=LocalHostPath(path);
         // access=0 is metadata only; BACKUP_SEMANTICS supports directories.
         // Do not OPEN_REPARSE_POINT: bind the resolved file/directory, not
@@ -132,9 +130,17 @@ public static class BoilerSteamBootNative {
         using (var handle=CreateFile(path,0,7,IntPtr.Zero,3,0x02000000,IntPtr.Zero)) {
             if (handle.IsInvalid) {
                 int code=Marshal.GetLastWin32Error();
-                // Null means ONLY CreateFile's FILE/PATH_NOT_FOUND. Keep this
-                // distinct from access denial and final-path/extent failures.
                 if (code==2 || code==3) return null;
+                if (activePageFile && code==32) { // ERROR_SHARING_VIOLATION
+                    var attributes=File.GetAttributes(path);
+                    const FileAttributes nonRegular=FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint;
+                    // Query the leaf without opening the locked file. A regular
+                    // leaf is on its parent's volume, even under a mount point.
+                    if ((attributes & nonRegular)==0) {
+                        var parent=FromHostPath(HostPathParent(path),false);
+                        if (parent!=null) return parent;
+                    }
+                }
                 throw new Win32Exception(code,"Open host-path metadata");
             }
             var name=new StringBuilder(32768);
@@ -156,9 +162,9 @@ function Get-SteamOsBootNativeVolumePaths {
     Initialize-SteamOsBootReader
     [BoilerSteamBootNative]::EnumerateVolumePaths()
 }
-function Get-SteamOsBootNativeHostVolume([string]$Path) {
+function Get-SteamOsBootNativeHostVolume([string]$Path, [bool]$ActivePageFile=$false) {
     Initialize-SteamOsBootReader
-    [BoilerSteamBootNative]::FromHostPath($Path)
+    [BoilerSteamBootNative]::FromHostPath($Path,$ActivePageFile)
 }
 function Get-SteamOsBootTarget($Disk, $Partition) {
     $number=0; $offset=[long]0; $size=[long]0
@@ -199,14 +205,14 @@ function Get-SteamOsBootRoot($Disk, $Partition, $Volume) {
     if ($found.Count -ne 1) { throw 'No unique native volume for the reviewed partition.' }
     return $found[0]
 }
-function Test-SteamOsBootHostPath($Disk, $Partition, [string]$Path) {
+function Test-SteamOsBootHostPath($Disk, $Partition, [string]$Path, [switch]$ActivePageFile) {
     $target=Get-SteamOsBootTarget $Disk $Partition
     Initialize-SteamOsBootReader
     $pathToOpen=[BoilerSteamBootNative]::LocalHostPath($Path)
-    while ($true) {
+    $native=Get-SteamOsBootNativeHostVolume $pathToOpen $ActivePageFile.IsPresent
+    while ($null -eq $native) {
+        $pathToOpen=[BoilerSteamBootNative]::HostPathParent($pathToOpen)
         $native=Get-SteamOsBootNativeHostVolume $pathToOpen
-        if ($null -ne $native) { break }
-        $pathToOpen=[BoilerSteamBootNative]::MissingPathParent($pathToOpen)
     }
     if ($native.IsOptical) { throw 'Host-path volume binding is unavailable.' }
     $null=[BoilerSteamBootNative]::CanonicalVolumePath($native.Path)

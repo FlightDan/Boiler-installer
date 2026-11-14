@@ -11,9 +11,12 @@ function Remove-Partition { throw 'Real deletion forbidden' }
 function Test-UnrecognizedPartitionAttributes { throw 'Unexpected generic native probe' }
 function Get-SteamOsDeletionMetadata { $script:native }
 function Get-SteamOsBootRoot { if ($script:rootFailure) { throw 'Unbound volume' }; '\\?\Volume{11111111-1111-4111-8111-111111111111}\' }
-function Test-SteamOsBootHostPath { $script:hostHit }
+function Test-SteamOsBootHostPath($Disk, $Partition, [string]$Path, [switch]$ActivePageFile) {
+    if ($ActivePageFile.IsPresent -ne ($Path -in $script:pagefiles.Name)) { throw 'Active pagefile classification differs from live inventory.' }
+    $script:hostHit -or ($ActivePageFile -and $script:pagefileOnTarget)
+}
 function Get-SteamOsBootContentBlockReason { $script:contentReason }
-function Get-CimInstance { @() }
+function Get-CimInstance { $script:pagefiles }
 function Get-ItemProperty { [pscustomobject]@{ DumpFile = 'C:\Windows\MEMORY.DMP' } }
 function Test-Path { $true }
 $disk = [pscustomobject]@{ Number=9999; Guid='22222222-2222-4222-8222-222222222222'; Size=128GB; PartitionStyle='GPT'; BusType='NVMe'; LogicalSectorSize=512; IsOffline=$false; IsReadOnly=$false }
@@ -22,7 +25,12 @@ $volume = [pscustomobject]@{ FileSystemType='FAT32'; HealthStatus='Healthy'; Pat
 $evidence = [pscustomobject]@{ guid=$part.Guid; offset=$part.Offset; size=$part.Size; gptType=$part.GptType; gptName='esp'; gptAttributes='0'; nativeGptVerified=$true }
 $script:native = [pscustomobject]@{ Id=[guid]$part.Guid; Type=[guid]$part.GptType; Offset=$part.Offset; Size=$part.Size; Name='esp'; Attributes='0' }
 $script:rootFailure=$false; $script:hostHit=$false; $script:contentReason=''
+$script:pagefiles=@([pscustomobject]@{ Name='Q:\pagefile.sys' })
+$script:pagefileOnTarget=$false
 Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -eq '') 'steamos-esp-is-deletable-after-native-and-host-checks'
+$script:pagefileOnTarget=$true
+Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume $evidence) -match '^This volume contains Windows') 'active-pagefile-on-target-stays-protected'
+$script:pagefileOnTarget=$false
 Assert-Check ((Get-PartitionDeletionBlockReason $disk $part $volume) -ne '') 'ordinary-efi-remains-protected'
 foreach ($key in @('IsBoot','IsSystem','IsOffline','IsReadOnly')) {
     $part.$key=$true

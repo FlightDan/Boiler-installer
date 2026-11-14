@@ -97,14 +97,15 @@ function Get-PartitionDeletionBlockReason($Disk, $Partition, $Volume, $SteamOsEv
         if ([string]$Partition.DriveLetter -match '^[A-Za-z]$') { $paths += ([string]$Partition.DriveLetter + ':\') }
         # Protect the installer, Windows, temp, pagefile and dump volumes, including folder mount points.
         $protectedPaths = @((Split-Path $PSScriptRoot -Parent), $env:SystemRoot, $env:TEMP, $env:TMP)
-        $protectedPaths += @(Get-CimInstance Win32_PageFileUsage -ErrorAction Stop | ForEach-Object { $_.Name })
+        $activePageFiles = @(Get-CimInstance Win32_PageFileUsage -ErrorAction Stop | ForEach-Object { $_.Name })
+        $protectedPaths += $activePageFiles
         $crash = Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -ErrorAction Stop
         foreach ($key in @('DumpFile','MinidumpDir','DedicatedDumpFile')) {
             if ($crash.$key) { $protectedPaths += [Environment]::ExpandEnvironmentVariables([string]$crash.$key) }
         }
         foreach ($protectedPath in $protectedPaths) {
             if (-not $protectedPath) { continue }
-            if ($steamBoot -and (Test-SteamOsBootHostPath $Disk $Partition $protectedPath)) {
+            if ($steamBoot -and (Test-SteamOsBootHostPath $Disk $Partition $protectedPath -ActivePageFile:($protectedPath -in $activePageFiles))) {
                 return 'This volume contains Windows, the installer, temporary files, a pagefile or crash dump.'
             }
             $full = [IO.Path]::GetFullPath($protectedPath).TrimEnd('\') + '\'
