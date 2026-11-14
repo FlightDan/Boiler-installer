@@ -1,8 +1,10 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace OxpInstaller;
@@ -181,8 +183,13 @@ internal static class SteamOsPartitionChecks
                     var capture = Path.Combine(directory, language + "-picker-" + size.Width + ".png");
                     try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, capture); captures.Add(capture); } catch (IOException error) { captureErrors.Add(error.Message); }
                 }
-                var dialog = PartitionDeletion.Confirmation(request with { Language = language });
+                // Use the real helper's window configuration with synthetic data only.
+                var dialog = PartitionDeletion.Confirmation(request with { Example = false, Language = language });
                 dialog.ShowActivated = false; dialog.MaxHeight = 540; dialog.Show(); await Flush(dialog);
+                const uint noMoveSizeOrActivation = 0x0001 | 0x0002 | 0x0010;
+                Require(SetWindowPos(new WindowInteropHelper(window).Handle, IntPtr.Zero, 0, 0, 0, 0, noMoveSizeOrActivation),
+                    language + "-raise-installer-in-normal-window-order");
+                Require(IsAbove(dialog, window), language + "-elevated-confirmation-is-above-installer-without-activation");
                 var panel = (StackPanel)((ScrollViewer)dialog.Content).Content;
                 var consent = panel.Children.OfType<CheckBox>().Single();
                 var buttons = panel.Children.OfType<WrapPanel>().Single().Children.OfType<Button>().ToArray();
@@ -221,5 +228,20 @@ internal static class SteamOsPartitionChecks
             scope = "Synthetic GPT snapshots, batch simulation, WPF routed controls and layout only. No native disk queries, deletion, installation, firmware writes or device acceptance." }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(directory, "checks.json"), report); return report;
     }
+    private static bool IsAbove(Window dialog, Window installer)
+    {
+        const uint nextWindow = 2;
+        var main = new WindowInteropHelper(installer).Handle;
+        for (var handle = new WindowInteropHelper(dialog).Handle; handle != IntPtr.Zero; handle = GetWindow(handle, nextWindow))
+            if (handle == main) return true;
+        return false;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr handle, uint command);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr handle, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
+
     private static async Task Flush(Window window) { window.UpdateLayout(); await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); }
 }

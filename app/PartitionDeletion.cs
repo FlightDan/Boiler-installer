@@ -80,6 +80,9 @@ public static class PartitionDeletion
         var window = new Window { Title = bulk ? L("删除 SteamOS 分区", "Delete SteamOS partitions") : L("删除选定分区", "Delete selected partition"), Width = 580, SizeToContent = SizeToContent.Height,
             MaxHeight = SystemParameters.WorkArea.Height, WindowStartupLocation = WindowStartupLocation.CenterScreen,
             ResizeMode = ResizeMode.NoResize, FontSize = 15, Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(25,43,67)) };
+        // The elevated helper has no WPF owner in the installer process.
+        // Keep its confirmation above the installer even if activation is denied.
+        window.Topmost = !request.Example;
         var panel = new StackPanel { Margin = new Thickness(24) };
         void Text(string value, bool title = false) => panel.Children.Add(new TextBlock { Text = value, TextWrapping = TextWrapping.Wrap,
             FontSize = title ? 21 : 15, FontWeight = title ? FontWeights.SemiBold : FontWeights.Normal, Margin = new Thickness(0,0,0,16) });
