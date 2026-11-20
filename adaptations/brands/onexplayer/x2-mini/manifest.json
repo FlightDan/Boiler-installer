@@ -393,7 +393,7 @@
         "common/sleep/runtime/LICENSE"
       ],
       "status": "shared_asset",
-      "notes": "独立 Decky 插件 0.1.3。界面显示创建交换文件所需空间，调节 S4 延时后自动保存。插件在休眠事务中自动协调已核验的 SteamOS 交换文件。"
+      "notes": "独立 Decky 插件 0.1.4。显示交换文件所需空间，延时自动保存。系统暂时无法开启 S4 时，界面显示具体原因。"
     },
     {
       "id": "oxp3-light",

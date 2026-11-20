@@ -53,7 +53,7 @@ const catalog = {
   "external resume configuration detected": ["外部の復帰設定が検出されました", "외부 복원 설정이 감지되었습니다", "Externe Fortsetzungskonfiguration erkannt", "Configuration de reprise externe détectée", "Se detectó una configuración externa de reanudación", "偵測到外部恢復設定"],
   "EFI variables unavailable": ["EFI 変数を利用できません", "EFI 변수를 사용할 수 없습니다", "EFI-Variablen nicht verfügbar", "Variables EFI indisponibles", "Variables EFI no disponibles", "EFI 變數無法使用"],
   "pending EFI location needs inspection": ["保留中の EFI 位置を確認してください", "대기 중인 EFI 위치를 확인해야 합니다", "Ausstehenden EFI-Speicherort prüfen", "Emplacement EFI en attente à vérifier", "Debe revisarse la ubicación EFI pendiente", "需要檢查待處理的 EFI 位置"],
-  "resume is already configured": ["復帰が既に設定されています", "복원이 이미 설정되어 있습니다", "Fortsetzung ist bereits konfiguriert", "La reprise est déjà configurée", "La reanudación ya está configurada", "恢復功能已設定"],
+  "The kernel still has a hibernation resume target.": ["カーネルに休止状態の復帰先が残っています。", "커널에 최대 절전 복원 대상이 남아 있습니다.", "Im Kernel ist noch ein Ruhezustandsziel eingestellt.", "Le noyau conserve une cible de reprise d’hibernation.", "El núcleo conserva un destino de reanudación de hibernación.", "核心仍保留休眠恢復位置。"],
   "resume configuration unavailable": ["復帰設定を取得できません", "복원 설정을 확인할 수 없습니다", "Fortsetzungskonfiguration nicht verfügbar", "Configuration de reprise indisponible", "Configuración de reanudación no disponible", "無法讀取恢復設定"],
   "other swap is active": ["別のスワップが有効です", "다른 스왑이 활성화되어 있습니다", "Anderer Swap ist aktiv", "Un autre espace d’échange est actif", "Hay otro espacio de intercambio activo", "其他交換區正在使用中"],
   "systemd sleep support is unavailable": ["systemd のスリープ機能を利用できません", "systemd 절전 기능을 사용할 수 없습니다", "systemd-Schlafunterstützung nicht verfügbar", "Prise en charge de la veille systemd indisponible", "Compatibilidad de suspensión de systemd no disponible", "systemd 睡眠功能無法使用"],
@@ -85,6 +85,7 @@ const catalog = {
   "Reading status…": ["状態を読み込み中…", "상태를 읽는 중…", "Status wird gelesen…", "Lecture de l’état…", "Leyendo estado…", "正在讀取狀態…"],
   "System integration is not active; see setup instructions.": ["システム連携が有効ではありません。設定手順を確認してください。", "시스템 연동이 활성화되지 않았습니다. 설정 지침을 확인하세요.", "Systemintegration ist nicht aktiv; siehe Einrichtungsanleitung.", "L’intégration système est inactive ; consultez les instructions de configuration.", "La integración del sistema no está activa; consulta las instrucciones de configuración.", "系統整合未啟用；請參閱設定說明。"],
   "Swap cleanup requires attention.": ["スワップのクリーンアップを確認してください。", "스왑 정리를 확인해야 합니다.", "Swap-Bereinigung erfordert Aufmerksamkeit.", "Le nettoyage de l’échange nécessite une intervention.", "La limpieza del intercambio requiere atención.", "交換區清理需要處理。"],
+  "S4 cannot be enabled. {details}": ["S4 を有効にできません。{details}", "S4를 켤 수 없습니다. {details}", "S4 lässt sich nicht aktivieren. {details}", "Impossible d’activer l’hibernation S4. {details}", "No se puede activar la hibernación S4. {details}", "暫時無法開啟 S4。{details}"],
   "Selected mode unavailable: ": ["選択したモードを利用できません: ", "선택한 모드를 사용할 수 없음: ", "Gewählter Modus nicht verfügbar: ", "Mode sélectionné indisponible : ", "Modo seleccionado no disponible: ", "所選模式無法使用："],
   "Saved mode is unavailable; system suspend will be used.": ["保存したモードを利用できません。システムのスリープを使用します。", "저장된 모드를 사용할 수 없어 시스템 절전을 사용합니다.", "Gespeicherter Modus nicht verfügbar; System-Energiesparen wird verwendet.", "Mode enregistré indisponible ; la veille système sera utilisée.", "El modo guardado no está disponible; se usará la suspensión del sistema.", "已儲存模式無法使用；將使用系統待機。"],
   "Retry cleanup": ["クリーンアップを再試行", "정리 다시 시도", "Bereinigung erneut versuchen", "Réessayer le nettoyage", "Reintentar limpieza", "重試清理"]
@@ -97,7 +98,7 @@ const reasons = {
   external_resume: ["external resume configuration detected", "检测到外部恢复配置"],
   efivars_unavailable: ["EFI variables unavailable", "EFI 变量不可用"],
   pending_efi_location: ["pending EFI location needs inspection", "待处理的 EFI 位置需要检查"],
-  resume_configured: ["resume is already configured", "恢复功能已配置"],
+  resume_configured: ["The kernel still has a hibernation resume target.", "内核仍保留休眠恢复位置。"],
   resume_unavailable: ["resume configuration unavailable", "无法读取恢复配置"],
   other_swap: ["other swap is active", "其他交换区正在使用"],
   systemd_unsupported: ["systemd sleep support is unavailable", "systemd 睡眠功能不可用"],
@@ -147,8 +148,10 @@ function Content() {
   }, []);
   const mode = step === 0 && legacy == null ? "hibernate" : "auto";
   const supported = !!status && status.available_modes.includes(mode);
+  const needsCleanup = !!status?.swap_state && status.swap_state !== "absent";
+  const canEnable = !!status?.router_installed && status.available_modes.includes("hibernate") && !needsCleanup;
   const changeEnabled = async value => {
-    if (delayQueue.current) return;
+    if (delayQueue.current || (value && !canEnable)) return;
     setBusy(true); setError("");
     try {
       const data = await setEnabled(value);
@@ -159,10 +162,12 @@ function Content() {
       const message = String(e).includes("Insufficient free space for swap")
         ? tr("Free up space to create the S4 swap file, then try again.", "请先腾出空间创建 S4 交换文件，再重试。")
         : String(e);
-      setError(message);
       try {
         const data = await getStatus(); setStatus(data); setEnabledState(data.enabled === true);
         setStep(position(data)); setLegacy(legacyDelay(data));
+        const nowUnavailable = value && !data.enabled && !data.available_modes.includes("hibernate") &&
+          String(e).includes("S4 is unavailable on this system");
+        if (!nowUnavailable) setError(message);
       } catch (readError) {
         setStatus(null); setError(message + "; " + String(readError));
       }
@@ -217,17 +222,18 @@ function Content() {
   const label = n => n === 0 ? tr("Immediately", "立即") :
     n === step && legacy != null ? tr("{minutes} min", "{minutes} 分钟", {minutes: legacy}) :
     ["", tr("20 min", "20 分钟"), tr("1 hour", "1 小时"), tr("2 hours", "2 小时"), tr("12 hours", "12 小时"), tr("24 hours", "24 小时")][n];
-  const missing = status?.reasons?.[mode];
+  const missing = status?.reasons?.[enabled ? mode : "hibernate"];
   const details = missing ? (Array.isArray(missing) ? missing : [missing]).map(reasonText).join("; ") : "";
   const notice = !status ? tr("Reading status…", "正在读取状态…") :
     !status.router_installed ? tr("System integration is not active; see setup instructions.", "系统集成未启用；请参阅设置说明。") :
-    !enabled && status.swap_state && status.swap_state !== "absent" ? tr("Swap cleanup requires attention.", "交换区清理需要处理。") :
+    !enabled && needsCleanup ? tr("Swap cleanup requires attention.", "交换区清理需要处理。") :
+    !enabled && !canEnable ? tr("S4 cannot be enabled. {details}", "暂时无法开启 S4。{details}", {details}).trim() :
     enabled && !supported ? tr("Selected mode unavailable: ", "所选模式不可用：") + details :
     enabled && !savingDelay && !status.ready ? tr("Saved mode is unavailable; system suspend will be used.", "已保存模式不可用；将使用系统待机。") : "";
   return h(U.PanelSection, {title: "Boiler S2/S4 switcher"},
     h(U.PanelSectionRow, {key: "switch"}, h(U.ToggleField, {
       label: tr("Enable S4 sleep", "开启 S4 睡眠"), checked: enabled,
-      disabled: !status || !status.router_installed || busy || savingDelay,
+      disabled: !status?.router_installed || (!enabled && !canEnable) || busy || savingDelay,
       onChange: changeEnabled,
     })),
     h(U.PanelSectionRow, {key: "delay"}, h(U.SliderField, {
@@ -240,7 +246,7 @@ function Content() {
       tr("Enabling S4 sleep requires {size} MB to create a swap file.",
          "开启 S4 睡眠后需要 {size} MB 空间创建交换文件", {size: Math.ceil(status.required_swap_bytes / 1048576)}))) : null,
     notice ? h(U.PanelSectionRow, {key: "status"}, h("div", null, notice)) : null,
-    status && !enabled && status.swap_state && status.swap_state !== "absent"
+    !enabled && needsCleanup
       ? h(U.PanelSectionRow, {key: "cleanup"}, h(U.ButtonItem, {
           disabled: busy, onClick: () => changeEnabled(false),
         }, tr("Retry cleanup", "重试清理"))) : null,

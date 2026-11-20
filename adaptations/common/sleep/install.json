@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "ComponentManifest",
   "id": "boiler:s2s4",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "name": {
     "en": "Boiler S2-S4 switcher",
     "zh": "Boiler S2-S4 switcher"
@@ -39,15 +39,15 @@
     {
       "source": "common/sleep/runtime/dist/index.js",
       "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/dist/index.js",
-      "size": 21888,
-      "sha256": "5a1fa96856cef0df8774f2396cf23b8d0b1a6da37c5727e5a87a4e4309625b3c",
+      "size": 22880,
+      "sha256": "2bbaa72689a491caf1dcf67f2a3685c8b24ccc3d6bbb6a6c336c58541c8f1ca9",
       "mode": 420
     },
     {
       "source": "common/sleep/runtime/package.json",
       "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/package.json",
       "size": 59,
-      "sha256": "e163c21465cf5b1391fc2fa754e481ca3d85b62130312f69b2688a456293ea13",
+      "sha256": "f2ce9255c2062c7a8e8476066a4744d8e3aa139e2791baca61f24630f7d02421",
       "mode": 420
     },
     {

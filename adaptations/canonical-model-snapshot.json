@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "71bba1d7ff6b0979f4554b8ecd097373b9a7290d",
+  "commit": "94866cd8678911a5c66cf3b044df96918047626e",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -461,13 +461,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/manifest.json",
-      "size": 16265,
-      "sha256": "045e599d69553cdfa51a8dfabc861c81533a35905eaecb3480abeb07464f3237"
+      "size": 16229,
+      "sha256": "18635c11b756625bdfe82566f73910ac053d1658fe20474e52d004f5dd19dca3"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/model.md",
-      "size": 7567,
-      "sha256": "9f215fda6a386b2f9f1ed7563cdcff3fe9b809f905833e362837e4a5ecbd692b"
+      "size": 7531,
+      "sha256": "b00daf1a774a04fc422efe42ccc26f505ac5b05eed4582ea214688fa68ad174d"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -801,13 +801,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
-      "size": 19517,
-      "sha256": "c351ecd4e0d9713f7bdbf05dfd8d82b71e8eee00f55f45bbc380808065315ee9"
+      "size": 19481,
+      "sha256": "0933cc632ed20d280c637f629707655c11955f382c991562094ba7eb0e43c63e"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/model.md",
-      "size": 9399,
-      "sha256": "ec1cdaca2503a833136c75d5f1f35984fe68b637f2cc6183fc5e701f66049a70"
+      "size": 9363,
+      "sha256": "cc4ef15a6b38bad567b4a7f5edaf477d84abdc47a4816a73fa080c7844474e96"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
@@ -1652,7 +1652,7 @@
     {
       "path": "adaptations/common/sleep/install.json",
       "size": 2596,
-      "sha256": "0e99f787b66c14ccaa786435f36a048b84864b6851bf7b09201c98720a764753"
+      "sha256": "8010c73837dda0fbac82b48765d41b7f36718c2717df020f086bdce68c16e8bc"
     },
     {
       "path": "adaptations/common/sleep/runtime/90-boiler-sleep.conf",
@@ -1666,8 +1666,8 @@
     },
     {
       "path": "adaptations/common/sleep/runtime/dist/index.js",
-      "size": 21888,
-      "sha256": "5a1fa96856cef0df8774f2396cf23b8d0b1a6da37c5727e5a87a4e4309625b3c"
+      "size": 22880,
+      "sha256": "2bbaa72689a491caf1dcf67f2a3685c8b24ccc3d6bbb6a6c336c58541c8f1ca9"
     },
     {
       "path": "adaptations/common/sleep/runtime/main.py",
@@ -1677,7 +1677,7 @@
     {
       "path": "adaptations/common/sleep/runtime/package.json",
       "size": 59,
-      "sha256": "e163c21465cf5b1391fc2fa754e481ca3d85b62130312f69b2688a456293ea13"
+      "sha256": "f2ce9255c2062c7a8e8476066a4744d8e3aa139e2791baca61f24630f7d02421"
     },
     {
       "path": "adaptations/common/sleep/runtime/plugin.json",
@@ -1692,7 +1692,7 @@
     {
       "path": "adaptations/common/sleep/source-lock.json",
       "size": 1589,
-      "sha256": "6b8bacdc4a5a34e07d1b4e7171af192ee11c60add37029981c6b0b00b70daf94"
+      "sha256": "9d19d6186f8acebecf4d9d8c61ea3d4b0c9e6c71238a481bb10bee05cc64c094"
     },
     {
       "path": "adaptations/common/ssd/acer/gm7/GM7_POLICY.md",
@@ -1716,13 +1716,13 @@
     },
     {
       "path": "adaptations/devices/onexplayer/oxp3.toon",
-      "size": 22854,
-      "sha256": "760dcddbb367d17a6b4e87a14ab9254da6d22a5a67f942bcf6017f5976cda974"
+      "size": 22818,
+      "sha256": "a47fa89e0cfbc345da552f6eb3c7ff3b365eed99cb1a3cde1d653e2fa5d8ea41"
     },
     {
       "path": "adaptations/devices/onexplayer/x2-mini.toon",
-      "size": 19874,
-      "sha256": "6a95ac0c92c7aa3eee50dde2e996bb785110eaaa5d931d5cb24943e98d5c5650"
+      "size": 19838,
+      "sha256": "4e84eaac2c05d0851fa426185bb2e02f4a8e69e5ffcbf176cb8ec4cd20437e08"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
@@ -1863,6 +1863,11 @@
       "path": "adaptations/records/migrations/s4-autosave-20261120.md",
       "size": 514,
       "sha256": "3fdbc30608a4df9b7d62e206f8add4a1c635a2146ed560151dd60cf49e7e7810"
+    },
+    {
+      "path": "adaptations/records/migrations/s4-availability-20261120.md",
+      "size": 488,
+      "sha256": "8b0601d351b5b64d92c4b9ad3fafd56dbf767fbef81d6d6b6eb288a2f9ff8447"
     },
     {
       "path": "adaptations/records/migrations/s4-steamos-swap-20261120.md",
@@ -2346,8 +2351,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 84736,
-      "sha256": "000ab2dceee35144278d32e08dc66e58b12de480eaaae649597d2fcb154bafd3"
+      "size": 84915,
+      "sha256": "ba350d58aa249a39952368216777fb1f00d564f5ef84b80fa5fc25c771ed12c0"
     }
   ]
 }
