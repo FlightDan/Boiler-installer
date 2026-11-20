@@ -84,7 +84,7 @@ class FingerprintProviderSourceTests(unittest.TestCase):
             self.assertIn(source + 'identity.py', paths)
             self.assertEqual({name for name in ('bf63112', 'fte3600')
                               if source + name + '/source.toon' in paths}, expected)
-            self.assertEqual(component['status'], 'external_runtime_required')
+            self.assertEqual(component['status'], 'external_locked_runtime')
             self.assertTrue(component['default'])
             self.assertFalse(record['installable'])
 

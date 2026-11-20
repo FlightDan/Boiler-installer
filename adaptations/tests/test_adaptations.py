@@ -44,7 +44,11 @@ class AdaptationCollectionTests(unittest.TestCase):
         self.assertEqual(result['models'], 2)
         self.assertFalse(result['installable'])
         models = {model['id']: model for _, model in collection.records(ROOT)}
-        self.assertEqual(len(models['guide:oxp3']['components']), 29)
+        for model in models.values():
+            components = {item['id']: item for item in model['components']}
+            self.assertTrue(components['s2s4']['default'])
+            self.assertIn('decky', components['s2s4']['dependencies'])
+            self.assertFalse(components['intel-cpu-microcode']['default'])
         x2 = {item['id']: item for item in models['guide:x2-mini']['components']}
         self.assertEqual(x2['pl4-175w']['status'], 'implementation_missing')
         self.assertEqual(x2['pl4-175w']['sources'], [])
@@ -207,7 +211,9 @@ class AdaptationCollectionTests(unittest.TestCase):
                 model['resource_model']['id'] = model['canonical_id']
                 model['device_record_path'] = 'devices/onexplayer-test-model.json'
                 model['guide'] = guide
-                next(item for item in model['components'] if item['id']=='fingerprint-unlock')['default'] = False
+                for item in model['components']:
+                    if item['id'] in ('fingerprint-unlock', 's2s4'):
+                        item['default'] = False
                 if case == 'no-gyro':
                     model['components'] = [item for item in model['components'] if item['id'] != 'gyro']
                 else:

@@ -57,7 +57,6 @@ HISTORICAL_INPUT_LOCK='adaptations/records/oxp3-shared-base/opti031-inputs.json'
 HISTORICAL_INPUT_LOCK_SHA256='f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bacc36bcd222abfa6'
 OXP_SHARED_ANCHOR='c80efd9cce07d35c5f8828d17b5fab8c15fbc177a10476754cfac04db3f27485'
 OXP_FULL_ANCHOR='cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684'
-LEVELS = {'required','recommended','optional','conditional','pending','excluded'}
 class CatalogError(ValueError):
     pass
 
@@ -285,12 +284,11 @@ def validate_model(model, path):
     require(isinstance(model['components'],list) and model['components'],'Component list required')
     components={}
     fields={'id','name','recommendation','default','dependencies','sources','status','notes'}
+    valid_choice = catalog_module('model-identity').valid_component_choice
     for row in model['components']:
         require(isinstance(row,dict) and set(row)==fields,'Invalid component fields')
         require(isinstance(row['id'],str) and re.fullmatch('[a-z][a-z0-9-]*',row['id']) and row['id'] not in components,'Duplicate/invalid component ID')
-        packaged_default = model['id'] in ('guide:oxp3', 'guide:x2-mini') and row['id'] in ('fingerprint-unlock', 's2s4')
-        require(row['recommendation'] in LEVELS and (row['default'] is False or (row['default'] is True and packaged_default)),
-                'Guide recommendation cannot enable installation defaults')
+        require(valid_choice(model['id'], row), 'Guide recommendation cannot enable installation defaults')
         require(all(isinstance(row[k],str) and row[k] for k in ('name','status','notes')),'Missing component description/status')
         for key in ('dependencies','sources'):
             require(isinstance(row[key],list) and all(isinstance(v,str) for v in row[key]) and len(set(row[key]))==len(row[key]),'Invalid component '+key)

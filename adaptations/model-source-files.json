@@ -2030,8 +2030,8 @@
     },
     {
       "path": "scripts/adaptations.py",
-      "size": 16651,
-      "sha256": "5a500d3d35e3fdc8a94dfcdd1acc0f79944cf28f1795d836d0b617422779e310"
+      "size": 16478,
+      "sha256": "863a4db7f860dbad772677f73733a36e0a80f6575c26e84771b95eee5fb97291"
     },
     {
       "path": "scripts/build-complete-bridge.py",
@@ -2095,8 +2095,8 @@
     },
     {
       "path": "scripts/model-identity.py",
-      "size": 14031,
-      "sha256": "4588883cff19bdf420451f52abf42252a8650d6929844cf041b9339a7ed4a673"
+      "size": 14404,
+      "sha256": "4e3b3eaed5269f46a849f2583c40c59ea5571c90cb4312c74d332bd618447b35"
     },
     {
       "path": "scripts/prepare-current-inputs.py",
@@ -2145,8 +2145,8 @@
     },
     {
       "path": "tests/test_adaptations.py",
-      "size": 20222,
-      "sha256": "d4a2b9321a0f6c0c8cd08b6faf699ed7e06204863128286d47e40b3a62a46f2d"
+      "size": 20523,
+      "sha256": "8eacc37fc0359dd4af3f7c9298d8237ca9dc5bb943e880174ce27882fc0ed53e"
     },
     {
       "path": "tests/test_common_device_sources.py",
@@ -2165,8 +2165,8 @@
     },
     {
       "path": "tests/test_fingerprint_providers.py",
-      "size": 4575,
-      "sha256": "0b7eec160ed37b9f738843ea81ded31fdf319760962cdd1b85a7348c5942f048"
+      "size": 4573,
+      "sha256": "e86a176995f3ec99b22ec7cb8dd2e417e8417ad01f7b3962e18e3b85c2efe5f0"
     },
     {
       "path": "tests/test_fingerprint_runtime_profile.py",

@@ -15,6 +15,14 @@ def module(name, path):
 common = module('common_device_sources', ROOT / 'scripts/common-device-sources.py')
 adaptations = module('adaptations', ROOT / 'scripts/adaptations.py')
 
+def valid_component_choice(guide_id, component):
+    packaged_default = (guide_id in ('guide:oxp3', 'guide:x2-mini')
+                        and component['id'] in ('fingerprint-unlock', 's2s4'))
+    default = component['default']
+    return (component['recommendation'] in adaptations.LEVELS
+            and (default is False or (default is True and packaged_default)))
+
+
 def json_bytes(value):
     return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
 

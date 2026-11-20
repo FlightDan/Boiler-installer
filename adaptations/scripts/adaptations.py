@@ -202,8 +202,16 @@ def prepare(checkout, root=ROOT):
     return check(root)
 
 
+def model_identity():
+    spec = importlib.util.spec_from_file_location('model_identity', Path(__file__).with_name('model-identity.py'))
+    identity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(identity)
+    return identity
+
+
 def validate_models(root, plan, inventory, current_rows, common):
     """Validate TOON-derived guide semantics after source inventories are checked."""
+    choices = model_identity().valid_component_choice
     models = records(root)
     for name, model in models:
         if model['kind'] != 'ModelInstallGuide' or model['installable'] is not False:
@@ -216,9 +224,7 @@ def validate_models(root, plan, inventory, current_rows, common):
         if name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json') and 'gyro' not in components:
             raise ValueError('Missing gyro component: '+name)
         for item in components.values():
-            fingerprint_default = (item.get('default') is True and item['id']=='fingerprint-unlock'
-                and name in ('brands/onexplayer/oxp3/manifest.json','brands/onexplayer/x2-mini/manifest.json'))
-            if item['recommendation'] not in LEVELS or not (item.get('default') is False or fingerprint_default):
+            if not choices(model['id'], item):
                 raise ValueError('Source-only choices cannot become installation defaults')
             for dependency in item['dependencies']:
                 if dependency not in components or components[dependency]['recommendation'] == 'excluded':
@@ -243,10 +249,7 @@ def validate_models(root, plan, inventory, current_rows, common):
 
 
 def check(root=ROOT):
-    spec = importlib.util.spec_from_file_location('model_identity', Path(__file__).with_name('model-identity.py'))
-    identity = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(identity)
-    identity.generate(root, check=True)
+    model_identity().generate(root, check=True)
     plan, lock = read(root/'source-plan.json'), read(root/'source-lock.json')
     if lock['source'] != plan['source']:
         raise ValueError('Source inventory is from another upstream revision')
