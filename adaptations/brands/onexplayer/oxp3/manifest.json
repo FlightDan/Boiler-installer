@@ -384,7 +384,7 @@
         "common/sleep/runtime/LICENSE"
       ],
       "status": "shared_asset",
-      "notes": "独立 Decky 插件 0.1.1，注册名称与前端 RPC 一致。关闭时沿用系统待机，开启时才准备休眠交换文件。"
+      "notes": "独立 Decky 插件 0.1.2。用户可在 Decky 开启 S4，插件在休眠事务中自动协调已核验的 SteamOS 交换文件。"
     },
     {
       "id": "oxp3-light",

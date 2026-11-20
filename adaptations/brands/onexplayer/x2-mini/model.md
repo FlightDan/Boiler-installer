@@ -34,7 +34,7 @@
 | oxp3-cpu | OXP3 CPU · EPP 与分组限频 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |
 | intel-cpu-microcode | Intel CPU 微码 · Panther Lake | 可选 | 可选构件，默认留空。安装与维护均使用 onexplayer-intel-microcode-v1 早期 initramfs 事务，按 CPUID 和平台标志匹配并保留原启动文件供恢复。OXP3 B 槽已验证 0x11d，X2 Mini 真机待验收。 |
 | charging | X2 Mini Battery · 电池遥测 | 可选 | 电量遥测与机型适用的充电控制；S4 由独立插件管理；依赖：fan-driver、decky |
-| s2s4 | Boiler S2-S4 switcher | 可选 | 独立 Decky 插件 0.1.1，注册名称与前端 RPC 一致。关闭时沿用系统待机，开启时才准备休眠交换文件；依赖：decky |
+| s2s4 | Boiler S2-S4 switcher | 可选 | 独立 Decky 插件 0.1.2。用户可在 Decky 开启 S4，插件在休眠事务中自动协调已核验的 SteamOS 交换文件；依赖：decky |
 | oxp3-light | OXP3 Light · 三分区灯光控制 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |
 | legacy-runtime | 音量键与电量显示修复 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | windows-reboot | 重启进入 Windows · Decky 按钮与桌面快捷方式 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |

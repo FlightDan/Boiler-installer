@@ -21,6 +21,8 @@ SWAP_DIR = 'home/.boiler-s2s4'
 SWAP_FILE = SWAP_DIR + '/hibernation.swapfile'
 STATE = SWAP_DIR + '/swap-state.json'
 NATIVE_METADATA = 'home/.hibernation.metadata'
+STOCK_SWAP = 'home/swapfile'
+STOCK_UNIT = 'home-swapfile.swap'
 RESERVE_BYTES = 500 * 1024 * 1024
 SLEEP = 'usr/lib/systemd/systemd-sleep'
 MODES = ('system', 's2idle', 'hibernate', 'auto')
@@ -160,8 +162,8 @@ def capabilities():
     except OSError:
         failures.append('resume_unavailable')
     try:
-        require_compatible_swaps(allow_owned=False)
-    except (OSError, RuntimeError):
+        require_compatible_swaps(allow_owned=False, allow_stock=True)
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError):
         failures.append('other_swap')
     try:
         resume = path('usr/lib/initcpio/hooks/resume').read_text()
@@ -376,9 +378,9 @@ def owned_swap(state, missing_ok=False):
     return True
 
 
-def swap_signature():
+def swap_signature(target=None):
     page = os.sysconf('SC_PAGE_SIZE')
-    with path(SWAP_FILE).open('rb') as stream:
+    with (target or path(SWAP_FILE)).open('rb') as stream:
         stream.seek(page - 10)
         signature = stream.read(10)
     if signature != b'SWAPSPACE2':
@@ -403,11 +405,66 @@ def swap_active():
     return any(name == str(path(SWAP_FILE)) for name, _ in active_swaps())
 
 
-def require_compatible_swaps(allow_owned):
+def stock_swap_identity():
+    """Recognize the package-owned Valve swap unit with the expected options and file."""
+    release = path('etc/os-release').read_text()
+    if not any(line.strip() in ('ID=steamos', 'ID="steamos"') for line in release.splitlines()):
+        raise RuntimeError('Stock swap requires SteamOS')
+    result = subprocess.run([str(path('usr/bin/systemctl')), 'show', STOCK_UNIT,
+                             '--property=FragmentPath,What,Options,DropInPaths'],
+                            check=True, capture_output=True, text=True)
+    props = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+    if props != {'FragmentPath': '/usr/lib/systemd/system/home-swapfile.swap',
+                 'What': '/home/swapfile', 'Options': '', 'DropInPaths': ''}:
+        raise RuntimeError('Stock swap unit is modified or unavailable')
+    result = subprocess.run([str(path('usr/bin/pacman')), '-Qqo',
+                             '/usr/lib/systemd/system/home-swapfile.swap'],
+                            check=True, capture_output=True, text=True)
+    if result.stdout.strip() != 'steamos-customizations-jupiter':
+        raise RuntimeError('Stock swap unit ownership is unverified')
+    home = path('home').lstat()
+    info = path(STOCK_SWAP).lstat()
+    if (not stat.S_ISDIR(home.st_mode) or home.st_uid != 0 or home.st_mode & 0o022
+            or not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o077
+            or info.st_nlink != 1 or info.st_dev != home.st_dev or filesystem_type() != 'ext4'):
+        raise RuntimeError('Stock swap file is untrusted')
+    swap_signature(path(STOCK_SWAP))
+    return (info.st_dev, info.st_ino)
+
+
+def stock_swap_active():
+    return any(name == str(path(STOCK_SWAP)) and kind == 'file' for name, kind in active_swaps())
+
+
+def stock_swap_priority():
+    for line in path('proc/swaps').read_text().splitlines()[1:]:
+        fields = line.split()
+        if len(fields) == 5 and fields[0] == str(path(STOCK_SWAP)) and fields[1] == 'file':
+            try:
+                return int(fields[4])
+            except ValueError:
+                break
+    raise RuntimeError('Cannot verify stock swap priority')
+
+
+def require_no_pending_efi():
+    try:
+        with os.scandir(path('sys/firmware/efi/efivars')) as entries:
+            if any(entry.name.startswith('HibernateLocation-') for entry in entries):
+                raise RuntimeError('EFI HibernateLocation exists; inspect before cleanup')
+    except OSError as error:
+        raise RuntimeError('Cannot inspect EFI HibernateLocation before cleanup') from error
+
+
+def require_compatible_swaps(allow_owned, allow_stock=False):
     import re
     owned = 0
     for name, kind in active_swaps():
         if kind == 'partition' and re.fullmatch(r'/dev/zram[0-9]+', name):
+            continue
+        if allow_stock and kind == 'file' and name == str(path(STOCK_SWAP)):
+            stock_swap_identity()
+            if stock_swap_priority() >= 0: raise RuntimeError('Stock swap priority is not automatic')
             continue
         if allow_owned and kind == 'file' and name == str(path(SWAP_FILE)):
             owned += 1
@@ -529,7 +586,8 @@ def run():
             owned_swap(state); swap_signature()
             if swap_active(): raise RuntimeError('Owned swap is unexpectedly active')
             swap_location()  # Validate the current page-unit extent before systemd selects it.
-            require_compatible_swaps(allow_owned=False)
+            require_compatible_swaps(allow_owned=False, allow_stock=True)
+            stock_identity = stock_swap_identity() if stock_swap_active() else None
             restore = {name: path(name).read_text().strip() for name in ('sys/power/resume_offset', 'sys/power/resume')}
             if restore['sys/power/resume'] != '0:0' or restore['sys/power/resume_offset'] != '0':
                 raise RuntimeError('A resume device is already configured')
@@ -543,6 +601,8 @@ def run():
         runtime = path(RUNTIME)
         runtime.parent.mkdir(parents=True, exist_ok=True)
         active_attempted = False
+        stock_off_attempted = False
+        sleep_attempted = False
         fallback = False
         stream = runtime.open('x', encoding='utf-8', newline='\n')
         try:
@@ -553,34 +613,50 @@ def run():
             command('usr/bin/swapon', str(path(SWAP_FILE)))
             if not swap_active(): raise RuntimeError('Swap activation was not confirmed')
             try:
-                require_compatible_swaps(allow_owned=True)
+                require_compatible_swaps(allow_owned=True, allow_stock=bool(stock_identity))
+                if stock_identity:
+                    if stock_swap_identity() != stock_identity or not stock_swap_active():
+                        raise RuntimeError('Stock swap identity or activation changed')
+                    try:
+                        stock_off_attempted = True
+                        command('usr/bin/swapoff', str(path(STOCK_SWAP)))
+                    except subprocess.CalledProcessError:
+                        fallback = True
+                    if not fallback:
+                        if stock_swap_active(): raise RuntimeError('Stock swap deactivation was not confirmed')
+                        if stock_swap_identity() != stock_identity: raise RuntimeError('Stock swap identity changed')
+                        require_compatible_swaps(allow_owned=True)
                 if path('sys/power/resume').read_text().strip() != '0:0' or path('sys/power/resume_offset').read_text().strip() != '0':
                     raise RuntimeError('A resume device became configured')
             except (OSError, RuntimeError):
+                if stock_identity: raise
                 fallback = True
             if not fallback:
+                sleep_attempted = True
                 command(SLEEP, 'hibernate' if mode == 'hibernate' else 'suspend-then-hibernate')
         finally:
-            restore_safe = True
             try:
-                if active_attempted and swap_active():
+                if active_attempted:
                     owned_swap(state)
-                    try:
-                        swap_signature()
-                    except (OSError, RuntimeError):
-                        # Preserve resume parameters and active swap for inspection.
-                        restore_safe = False
-                        raise
-                    command('usr/bin/swapoff', str(path(SWAP_FILE)))
-                    if swap_active(): raise RuntimeError('Swap deactivation was not confirmed')
+                    swap_signature()
+                    require_no_pending_efi()
+                    if swap_active():
+                        command('usr/bin/swapoff', str(path(SWAP_FILE)))
+                        if swap_active(): raise RuntimeError('Swap deactivation was not confirmed')
+                if sleep_attempted:
+                    for name, value in restore.items():
+                        if path(name).read_text().strip() != value:
+                            path(name).write_text(value + '\n')
+                if stock_off_attempted:
+                    if stock_swap_identity() != stock_identity:
+                        raise RuntimeError('Stock swap identity changed before restoration')
+                    if not stock_swap_active():
+                        command('usr/bin/swapon', str(path(STOCK_SWAP)))
+                    if (not stock_swap_active() or stock_swap_identity() != stock_identity
+                            or stock_swap_priority() >= 0):
+                        raise RuntimeError('Stock swap restoration was not confirmed')
             finally:
-                try:
-                    if restore_safe:
-                        for name, value in restore.items():
-                            if path(name).read_text().strip() != value:
-                                path(name).write_text(value + '\n')
-                finally:
-                    runtime.unlink()
+                runtime.unlink()
         if fallback:
             command(SLEEP, 'suspend')
 

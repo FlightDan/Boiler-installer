@@ -2,14 +2,14 @@
   "schema_version": 1,
   "kind": "ComponentManifest",
   "id": "boiler:s2s4",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": {
     "en": "Boiler S2-S4 switcher",
     "zh": "Boiler S2-S4 switcher"
   },
   "description": {
-    "en": "Separate SteamOS sleep plugin. S4 starts disabled and prepares swap only when enabled.",
-    "zh": "独立的 SteamOS 休眠插件。S4 默认关闭，开启时才预留交换文件。"
+    "en": "Coordinates the verified SteamOS swap file during S4. The switch starts off.",
+    "zh": "进入 S4 时自动协调已核验的 SteamOS 交换文件。S4 默认关闭。"
   },
   "optional": true,
   "default": false,
@@ -47,7 +47,7 @@
       "source": "common/sleep/runtime/package.json",
       "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/package.json",
       "size": 59,
-      "sha256": "0feae41e568fe5ccda14b2b2d05c685bd9ecc58333f8e6e90a6acc61e92cf420",
+      "sha256": "11eb742e5221a451e137400bf1418959f09336fead723155e852da6dd65212e1",
       "mode": 420
     },
     {
@@ -60,8 +60,8 @@
     {
       "source": "common/sleep/runtime/sleep_control.py",
       "target": "var/lib/boiler-sleep/sleep_control.py",
-      "size": 25448,
-      "sha256": "62779f0e5210ffd44c88d92e301d266e45381750941d9103bf433af71a01a0c1",
+      "size": 29841,
+      "sha256": "254de8ad836a4a63af8389e907adb08ae88c0db48e63b400d110323651f43ee9",
       "mode": 420
     },
     {
