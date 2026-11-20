@@ -160,8 +160,9 @@ def guard_sleep_restore(engine, component_id):
     if component_id == SLEEP_COMPONENT:
         directory = engine.home_root/'.boiler-s2s4'
         if (os.path.lexists(directory/'swap-state.json')
-                or os.path.lexists(directory/'hibernation.swapfile')):
-            raise MaintenanceError('Turn off S4 and release the swap file before restoring Boiler S2/S4 switcher')
+                or os.path.lexists(directory/'hibernation.swapfile')
+                or os.path.lexists(directory/'deadline-efi.json')):
+            raise MaintenanceError('Turn off S4 and clean its swap and EFI configuration before restoring Boiler S2/S4 switcher')
 
 
 def check_fingerprint_model(component, identity):

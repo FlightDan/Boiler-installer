@@ -384,7 +384,7 @@
         "common/sleep/runtime/LICENSE"
       ],
       "status": "shared_asset",
-      "notes": "独立 Decky 插件 0.1.4。显示交换文件所需空间，延时自动保存。系统暂时无法开启 S4 时，界面显示具体原因。"
+      "notes": "独立 Decky 插件 0.1.5。提供 S4 的 TSC deadline 启动参数选项，并在关闭 S4 时清理由插件创建的配置。"
     },
     {
       "id": "oxp3-light",

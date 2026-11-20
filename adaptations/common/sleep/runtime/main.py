@@ -15,6 +15,8 @@ class Plugin:
         return await asyncio.to_thread(sleep.status)
     async def set_enabled(self, enabled):
         return await asyncio.to_thread(sleep.set_enabled, enabled)
+    async def set_tsc_deadline_disabled(self, disabled):
+        return await asyncio.to_thread(sleep.set_tsc_deadline_disabled, disabled)
     async def set_sleep_policy(self, mode, delay_minutes):
         return await asyncio.to_thread(sleep.save, mode, delay_minutes)
     async def _main(self): pass

@@ -43,3 +43,7 @@ class SleepComponentTests(unittest.TestCase):
             (root / 'swap-state.json').touch()
             with self.assertRaisesRegex(MaintenanceError, 'Turn off S4'):
                 guard_sleep_restore(engine, SLEEP_COMPONENT)
+            (root / 'swap-state.json').unlink()
+            (root / 'deadline-efi.json').touch()
+            with self.assertRaisesRegex(MaintenanceError, 'Turn off S4'):
+                guard_sleep_restore(engine, SLEEP_COMPONENT)

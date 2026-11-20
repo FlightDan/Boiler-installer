@@ -30,6 +30,11 @@ DELAY_OPTIONS = (20, 60, 120, 720, 1440)
 LEGACY_DELAYS = (15, 30, 180, 240)
 DELAYS = DELAY_OPTIONS + LEGACY_DELAYS
 DEFAULT = {'mode': 'system', 'delay_minutes': 120}
+DEADLINE_CUSTOM = 'efi/EFI/steamos/custom.cfg'
+DEADLINE_GRUB = 'efi/EFI/steamos/grub.cfg'
+DEADLINE_RECORD = SWAP_DIR + '/deadline-efi.json'
+DEADLINE_OPTION = 'lapic=notscdeadline'
+DEADLINE_BODY = b'set steamenv_verbosity="${steamenv_verbosity} lapic=notscdeadline"\nexport steamenv_verbosity\n'
 ROUTER_TEXT = '''# Boiler Sleep: route the existing suspend request.
 [Service]
 ExecStart=
@@ -215,7 +220,7 @@ def status():
         required_bytes = required_swap_bytes()
     except (OSError, RuntimeError, ValueError):
         required_bytes = None
-    return {**policy, 'enabled': enabled, 'swap_state': state['phase'] if state else 'absent',
+    return {**policy, **deadline_status(), 'enabled': enabled, 'swap_state': state['phase'] if state else 'absent',
             'required_swap_bytes': required_bytes, 'reserve_bytes': RESERVE_BYTES,
             'available_modes': modes, 'router_installed': installed,
             'ready': installed and (not enabled or (policy['mode'] in modes and swap_ready)),
@@ -513,6 +518,7 @@ def set_enabled(enabled):
             if not current['router_installed']: raise RuntimeError('Activate the system integration first')
             if 'hibernate' not in current['available_modes']: raise RuntimeError('S4 is unavailable on this system')
             if state: raise RuntimeError('Owned swap state exists; disable or resolve it first')
+            if deadline_read_record(): raise RuntimeError('Resolve the existing TSC deadline ownership record before enabling S4')
             directory_exists = owned_directory(missing_ok=True)
             if os.path.lexists(path(SWAP_FILE)): raise RuntimeError('Unowned swap file already exists')
             uuid = filesystem_uuid()
@@ -549,6 +555,7 @@ def set_enabled(enabled):
                 if (filesystem_type() != 'ext4' or filesystem_uuid() != state['filesystem_uuid']
                         or swap_active()):
                     raise RuntimeError('Cannot confirm cleanup ownership or swap state')
+                deadline_remove()
                 path(STATE).unlink()
             else:
                 if state['phase'] in ('ready', 'cleaning'):
@@ -559,6 +566,7 @@ def set_enabled(enabled):
                                 raise RuntimeError('EFI HibernateLocation exists; inspect before cleanup')
                     except OSError as error:
                         raise RuntimeError('Cannot inspect EFI HibernateLocation before cleanup') from error
+                deadline_remove()
                 if swap_active():
                     command('usr/bin/swapoff', str(path(SWAP_FILE)))
                     if swap_active(): raise RuntimeError('Swap deactivation was not confirmed')
@@ -566,7 +574,242 @@ def set_enabled(enabled):
                 state.update(enabled=False, phase='cleaning'); write_json(STATE, state)
                 path(SWAP_FILE).unlink()
                 path(STATE).unlink()
+        elif not enabled:
+            deadline_remove()
 
+    return status()
+
+
+def deadline_directory():
+    """Validate the current EFI mount and every component of its fixed path."""
+    base = path('efi')
+    # Accessing the child triggers SteamOS's EFI automount before checking it.
+    path('efi/EFI/steamos').lstat()
+    if not os.path.ismount(base):
+        raise RuntimeError('Active EFI partition is not mounted at /efi')
+    device = base.stat().st_dev
+    for item in (base, path('efi/EFI'), path('efi/EFI/steamos')):
+        info = item.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_dev != device:
+            raise RuntimeError('Untrusted EFI directory or nested mount')
+        if os.name == 'posix' and (info.st_uid != 0 or info.st_mode & 0o022):
+            raise RuntimeError('Untrusted EFI directory permissions')
+    return path('efi/EFI/steamos')
+
+
+def deadline_efi_uuid():
+    import re
+    deadline_directory()
+    try:
+        result = subprocess.run([str(path('usr/bin/findmnt')), '-n', '-o', 'TARGET,FSTYPE,UUID',
+                                 '-T', str(path('efi'))], check=True, capture_output=True, text=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise RuntimeError('Cannot identify active EFI filesystem') from error
+    # findmnt reports both the systemd automount and its mounted FAT volume.
+    mounts = [line.split() for line in result.stdout.splitlines() if line.strip()]
+    volumes = [row for row in mounts if row != ['/efi', 'autofs']]
+    fields = volumes[0] if len(volumes) == 1 else []
+    if (len(fields) != 3 or fields[0] != '/efi' or fields[1] != 'vfat' or
+            not re.fullmatch(r'[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}', fields[2])):
+        raise RuntimeError('Cannot identify mounted EFI filesystem UUID')
+    return fields[2].upper()
+
+
+def deadline_read_record():
+    import re
+    target = path(DEADLINE_RECORD)
+    if not os.path.lexists(target):
+        return None
+    owned_directory()
+    trusted_file(target)
+    if os.name == 'posix' and target.lstat().st_mode & 0o077:
+        raise RuntimeError('Untrusted deadline ownership record')
+    try:
+        record = json.loads(target.read_text(encoding='utf-8'))
+    except (ValueError, UnicodeError) as error:
+        raise RuntimeError('Invalid deadline ownership record') from error
+    if (not isinstance(record, dict) or set(record) != {'efi_uuid', 'token'} or
+            not isinstance(record['efi_uuid'], str) or
+            not re.fullmatch(r'[0-9A-F]{4}-[0-9A-F]{4}', record['efi_uuid']) or
+            not isinstance(record['token'], str) or not re.fullmatch(r'[0-9a-f]{32}', record['token'])):
+        raise RuntimeError('Invalid deadline ownership record')
+    return record
+
+
+def deadline_bytes(record):
+    return b'# Boiler Sleep: TSC deadline workaround ' + record['token'].encode('ascii') + b'\n' + DEADLINE_BODY
+
+
+def deadline_record_create(uuid):
+    import secrets
+    owned_directory()
+    record = {'efi_uuid': uuid, 'token': secrets.token_hex(16)}
+    target = path(DEADLINE_RECORD)
+    fd, temporary = tempfile.mkstemp(prefix='.deadline-', dir=target.parent)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            json.dump(record, stream); stream.write('\n'); stream.flush(); os.fsync(stream.fileno())
+        # The private /home directory is ext4; link publishes without replacement.
+        os.link(temporary, target)
+        deadline_sync_directory(target.parent)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+    return record
+
+
+def deadline_match_slot(record):
+    if deadline_efi_uuid() != record['efi_uuid']:
+        raise RuntimeError('TSC deadline setting belongs to another EFI slot; boot its slot and retry')
+
+
+def deadline_config():
+    import re
+    deadline_directory()
+    grub = path(DEADLINE_GRUB)
+    trusted_file(grub)
+    data = grub.read_bytes()
+    if not data or len(data) > 1024 * 1024 or b'\x00' in data:
+        raise RuntimeError('Unsupported SteamOS boot configuration')
+    custom_block = re.search(rb'### BEGIN /etc/grub\.d/41_custom ###(.*?)### END /etc/grub\.d/41_custom ###', data, re.S)
+    if (not custom_block or
+            not re.search(rb'(?m)^[ \t]*source[ \t]+\$\{config_directory\}/custom\.cfg[ \t]*$', custom_block.group(1)) or
+            not re.search(rb'(?m)^[ \t]*source[ \t]+\$prefix/custom\.cfg[ \t]*$', custom_block.group(1)) or
+            not re.search(rb'(?m)^[ \t]*steamenv_init(?:[ \t]|$)', data)):
+        raise RuntimeError('SteamOS custom configuration is unavailable')
+    boots = []
+    for line in data.splitlines():
+        if re.match(rb'^[ \t]*steamenv_boot(?:[ \t]|$)', line):
+            if not re.fullmatch(rb'[ \t]*steamenv_boot[ \t]+linux[ \t]+/boot/vmlinuz-[A-Za-z0-9_.+-]+(?:[ \t]+[^\r\n]*)?', line):
+                raise RuntimeError('Unsupported SteamOS boot entry')
+            boots.append(line.split()[3:])
+        elif DEADLINE_OPTION.encode() in line and not line.lstrip().startswith(b'#'):
+            raise RuntimeError('Unsupported external TSC deadline configuration')
+    if not boots:
+        raise RuntimeError('No supported SteamOS boot entries')
+    configured = [DEADLINE_OPTION.encode() in entry for entry in boots]
+    if any(configured) and not all(configured):
+        raise RuntimeError('Inconsistent external TSC deadline option')
+    return all(configured)
+
+
+def deadline_owned(record):
+    target = path(DEADLINE_CUSTOM)
+    if not record or not os.path.lexists(target):
+        return False
+    trusted_file(target)
+    return target.read_bytes() == deadline_bytes(record)
+
+
+def deadline_status():
+    try:
+        active = DEADLINE_OPTION in path('proc/cmdline').read_text().split()
+    except OSError:
+        active = None
+    result = {'tsc_deadline_disabled': None, 'tsc_deadline_external': False, 'tsc_deadline_owned': False,
+              'tsc_deadline_available': False, 'tsc_deadline_reboot_required': None,
+              'tsc_deadline_active': active}
+    try:
+        record = deadline_read_record()
+        if record:
+            deadline_match_slot(record)
+        else:
+            deadline_efi_uuid()
+        external = deadline_config()
+        owned = deadline_owned(record)
+        if os.path.lexists(path(DEADLINE_CUSTOM)) and not owned:
+            return result
+        configured = owned or external
+        result.update(tsc_deadline_disabled=configured, tsc_deadline_external=external,
+                      tsc_deadline_owned=owned, tsc_deadline_available=owned or not external,
+                      tsc_deadline_reboot_required=(configured != active if active is not None else None))
+    except (OSError, RuntimeError, UnicodeError, ValueError):
+        pass
+    return result
+
+
+def deadline_remove():
+    # Cleanup works even after a bootloader update changes the generator format.
+    record = deadline_read_record()
+    if not record:
+        return
+    deadline_match_slot(record)
+    target = path(DEADLINE_CUSTOM)
+    if os.path.lexists(target):
+        info = target.lstat()
+        if (stat.S_ISREG(info.st_mode) and
+                (os.name != 'posix' or (info.st_uid == 0 and not info.st_mode & 0o022)) and
+                target.read_bytes() == deadline_bytes(record)):
+            target.unlink()
+            deadline_sync_directory(target.parent)
+    path(DEADLINE_RECORD).unlink()
+    deadline_sync_directory(path(DEADLINE_RECORD).parent)
+
+
+def deadline_sync_directory(directory):
+    directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def deadline_publish(temporary, directory, record):
+    import ctypes
+    # NOREPLACE is atomic and works on FAT, which has no hard links.
+    libc = ctypes.CDLL(None, use_errno=True)
+    rename = libc.renameat2
+    rename.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    rename.restype = ctypes.c_int
+    if rename(-100, os.fsencode(temporary), -100, os.fsencode(path(DEADLINE_CUSTOM)), 1):
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+    if not deadline_owned(record):
+        raise RuntimeError('TSC deadline configuration readback differs')
+    deadline_sync_directory(directory)
+
+
+def deadline_create():
+    directory = deadline_directory()
+    uuid = deadline_efi_uuid()
+    record = deadline_read_record()
+    if record:
+        deadline_match_slot(record)
+    external = deadline_config()
+    if os.path.lexists(path(DEADLINE_CUSTOM)):
+        if deadline_owned(record):
+            return
+        raise RuntimeError('External custom.cfg exists; it was not changed')
+    if external:
+        return
+    if not record:
+        record = deadline_record_create(uuid)
+    fd, temporary = tempfile.mkstemp(prefix='.boiler-sleep-', dir=directory)
+    try:
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(deadline_bytes(record))
+            stream.flush()
+            os.fsync(stream.fileno())
+        subprocess.run([str(path('usr/bin/grub-script-check')), temporary], check=True,
+                       capture_output=True)
+        deadline_publish(temporary, directory, record)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def set_tsc_deadline_disabled(disabled):
+    if type(disabled) is not bool:
+        raise ValueError('Expected a boolean')
+    if os.geteuid() != 0:
+        raise RuntimeError('Run as root')
+    with locked():
+        if disabled:
+            current = status()
+            if not current['router_installed'] or not current['enabled']:
+                raise RuntimeError('Enable S4 before changing the TSC deadline option')
+            deadline_create()
+        else:
+            deadline_remove()
     return status()
 
 
