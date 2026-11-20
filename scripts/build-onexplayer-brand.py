@@ -27,6 +27,7 @@ MODELS = (('device:oxp3', 'oxp3'), ('device:x2-mini', 'x2-mini'))
 CURRENT_GUIDES = {f'devices/onexplayer/{model}.toon' for _, model in MODELS}
 MICROCODE_ROOT = 'common/cpu/intel/microcode/'
 MICROCODE_ID = 'onexplayer:intel-microcode'
+MICROCODE_BOOT_POLICY = {'kind': 'onexplayer-intel-microcode-v1', 'minimum_engine_version': '0.1.7'}
 
 
 def model_microcode(guide, snapshot, toon, inventory, version):
@@ -37,11 +38,12 @@ def model_microcode(guide, snapshot, toon, inventory, version):
     if len(requests) != 1 or requests[0].get('default') is not False or set(requests[0].get('sources', [])) != set(required) or len(requests[0]['sources']) != 3:
         raise ValueError('Invalid model microcode TOON request')
     source = toon.loads(confined(snapshot, required[0]).read_text(encoding='utf-8'), strict=True)
+    boot_policy = source.get('boot_policy', MICROCODE_BOOT_POLICY)
     files = source.get('files', [])
     if (source.get('id') != 'resource:intel-cpu-microcode' or len(files) != 1
             or files[0].get('path') != 'inputs/06-cc-02'
             or files[0].get('license') != 'licenses/Intel-microcode.txt'
-            or source.get('licenses') != ['licenses/Intel-microcode.txt']):
+            or source.get('licenses') != ['licenses/Intel-microcode.txt'] or boot_policy != MICROCODE_BOOT_POLICY):
         raise ValueError('Invalid canonical Intel microcode source')
     records = []
     targets = ('usr/lib/firmware/intel-ucode/06-cc-02',
@@ -57,7 +59,8 @@ def model_microcode(guide, snapshot, toon, inventory, version):
                      name=requests[0].get('name', 'Intel CPU microcode'), optional=True, default=False,
                      selection_policy='explicit-opt-in',
                      files=records, requires=[], conflicts=[], hooks={},
-                     microcode_boot_policy={'kind': 'onexplayer-intel-microcode-v1'}, minimum_engine_version='0.1.7')
+                     microcode_boot_policy={'kind': boot_policy['kind']},
+                     minimum_engine_version=boot_policy['minimum_engine_version'])
     return component, {path: inventory['adaptations/' + path] for path in required[1:]}
 
 
@@ -119,6 +122,43 @@ def selected_components(guide, manifest):
     missing = sorted(wanted - found.keys())
     components = [copy.deepcopy(c) for c in manifest['components'] if c['id'] in wanted]
     return components, missing
+
+
+def model_plugin_gaps(guide, components, snapshot, inventory):
+    gaps = []
+    requests = {entry['id']: set(entry.get('sources', ())) for entry in guide['components']}
+    components = {entry['id']: entry for entry in components}
+    sleep_install = 'common/sleep/install.json'
+    if sleep_install in requests.get('s2s4', ()):
+        expected = json_document(confined(snapshot, sleep_install).read_bytes())
+        actual = components.get('boiler:s2s4', {})
+        if actual.get('version') != expected['version'] or actual.get('files') != expected['files']:
+            gaps.append(dict(component='boiler:s2s4', reason='runtime differs from the canonical TOON request'))
+
+    keyboard = 'common/fingerprint/kde/gamescope-auth/'
+    if keyboard + 'source-lock.json' in requests.get('fingerprint-unlock', ()):
+        prefix = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
+        sources = {
+            **{'common/fingerprint/bridge/' + source: prefix + target for source, target in (
+                ('main.py', 'main.py'), ('index.js', 'dist/index.js'), ('package.json', 'package.json'),
+                ('plugin.json', 'plugin.json'))},
+            'common/fingerprint/runtime-profile/profile.json': prefix + 'profile.json',
+            'common/fingerprint/runtime-profile/boiler-fprintd.service': 'etc/systemd/system/boiler-fprintd.service',
+            'common/fingerprint/runtime-profile/net.reactivated.Fprint.service':
+                'usr/share/dbus-1/system-services/net.reactivated.Fprint.service',
+            keyboard + 'polkit-kde-authentication-agent-1':
+                'var/lib/oxp3-installer/fingerprint/libexec/polkit-kde-authentication-agent-1',
+            keyboard + 'GPL-2.0-or-later.txt': 'usr/share/licenses/boiler-fingerprint-keyboard/GPL-2.0-or-later.txt',
+        }
+        installed = {row['target']: row for row in components.get('oxp3:fingerprint-unlock', {}).get('files', ())}
+        for path, target in sources.items():
+            expected = inventory.get('adaptations/' + path)
+            actual = installed.get(target)
+            if (path not in requests['fingerprint-unlock'] or not expected or not actual
+                    or (actual['size'], actual['sha256']) != (expected['size'], expected['sha256'])):
+                gaps.append(dict(component='oxp3:fingerprint-unlock', path=path,
+                                 reason='runtime differs from the canonical TOON request'))
+    return gaps
 
 
 def load_resource_pool(root, snapshot_inventory, expected):
@@ -481,6 +521,7 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
             raise ValueError('Explicit package identity differs: ' + identity)
         require_new_version(version, manifest['version'])
         components, missing_components = selected_components(guide, manifest)
+        unresolved.extend(dict(model=identity, **gap) for gap in model_plugin_gaps(guide, components, snapshot, inventory))
         for name in missing_components:
             unresolved.append({'model': identity, 'component': name, 'reason': 'requested package component missing'})
         rows = {row['path']: row for row in manifest['files']}
@@ -885,8 +926,11 @@ def build(project, packages, output, *, version, resource_pool=None, allow_incom
                     entries[member] = pool_file
                     entry_keys[member] = expected
                 match = member
-            if match is None and logical.startswith('fingerprint/profile/common/'):
-                candidate = logical.removeprefix('fingerprint/profile/')
+            fingerprint_sources = {'fingerprint/profile/common/': 'common/',
+                                   'fingerprint/licenses/kde-keyboard/': 'common/fingerprint/kde/gamescope-auth/'}
+            fingerprint_prefix = next((prefix for prefix in fingerprint_sources if logical.startswith(prefix)), None)
+            if match is None and fingerprint_prefix:
+                candidate = fingerprint_sources[fingerprint_prefix] + logical.removeprefix(fingerprint_prefix)
                 record = snapshot_inventory.get(candidate)
                 if record and (record['size'], record['sha256']) == key[1:]:
                     match = candidate

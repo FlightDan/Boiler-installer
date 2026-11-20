@@ -18,7 +18,10 @@ compatibility:
 files[1]{path,size,sha256,origin,license,availability}:
   inputs/06-cc-02,165888,2960a456b2c672614487f410e774012e386bddeaefb5a9899b307ef682cb1536,intel/Intel-Linux-Processor-Microcode-Data-Files@d71fe4e2f0f70a49ebbac7f2c7e915f181361974,licenses/Intel-microcode.txt,checked-in
 licenses[1]: licenses/Intel-microcode.txt
+boot_policy:
+  kind: onexplayer-intel-microcode-v1
+  minimum_engine_version: "0.1.7"
 lifecycle:
-  install: pending model integration with the Boiler early initramfs microcode transaction
-  verify: pending signature and revision verification on target hardware
-  restore: pending model boot transaction and original boot file restoration checks
+  install: onexplayer-intel-microcode-v1 adds verified early Intel microcode to the selected SteamOS slot initramfs
+  verify: validate the early archive and check the Intel signature, platform mask and active revision in live maintenance
+  restore: restore original initramfs bytes and permissions using the maintenance file transaction

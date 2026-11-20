@@ -5,6 +5,7 @@ The output is a source snapshot, not a trust grant or installation package.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -21,7 +22,8 @@ def prepare(checkout,commit,output):
     if not re.fullmatch(r'[0-9a-f]{40}',commit): raise ValueError('Exact commit required')
     checkout=Path(checkout); output=Path(output)
     if output.exists(): raise ValueError('Use a fresh snapshot destination')
-    def git(*args): return subprocess.check_output(['git','-C',str(checkout),*args],stderr=subprocess.PIPE)
+    git_exe = os.environ.get('BOILER_GIT_EXE', 'git')
+    def git(*args): return subprocess.check_output([git_exe,'-C',str(checkout),*args],stderr=subprocess.PIPE)
     origin=git('remote','get-url','origin').decode().strip()
     if origin not in ('https://github.com/'+REPOSITORY,'https://github.com/'+REPOSITORY+'.git','git@github.com:'+REPOSITORY+'.git'):
         raise ValueError('Expected canonical repository origin')

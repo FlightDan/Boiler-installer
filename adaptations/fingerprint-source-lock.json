@@ -14,29 +14,24 @@
       "sha256": "68d4eca256cfe27f13494089cb7957fca429e4739aaa0ad0953717c6e866b1a5"
     },
     {
-      "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
-      "size": 726,
-      "sha256": "db47b061d0ee41594f8f6a87dd0294fa6e76ec880da48ed7a416f2bebc546935"
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
+      "size": 1520,
+      "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
     },
     {
-      "path": "common/fingerprint/runtime-profile/COPYING",
-      "size": 26436,
-      "sha256": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/50-boiler-fte3600.conf",
+      "size": 68,
+      "sha256": "f60df742bc433749ce400834fcbba670b99a25ef37de5091de8cea9ce6af5532"
     },
     {
-      "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
-      "size": 233,
-      "sha256": "d103d4e16c31d84e1283b401fe7b0547a4923faa9d680ebf661e2399af8b3a03"
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/boiler-fte3600.service",
+      "size": 204,
+      "sha256": "aa8b7940fd0ebda217163d23c1e1d7606381c08ed2883cfa61781d5b7c1a7057"
     },
     {
-      "path": "common/fingerprint/runtime-profile/profile.json",
-      "size": 243,
-      "sha256": "33975adb8a98a7dfe79c3a55a9a239fab8d413a11b3c1b225f0f5d3f154aa449"
-    },
-    {
-      "path": "common/fingerprint/runtime-profile/spidev.conf",
-      "size": 494,
-      "sha256": "1bce8ac18b921547ce2518ebf53628d1d90651f32ba83049b3e4f0928df71c90"
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/load.sh",
+      "size": 2192,
+      "sha256": "f9a79c68f7feb5d1f0f7d884eb2ff4215ed11280eb251ddc9f9819412593f5a4"
     },
     {
       "path": "common/fingerprint/bridge/index.js",
@@ -45,13 +40,13 @@
     },
     {
       "path": "common/fingerprint/bridge/main.py",
-      "size": 43703,
-      "sha256": "9fffcf215fac1d496d76b2d327180e0564d187354001d7fd68fd58380eae3b1b"
+      "size": 45920,
+      "sha256": "83cc8eafd7a89d39d2083a7b9dec379efb1796e274d5a53ec01725637a8c07c4"
     },
     {
       "path": "common/fingerprint/bridge/package.json",
       "size": 85,
-      "sha256": "1463c20a384a3d9e14e673966532b29591d9394c371a872b6a3f2178324e819f"
+      "sha256": "4e5b32e20ff4648ecc3f7b2bc9a06b141c0f3c6e1fc3ec7fc7f007b6dd030e2c"
     },
     {
       "path": "common/fingerprint/bridge/plugin.json",
@@ -59,27 +54,62 @@
       "sha256": "53e738e0537c26000f51a6937ac600c30633666cc6d94a6ff7067c24a09eefb7"
     },
     {
-      "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
-      "size": 1520,
-      "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
+      "path": "common/fingerprint/kde/gamescope-auth/BUILD.md",
+      "size": 1397,
+      "sha256": "8cd19b03641824353dc89656c76b2786d82d890449a9b9bd8120593f21f36968"
     },
     {
-      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/boiler-fte3600.service",
-      "size": 204,
-      "sha256": "aa8b7940fd0ebda217163d23c1e1d7606381c08ed2883cfa61781d5b7c1a7057"
+      "path": "common/fingerprint/kde/gamescope-auth/GPL-2.0-or-later.txt",
+      "size": 17277,
+      "sha256": "b58671fb4d9e9efeb9a6af1bdba02e61ac69af654855b45a372efe8f52413f83"
     },
     {
-      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/50-boiler-fte3600.conf",
-      "size": 68,
-      "sha256": "f60df742bc433749ce400834fcbba670b99a25ef37de5091de8cea9ce6af5532"
+      "path": "common/fingerprint/kde/gamescope-auth/gamescope-auth.patch",
+      "size": 4630,
+      "sha256": "73e26b4c1d0fa11aae33e21da33218a47dfdf1e1750583f67fb4fcb2bdfc72a4"
     },
     {
-      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/load.sh",
-      "size": 2192,
-      "sha256": "f9a79c68f7feb5d1f0f7d884eb2ff4215ed11280eb251ddc9f9819412593f5a4"
+      "path": "common/fingerprint/kde/gamescope-auth/polkit-kde-agent-1-v6.7.3-source.tar.gz",
+      "size": 70722,
+      "sha256": "fcd7e923aa09c6f897a61fe502e772c81978b125dd4c505a64b07a184c232659"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/polkit-kde-authentication-agent-1",
+      "size": 158952,
+      "sha256": "959ef59018df7696a101479276b817faee5066d61eaae9b1ae51fa8776417d5f"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/source-lock.json",
+      "size": 1354,
+      "sha256": "f0460b95f1f1ff6b94b058340775d370919d9e9cbf45789e6d0e38521c600093"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/COPYING",
+      "size": 26436,
+      "sha256": "5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
+      "size": 726,
+      "sha256": "db47b061d0ee41594f8f6a87dd0294fa6e76ec880da48ed7a416f2bebc546935"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
+      "size": 233,
+      "sha256": "d103d4e16c31d84e1283b401fe7b0547a4923faa9d680ebf661e2399af8b3a03"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/profile.json",
+      "size": 362,
+      "sha256": "19918621e3bdd321127c588d069516aefd73f0e83cfe6b2414898163071f0412"
+    },
+    {
+      "path": "common/fingerprint/runtime-profile/spidev.conf",
+      "size": 494,
+      "sha256": "1bce8ac18b921547ce2518ebf53628d1d90651f32ba83049b3e4f0928df71c90"
     }
   ],
   "upstream_lock_sha256": "bfbb3d6f5c541936b61fea648be230f0f8760e7020625d5b48eab0b13ffd8b73",
   "public_bridge_lock": "common/fingerprint/public-bridge-lock.json",
-  "public_bridge_lock_sha256": "8d40a650e73a66a374731a4abc6148b8fd55695c80a50c94d56e34aa53dd1d9c"
+  "public_bridge_lock_sha256": "c1a13a48fecd6b462ac0d719cda2aa23eac4af33580d654c54797de39fdf35ec"
 }

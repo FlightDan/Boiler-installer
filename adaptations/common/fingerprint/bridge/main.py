@@ -264,6 +264,23 @@ class Plugin:
         display = displays[0]
         owner = ('/usr/bin/busctl', '--user', '--no-pager', 'status', AUTH_AGENT_NAME)
         code, status = await self._user_capture(*owner)
+        if code == 0 and self.game_mode_auth_agent:
+            # Replace only our own stale transient agent after an upgrade.
+            pid = re.search(r'^PID=([1-9][0-9]*)$', status, re.M)
+            unit = 'boiler-fingerprint-gamemode-auth.service'
+            ucode, properties = await self._user_capture('/usr/bin/systemctl', '--user', 'show', unit,
+                                                         '--property=MainPID', '--property=ExecStart')
+            main_pid = re.search(r'^MainPID=([1-9][0-9]*)$', properties, re.M)
+            if pid and ucode == 0 and main_pid and main_pid.group(1) == pid.group(1):
+                executable = re.search(r'^ExecStart=\{ path=(.*?) ;', properties, re.M)
+                if not executable:
+                    return False
+                if executable.group(1) != self.game_mode_auth_agent:
+                    if not await self._stop_unit(unit):
+                        return False
+                    code, status = await self._user_capture(*owner)
+                    if code == 0:
+                        return False
         if code != 0:
             # Start the KDE agent as the Steam user on Gamescope's active display.
             agent = self.game_mode_auth_agent or STOCK_AUTH_AGENT
@@ -280,6 +297,24 @@ class Plugin:
                 '--property=TimeoutStartSec=5s', '--setenv=DISPLAY=' + display,
                 '--setenv=QT_QPA_PLATFORM=xcb', '--setenv=QT_SCALE_FACTOR=1.6',
                 *keyboard_env, '--', agent)
+            if code != 0 and self.game_mode_auth_agent:
+                # If the bundled agent cannot start on this runtime, retain
+                # enrollment through the stock agent only after cleanup and
+                # confirming nobody else has acquired the bus name.
+                unit = 'boiler-fingerprint-gamemode-auth.service'
+                if not await self._stop_unit(unit):
+                    return False
+                occupied, _ = await self._user_capture(*owner)
+                if occupied == 0:
+                    return False
+                code, _ = await self._user_capture(
+                    '/usr/bin/systemd-run', '--user', '--quiet', '--collect',
+                    '--unit=' + unit,
+                    '--property=Type=dbus', '--property=BusName=' + AUTH_AGENT_NAME,
+                    '--property=BindsTo=gamescope-session.target', '--property=After=gamescope-session.target',
+                    '--property=TimeoutStartSec=5s', '--setenv=DISPLAY=' + display,
+                    '--setenv=QT_QPA_PLATFORM=xcb', '--setenv=QT_SCALE_FACTOR=1.6',
+                    '--', STOCK_AUTH_AGENT)
             if code != 0:
                 return False
             code, status = await self._user_capture(*owner)

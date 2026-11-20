@@ -15,9 +15,9 @@ components[31]:
     recommendation: optional
     default: true
     dependencies[1]: decky
-    sources[17]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/runtime-profile/boiler-fprintd.service,common/fingerprint/runtime-profile/net.reactivated.Fprint.service,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md,common/fingerprint/kde/pam-module.toon,common/fingerprint/kde/pam-module-lock.json,common/fingerprint/bridge/index.js,common/fingerprint/bridge/package.json,common/fingerprint/bridge/plugin.json,common/fingerprint/public-bridge-lock.json,common/fingerprint/public-COPYING,common/fingerprint/upstream/LICENSE
+    sources[23]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/runtime-profile/boiler-fprintd.service,common/fingerprint/runtime-profile/net.reactivated.Fprint.service,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,brands/onexplayer/oxp3/current/fingerprint/69-boiler-oxp3-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md,common/fingerprint/kde/pam-module.toon,common/fingerprint/kde/pam-module-lock.json,common/fingerprint/bridge/index.js,common/fingerprint/bridge/package.json,common/fingerprint/bridge/plugin.json,common/fingerprint/public-bridge-lock.json,common/fingerprint/public-COPYING,common/fingerprint/upstream/LICENSE,common/fingerprint/kde/gamescope-auth/polkit-kde-authentication-agent-1,common/fingerprint/kde/gamescope-auth/GPL-2.0-or-later.txt,common/fingerprint/kde/gamescope-auth/gamescope-auth.patch,common/fingerprint/kde/gamescope-auth/BUILD.md,common/fingerprint/kde/gamescope-auth/polkit-kde-agent-1-v6.7.3-source.tar.gz,common/fingerprint/kde/gamescope-auth/source-lock.json
     status: external_locked_runtime
-    notes: "Decky bridge 0.1.10 with fingerprint enrollment. The locked fprintd runtime uses model-specific BF63112 rules. Actual enrollment and unlock through this combined package need device verification. Keep the Steam PIN fallback."
+    notes: "Decky 0.1.11 enrolls through KDE and provides the locked Gamescope keyboard agent. The fprintd runtime keeps BF63112 rules. Keep the Steam PIN fallback."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional
@@ -201,7 +201,7 @@ components[31]:
     dependencies: []
     sources[3]: common/cpu/intel/microcode/source.toon,common/cpu/intel/microcode/inputs/06-cc-02,common/cpu/intel/microcode/licenses/Intel-microcode.txt
     status: external_boiler_core
-    notes: 适用于 Intel Arc G3 Extreme 配置；按 CPU 签名及平台标志匹配。机型包安装、维护恢复和实机加载验收待接入。
+    notes: 可选构件，默认留空。安装与维护均使用 onexplayer-intel-microcode-v1 早期 initramfs 事务，按 CPUID 和平台标志匹配并保留原启动文件供恢复。OXP3 B 槽已验证 0x11d，X2 Mini 真机待验收。
   - id: charging
     name: OXP3 Battery · 充电上限与模式
     recommendation: optional
@@ -211,13 +211,13 @@ components[31]:
     status: source_reference_only
     notes: 电量遥测与机型适用的充电控制；S4 由独立插件管理。
   - id: s2s4
-    name: Boiler S2/S4 switcher
+    name: Boiler S2-S4 switcher
     recommendation: optional
     default: true
     dependencies[1]: decky
     sources[9]: common/sleep/source-lock.json,common/sleep/install.json,common/sleep/runtime/main.py,common/sleep/runtime/dist/index.js,common/sleep/runtime/package.json,common/sleep/runtime/plugin.json,common/sleep/runtime/sleep_control.py,common/sleep/runtime/90-boiler-sleep.conf,common/sleep/runtime/LICENSE
     status: shared_asset
-    notes: 独立 Decky 插件，关闭时沿用系统待机，开启时预留并保留休眠交换文件。
+    notes: 独立 Decky 插件 0.1.1，注册名称与前端 RPC 一致。关闭时沿用系统待机，开启时才准备休眠交换文件。
   - id: oxp3-light
     name: OXP3 Light · 三分区灯光控制
     recommendation: optional
@@ -267,7 +267,7 @@ build:
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
     model,adaptations/records/oxp3-shared-base/opti031-inputs.json,f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bacc36bcd222abfa6
-    model,adaptations/fingerprint-source-lock.json,1daf316e4eb9937d27fb4f071c40362775532a0ccb6f6f6455525e0003cddf25
+    model,adaptations/fingerprint-source-lock.json,e21c367747cd4e2055b54cbf2eb9ca1b7b5c2c40f0ca2f75fc1f080feaba7285
     common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
   inputs[9]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-shared-base-2,adaptations/inputs/oxp3-shared-base-2/manifest.json,510342dec0bfe6ce39389f5e13cae0d504755aa4072d90b73641b4dd2d5aead9,Explicit complete reviewed .20261030.2 package. Fixed public builders reproduce and verify .3 then .4 before final .8; no prebuilt .3/.4 fallback.

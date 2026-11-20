@@ -1,1 +1,6 @@
-{"verify_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-verify","list_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-list","enroll_command":"/var/lib/oxp3-installer/fingerprint/bin/fprintd-enroll -f right-index-finger"}
+{
+  "verify_command": "/var/lib/oxp3-installer/fingerprint/bin/fprintd-verify",
+  "list_command": "/var/lib/oxp3-installer/fingerprint/bin/fprintd-list",
+  "enroll_command": "/var/lib/oxp3-installer/fingerprint/bin/fprintd-enroll -f right-index-finger",
+  "game_mode_auth_agent": "/var/lib/oxp3-installer/fingerprint/libexec/polkit-kde-authentication-agent-1"
+}

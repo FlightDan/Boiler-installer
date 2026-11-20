@@ -4,6 +4,36 @@ import json
 
 PUBLIC_LOCK = 'common/fingerprint/public-bridge-lock.json'
 BRIDGE = ('index.js', 'main.py', 'package.json', 'plugin.json')
+KEYBOARD_ROOT = 'common/fingerprint/kde/gamescope-auth/'
+KEYBOARD_AGENT = 'polkit-kde-authentication-agent-1'
+KEYBOARD_LICENSE = 'GPL-2.0-or-later.txt'
+KEYBOARD_PROFILE = 'common/fingerprint/runtime-profile/profile.json'
+KEYBOARD_TARGETS = {
+    KEYBOARD_AGENT: ('var/lib/oxp3-installer/fingerprint/libexec/' + KEYBOARD_AGENT, 0o755),
+    KEYBOARD_LICENSE: ('usr/share/licenses/boiler-fingerprint-keyboard/' + KEYBOARD_LICENSE, 0o644),
+}
+KEYBOARD_SOURCE_FILES = ('BUILD.md', 'gamescope-auth.patch', 'polkit-kde-agent-1-v6.7.3-source.tar.gz')
+
+
+def keyboard_sources(read):
+    """Return the reviewed agent, corresponding source and license after byte validation."""
+    lock = json.loads(read(KEYBOARD_ROOT + 'source-lock.json'))
+    expected = {*KEYBOARD_TARGETS, *KEYBOARD_SOURCE_FILES}
+    rows = lock.get('files', [])
+    if (lock.get('kind') != 'BoilerFingerprintKeyboardSource' or lock.get('schema_version') != 1
+            or len(rows) != len(expected) or {row.get('path') for row in rows} != expected):
+        raise ValueError('Unexpected fingerprint keyboard source inventory')
+    profile = json.loads(read(KEYBOARD_PROFILE))
+    if profile.get('game_mode_auth_agent') != '/' + KEYBOARD_TARGETS[KEYBOARD_AGENT][0]:
+        raise ValueError('Fingerprint profile does not point to the packaged keyboard agent')
+    verified = {}
+    for row in rows:
+        data = read(KEYBOARD_ROOT + row['path'])
+        if (len(data), hashlib.sha256(data).hexdigest()) != (row['size'], row['sha256']):
+            raise ValueError('Fingerprint keyboard source differs from lock: ' + row['path'])
+        verified[row['path']] = data
+    return verified
+
 
 
 def validate(root, source_lock, member):
@@ -15,7 +45,7 @@ def validate(root, source_lock, member):
     lock = json.loads(raw)
     if (lock.get('schema_version') != 1 or lock.get('kind') != 'BoilerFingerprintPublicBridgeSource'
             or lock.get('repository') != 'FlightDan/FingerprintUnlock-SteamOS'
-            or lock.get('commit') != '5f7f988f645c08f9a1837ddcaa1d66b776ca7df6'):
+            or lock.get('commit') != '8be889082ebf4e8df6ad706857d2f59bd701d070'):
         raise ValueError('Unexpected fingerprint public bridge identity')
     expected = {('bridge/'+n, 'common/fingerprint/bridge/'+n) for n in BRIDGE}
     license_expected = {('COPYING', 'common/fingerprint/public-COPYING'),

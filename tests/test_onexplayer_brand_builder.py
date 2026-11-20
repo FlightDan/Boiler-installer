@@ -23,6 +23,19 @@ class Encoder:
 
 
 class BrandBuilderTests(unittest.TestCase):
+    def test_stale_plugin_payloads_are_reported_as_unresolved(self):
+        snapshot = ROOT / 'adaptations'
+        toon = builder.decoder(snapshot)
+        lock = json.loads((snapshot / 'canonical-model-snapshot.json').read_bytes())
+        inventory = {row['path']: row for row in lock['files']}
+        old_plugins = [{'id': 'boiler:s2s4', 'version': '0.1.0', 'files': []},
+                       {'id': 'oxp3:fingerprint-unlock', 'version': '0.1.10', 'files': []}]
+        for model in ('oxp3', 'x2-mini'):
+            with self.subTest(model=model):
+                guide = toon.loads((snapshot / 'devices/onexplayer' / (model + '.toon')).read_text(encoding='utf-8'), strict=True)
+                gaps = builder.model_plugin_gaps(guide, old_plugins, snapshot, inventory)
+                self.assertEqual({gap['component'] for gap in gaps}, {'boiler:s2s4', 'oxp3:fingerprint-unlock'})
+
     def test_microcode_is_derived_only_from_explicit_locked_request(self):
         snapshot = ROOT / 'adaptations'
         toon = builder.decoder(snapshot)

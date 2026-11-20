@@ -1,5 +1,5 @@
 const R = window.SP_REACT, U = window.DFL, h = R.createElement;
-const api = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit.connect(2, "Boiler S2/S4 switcher");
+const api = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit.connect(2, "Boiler S2-S4 switcher");
 const getStatus = api.callable("get_sleep_status"), savePolicy = api.callable("set_sleep_policy"), setEnabled = api.callable("set_enabled");
 // BEGIN BOILER PLUGIN LOCALE
 const steamLanguages = {
@@ -210,5 +210,5 @@ function Content() {
     }, tr("Save", "保存"))),
     error ? h(U.PanelSectionRow, {key: "error"}, h("div", null, error)) : null);
 }
-export default () => ({ title: "Boiler S2/S4 switcher", content: h(Content, null) });
+export default () => ({ titleView: h("div", null, "Boiler S2/S4 switcher"), content: h(Content, null) });
 

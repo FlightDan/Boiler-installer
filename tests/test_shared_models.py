@@ -181,6 +181,19 @@ class SharedLifecycle(unittest.TestCase):
     def test_fingerprint_action_is_not_exposed(self):
         self.assertFalse(hasattr(shared, 'fingerprint'))
 
+    def test_fingerprint_keyboard_targets_are_optional_and_atomic(self):
+        targets = shared.FINGERPRINT_FIXED | {shared.FINGERPRINT_RULES['device:oxp3'],
+            shared.FINGERPRINT_NATIVE + 'libexec/fprintd',
+            *(shared.FINGERPRINT_NATIVE + 'bin/fprintd-' + name for name in ('verify', 'enroll', 'list', 'delete'))}
+        historical = [dict(target=target) for target in sorted(targets)]
+        keyboard = [dict(target=target, mode=mode) for target, mode in shared.FINGERPRINT_KEYBOARD.items()]
+        component = dict(id=shared.FINGERPRINT_COMPONENT, optional=True, default=True)
+        engine = Engine(self.root)
+        shared.check_fingerprint_component(engine, dict(component, files=historical))
+        shared.check_fingerprint_component(engine, dict(component, files=historical + keyboard))
+        with self.assertRaisesRegex(MaintenanceError, 'Incomplete fingerprint keyboard runtime'):
+            shared.check_fingerprint_component(engine, dict(component, files=historical + keyboard[:1]))
+
     def test_pending_before_first_commit_exposes_restore(self):
         with patch('maintenance.live_root.pending', return_value={'id': 'interrupted-root-window'}):
             view = shared.options(self.root, 'device:x2-mini', **self.kw)

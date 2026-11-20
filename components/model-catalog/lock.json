@@ -3,7 +3,7 @@
   "kind": "ModelCatalogLock",
   "source": {
     "repository": "FlightDan/Boiler-adaptations",
-    "commit": "4134badfb325b8231b6ee2ad8ec1953a06f7f17a",
+    "commit": "65e7b68f37b0d7bc532616462a40ced57c92ffe7",
     "subtree": ""
   },
   "files": [
@@ -14,13 +14,13 @@
     },
     {
       "path": "brands/onexplayer/oxp3/manifest.json",
-      "size": 15728,
-      "sha256": "998b1fd020f73f438e5e79978b28190715932bc80513f7813b1eb59ad0e9576e"
+      "size": 16218,
+      "sha256": "6e33d0c7f1070fe145ccf6095bef35c6295596e40ce0da16d7ccd68113ae09a5"
     },
     {
       "path": "brands/onexplayer/x2-mini/manifest.json",
-      "size": 18980,
-      "sha256": "f9e485b76071b3e3d3661e3504a64fead05ce7355f48e71d46022d3d8c57859c"
+      "size": 19470,
+      "sha256": "bda64f588e6df68c0fdd1130b930e1c426a43ad73a06d132fe56b330f0240021"
     }
   ]
 }

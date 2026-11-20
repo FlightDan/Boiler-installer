@@ -42,10 +42,16 @@
         "common/fingerprint/bridge/plugin.json",
         "common/fingerprint/public-bridge-lock.json",
         "common/fingerprint/public-COPYING",
-        "common/fingerprint/upstream/LICENSE"
+        "common/fingerprint/upstream/LICENSE",
+        "common/fingerprint/kde/gamescope-auth/polkit-kde-authentication-agent-1",
+        "common/fingerprint/kde/gamescope-auth/GPL-2.0-or-later.txt",
+        "common/fingerprint/kde/gamescope-auth/gamescope-auth.patch",
+        "common/fingerprint/kde/gamescope-auth/BUILD.md",
+        "common/fingerprint/kde/gamescope-auth/polkit-kde-agent-1-v6.7.3-source.tar.gz",
+        "common/fingerprint/kde/gamescope-auth/source-lock.json"
       ],
       "status": "external_locked_runtime",
-      "notes": "Decky bridge 0.1.10 with fingerprint enrollment. The locked fprintd runtime uses model-specific FTE3600 rules. Actual enrollment and unlock through this combined package need device verification. Keep the Steam PIN fallback."
+      "notes": "Decky 0.1.11 enrolls through KDE and provides the locked Gamescope keyboard agent. The fprintd runtime keeps FTE3600 rules. Keep the Steam PIN fallback."
     },
     {
       "id": "slot-switch",
@@ -347,7 +353,7 @@
         "common/cpu/intel/microcode/licenses/Intel-microcode.txt"
       ],
       "status": "external_boiler_core",
-      "notes": "适用于 Intel Arc G3 Extreme 配置；按 CPU 签名及平台标志匹配。机型包安装、维护恢复和实机加载验收待接入。"
+      "notes": "可选构件，默认留空。安装与维护均使用 onexplayer-intel-microcode-v1 早期 initramfs 事务，按 CPUID 和平台标志匹配并保留原启动文件供恢复。OXP3 B 槽已验证 0x11d，X2 Mini 真机待验收。"
     },
     {
       "id": "charging",
@@ -369,7 +375,7 @@
     },
     {
       "id": "s2s4",
-      "name": "Boiler S2/S4 switcher",
+      "name": "Boiler S2-S4 switcher",
       "recommendation": "optional",
       "default": true,
       "dependencies": [
@@ -387,7 +393,7 @@
         "common/sleep/runtime/LICENSE"
       ],
       "status": "shared_asset",
-      "notes": "独立 Decky 插件，关闭时沿用系统待机，开启时预留并保留休眠交换文件。"
+      "notes": "独立 Decky 插件 0.1.1，注册名称与前端 RPC 一致。关闭时沿用系统待机，开启时才准备休眠交换文件。"
     },
     {
       "id": "oxp3-light",

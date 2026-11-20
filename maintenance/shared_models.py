@@ -35,6 +35,10 @@ SLEEP_FILES = {SLEEP_ROUTER, 'var/lib/boiler-sleep/sleep_control.py',
     *(SLEEP_PLUGIN+name for name in ('main.py', 'plugin.json', 'package.json', 'dist/index.js'))}
 FINGERPRINT_NATIVE = 'var/lib/oxp3-installer/fingerprint/'
 FINGERPRINT_PLUGIN = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
+FINGERPRINT_KEYBOARD = {
+    FINGERPRINT_NATIVE + 'libexec/polkit-kde-authentication-agent-1': 0o755,
+    'usr/share/licenses/boiler-fingerprint-keyboard/GPL-2.0-or-later.txt': 0o644,
+}
 FINGERPRINT_RULES = {'device:oxp3': 'etc/udev/rules.d/69-boiler-oxp3-fingerprint.rules',
     'device:x2-mini': 'etc/udev/rules.d/69-boiler-x2-fingerprint.rules'}
 FINGERPRINT_FIXED = frozenset((
@@ -186,11 +190,14 @@ def check_fingerprint_component(engine, component):
     required = {FINGERPRINT_NATIVE+'libexec/fprintd', *(FINGERPRINT_NATIVE+'bin/fprintd-'+x for x in ('verify','enroll','list','delete'))}
     if not required <= set(targets):
         raise MaintenanceError('Fingerprint runtime missing')
+    keyboard = {row['target']: row.get('mode', 0o644) for row in rows if row['target'] in FINGERPRINT_KEYBOARD}
+    if keyboard and keyboard != FINGERPRINT_KEYBOARD:
+        raise MaintenanceError('Incomplete fingerprint keyboard runtime')
     for target in targets:
         relative = target.removeprefix(FINGERPRINT_NATIVE)
         native = target.startswith(FINGERPRINT_NATIVE) and (relative in {'libexec/fprintd', *(f'bin/fprintd-{x}' for x in ('verify','enroll','list','delete'))}
             or relative.startswith('lib/') and '/' not in relative[4:])
-        if target not in FINGERPRINT_FIXED and target not in FINGERPRINT_RULES.values() and not native:
+        if target not in FINGERPRINT_FIXED and target not in FINGERPRINT_RULES.values() and not native and target not in keyboard:
             raise MaintenanceError('Unexpected fingerprint target')
     state = engine._state()
     for target in set(targets) | set(FINGERPRINT_CONFLICTS):

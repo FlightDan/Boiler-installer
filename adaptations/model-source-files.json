@@ -30,8 +30,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "size": 2462,
-      "sha256": "c962ccc47abb7aa3d1f50c1c4b449d5dd4ed243c4614c568703fff0e88f0e6a1"
+      "size": 2749,
+      "sha256": "fef7979bcfc015ee792717ec0eaf42937ece40d159b82fe1e7b0430b8ff28b05"
     },
     {
       "path": "adaptations.json",
@@ -460,13 +460,13 @@
     },
     {
       "path": "brands/onexplayer/oxp3/manifest.json",
-      "size": 15728,
-      "sha256": "998b1fd020f73f438e5e79978b28190715932bc80513f7813b1eb59ad0e9576e"
+      "size": 16218,
+      "sha256": "6e33d0c7f1070fe145ccf6095bef35c6295596e40ce0da16d7ccd68113ae09a5"
     },
     {
       "path": "brands/onexplayer/oxp3/model.md",
-      "size": 7466,
-      "sha256": "4e393a44595e0c0553ac2f4c8e2e469cc9784057f3b362d2a77cac64a70c29ed"
+      "size": 7520,
+      "sha256": "29c19b55758ddda96529da343fffc50a8fe5918cefa023c91ec6d6b05ae9be8f"
     },
     {
       "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -800,13 +800,13 @@
     },
     {
       "path": "brands/onexplayer/x2-mini/manifest.json",
-      "size": 18980,
-      "sha256": "f9e485b76071b3e3d3661e3504a64fead05ce7355f48e71d46022d3d8c57859c"
+      "size": 19470,
+      "sha256": "bda64f588e6df68c0fdd1130b930e1c426a43ad73a06d132fe56b330f0240021"
     },
     {
       "path": "brands/onexplayer/x2-mini/model.md",
-      "size": 9298,
-      "sha256": "7d4df1ea3e9c029d7841d18b8f303a0400e4e73f5e523a8e5bf24f5d6879952b"
+      "size": 9352,
+      "sha256": "ce80d339355f5a46d293737e25a1f58103414a73231aff33756a2760d35ce65a"
     },
     {
       "path": "brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
@@ -930,8 +930,8 @@
     },
     {
       "path": "common/cpu/intel/microcode/source.toon",
-      "size": 1106,
-      "sha256": "a45af5cb0eb6dace9004c06fbca1c5cdd6c9dc29606879cacc27d78be6fb5f8e"
+      "size": 1280,
+      "sha256": "b884f86cff6889a5553b84919dc3109d2a84955616565035d7d53bdcfc7cb62c"
     },
     {
       "path": "common/fingerprint/bridge/index.js",
@@ -940,13 +940,13 @@
     },
     {
       "path": "common/fingerprint/bridge/main.py",
-      "size": 43703,
-      "sha256": "9fffcf215fac1d496d76b2d327180e0564d187354001d7fd68fd58380eae3b1b"
+      "size": 45920,
+      "sha256": "83cc8eafd7a89d39d2083a7b9dec379efb1796e274d5a53ec01725637a8c07c4"
     },
     {
       "path": "common/fingerprint/bridge/package.json",
       "size": 85,
-      "sha256": "1463c20a384a3d9e14e673966532b29591d9394c371a872b6a3f2178324e819f"
+      "sha256": "4e5b32e20ff4648ecc3f7b2bc9a06b141c0f3c6e1fc3ec7fc7f007b6dd030e2c"
     },
     {
       "path": "common/fingerprint/bridge/plugin.json",
@@ -957,6 +957,36 @@
       "path": "common/fingerprint/kde/README.md",
       "size": 4539,
       "sha256": "cb0ea91640f446c89fae2f1337dceb3ac67591718ae787c9267c91f33620536a"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/BUILD.md",
+      "size": 1397,
+      "sha256": "8cd19b03641824353dc89656c76b2786d82d890449a9b9bd8120593f21f36968"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/GPL-2.0-or-later.txt",
+      "size": 17277,
+      "sha256": "b58671fb4d9e9efeb9a6af1bdba02e61ac69af654855b45a372efe8f52413f83"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/gamescope-auth.patch",
+      "size": 4630,
+      "sha256": "73e26b4c1d0fa11aae33e21da33218a47dfdf1e1750583f67fb4fcb2bdfc72a4"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/polkit-kde-agent-1-v6.7.3-source.tar.gz",
+      "size": 70722,
+      "sha256": "fcd7e923aa09c6f897a61fe502e772c81978b125dd4c505a64b07a184c232659"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/polkit-kde-authentication-agent-1",
+      "size": 158952,
+      "sha256": "959ef59018df7696a101479276b817faee5066d61eaae9b1ae51fa8776417d5f"
+    },
+    {
+      "path": "common/fingerprint/kde/gamescope-auth/source-lock.json",
+      "size": 1354,
+      "sha256": "f0460b95f1f1ff6b94b058340775d370919d9e9cbf45789e6d0e38521c600093"
     },
     {
       "path": "common/fingerprint/kde/install-kde-pam.py",
@@ -996,7 +1026,7 @@
     {
       "path": "common/fingerprint/public-bridge-lock.json",
       "size": 2153,
-      "sha256": "8d40a650e73a66a374731a4abc6148b8fd55695c80a50c94d56e34aa53dd1d9c"
+      "sha256": "c1a13a48fecd6b462ac0d719cda2aa23eac4af33580d654c54797de39fdf35ec"
     },
     {
       "path": "common/fingerprint/runtime-profile/COPYING",
@@ -1015,8 +1045,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/profile.json",
-      "size": 243,
-      "sha256": "33975adb8a98a7dfe79c3a55a9a239fab8d413a11b3c1b225f0f5d3f154aa449"
+      "size": 362,
+      "sha256": "19918621e3bdd321127c588d069516aefd73f0e83cfe6b2414898163071f0412"
     },
     {
       "path": "common/fingerprint/runtime-profile/spidev.conf",
@@ -1621,7 +1651,7 @@
     {
       "path": "common/sleep/install.json",
       "size": 2611,
-      "sha256": "4eb38c298b17d8dadc31ef1570706d971cc484077695a51499536cba3227d50c"
+      "sha256": "639e5ac172449702855cc9a8c78bc9317b3ae710b36802dbde38ef63299aa7bc"
     },
     {
       "path": "common/sleep/runtime/90-boiler-sleep.conf",
@@ -1635,8 +1665,8 @@
     },
     {
       "path": "common/sleep/runtime/dist/index.js",
-      "size": 21835,
-      "sha256": "03f0c916ea5e6b9490d338e09e382a153f1e688a7b14cc55b0b03910f5cea80a"
+      "size": 21855,
+      "sha256": "3d46940762f210241c1aff1f53c7ac9f69b82681a0452e2b2f73e53da2577158"
     },
     {
       "path": "common/sleep/runtime/main.py",
@@ -1646,12 +1676,12 @@
     {
       "path": "common/sleep/runtime/package.json",
       "size": 59,
-      "sha256": "72c1e9e1ba806ce747b0abb716fc360d2fc0eb386c57f2d616d0aee618762f2b"
+      "sha256": "0feae41e568fe5ccda14b2b2d05c685bd9ecc58333f8e6e90a6acc61e92cf420"
     },
     {
       "path": "common/sleep/runtime/plugin.json",
       "size": 85,
-      "sha256": "bc82f7346ee8a596d68a05457569aafd064c753f2f2e19d79e141c7faf4026ff"
+      "sha256": "375266baa99f862ac8b3f82893d841c6bc92f76b1e33d59819a9efe0ae91316f"
     },
     {
       "path": "common/sleep/runtime/sleep_control.py",
@@ -1660,8 +1690,8 @@
     },
     {
       "path": "common/sleep/source-lock.json",
-      "size": 1535,
-      "sha256": "127795882e96258de05661610fed0d558b5b50326498739ede7c04c49fccb9f7"
+      "size": 1589,
+      "sha256": "b9abf4442777eb7acf33298c260b7bc8a287137d572e5a90fbd51d70f0d3d4f6"
     },
     {
       "path": "common/ssd/acer/gm7/GM7_POLICY.md",
@@ -1685,13 +1715,13 @@
     },
     {
       "path": "devices/onexplayer/oxp3.toon",
-      "size": 22383,
-      "sha256": "2181c59fd48185986230d073c36b443cb833f6393ee319fc4455e1f7eec3cad4"
+      "size": 22807,
+      "sha256": "55ef55cbd133f0835a0001b75e1351e1cea6865901d5f1bd86d4ceae9b49d17b"
     },
     {
       "path": "devices/onexplayer/x2-mini.toon",
-      "size": 19403,
-      "sha256": "c0b0aa51e92720246b4a0e24de27b6946ecc559bb3202ead18cc46f2784d1f12"
+      "size": 19827,
+      "sha256": "59730b59f90343a8067e2ac80ec2eb748a6d107c98aae5d1cc02160a0a5827d6"
     },
     {
       "path": "docs/ADAPTATIONS.md",
@@ -1745,8 +1775,8 @@
     },
     {
       "path": "fingerprint-source-lock.json",
-      "size": 3219,
-      "sha256": "1daf316e4eb9937d27fb4f071c40362775532a0ccb6f6f6455525e0003cddf25"
+      "size": 4391,
+      "sha256": "e21c367747cd4e2055b54cbf2eb9ca1b7b5c2c40f0ca2f75fc1f080feaba7285"
     },
     {
       "path": "licenses/GPL-2.0.txt",
@@ -1817,6 +1847,11 @@
       "path": "records/migrations/intel-cpu-microcode-toon-20261118.md",
       "size": 1045,
       "sha256": "88258a615e8f8b497407435ec77ff917a8237daf2f8d7c41d34bccc01f6d7df4"
+    },
+    {
+      "path": "records/migrations/onexplayer-plugin-fixes-20261120.md",
+      "size": 1678,
+      "sha256": "f99c255bb0ffbc30055dc4b2240f08e171c9e0de59bab2cdadd88c46795d9481"
     },
     {
       "path": "records/migrations/s2s4-split-20261118.md",
@@ -2045,13 +2080,13 @@
     },
     {
       "path": "scripts/build-fingerprint-overlay.py",
-      "size": 22748,
-      "sha256": "84e9d828a328b5ed77f573451ec41adbcd6b0b06bc6f5031e4df21951ea0507c"
+      "size": 23512,
+      "sha256": "2ab2339abe46b5e8f9f48618873fed43fb60c46742bb13d23c6fa2c589715811"
     },
     {
       "path": "scripts/build-index.py",
-      "size": 35125,
-      "sha256": "af3de3eeee38e633ad05650935e3e4137589cc3f62fa6b8379767969e68ec0de"
+      "size": 35545,
+      "sha256": "bcbe75db3efafacc69b2bd87054a6067a6bac530e8f63fb4014240ab36c5d39a"
     },
     {
       "path": "scripts/build-keyboard-runtime.py",
@@ -2065,8 +2100,8 @@
     },
     {
       "path": "scripts/build-s4-split-model.py",
-      "size": 14324,
-      "sha256": "3e294dc4e96a88b2cdf5fc57e0933fe9a26a7aed3352a09a8c64700f0122b4d9"
+      "size": 15708,
+      "sha256": "d34be0397079236db70a1ca8490df2d1d85802cf1424ef34ed8418d429c0bc7b"
     },
     {
       "path": "scripts/build-shared-base.py",
@@ -2090,8 +2125,8 @@
     },
     {
       "path": "scripts/fingerprint_provenance.py",
-      "size": 2313,
-      "sha256": "9ed224d50d260e68aec86621782f0201d01db9c908a98230eb34306e1208ad4b"
+      "size": 3963,
+      "sha256": "ecd2401ea6b93c8ad0c5f3355b1a769794e8a56a74a32ab8d7a5b7095830d2a4"
     },
     {
       "path": "scripts/model-identity.py",
@@ -2160,8 +2195,8 @@
     },
     {
       "path": "tests/test_fingerprint_overlay.py",
-      "size": 11453,
-      "sha256": "e7639d144d9d6d5ab9db95806f7a7a26369c803f004e950db2ac973a83fbf8eb"
+      "size": 12060,
+      "sha256": "7c625339109f245dd1bf7074c6976d4ad54800cffcc8ada10055bc3e4d55c18d"
     },
     {
       "path": "tests/test_fingerprint_providers.py",

@@ -188,6 +188,27 @@ def build(base, anchor, checkout, commit, installer_root, output, version):
             raise ValueError('Expected one fingerprint bridge binding: ' + path)
         changed[path] = locked(source)
         frontends.pop(path, None)
+    for source in ('profile.json', 'boiler-fprintd.service', 'net.reactivated.Fprint.service'):
+        name = 'common/fingerprint/runtime-profile/' + source
+        path = 'fingerprint/profile/' + name
+        if sum(member['source'] == path for member in fingerprint['files']) != 1:
+            raise ValueError('Expected one fingerprint profile binding: ' + path)
+        changed[path] = locked(name)
+    keyboard = fingerprint_provenance.keyboard_sources(locked)
+    for name, data in keyboard.items():
+        target = fingerprint_provenance.KEYBOARD_TARGETS.get(name)
+        if target:
+            path = 'fingerprint/profile/' + fingerprint_provenance.KEYBOARD_ROOT + name
+            fingerprint['files'].append(dict(source=path, target=target[0], mode=target[1]))
+        else:
+            path = 'fingerprint/licenses/kde-keyboard/' + name
+        if path in inventory or path in changed:
+            raise ValueError('Duplicate fingerprint keyboard member: ' + path)
+        changed[path] = data
+        inventory[path] = dict(path=path, size=len(data), sha256=digest(data))
+    keyboard_lock = 'fingerprint/licenses/kde-keyboard/source-lock.json'
+    changed[keyboard_lock] = locked(fingerprint_provenance.KEYBOARD_ROOT + 'source-lock.json')
+    inventory[keyboard_lock] = dict(path=keyboard_lock, size=len(changed[keyboard_lock]), sha256=digest(changed[keyboard_lock]))
     fingerprint['version'] = version
     localized['fingerprint_source_commit'] = bridge['commit']
     shared = manifest.setdefault('shared_adaptations', {'kind': 'boiler-shared-static-v1', 'components': [], 'warnings': []})

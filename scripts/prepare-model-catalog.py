@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -28,8 +29,9 @@ def prepare(checkout, commit, output, *, source_subtree=SOURCE_SUBTREE, adaptati
     if output.exists():
         raise ValueError('Use a fresh catalog snapshot directory')
     if source_subtree != SOURCE_SUBTREE: raise ValueError('Canonical catalog must use repository root')
+    git_exe = os.environ.get('BOILER_GIT_EXE', 'git')
     def git(*args):
-        return subprocess.check_output(['git', '-C', str(checkout), *args], stderr=subprocess.PIPE)
+        return subprocess.check_output([git_exe, '-C', str(checkout), *args], stderr=subprocess.PIPE)
     if git('remote', 'get-url', 'origin').decode().strip() not in (
             'https://github.com/'+REPOSITORY, 'https://github.com/'+REPOSITORY+'.git',
             'git@github.com:'+REPOSITORY+'.git'):

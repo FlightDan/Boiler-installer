@@ -249,6 +249,18 @@ def build(base, base_sha256, runtime, native_sha256, source_sha256, output, mode
     for name, target in [MODEL_RULES[identity], *TARGETS.items()]:
         data = confined(prepared/'sources', name).read_bytes()
         add(data, 'fingerprint/profile/'+name, target, 0o644)
+    provenance = prep.fingerprint_provenance
+    keyboard = provenance.keyboard_sources(lambda name: confined(prepared/'sources', name).read_bytes())
+    for name, data in keyboard.items():
+        if name in provenance.KEYBOARD_TARGETS:
+            target, mode = provenance.KEYBOARD_TARGETS[name]
+            add(data, 'fingerprint/profile/' + provenance.KEYBOARD_ROOT + name, target, mode)
+        else:
+            source = confined(stage, 'fingerprint/licenses/kde-keyboard/' + name)
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_bytes(data)
+    shutil.copyfile(confined(prepared/'sources', provenance.KEYBOARD_ROOT + 'source-lock.json'),
+                    stage/'fingerprint/licenses/kde-keyboard/source-lock.json')
     add(pam_data, 'fingerprint/kde/pam_fprintd.so', 'usr/lib/security/pam_fprintd.so', 0o755)
     if identity == 'device:x2-mini':
         for name, (target, mode) in FTE_TARGETS.items():

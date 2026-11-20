@@ -123,7 +123,10 @@ class OverlayTests(unittest.TestCase):
                     'shared_adaptations':{'kind':'boiler-shared-static-v1','components':[],'warnings':[]}}
             def prepare(runtime,native,source,out):
                 out=Path(out)
-                for path in [*overlay.MODEL_RULES['device:oxp3'][:1],*overlay.TARGETS]:
+                provenance = overlay.prep.fingerprint_provenance
+                keyboard = ROOT / provenance.KEYBOARD_ROOT
+                sources = [path.relative_to(ROOT).as_posix() for path in keyboard.iterdir()]
+                for path in [*overlay.MODEL_RULES['device:oxp3'][:1], *overlay.TARGETS, *sources]:
                     dest=out/'sources'/path;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/path,dest)
                 dest=out/'sources'/overlay.SHARED_PROFILE/'COPYING';dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/overlay.SHARED_PROFILE/'COPYING',dest)
                 native_dir=out/'native';native_dir.mkdir(parents=True);(native_dir/'runtime-manifest.json').write_bytes(encoded({'files':[]}));(native_dir/'closure-proof.json').write_bytes(b'{}')
@@ -140,6 +143,10 @@ class OverlayTests(unittest.TestCase):
                 self.assertEqual(result['source'],{'kind':'github','repository':overlay.REPOSITORY,'commit':'c'*40})
                 self.assertEqual(result['minimum_engine_version'],'0.1.5')
                 self.assertEqual(result['components'][-1]['minimum_engine_version'],'0.1.5')
+                files = result['components'][-1]['files']
+                targets = {row['target']: row['mode'] for row in files}
+                self.assertEqual(targets['var/lib/oxp3-installer/fingerprint/libexec/polkit-kde-authentication-agent-1'], 0o755)
+                self.assertEqual(targets['usr/share/licenses/boiler-fingerprint-keyboard/GPL-2.0-or-later.txt'], 0o644)
                 self.assertEqual((root/'first/package/fingerprint/evidence/base-manifest.json').read_bytes(),good)
                 provenance=json.loads((root/'first/package/fingerprint/evidence/build-provenance.json').read_bytes())
                 self.assertEqual(provenance['base_source']['commit'],overlay.BASE_AUTHORITY_COMMIT)

@@ -9,7 +9,7 @@
 <!-- BEGIN GENERATED INSTALL LIST -->
 | 组件 ID | 适配项目 | 建议 | 验证与适用边界 |
 | --- | --- | --- | --- |
-| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Decky bridge 0.1.10 with fingerprint enrollment. The locked fprintd runtime uses model-specific BF63112 rules. Actual enrollment and unlock through this combined package need device verification. Keep the Steam PIN fallback.；依赖：decky |
+| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Decky 0.1.11 enrolls through KDE and provides the locked Gamescope keyboard agent. The fprintd runtime keeps BF63112 rules. Keep the Steam PIN fallback.；依赖：decky |
 | slot-switch | KDE 槽位切换 / 系统回退 | 可选 | A/B 布局及系统工具满足时可选；真实切换与重启分别验证。 |
 | partition-mount | KDE 图形分区持久挂载 | 可选 | 共享 home/NTFS 布局核对后可选；本次归档基线不代表工作区后续 NTFS 修复。 |
 | refind | rEFInd · 双系统图形启动菜单 | 可选 | 独立启动管理器入口；脚本不归机型适配所有，核对 EFI 与双系统布局。 |
@@ -32,9 +32,9 @@
 | fan-driver | OXP3 风扇与充电接口驱动 | 条件适用 | OXP3 专用寄存器/驱动布局；另需匹配公开驱动载荷。 |
 | oxp3-fan | OXP3 风扇 · 自动与曲线 | 可选 | OXP3 专用风扇界面与曲线；另需原公开插件载荷；依赖：fan-driver、decky |
 | oxp3-cpu | OXP3 CPU · EPP 与分组限频 | 可选 | 仅保留公开常规控制；未纳入工作区新动态功耗研究；依赖：decky |
-| intel-cpu-microcode | Intel CPU 微码 · Panther Lake | 可选 | 适用于 Intel Arc G3 Extreme 配置；按 CPU 签名及平台标志匹配。机型包安装、维护恢复和实机加载验收待接入。 |
+| intel-cpu-microcode | Intel CPU 微码 · Panther Lake | 可选 | 可选构件，默认留空。安装与维护均使用 onexplayer-intel-microcode-v1 早期 initramfs 事务，按 CPUID 和平台标志匹配并保留原启动文件供恢复。OXP3 B 槽已验证 0x11d，X2 Mini 真机待验收。 |
 | charging | OXP3 Battery · 充电上限与模式 | 可选 | 电量遥测与机型适用的充电控制；S4 由独立插件管理；依赖：fan-driver、decky |
-| s2s4 | Boiler S2/S4 switcher | 可选 | 独立 Decky 插件，关闭时沿用系统待机，开启时预留并保留休眠交换文件；依赖：decky |
+| s2s4 | Boiler S2-S4 switcher | 可选 | 独立 Decky 插件 0.1.1，注册名称与前端 RPC 一致。关闭时沿用系统待机，开启时才准备休眠交换文件；依赖：decky |
 | oxp3-light | OXP3 Light · 三分区灯光控制 | 可选 | 核对现有 HID 报文格式；保留上游许可证和恢复行为；依赖：decky |
 | legacy-runtime | 音量键与电量显示修复 | 可选 | 保留原音量/电量运行时依赖，不自动迁移到其他机型。 |
 | windows-reboot | 重启进入 Windows · Decky 按钮与桌面快捷方式 | 可选 | 核对 Windows EFI 启动项、授权入口及恢复；依赖：decky |

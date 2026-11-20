@@ -1,0 +1,121 @@
+diff --git a/QuickAuthDialog.cpp b/QuickAuthDialog.cpp
+index 7e9eae5..686c5a4 100644
+--- a/QuickAuthDialog.cpp
++++ b/QuickAuthDialog.cpp
+@@ -44,14 +44,18 @@ QuickAuthDialog::QuickAuthDialog(const QString &actionId,
+         }
+     }
+ 
+-    engine->setInitialProperties(props);
+     engine->rootContext()->setContextObject(new KLocalizedQmlContext(engine));
+ 
+     if (KRuntimePlatform::runtimePlatform().contains("phone")) {
+         // If this is Plasma Mobile
++        engine->setInitialProperties(props);
+         engine->load("qrc:/qml/MobileQuickAuthDialog.qml");
+     } else {
+         // If this is Plasma Desktop, or other platforms
++        props.insert("fingerprintGameModeKeyboard",
++                     actionId == QLatin1String("net.reactivated.fprint.device.enroll")
++                         && qEnvironmentVariable("BOILER_FINGERPRINT_GAMESCOPE_KEYBOARD") == QLatin1String("1"));
++        engine->setInitialProperties(props);
+         engine->load("qrc:/qml/QuickAuthDialog.qml");
+     }
+ 
+diff --git a/QuickAuthDialog.qrc b/QuickAuthDialog.qrc
+index 6f7a814..192715b 100644
+--- a/QuickAuthDialog.qrc
++++ b/QuickAuthDialog.qrc
+@@ -2,6 +2,7 @@
+ <RCC version="1.0">
+  <qresource>
+     <file>qml/QuickAuthDialog.qml</file>
++    <file>qml/FingerprintInputPanel.qml</file>
+     <file>qml/MobileQuickAuthDialog.qml</file>
+     <file>qml/RejectPasswordAnimation.qml</file>
+     <file>qml/RejectPasswordPathAnimation.qml</file>
+diff --git a/qml/FingerprintInputPanel.qml b/qml/FingerprintInputPanel.qml
+new file mode 100644
+index 0000000..1ba49a6
+--- /dev/null
++++ b/qml/FingerprintInputPanel.qml
+@@ -0,0 +1,13 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++import QtQuick
++import QtQuick.VirtualKeyboard
++
++Item {
++    implicitHeight: panel.height
++
++    InputPanel {
++        id: panel
++        width: parent.width
++        visible: Qt.inputMethod.visible
++    }
++}
+diff --git a/qml/QuickAuthDialog.qml b/qml/QuickAuthDialog.qml
+index 283b9c2..13154e1 100644
+--- a/qml/QuickAuthDialog.qml
++++ b/qml/QuickAuthDialog.qml
+@@ -31,6 +31,7 @@ Kirigami.AbstractApplicationWindow {
+     property alias selectedIdentity: identitiesCombo.currentValue
+ 
+     property bool waitingForAuthentication: false
++    property bool fingerprintGameModeKeyboard: false
+ 
+     // passed in by QuickAuthDialog.cpp
+     property string mainText
+@@ -48,6 +49,9 @@ Kirigami.AbstractApplicationWindow {
+ 
+     onAccept: {
+         waitingForAuthentication = true;
++        if (fingerprintGameModeKeyboard) {
++            Qt.inputMethod.hide();
++        }
+         // disable password field while password is being checked
+         if (passwordField.text !== "") {
+             passwordField.enabled = false;
+@@ -81,10 +85,13 @@ Kirigami.AbstractApplicationWindow {
+ 
+     readonly property real intendedWindowWidth: Kirigami.Units.gridUnit * 35
+     // HACK: Window doesn't seem to automatically update height from binding, so manually set the height value
+-    readonly property real intendedWindowHeight: column.implicitHeight + column.anchors.topMargin + column.anchors.bottomMargin;
++    readonly property real intendedWindowHeight: column.implicitHeight + column.anchors.topMargin + column.anchors.bottomMargin
++        + (fingerprintGameModeKeyboard && Qt.inputMethod.visible && keyboardLoader.item ? keyboardLoader.item.implicitHeight : 0);
+     onIntendedWindowHeightChanged: {
+-        minimumHeight = intendedWindowHeight;
++        minimumHeight = Math.min(height, intendedWindowHeight);
++        maximumHeight = Math.max(height, intendedWindowHeight);
+         height = intendedWindowHeight;
++        minimumHeight = intendedWindowHeight;
+         maximumHeight = intendedWindowHeight
+     }
+ 
+@@ -129,6 +136,16 @@ Kirigami.AbstractApplicationWindow {
+         target: column
+     }
+ 
++    Loader {
++        id: keyboardLoader
++        active: root.fingerprintGameModeKeyboard
++        source: active ? "FingerprintInputPanel.qml" : ""
++        anchors.left: parent.left
++        anchors.right: parent.right
++        anchors.bottom: parent.bottom
++        height: item && Qt.inputMethod.visible ? item.implicitHeight : 0
++    }
++
+     // dialog contents
+     ColumnLayout {
+         id: column
+@@ -199,6 +216,10 @@ Kirigami.AbstractApplicationWindow {
+                     Layout.fillWidth: true
+                     onAccepted: root.accept()
+                     placeholderText: i18n("Password…")
++                    TapHandler {
++                        enabled: root.fingerprintGameModeKeyboard
++                        onTapped: Qt.inputMethod.show()
++                    }
+                 }
+ 
+                 RowLayout {

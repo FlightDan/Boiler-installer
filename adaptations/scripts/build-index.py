@@ -360,10 +360,14 @@ def validate_fingerprint_release(manifest):
            *(plugin+x for x in ('profile.json','main.py','dist/index.js','plugin.json','package.json'))}
     required={native+'libexec/fprintd',*(native+'bin/fprintd-'+x for x in ('verify','enroll','list','delete'))}
     if len(targets)!=len(set(targets)) or not (fixed|required|{target}).issubset(targets): raise ValueError('Incomplete or duplicate fingerprint target')
+    keyboard_modes = {native+'libexec/polkit-kde-authentication-agent-1': 0o755,
+                      'usr/share/licenses/boiler-fingerprint-keyboard/GPL-2.0-or-later.txt': 0o644}
+    keyboard = {row['target']: row.get('mode', 0o644) for row in rows if row['target'] in keyboard_modes}
+    if keyboard and keyboard != keyboard_modes: raise ValueError('Incomplete fingerprint keyboard runtime')
     for item in targets:
         relative=item.removeprefix(native)
         allowed_native=item.startswith(native) and (item in required or relative.startswith('lib/') and '/' not in relative[4:])
-        if item not in fixed and item!=target and not allowed_native: raise ValueError('Unexpected fingerprint target')
+        if item not in fixed and item!=target and not allowed_native and item not in keyboard: raise ValueError('Unexpected fingerprint target')
     if fingerprint.get('compatibility',{}).get('device_ids') != [identity.removeprefix('device:')]: raise ValueError('Fingerprint model compatibility required')
     legacy=manifest.get('legacy_capabilities',[]); decky=[x for x in legacy if x.get('id')=='oxp3:decky']; wifi=[x for x in legacy if x.get('id')=='oxp3:wifi']
     if (len(decky)!=1 or decky[0].get('available') is not True or len(wifi)!=1 or wifi[0].get('available') is not False or wifi[0].get('default') is not False

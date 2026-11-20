@@ -1,5 +1,11 @@
 # Third-party notices
 
+The fingerprint authorization keyboard bundles KDE's `polkit-kde-agent-1`
+v6.7.3 with the fingerprint-only Gamescope keyboard patch. Its corresponding
+source archive, patch, build instructions, checksums and GPL-2.0-or-later
+license are under `common/fingerprint/kde/gamescope-auth/`.
+
+
 Boiler-devices contains original registry metadata, source collection tooling,
 model installation guides, and tests. Original repository content is licensed under
 AGPL-3.0-only; the full, unmodified license text is in [LICENSE](LICENSE).
