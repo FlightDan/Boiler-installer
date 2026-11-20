@@ -6,6 +6,7 @@
 
 - [安装指南](install/README.md) — 安装准备、操作步骤和界面示例
 - [贡献机型或部件适配](CONTRIBUTING_ADAPTATIONS.md) — 最低实机要求、开发步骤与 PR 模板
+- [0.2.8 slim 安装器与配套维护器](RELEASE_SLIM_20261121.md)
 - [新机型与单部件接入验证记录](CONTRIBUTOR_MODEL_INTEGRATION_20261121.md)
 - [开发与构建](DEVELOPMENT.md) — 依赖、构建与检查入口
 - [README 与安装指南更新记录](README_REDESIGN_20261108.md) — 素材来源及本次文档交付边界
