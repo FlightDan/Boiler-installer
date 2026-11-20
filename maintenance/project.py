@@ -56,6 +56,34 @@ def hardware_match(*, dmi=DMI, catalog=None):
     return dict(match, status='matched', model_id=model['id'], name=model['name']), model
 
 
+def _match_signed_index(index):
+    """Combine exact offline and authenticated index matches; conflicts deny selection."""
+    match, model = hardware_match()
+    if match.get('status') in ('unavailable', 'ambiguous'):
+        return match, None
+    pair = {'manufacturer': match.get('manufacturer'), 'model': match.get('product')}
+    identities = set()
+    for entry in index['packages']:
+        source = entry.get('declared_source', {})
+        hardware = entry.get('hardware_matching', {})
+        if (entry.get('id', '').startswith('device:') and entry.get('sha256') not in index.get('revocations', [])
+                and source.get('kind') == 'github' and source.get('repository') == REPOSITORY
+                and entry.get('source', {}).get('kind') != 'local'
+                and hardware.get('mode') == 'advisory-exact-dmi-v1' and pair in hardware.get('pairs', [])):
+            identities.add(entry['id'])
+    if match.get('status') == 'matched':
+        identities.add(match['model_id'])
+    if len(identities) > 1:
+        return dict(match, status='ambiguous', model_id=None), None
+    if not identities:
+        return match, model
+    identity = next(iter(identities))
+    if model is not None and match.get('model_id') == identity:
+        return match, model
+    model = dict(id=identity, name=identity, components=[])
+    return dict(match, status='matched', model_id=identity, name=identity, source='signed-index'), model
+
+
 def _releases(repository):
     url = 'https://api.github.com/repos/' + repository + '/releases?per_page=50'
     try:
@@ -182,11 +210,25 @@ def _transport(entry, stream):
         raise MaintenanceError('Generic maintenance requires an official Boiler Release ZIP')
 
 
-def _stream(session, stream, identity, environment, offline):
+def _device_snapshot(session, offline):
+    cache = Path(session)/'device'
+    if offline:
+        return _registry(cached_index(cache), 'device'), 'offline'
+    try:
+        result = fetch_index(DEVICE + '/index.json', DEVICE + '/index.sig', cache, timeout=12,
+                             expected_id=REGISTRIES['device'])
+        return _registry(result['index'], 'device'), 'ready'
+    except (URLError, TimeoutError, ConnectionError):
+        return _registry(cached_index(cache), 'device'), 'offline'
+
+
+def _stream(session, stream, identity, environment, offline, *, snapshot=None):
     cache = session / stream
     try:
         status = 'offline' if offline else 'ready'
-        if offline:
+        if snapshot is not None:
+            index, status = snapshot
+        elif offline:
             index = cached_index(cache)
         else:
             try:
@@ -226,26 +268,35 @@ def _stream(session, stream, identity, environment, offline):
 
 def check(root, session, *, offline=False):
     try:
-        match, model = hardware_match()
-    except (OSError, ValueError) as error:
-        match, model = {'status': 'unavailable', 'message': str(error)}, None
+        snapshot = _device_snapshot(session, offline)
+        match, model = _match_signed_index(snapshot[0])
+        device_error = None
+    except (OSError, ValueError, MaintenanceError) as error:
+        snapshot = None
+        device_error = str(error)
+        try:
+            match, model = hardware_match()
+        except (OSError, ValueError):
+            match, model = {'status': 'unavailable'}, None
     device_id = model['id'].removeprefix('device:') if model else None
     environment = updates.target_environment(root, device_id=device_id)
     session = Path(session)
     streams = [_stream(session, 'maintenance', CORE, environment, offline)]
-    if model is not None:
-        streams.append(_stream(session, 'device', model['id'], environment, offline))
+    if snapshot is not None and model is not None:
+        streams.append(_stream(session, 'device', model['id'], environment, offline, snapshot=snapshot))
+    elif device_error:
+        streams.append(dict(id='device', status='error', candidates=[], message=device_error))
     return dict(match=match, streams=streams, fallback=_fallback(match, offline),
                 components=model['components'] if model else [],
                 upstream_plugin=None if offline else _upstream_plugin(root, model))
 
 
-def _identity(stream, identity):
+def _identity(stream, identity, index=None):
     if stream == 'maintenance':
         if identity != CORE:
             raise MaintenanceError('Only the generic maintenance bundle is permitted in this channel')
         return None
-    match, _ = hardware_match()
+    match, _ = _match_signed_index(index) if index is not None else hardware_match()
     if stream == 'component':
         if match.get('status') != 'matched':
             raise MaintenanceError('Component update requires a matched live model')
@@ -267,7 +318,7 @@ def _entry(index, identity, version):
 
 
 def inventory(root):
-    from .models import _privileged, pending
+    from .models import _privileged, pending, owned_component_views
     _privileged()
     result = updates.inventory(root)
     engine = Engine(root, read_only=True)
@@ -275,15 +326,19 @@ def inventory(root):
     for row in result['components'].values():
         journal = read_journal(engine._journal(row['transaction']))
         row['scripted'] = bool(journal['component'].get('hooks'))
+        hooks = journal['component'].get('hooks', {})
+        row['static_restore'] = isinstance(hooks, dict) and not (set(hooks) - {'verify'})
+        row['script_restore_hook'] = isinstance(hooks, dict) and 'restore' in hooks
         if row['scripted'] and not journal.get('operations'):
             row['verified'] = None
+    result['installed_models'] = owned_component_views(engine, result['components'])
     return result
 
 
 def acquire(session, stream, identity, version, *, root='/'):
-    device_id = _identity(stream, identity)
     cache = Path(session) / ('device' if stream == 'component' else stream)
     index = _registry(cached_index(cache), stream)
+    device_id = _identity(stream, identity, index)
     entry = _entry(index, identity, version)
     _transport(entry, stream)
     if stream == 'component':
@@ -315,9 +370,9 @@ def _component_entry(root, cache, index, entry, identity, device_id):
 def component_check(root, session):
     from .models import _privileged
     _privileged()
-    device_id = _identity('component', '')
-    current = updates.inventory(root, device_id=device_id)
     with _private_index(session, 'component') as (cache, index):
+        device_id = _identity('component', '', index)
+        current = updates.inventory(root, device_id=device_id)
         updates.discover(root, cache, device_id=device_id)
     candidates = []
     for identity, owner in current['components'].items():
@@ -384,10 +439,10 @@ def _validate_channel(stream, entry, package):
 def reviewed_update(root, session, stream, identity, version, *, components=None, plan=None, digest=None, component_intent=None):
     from .models import _privileged, check_pending
     _privileged()
-    device_id = _identity(stream, identity)
     engine = Engine(root, read_only=True)
     check_pending(engine)
     with _private_index(session, stream) as (cache, index):
+        device_id = _identity(stream, identity, index)
         entry = _entry(index, identity, version)
         _transport(entry, stream)
         source = _package_path(session, stream, entry)

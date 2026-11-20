@@ -41,6 +41,141 @@ def _private_json(path):
         return document(stream.read())
 
 
+def record_owned_components(engine, identity, manifest_sha256, component_ids):
+    """Record installed component identifiers; this grants no package trust."""
+    if not re.fullmatch(r'device:[a-z0-9][a-z0-9_.-]*', identity or '') or not re.fullmatch(r'[0-9a-f]{64}', manifest_sha256 or ''):
+        raise MaintenanceError('Invalid model ownership receipt identity')
+    state = engine._state()
+    selected = sorted(set(component_ids) & set(state['components']))
+    transactions = {cid: state['components'][cid]['transaction'] for cid in selected}
+    if any(not re.fullmatch(r'[0-9a-f]{32}', transaction or '') for transaction in transactions.values()):
+        raise MaintenanceError('Invalid installed transaction identity')
+    directory = engine.state_dir/'models'
+    with _directory(directory, create=True):
+        pass
+    _json_write(directory/('ownership-'+identity.removeprefix('device:')+'.json'),
+                dict(kind='InstalledModelComponents', model_id=identity,
+                     manifest_sha256=manifest_sha256, components=selected, transactions=transactions))
+
+
+def owned_component_views(engine, components):
+    """Intersect install receipts with current committed Engine ownership."""
+    directory = engine.state_dir/'models'
+    result = {}
+    for path in sorted(directory.glob('ownership-*.json')):
+        receipt = _private_json(path)
+        identity = receipt.get('model_id')
+        ids = receipt.get('components')
+        if (not isinstance(identity, str) or not re.fullmatch(r'device:[a-z0-9][a-z0-9_.-]*', identity)
+                or path.name != 'ownership-'+identity.removeprefix('device:')+'.json'
+                or receipt.get('kind') != 'InstalledModelComponents'
+                or not re.fullmatch(r'[0-9a-f]{64}', receipt.get('manifest_sha256', ''))
+                or not isinstance(ids, list) or any(not isinstance(cid, str) for cid in ids)
+                or len(ids) != len(set(ids))):
+            raise MaintenanceError('Invalid model ownership receipt')
+        result[identity] = {}
+        transactions = receipt.get('transactions', {})
+        if not isinstance(transactions, dict):
+            raise MaintenanceError('Invalid model ownership transaction bindings')
+        for cid in ids:
+            if cid not in components:
+                continue
+            row = components[cid]
+            binding = _component_package_binding(engine, receipt, cid, row.get('transaction'))
+            if binding is not None:
+                result[identity][cid] = dict(row, script_restore_available=True) if row.get('script_restore_hook') else row
+    return result
+
+
+def _component_package_binding(engine, receipt, component_id, transaction):
+    """Trace committed update receipts back to this model's installed generation."""
+    original = receipt.get('transactions', {}).get(component_id)
+    if not isinstance(original, str) or not re.fullmatch(r'[0-9a-f]{32}', original):
+        return None
+    seen = set()
+    current = transaction
+    current_binding = None
+    from .engine import _read
+    while isinstance(current, str) and re.fullmatch(r'[0-9a-f]{32}', current) and current not in seen:
+        seen.add(current)
+        if current == original:
+            return current_binding or (receipt['manifest_sha256'], receipt['model_id'])
+        matches = []
+        for path in (engine.state_dir/'updates').glob('*.json'):
+            update = _private_json(path)
+            package = update.get('package', {})
+            if (update.get('kind') == 'UpdateExecutionReceipt' and update.get('status') == 'committed'
+                    and package.get('id') in (receipt['model_id'], component_id)
+                    and component_id in package.get('component_ids', [])
+                    and any(row.get('transaction') == current and row.get('status') == 'committed'
+                            for row in update.get('transactions', []))):
+                matches.append(package)
+        if len(matches) != 1 or not re.fullmatch(r'[0-9a-f]{64}', matches[0].get('manifest_sha256', '')):
+            return None
+        if current_binding is None:
+            current_binding = (matches[0]['manifest_sha256'], matches[0]['id'])
+        journal = _read(engine._journal(current))
+        if journal.get('root') != engine.identity or journal.get('component', {}).get('id') != component_id:
+            return None
+        current = journal.get('before_state', {}).get('components', {}).get(component_id, {}).get('transaction')
+    return None
+
+
+def plan_script_restore(root, identity, component_id, package_dir, state_dir=None):
+    """Review one installed third-model transaction against its original package."""
+    _privileged()
+    if identity in ('device:oxp3', 'device:x2-mini') or not re.fullmatch(r'device:[a-z0-9][a-z0-9_.-]*', identity or ''):
+        raise MaintenanceError('Script restore requires a recorded third model')
+    engine = Engine(root, state_dir, read_only=True)
+    receipt = _private_json(_retained_package_pointer(engine, identity).with_name('ownership-'+identity.removeprefix('device:')+'.json'))
+    if receipt.get('kind') != 'InstalledModelComponents' or receipt.get('model_id') != identity:
+        raise MaintenanceError('Invalid model ownership receipt')
+    state = engine._state()
+    transaction = state['components'].get(component_id, {}).get('transaction')
+    if component_id not in receipt.get('components', []):
+        raise MaintenanceError('Selected component is not the bound active transaction')
+    binding = _component_package_binding(engine, receipt, component_id, transaction)
+    if binding is None:
+        raise MaintenanceError('This installed transaction has no package binding')
+    digest, package_id = binding
+    from .engine import _read
+    journal = _read(engine._journal(transaction))
+    if journal.get('root') != engine.identity or journal.get('status') != 'committed':
+        raise MaintenanceError('Installed transaction is not restorable')
+    package = validate_package(package_dir, expected_manifest_sha256=digest)
+    if package.get('id') != package_id or journal['component'] not in package['components']:
+        raise MaintenanceError('Package does not match the installed component')
+    hooks = journal['component'].get('hooks', {})
+    if not isinstance(hooks, dict) or 'restore' not in hooks:
+        raise MaintenanceError('Installed component does not declare a restore hook')
+    plan = dict(kind='ReviewedModelScriptRestore', model_id=identity, component_id=component_id,
+                transaction=transaction, manifest_sha256=digest, root=engine.identity,
+                state_sha256=_digest(state), scope='restore hook and recorded component files')
+    plan['review_sha256'] = _digest(plan)
+    return plan
+
+
+def execute_script_restore(root, plan, package_dir, *, reviewed_sha256, state_dir=None):
+    _privileged()
+    if not isinstance(plan, dict) or plan.get('review_sha256') != reviewed_sha256:
+        raise MaintenanceError('Explicit review of this restore is required')
+    engine = Engine(root, state_dir)
+    with _authenticated_payload(package_dir, plan.get('manifest_sha256', ''), engine.state_dir) as payload:
+        with engine._lock():
+            engine._recover()
+            fresh = plan_script_restore(root, plan.get('model_id'), plan.get('component_id'), payload, state_dir)
+            if fresh != plan:
+                raise MaintenanceError('Restore changed since review')
+            from .engine import _read, _legacy_lock_required
+            path = engine._journal(plan['transaction'])
+            journal = _read(path)
+            if _legacy_lock_required(journal):
+                from .adoption_blobs import _legacy_lock
+                with _legacy_lock(engine):
+                    return engine._restore_locked(plan['transaction'], engine._state(), path, journal, restore_payload=payload)
+            return engine._restore_locked(plan['transaction'], engine._state(), path, journal, restore_payload=payload)
+
+
 def pending(engine):
     path = engine.state_dir/'models/pending.json'
     if not os.path.lexists(path):
@@ -383,9 +518,26 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
     data = catalog(runtime_root=runtime_root, online=online)
     model = next((item for item in data['models'] if item['id'] == identity), None)
     if model is None:
-        raise MaintenanceError('Unknown model identity')
+        from .updates import inventory
+        engine = Engine(root, state_dir, read_only=True)
+        owned = owned_component_views(engine, inventory(root, state_dir)['components'])
+        if identity not in owned:
+            raise MaintenanceError('Unknown model identity')
+        model = dict(id=identity, name=identity, components=[])
     view = dict(model=model, capabilities=[], current=None, executable=False,
                 reasons=[], source=data['source'], offline=data['offline'], scope=SCOPE)
+    if identity not in MODELS:
+        from .updates import inventory
+        engine = Engine(root, state_dir, read_only=True)
+        installed = inventory(root, state_dir)
+        owned = owned_component_views(engine, installed['components'])
+        blocked = bool(installed.get('pending_transactions') or installed.get('pending_platform_recovery') or pending(engine))
+        view.update(ownership_receipt=identity in owned, installed_components=owned.get(identity, {}),
+                    pending_recovery=blocked)
+        view['reasons'] = (['Recovery is required before maintenance.'] if blocked else
+                           ['No model installation record exists.'] if identity not in owned else
+                           ['Use the existing component verify and restore commands for recorded ownership.'])
+        return view
     if trust_local_test is not True:
         if identity == 'device:x2-mini':
             engine = Engine(root, state_dir, read_only=True)

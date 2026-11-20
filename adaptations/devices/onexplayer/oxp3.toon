@@ -155,13 +155,13 @@ components[31]:
     status: source_reference_only
     notes: 核对实际 Manager 接口和软件版本；不取消已有硬件检查。
   - id: native-tdp
-    name: 原生 TDP 10–40W 控制
+    name: 原生 TDP · PL1 8–40 W
     recommendation: conditional
     default: false
     dependencies[1]: manager
-    sources[1]: brands/onexplayer/oxp3/scripts/controls/rapl/provider.py
+    sources[2]: brands/onexplayer/oxp3/scripts/controls/rapl/provider.py,brands/onexplayer/common/tdp_sources.py
     status: source_reference_only
-    notes: 仅保留已公开常规 RAPL 实现；10–40W 不作为其他机型范围。
+    notes: 新版机型包在匹配机型上提供 PL1 8–40 W，SteamOS 与 Decky 共用同一范围。
   - id: overlay
     name: CPU/GPU/APU 功耗与 PVRAM 叠加层
     recommendation: optional
@@ -191,7 +191,7 @@ components[31]:
     recommendation: optional
     default: false
     dependencies[1]: decky
-    sources[2]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py
+    sources[4]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py,brands/onexplayer/common/tdp_sources.py,brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js
     status: source_reference_only
     notes: 仅保留公开常规控制；未纳入工作区新动态功耗研究。
   - id: intel-cpu-microcode
@@ -217,7 +217,7 @@ components[31]:
     dependencies[1]: decky
     sources[9]: common/sleep/source-lock.json,common/sleep/install.json,common/sleep/runtime/main.py,common/sleep/runtime/dist/index.js,common/sleep/runtime/package.json,common/sleep/runtime/plugin.json,common/sleep/runtime/sleep_control.py,common/sleep/runtime/90-boiler-sleep.conf,common/sleep/runtime/LICENSE
     status: shared_asset
-    notes: 独立 Decky 插件 0.1.5。提供 S4 的 TSC deadline 启动参数选项，并在关闭 S4 时清理由插件创建的配置。
+    notes: 独立 Decky 插件。构建准备从上游最新正式版解析并锁定共享载荷；安装和维护使用已校验的锁定版本。
   - id: oxp3-light
     name: OXP3 Light · 三分区灯光控制
     recommendation: optional
@@ -268,7 +268,7 @@ build:
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
     model,adaptations/records/oxp3-shared-base/opti031-inputs.json,f8cf3f4007e1ff6f436b0b914bf10762fe3737c0ec013d2bacc36bcd222abfa6
     model,adaptations/fingerprint-source-lock.json,e21c367747cd4e2055b54cbf2eb9ca1b7b5c2c40f0ca2f75fc1f080feaba7285
-    common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
+    common,adaptations/metadata/locks/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
   inputs[9]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-shared-base-2,adaptations/inputs/oxp3-shared-base-2/manifest.json,510342dec0bfe6ce39389f5e13cae0d504755aa4072d90b73641b4dd2d5aead9,Explicit complete reviewed .20261030.2 package. Fixed public builders reproduce and verify .3 then .4 before final .8; no prebuilt .3/.4 fallback.
     decky,locked-directory,adaptations/inputs/decky-3.3.1,components/locks/decky.json,70650383267d3d9c24a04c8c4c7a9c8c0f89581fb7b7a19b296ae0d1b53c58a4,Prepare Decky 3.3.1 with scripts/prepare-decky.py and the exact PluginLoader/source notices in this lock.

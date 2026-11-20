@@ -1,32 +1,36 @@
 # Boiler 品牌与机型适配
 
+[新机型与单部件贡献指南（最低实机要求、开发步骤和 PR 模板）](https://github.com/FlightDan/Boiler-installer/blob/main/docs/CONTRIBUTING_ADAPTATIONS.md)
+
 这里按品牌、机型整理已有公开适配源码，并记录应该选择哪些组件。
 
-- [ONEXPLAYER 3 安装清单](../brands/onexplayer/oxp3/model.md)
-- [ONEXPLAYER X2 Mini 安装清单](../brands/onexplayer/x2-mini/model.md)
-- [跨品牌共用源码说明](../common/components.md)
-- [ONEXPLAYER 共用源码说明](../brands/onexplayer/common/components.md)
+| 要做的事 | 从哪里开始 |
+| --- | --- |
+| 修改某台机型申请的部件、依赖或默认选项 | [OXP3 TOON](../devices/onexplayer/oxp3.toon) 或 [X2 Mini TOON](../devices/onexplayer/x2-mini.toon) |
+| 查看机型组件说明及适用条件 | [OXP3 安装清单](../brands/onexplayer/oxp3/model.md) 或 [X2 Mini 安装清单](../brands/onexplayer/x2-mini/model.md) |
+| 修改机型专属实现 | [OXP3](../brands/onexplayer/oxp3/) 或 [X2 Mini](../brands/onexplayer/x2-mini/) |
+| 修改 ONEXPLAYER 品牌共用实现 | [brands/onexplayer/common](../brands/onexplayer/common/) |
+| 修改跨品牌复用的设备资源 | [common](../common/) 下对应的硬件目录 |
 
-```text
-common/scripts/                       跨品牌辅助源码
-brands/onexplayer/common/scripts/     同品牌输入源码
-common/sensors/bosch/bmi260/gyro/      跨机型共用陀螺仪源码
-brands/onexplayer/oxp3/                OXP3 清单和专属源码
-brands/onexplayer/x2-mini/             X2 Mini 清单和专属源码
-adaptations.json                      源码目录索引
-source-plan.json                      明确的公开源码导入白名单
-source-lock.json                      不可变历史来源、大小、SHA-256 库存
-```
+### 两台机型实际引用的共用设备资源
 
-每个机型包含 `model.md`、`manifest.json` 和 `scripts/`。机型 manifest 的种类是
-`ModelInstallGuide`，用于结构化组件说明；不是安装协议的 `DevicePackage`。
-`adaptations.json` 不参与生产设备发现，不替代 `device-index.json` 的签名信任链。
-源码归档还没有接入新的安装、升级或恢复执行路径。
+两台机型的 `resource_model.common_references` 包含两组条目。`resources` 列出前四项共用源码资源，`boot_policies` 列出 GM7 启动策略。两组条目的 `source` 都相对于适配仓库根目录。打开某个 `source.toon` 后，其中的 `files[].path` 相对于该文件所在目录。其他组件及机型专属路径见各自 TOON 的 `components` 和 `build`。
 
-安装表使用 manifest 生成，避免表中的依赖、建议和状态各维护一份。源代码保持固定
-公开提交的原始字节，组件原路径见库存；归档后的相对位置不是原部署目录。不要从
-这里直接运行旧组合安装器，实际部署继续使用对应已发布版本及完整载荷。
-跨品牌共用表示源码可复用，每个机型仍需确认系统、内核、接口和恢复条件。
+| 设备 | TOON 入口 |
+| --- | --- |
+| Intel Xe VMA | [GPU 修复资源](../common/gpu/intel/xe/xevmafix-724/source.toon) |
+| Intel BE201 | [无线固件资源](../common/network/intel/be201/source.toon) |
+| Realtek ALC245 | [扬声器路由资源](../common/audio/realtek/alc245/speaker-route/source.toon) |
+| Bosch BMI260 | [陀螺仪资源](../common/sensors/bosch/bmi260/gyro/source.toon) |
+| Acer GM7 | [SSD 启动策略](../common/ssd/acer/gm7/components.toon) |
+
+例如，修改 GM7 修复时，从上表的启动策略进入；调整哪台机型提供该修复时，修改对应机型 TOON 的 `boot_policies`。实际应用时仍需匹配目标 SSD。
+
+### 构建与生成文件
+
+- 两份 TOON 在 `build.materials` 引用同一份 [Xe VMA 转换源码锁](../metadata/locks/xevma-kmod-source-lock.json)。[保留输入记录](../metadata/build-inputs/retained-build-inputs.json)列出可重建所需的外部材料。
+- [models.toon](../models.toon) 提供机型 TOON 索引。[adaptations.json](../adaptations.json) 和机型目录中的 `manifest.json` 供工具读取。修改组件时先改对应机型 TOON，再按 [TOON 指南](TOON.md) 更新生成视图。
+- [源码导入计划](../source-plan.json) 和[历史来源库存](../source-lock.json)用于核对固定公开提交中的原始文件。生产设备发现与签名流程见[设备索引与签名](REGISTRY.md)。
 
 ## 检查与更新
 

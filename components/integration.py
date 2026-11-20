@@ -821,6 +821,16 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                 if models._private_json(pointer) != expected:
                     raise ValueError('Retained model package changed during installation')
             models._retain(engine, retained_item)
+    if package_root and device_components and 'core:maintenance' in choices:
+        from maintenance import models
+        from protocol import validate_package
+        with engine._lock():
+            engine._recover()
+            checked_package = validate_package(package_root, expected_manifest_sha256=descriptor['manifest_sha256'])
+            if checked_package['id'] != descriptor['id']:
+                raise ValueError('Selected model package changed during installation')
+            models.record_owned_components(engine, descriptor['id'], descriptor['manifest_sha256'],
+                                           [part['id'] for part in device_components])
     _stage_mark(slot, 'retained', clock)
     result['status'] = 'ssd-pending' if defer_ssd else 'files_installed'
     save_result(root, slot, result)

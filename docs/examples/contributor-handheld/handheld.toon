@@ -1,0 +1,74 @@
+schema_version: 1
+kind: ModelInstallGuide
+id: "guide:contributor-handheld"
+name: Contributor Handheld Example
+installable: false
+guide: brands/contributor/handheld/model.md
+source_inventory: model-source-files.json
+source_revision:
+  kind: github
+  repository: microsoft/vscode
+  commit: 3b381b139291d9bbdd5a5a1ae60d41dad26d137d
+components[1]:
+  - id: demo-config
+    name: Static upstream config and license example
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[2]: brands/contributor/handheld/config/editorconfig.sample,brands/contributor/handheld/UPSTREAM-LICENSE.txt
+    status: source_only_example
+    notes: "Static upstream text and its MIT license, placed under documentation paths; not enabled as an editor setting and not hardware-tested."
+build:
+  adapter: toon-package-v1
+  complete: true
+  missing: []
+  materials: []
+  inputs: []
+  sources[2]{source,path}:
+    payload/editorconfig.sample,brands/contributor/handheld/config/editorconfig.sample
+    payload/UPSTREAM-LICENSE.txt,brands/contributor/handheld/UPSTREAM-LICENSE.txt
+  resource_bindings: []
+package:
+  schema_version: 1
+  kind: DevicePackage
+  id: "device:contributor-handheld"
+  version: 0.1.0
+  components[1]:
+    - schema_version: 1
+      kind: ComponentManifest
+      id: "handheld:demo-config"
+      version: 0.1.0
+      default: false
+      files[2]{source,target,mode}:
+        payload/editorconfig.sample,usr/share/doc/boiler-contributor-handheld/editorconfig.sample,420
+        payload/UPSTREAM-LICENSE.txt,usr/share/licenses/boiler-contributor-handheld/LICENSE.txt,420
+runtime:
+  id: "device:contributor-handheld"
+  name:
+    en: Contributor Handheld Example
+    zh: 贡献者掌机示例
+  hardware_matching:
+    mode: advisory-exact-dmi-v1
+    pairs[1]{manufacturer,model}:
+      "EXAMPLE ONLY","NOT A REAL DEVICE"
+resource_model:
+  schema_version: 1
+  kind: BoilerModelResourceSource
+  id: "device:contributor-handheld"
+  parameters:
+  resources: []
+canonical_id: "device:contributor-handheld"
+legacy_aliases:
+  guide: []
+  package: []
+device_record_path: devices/contributor-handheld.json
+device_record:
+  schema_version: 1
+  repository: FlightDan/Boiler-adaptations
+  package_status: experimental
+  notes[2]: "Copyable local template only; this identity and synthetic DMI pair do not describe a real device.","Static text package only; no production lifecycle or hardware acceptance is claimed."
+  compatibility_records: []
+  known_issues[1]:
+    - issue: This example has no device-specific implementation or real-device validation.
+      scope: template
+      state: not-tested

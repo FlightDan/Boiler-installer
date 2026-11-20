@@ -30,6 +30,13 @@
       "source_sha256": "b014f3a238e1a7b74fbf4b0332e520e9aff7877b4132cca228833bfe61c63d17",
       "files": 11,
       "external_inputs": 0
+    },
+    {
+      "id": "resource:intel-cpu-microcode",
+      "source": "common/cpu/intel/microcode/source.toon",
+      "source_sha256": "b884f86cff6889a5553b84919dc3109d2a84955616565035d7d53bdcfc7cb62c",
+      "files": 1,
+      "external_inputs": 0
     }
   ],
   "boot_policy": {

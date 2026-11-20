@@ -49,11 +49,17 @@ def common_reference_view(root, model, canonical, package_id):
             or not isinstance(reference.get('boot_policies', []), list)):
         raise ValueError('Invalid model common references: ' + canonical)
     resources = reference['resources']
+    previous_root = common.ROOT
+    try:
+        common.ROOT = root
+        available = common.resource_sources()
+    finally:
+        common.ROOT = previous_root
     seen = set()
     for item in resources:
         if (not isinstance(item, dict) or set(item) != {'id', 'source'}
                 or not isinstance(item['id'], str) or not isinstance(item['source'], str)
-                or item['id'] not in common.RESOURCES or common.RESOURCES[item['id']] != item['source']
+                or item['id'] not in available or available[item['id']] != item['source']
                 or item['id'] in seen):
             raise ValueError('Unknown, duplicate or mismatched common source: ' + canonical)
         seen.add(item['id'])
@@ -157,10 +163,8 @@ def _project(root=ROOT):
         if reference is None:
             if adaptations.local(root, reference_path).exists():
                 raise ValueError('Undeclared common reference view: ' + reference_path)
-        elif canonical in ('device:onexplayer-oxp3', 'device:onexplayer-x2-mini'):
-            outputs[reference_path] = (common.toon_format.dumps(reference) + '\n').encode('utf-8')
         else:
-            raise ValueError('Common references are supported only for published models: ' + canonical)
+            outputs[reference_path] = (common.toon_format.dumps(reference) + '\n').encode('utf-8')
         for component in model['components']:
             for source in component['sources']:
                 if source == reference_path and reference is not None:
@@ -202,7 +206,7 @@ def _project(root=ROOT):
         value = before + begin + '\n' + adaptations.table(guide) + '\n' + end + after
         revision = guide['source_revision']
         source = ('适配源码来源：`' + revision['repository'] + '`，固定提交 `' + revision['commit']
-                  + '`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../source-lock.json)。')
+                  + '`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../' + guide['source_inventory'] + ')。')
         before, rest = value.split(sb); _, after = rest.split(se)
         outputs[model['guide']] = (before + sb + '\n' + source + '\n' + se + after).encode('utf-8')
         index.append(manifest)
@@ -215,6 +219,11 @@ def _project(root=ROOT):
         trust={'status':'unsigned-development', 'official_release':False}, revocations=[], packages=[],
         devices=['devices/oxp3.json'], note='No production package is advertised before formal signing, publication and new-stack acceptance.'))
     return found, outputs, protocol
+
+
+def registry_projection(root=ROOT):
+    found, _, protocol = _project(root)
+    return found, protocol
 
 
 def models(root=ROOT):

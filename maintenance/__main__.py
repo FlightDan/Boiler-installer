@@ -56,6 +56,8 @@ def main(argv=None):
     command.add_argument('--kde-language',default='system',help='system or an authenticated package-declared KDE locale')
     command=actions.add_parser('execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
     command.add_argument('--trust-local-test',action='store_true')
+    command=actions.add_parser('script-restore-plan'); command.add_argument('model_id'); command.add_argument('component'); command.add_argument('package_dir')
+    command=actions.add_parser('script-restore-execute'); command.add_argument('plan'); command.add_argument('package_dir'); command.add_argument('--reviewed-sha256',required=True)
     command=actions.add_parser('shared-options'); command.add_argument('model_id'); command.add_argument('--trust-local-test',action='store_true')
     command=actions.add_parser('shared-plan'); command.add_argument('model_id')
     command.add_argument('--action',choices=('apply','verify','restore'),default='apply')
@@ -104,7 +106,11 @@ def main(argv=None):
             print(json.dumps({'ok':True,'result':result})); return 0
         if args.command=='models':
             from . import models
-            if args.model_command.startswith('keyboard-'):
+            if args.model_command == 'script-restore-plan':
+                result=models.plan_script_restore(args.root,args.model_id,args.component,args.package_dir,state_dir=args.state_dir)
+            elif args.model_command == 'script-restore-execute':
+                result=models.execute_script_restore(args.root,load_json(args.plan),args.package_dir,reviewed_sha256=args.reviewed_sha256,state_dir=args.state_dir)
+            elif args.model_command.startswith('keyboard-'):
                 from . import keyboard_models
                 if args.model_command=='keyboard-options': result=keyboard_models.options(args.root,args.model_id,trust_local_test=args.trust_local_test,state_dir=args.state_dir)
                 elif args.model_command=='keyboard-plan': result=keyboard_models.plan(args.root,args.model_id,args.repair,args.plugin,action=args.action,trust_local_test=args.trust_local_test,state_dir=args.state_dir)

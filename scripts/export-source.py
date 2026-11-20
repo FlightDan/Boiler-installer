@@ -78,7 +78,12 @@ def verify_model_catalog(root, files):
     required.update('adaptations/'+name for name in catalog.definition_sources(adaptations))
     for name,model in catalog.models(adaptations):
         required.add('adaptations/'+name)
-        required.add(catalog.adapter(model)[0])
+        adapter_script, _ = catalog.adapter(model)
+        if adapter_script is None:  # The generic builder lives in scripts/toon_catalog.py.
+            required.add('scripts/build-device-package.py')
+            required.update('adaptations/' + member['path'] for member in model['build']['sources'])
+        else:
+            required.add(adapter_script)
         if model['build']['adapter']=='oxp3-current-v1':
             required.update(('adaptations/scripts/build-upstream-repairs.py','adaptations/scripts/build-shared-base.py'))
         if model['build']['adapter']=='x2-complete-v1':

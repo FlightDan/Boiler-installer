@@ -34,6 +34,7 @@ runtime/dotnet/dotnet.exe app/bin/Release/net10.0-windows/OxpInstaller.dll --cli
 
 ## 包与发布资料
 
+- [贡献机型或部件适配](CONTRIBUTING_ADAPTATIONS.md)
 - [机型包与本地导入契约](DEVICE_PACKAGES.md)
 - [GitHub slim 安装器发布策略](GITHUB_SLIM_INSTALLER_RELEASE_POLICY.md)
 - [发布及验证记录索引](INDEX.md)

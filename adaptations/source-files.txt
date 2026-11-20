@@ -303,6 +303,8 @@ docs/TOON.md
 fingerprint-source-lock.json
 licenses/GPL-2.0.txt
 licenses/license-inventory.json
+metadata/build-inputs/retained-build-inputs.json
+metadata/locks/xevma-kmod-source-lock.json
 model-source-files.json
 models.toon
 records/adaptations-consolidation-20261104-inventory.json
@@ -621,6 +623,7 @@ records/legacy-adaptations-373fe55/objects/fe68ea0907740f8d29477935a48a3a017899e
 records/legacy-adaptations-373fe55/objects/feab5309d7c17da4e10dc158e08290270ffeb7a928f7fd81aa7fb95d9736a484
 records/legacy-adaptations-373fe55/objects/ff0e689066828da530dd7e292b3c76ff0da8c916776353c3e999bb5d607bb193
 records/legacy-adaptations-373fe55/objects/ffc46904335bfb2b261c0fb17b72cf958d26f9750696934a8187467f391b28e0
+records/migrations/adaptation-navigation-20261121.md
 records/migrations/bmi260-source-relocation-20261103.json
 records/migrations/branded-model-identity-20261104.md
 records/migrations/common-bmi260-inputplumber-20261103.json
@@ -665,7 +668,6 @@ records/shared-20261030/microphone/x2-mini/002.bin
 records/x2-keyboard/runtime-source-lock.json
 resource-build-inputs.json
 resource-public-source-proof.json
-retained-build-inputs.json
 scripts/adaptations.py
 scripts/build-complete-bridge.py
 scripts/build-current-opti.py
@@ -718,4 +720,3 @@ vendor/toon_format/_errors.py
 vendor/toon_format/_text.py
 vendor/toon_format/py.typed
 vendor/toon_format/pydantic.py
-xevma-kmod-source-lock.json

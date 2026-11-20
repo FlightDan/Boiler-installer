@@ -1,8 +1,8 @@
 # ONEXPLAYER 3 机型安装清单
 
-日期：2026-10-29。本文由机型 manifest 的组件数据生成安装表；正文记录适用与恢复边界。
+修改构件、依赖和默认选项请编辑 [oxp3.toon](../../../devices/onexplayer/oxp3.toon)。[manifest.json](manifest.json) 和下方安装表由机型数据生成。查看[本机型源码](./)或[两台机型引用的共用设备资源](../../../docs/ADAPTATIONS.md)。
 
-此目录是适配源码归档和安装指南，尚不是可执行的 Boiler DevicePackage。所有 `default` 为 false 表示此指南不向安装器注入默认选择；表内“推荐”供选型参考，不表示自动执行。脚本保持原公开提交的字节和检查，未改写硬件门槛。
+本指南最初整理于 2026-10-29。安装表中的推荐级别用于选型，构件默认值以机型 TOON 为准。安装与恢复仍需核对下文列出的系统、内核和硬件条件。
 
 ## 安装清单
 
@@ -27,14 +27,14 @@
 | split-lock | Split-lock 报告洪泛修复 · 需要重启 | 条件适用 | 确认存在报告洪泛且启动文件受支持时使用；重启生效，按原事务恢复。 |
 | wifi | BE201 无线 c106 与蓝牙固件 | 条件适用 | Source reference only; verify the actual wireless device and firmware compatibility. |
 | manager | SteamOS Manager 状态与错误修复 | 推荐 | 核对实际 Manager 接口和软件版本；不取消已有硬件检查。 |
-| native-tdp | 原生 TDP 10–40W 控制 | 条件适用 | 仅保留已公开常规 RAPL 实现；10–40W 不作为其他机型范围；依赖：manager |
+| native-tdp | 原生 TDP · PL1 8–40 W | 条件适用 | 新版机型包在匹配机型上提供 PL1 8–40 W，SteamOS 与 Decky 共用同一范围；依赖：manager |
 | overlay | CPU/GPU/APU 功耗与 PVRAM 叠加层 | 可选 | 按实际 CPU/GPU 接口验证读数，缺失指标保持缺失。 |
 | fan-driver | OXP3 风扇与充电接口驱动 | 条件适用 | OXP3 专用寄存器/驱动布局；另需匹配公开驱动载荷。 |
 | oxp3-fan | OXP3 风扇 · 自动与曲线 | 可选 | OXP3 专用风扇界面与曲线；另需原公开插件载荷；依赖：fan-driver、decky |
 | oxp3-cpu | OXP3 CPU · EPP 与分组限频 | 可选 | 仅保留公开常规控制；未纳入工作区新动态功耗研究；依赖：decky |
 | intel-cpu-microcode | Intel CPU 微码 · Panther Lake | 可选 | 可选构件，默认留空。安装与维护均使用 onexplayer-intel-microcode-v1 早期 initramfs 事务，按 CPUID 和平台标志匹配并保留原启动文件供恢复。OXP3 B 槽已验证 0x11d，X2 Mini 真机待验收。 |
 | charging | OXP3 Battery · 充电上限与模式 | 可选 | 电量遥测与机型适用的充电控制；S4 由独立插件管理；依赖：fan-driver、decky |
-| s2s4 | Boiler S2-S4 switcher | 可选 | 独立 Decky 插件 0.1.5。提供 S4 的 TSC deadline 启动参数选项，并在关闭 S4 时清理由插件创建的配置；依赖：decky |
+| s2s4 | Boiler S2-S4 switcher | 可选 | 独立 Decky 插件。构建准备从上游最新正式版解析并锁定共享载荷；安装和维护使用已校验的锁定版本；依赖：decky |
 | oxp3-light | OXP3 Light · 三分区灯光控制 | 可选 | 核对现有 HID 报文格式；保留上游许可证和恢复行为；依赖：decky |
 | legacy-runtime | 音量键与电量显示修复 | 可选 | 保留原音量/电量运行时依赖，不自动迁移到其他机型。 |
 | windows-reboot | 重启进入 Windows · Decky 按钮与桌面快捷方式 | 可选 | 核对 Windows EFI 启动项、授权入口及恢复；依赖：decky |

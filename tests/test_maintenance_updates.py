@@ -107,7 +107,7 @@ class MaintenanceUpdateTests(unittest.TestCase):
         return payload, value
 
     def sign_index(self, package, *, sequence=10, revoked=False, repository='FlightDan/Boiler-installer',
-                   registry_id='registry:boiler-devices'):
+                   registry_id='registry:boiler-devices', hardware_matching=None):
         payload, manifest = package
         data = (payload/'manifest.json').read_bytes()
         digest = hashlib.sha256(data).hexdigest()
@@ -119,6 +119,9 @@ class MaintenanceUpdateTests(unittest.TestCase):
             index['packages'][0]['component_release'] = manifest['component_release']
             index['packages'][0]['declared_source'] = manifest['source']
             index['packages'][0]['minimum_engine_version'] = manifest['minimum_engine_version']
+        if hardware_matching is not None:
+            index['packages'][0]['hardware_matching'] = hardware_matching
+            index['packages'][0]['declared_source'] = manifest['source']
         raw = json.dumps(index, sort_keys=True).encode()
         raw_digest = hashlib.sha256(raw).hexdigest()
         generation = self.cache/raw_digest
@@ -283,6 +286,87 @@ class MaintenanceUpdateTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), b'new plugin\n')
             self.engine.restore(result['transactions'][0]['transaction'])
             self.assertEqual(target.read_bytes(), b'old plugin\n')
+
+    @unittest.skipIf(os.name == 'nt', 'Native Engine Bash hooks require Linux')
+    def test_signed_third_model_upstream_hook_update_matches_target_and_selection(self):
+        from maintenance import project
+        from protocol import fetch
+        identities = ('third:chosen', 'third:other')
+        for identity in identities:
+            old = self.component(self.old, identity, '1.0.0', b'old '+identity.encode())
+            self.engine.apply(old, self.old, environment=self.environment)
+        from maintenance import models
+        models.record_owned_components(self.engine, 'device:third', 'a'*64, list(identities))
+        package = self.package(components=lambda payload: [
+            self.component(payload, identity, '2.0.0', b'new '+identity.encode()) for identity in identities])
+        payload, manifest = package
+        manifest['id'] = 'device:third'
+        manifest['source'] = {'kind': 'github', 'repository': project.REPOSITORY, 'commit': 'a'*40}
+        manifest['compatibility']['device_ids'] = ['third']
+        manifest['components'][0]['compatibility']['device_ids'] = ['third']
+        manifest['components'][0]['provenance'] = {'upstream': 'https://github.com/other-author/fork', 'license': 'MIT'}
+        (payload/'scripts').mkdir()
+        script = b'#!/bin/bash\nset -eu\nprintf hook-ran > "$BOILER_TARGET_ROOT/hook-result"\n'
+        (payload/'scripts/apply.sh').write_bytes(script)
+        restore_script = b'#!/bin/bash\nset -eu\nrm "$BOILER_TARGET_ROOT/hook-result"\n'
+        (payload/'scripts/restore.sh').write_bytes(restore_script)
+        manifest['components'][0]['hooks'] = {'apply': 'scripts/apply.sh', 'restore': 'scripts/restore.sh'}
+        manifest['maintenance_entry'] = {'kind': 'engine-hooks-v1'}
+        manifest['files'].append({'path': 'scripts/apply.sh', 'size': len(script), 'sha256': hashlib.sha256(script).hexdigest()})
+        manifest['files'].append({'path': 'scripts/restore.sh', 'size': len(restore_script), 'sha256': hashlib.sha256(restore_script).hexdigest()})
+        (payload/'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+        index = self.sign_index(package, repository=project.REPOSITORY, hardware_matching={
+            'mode':'advisory-exact-dmi-v1', 'pairs':[{'manufacturer':'Other Author Hardware','model':'Third Model'}]})
+        session = self.work/'third-session'
+        session.mkdir()
+        self.cache.rename(session/'device')
+        payload.rename(project._package_path(session, 'device', index['packages'][0]))
+        verify = fetch.verify_signed_index
+        def verify_fixture(path, signature, _public_key=None, **_kwargs):
+            return verify(path, signature, self.public_key, openssl=self.openssl or 'openssl')
+        dmi = self.work/'test-dmi'
+        dmi.mkdir()
+        (dmi/'sys_vendor').write_text('Other Author Hardware\n')
+        (dmi/'product_name').write_text('Third Model\n')
+        catalog = {'models': []}
+        real_match = project.hardware_match
+        with mock.patch.object(fetch, 'verify_signed_index', side_effect=verify_fixture), \
+                mock.patch('maintenance.models._privileged'), \
+                mock.patch.object(project, 'hardware_match', side_effect=lambda: real_match(dmi=dmi, catalog=catalog)):
+            discovery = project.check(self.root, session, offline=True)
+            self.assertEqual(discovery['match']['model_id'], 'device:third')
+            self.assertEqual(discovery['match']['source'], 'signed-index')
+            self.assertEqual(discovery['streams'][-1]['candidates'][0]['id'], 'device:third')
+            acquired = project.acquire(session, 'device', 'device:third', '2.0.0', root=self.root)
+            self.assertEqual(acquired['manifest_sha256'], index['packages'][0]['sha256'])
+            plan = project.reviewed_update(self.root, session, 'device', 'device:third', '2.0.0', components=[identities[0]])
+            self.assertEqual(plan['execution'], 'engine-hooks-v1')
+            self.assertEqual(plan['selected'], [identities[0]])
+            (dmi/'product_name').write_text('Different Model\n')
+            with self.assertRaisesRegex(MaintenanceError, 'must match'):
+                project.reviewed_update(self.root, session, 'device', 'device:third', '2.0.0', plan=plan, digest=plan['review_sha256'])
+            self.assertFalse((self.root/'hook-result').exists())
+            (dmi/'product_name').write_text('Third Model\n')
+            result = project.reviewed_update(self.root, session, 'device', 'device:third', '2.0.0', plan=plan, digest=plan['review_sha256'])
+            generation = json.loads((session/'device/current.json').read_text())['generation']
+            signature = session/'device'/generation/'index.sig'
+            valid_signature = signature.read_bytes()
+            signature.write_bytes(b'\0'*len(valid_signature))
+            invalid = project.check(self.root, session, offline=True)
+            self.assertNotEqual(invalid['match'].get('status'), 'matched')
+            self.assertEqual(invalid['streams'][-1]['status'], 'error')
+            signature.write_bytes(valid_signature)
+        self.assertEqual(result['status'], 'committed')
+        self.assertEqual((self.root/'hook-result').read_text(), 'hook-ran')
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/third-chosen.txt').read_bytes(), b'new third:chosen')
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/third-other.txt').read_bytes(), b'old third:other')
+        package_dir = project._package_path(session, 'device', index['packages'][0])
+        restore_plan = models.plan_script_restore(self.root, 'device:third', identities[0], package_dir)
+        self.assertEqual(restore_plan['manifest_sha256'], index['packages'][0]['sha256'])
+        models.execute_script_restore(self.root, restore_plan, package_dir, reviewed_sha256=restore_plan['review_sha256'])
+        self.assertFalse((self.root/'hook-result').exists())
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/third-chosen.txt').read_bytes(), b'old third:chosen')
+        self.assertEqual((self.root/'usr/local/lib/boiler-test/third-other.txt').read_bytes(), b'old third:other')
 
     def test_device_mismatch_warns_in_discovery_plan_and_still_updates(self):
         package = self.package()

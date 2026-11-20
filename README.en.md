@@ -68,7 +68,7 @@ The [detailed installation guide](docs/install/README.md) is currently in Chines
 - [Documentation index](docs/INDEX.md)
 - [Report an installer issue](https://github.com/FlightDan/Boiler-installer/issues)
 - [Request support for another model](https://github.com/FlightDan/Boiler-adaptations/issues): include its brand, model, and the support you need.
-- [Contribute a device adaptation](https://github.com/FlightDan/Boiler-adaptations): follow that repository's contribution instructions and include the device, system and kernel versions, and test evidence.
+- [Contribute a handheld or component (Chinese)](docs/CONTRIBUTING_ADAPTATIONS.md) — hardware evidence and pull request checklist.
 
 <details>
 <summary>Issue report template</summary>

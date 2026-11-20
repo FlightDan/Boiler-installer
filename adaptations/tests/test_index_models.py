@@ -101,6 +101,52 @@ class MultiIndexTests(unittest.TestCase):
         self.assertEqual(result['revocations'], self.previous['revocations'])
         self.assertEqual(result['sequence'], 2)
 
+    def test_third_model_from_committed_toon_without_fingerprint(self):
+        spec = importlib.util.spec_from_file_location('fixture_identity', ROOT/'scripts/model-identity.py')
+        identity = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(identity)
+        toon = identity.common.toon_format
+        model = toon.loads((self.repo/'devices/onexplayer/oxp3.toon').read_text(encoding='utf-8'), strict=True)
+        model_id = 'device:example-handheld'
+        model.update(id='guide:example-handheld', canonical_id=model_id, legacy_aliases={'guide': [], 'package': []},
+                     guide='brands/example/handheld/model.md', device_record_path='devices/example-handheld.json')
+        model['runtime'].update(id=model_id, name={'en':'Example Handheld', 'zh':'Example Handheld'})
+        model['resource_model']['id'] = model_id
+        del model['resource_model']['common_references']
+        model['device_record']['repository'] = 'FlightDan/Boiler-adaptations'
+        model['components'] = []
+        guide = self.repo/model['guide']
+        guide.parent.mkdir(parents=True)
+        shutil.copyfile(self.repo/'brands/onexplayer/oxp3/model.md', guide)
+        source = self.repo/'devices/example/handheld.toon'
+        source.parent.mkdir()
+        source.write_text(toon.dumps(model)+'\n', encoding='utf-8', newline='\n')
+        identity.generate(self.repo)
+        git = ['git', '-C', str(self.repo)]
+        subprocess.run([*git, 'add', '.'], check=True)
+        subprocess.run([*git, 'commit', '-qm', 'Add synthetic third model'], check=True)
+        self.commit = subprocess.check_output([*git, 'rev-parse', 'HEAD']).decode().strip()
+        for i in range(len(self.models)):
+            self.change(i, lambda m: m['source'].update(commit=self.commit))
+        folder = self.work/'new-handheld'
+        folder.mkdir()
+        manifest = {'schema_version':1, 'kind':'DevicePackage', 'id':model_id, 'version':'0.1.1',
+                    'source':{'kind':'github', 'repository':'FlightDan/Boiler-adaptations', 'commit':self.commit},
+                    'trust':{'status':'index-signature-required', 'official_release':False},
+                    'components':[], 'files':[], 'compatibility':{}}
+        (folder/'manifest.json').write_text(json.dumps(manifest))
+        archive = self.work/'example.zip'
+        self.zip(folder, archive)
+        self.models.append((folder, archive, 'https://github.com/FlightDan/Boiler-adaptations/releases/download/v0.1.1/example.zip'))
+        result = self.run_build()
+        self.assertEqual(result['packages'][-1]['id'], model_id)
+        self.assertEqual(result['packages'][-1]['source_url'].split('/tree/')[1], self.commit+'/brands/example/handheld')
+        self.assertIn(model['device_record_path'], result['devices'])
+        (self.work/'out.json').unlink()
+        source.write_bytes(source.read_bytes()+b'\n')
+        with self.assertRaisesRegex(ValueError, 'committed bytes'):
+            self.run_build()
+
     def test_rejects_empty_and_duplicate_models(self):
         self.models = []
         with self.assertRaises(ValueError): self.run_build()

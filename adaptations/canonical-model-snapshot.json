@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "c6cf913f996bd32b3547644240c5bbb61453b5df",
+  "commit": "ce6043c850f35a7a3f191f46dceb2a00f288d7f2",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -16,8 +16,8 @@
     },
     {
       "path": "adaptations/ADAPTATIONS.md",
-      "size": 2827,
-      "sha256": "4457282104a33fba77f688537d29272929558e20a9f271bc0ba393edb85ca593"
+      "size": 119,
+      "sha256": "186a4448b717f39f61961944772a0a696ef655ec977541ebc25e3f1ddd493234"
     },
     {
       "path": "adaptations/LICENSE",
@@ -26,8 +26,8 @@
     },
     {
       "path": "adaptations/README.md",
-      "size": 1954,
-      "sha256": "40a073343d34e740a3ce5ba8baf488373785ef9de63aac6f09d5c53c3f15b118"
+      "size": 2323,
+      "sha256": "ae90a198ce9f56fb6834e69c60c8b9267fb5678fbc17b42e77b9b56b0e7e9ce8"
     },
     {
       "path": "adaptations/THIRD_PARTY_NOTICES.md",
@@ -195,6 +195,11 @@
       "sha256": "fd41a0d19bafdbca7e6450f1db292c187e2c8cac2743edb215c7d889244997fd"
     },
     {
+      "path": "adaptations/brands/onexplayer/common/tdp_sources.py",
+      "size": 2701,
+      "sha256": "018b6846f710a0850c614784927e5d4ca5da1283fe931620b51951cfd726e0d4"
+    },
+    {
       "path": "adaptations/brands/onexplayer/oxp3/bridge/.gitignore",
       "size": 33,
       "sha256": "adc0c7acfe8ea99a093fb8a7348a1bf44ece8ce8f405d9e3dcf0b04f08756d36"
@@ -346,8 +351,8 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js",
-      "size": 24873,
-      "sha256": "2061e8a9dcfb74a4fe16fd9ad555e94aaf5cbf5028175adb78eb81652b6508b3"
+      "size": 24877,
+      "sha256": "18098f47d912db8bec76c7768ed59021ed6a2f1b82a7c5e199119181ec47d624"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/current/plugin-i18n/fan/index.js",
@@ -461,13 +466,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/manifest.json",
-      "size": 16214,
-      "sha256": "8ae398fc41726fe060099e86366ce6136b9738635864e2eff5ba4afc57accb2b"
+      "size": 16407,
+      "sha256": "748a8749b4757dfbf2b0b39e4cadfcd8ea4a8ab2f80831365e9ac62f7e37719d"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/model.md",
-      "size": 7516,
-      "sha256": "34dbfade1522c947b04c7af4ef3fb7cbb225ab8df521b54a761b3d7cc3f7a69b"
+      "size": 7591,
+      "sha256": "59bf2ebd1bced171efd4763d645526521040039370a3862f0ea1ffd8e9be8d2f"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -801,13 +806,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
-      "size": 19466,
-      "sha256": "847d75e83f6191d8b3a32ded10415aa914162939f3d0a59ff4c06568fdf5f704"
+      "size": 19635,
+      "sha256": "ce2d19cc4ecde2af17a745a743631d84b233ecefd40648adc3fb0943f14e220e"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/model.md",
-      "size": 9348,
-      "sha256": "0ab02679bf4b6451f9d528cf00387d3111a6117836e60257f614af7559214a35"
+      "size": 9405,
+      "sha256": "0e4183491206569d1bebd582dfb4ee563b65f6f85a29ad9e83139150d4b87403"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
@@ -841,8 +846,8 @@
     },
     {
       "path": "adaptations/common-device-source-index.json",
-      "size": 2299,
-      "sha256": "88ef28b51a1131a4e4a1059a280f90a6ff867ab02f15a32e2d33051dab4bfaef"
+      "size": 2550,
+      "sha256": "1d5e3891dc7c1b0b7a479663d8db96946162f5d5aa375a172fea67db961c172b"
     },
     {
       "path": "adaptations/common/audio/realtek/alc245/speaker-route/final/speaker_route.py",
@@ -1652,7 +1657,7 @@
     {
       "path": "adaptations/common/sleep/install.json",
       "size": 2597,
-      "sha256": "8542a5ab482b24140993506258d1c9c075dc768cc4aaa84efe6d5f5c75749397"
+      "sha256": "1984a6e46b00c55494402eccef801bb1ff1ac7e1f5ddc5cbedda75899f335593"
     },
     {
       "path": "adaptations/common/sleep/runtime/90-boiler-sleep.conf",
@@ -1666,8 +1671,8 @@
     },
     {
       "path": "adaptations/common/sleep/runtime/dist/index.js",
-      "size": 26139,
-      "sha256": "20bb0da8def5bf492430679a3c59f36b4149319e34c2abe3f9cf547d0a0d2fd3"
+      "size": 26476,
+      "sha256": "00d8ccbb5804ab23f8fe3dba96a5d477b61281f434f062385a957f106af32244"
     },
     {
       "path": "adaptations/common/sleep/runtime/main.py",
@@ -1677,7 +1682,7 @@
     {
       "path": "adaptations/common/sleep/runtime/package.json",
       "size": 59,
-      "sha256": "21aa6997fe9dfcdba4566a8dafd89ef280ceacd5a907208de5b1e2ffaabacc6d"
+      "sha256": "a53306fcee5238827678cc3fa593cc39750e3aee2e717503f25fe60a78899cd7"
     },
     {
       "path": "adaptations/common/sleep/runtime/plugin.json",
@@ -1686,13 +1691,13 @@
     },
     {
       "path": "adaptations/common/sleep/runtime/sleep_control.py",
-      "size": 40129,
-      "sha256": "e768261138e24e98b29e821077cb205fd0ca9c422bbc08633b90e9a7fae2ec73"
+      "size": 39607,
+      "sha256": "945d38f01c69085c5f4a3b4d2a8093a0658d7af808c777aed0afa8b773199533"
     },
     {
       "path": "adaptations/common/sleep/source-lock.json",
       "size": 1590,
-      "sha256": "40fc9cd03694a328a597139906322069771a84083dade41bb2665d2b58787356"
+      "sha256": "783302671a9f05a3434553a9842070329fdcdd9856866caecf418232582a9fc2"
     },
     {
       "path": "adaptations/common/ssd/acer/gm7/GM7_POLICY.md",
@@ -1716,28 +1721,28 @@
     },
     {
       "path": "adaptations/devices/onexplayer/oxp3.toon",
-      "size": 22803,
-      "sha256": "b269e6af47409ec519770439815f616eb676ba1e05dc1302c6e4c6be8943625a"
+      "size": 22978,
+      "sha256": "c2c2427b5e26a01d16e1805462fb4740e0b79c061f8a3fe5ab92ee57d41a199d"
     },
     {
       "path": "adaptations/devices/onexplayer/x2-mini.toon",
-      "size": 19823,
-      "sha256": "ee9009504be0b79c32a173d07115100540e27aefb868092a5fd097bbaf17e916"
+      "size": 19974,
+      "sha256": "48f0c905cde23d92c4354dc5a0de8d07db435a40a3f0e34f19216883f8477aca"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
-      "size": 3006,
-      "sha256": "87d4f7971b5d9bb73ddcd9c76fa61b8e9973a7374b163d571bbd6b1f6b939b94"
+      "size": 4075,
+      "sha256": "834f4eee56920b8d5436434a6c537e71bcaafd7332ea4171445bd4388500998d"
     },
     {
       "path": "adaptations/docs/BUILD.en.md",
-      "size": 7629,
-      "sha256": "681e1c478da77788c5859a7af659ac4bc50be83d21581741083bf932440f33d1"
+      "size": 7795,
+      "sha256": "d12f84ebc33beb1b30498902c378fc0b1acce6d37fab1d97179bc048b2737634"
     },
     {
       "path": "adaptations/docs/BUILD.md",
-      "size": 7237,
-      "sha256": "b5bb2d957b18240fcee54d52d9f55cf79ec0c61b18db9cd872e2a69511f3e305"
+      "size": 7416,
+      "sha256": "fd66c8af487ae307f1176f1b7956e71f4c533a80aa4109d296a9064cd1f24ef4"
     },
     {
       "path": "adaptations/docs/FINGERPRINT_OVERLAY_AUTHORITY_PREVIEW_20261104.md",
@@ -1746,18 +1751,18 @@
     },
     {
       "path": "adaptations/docs/README.zh.md",
-      "size": 1765,
-      "sha256": "2c20f6104309ca5a46dfaac09ef9a324e755a2ec21c70228eae578b9b1de9ba9"
+      "size": 2170,
+      "sha256": "91de784a86387ede41314ac08816644c8f9912c6ab157cccc3863e2c1a00ee14"
     },
     {
       "path": "adaptations/docs/REGISTRY.en.md",
-      "size": 2627,
-      "sha256": "2f02ba2d2dfe5ee2f18be99cddafdd4319e40bb22cf3321834d4fcf4478096c6"
+      "size": 2415,
+      "sha256": "c154aa81e7f138e4eab106539f4c087a16b622d05d69e87be0423348a95026f7"
     },
     {
       "path": "adaptations/docs/REGISTRY.md",
-      "size": 2318,
-      "sha256": "337be32c219d3a3d18fe16f641547bd8879b1fac5de209c8b8ec119b1fe4e373"
+      "size": 2154,
+      "sha256": "9ef52870dd751d09b96d5c671eba0920d138008c57c6e73b00d2e4050047e532"
     },
     {
       "path": "adaptations/docs/RELEASE_0.1.0-layout.1.md",
@@ -1766,13 +1771,13 @@
     },
     {
       "path": "adaptations/docs/TOON.en.md",
-      "size": 4476,
-      "sha256": "e23f38525f339747fd44fecd0d8a68c25f4dbd1b4aee531b232aae9fe8193baa"
+      "size": 4709,
+      "sha256": "16e7e96faa610b80860519b965d3cdca4b373bd8e6845ef4b64969f9151a5f8a"
     },
     {
       "path": "adaptations/docs/TOON.md",
-      "size": 4064,
-      "sha256": "176fcc7867279d9fd13b8179fa4d8e415779a68d830583669fcb0af2556641f9"
+      "size": 4271,
+      "sha256": "e37e9d7ebc1401eb4d998b061db4c8fcee8192d8732958c0e48330ce69717a2e"
     },
     {
       "path": "adaptations/fingerprint-source-lock.json",
@@ -1790,9 +1795,24 @@
       "sha256": "01cfe8010a526d2ce899bca35e0b85f87dfb69ab828e8ccca784dada38ed4f0c"
     },
     {
+      "path": "adaptations/metadata/build-inputs/retained-build-inputs.json",
+      "size": 1096,
+      "sha256": "95f0e63c6ff3f7793e0179903807f2d11e1b319127e708e33e720c85a49235c4"
+    },
+    {
+      "path": "adaptations/metadata/locks/xevma-kmod-source-lock.json",
+      "size": 388,
+      "sha256": "74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17"
+    },
+    {
       "path": "adaptations/models.toon",
       "size": 203,
       "sha256": "8f6ea67aa5a9ea7d16a1fcf2b17db252afb356a6bbc30af9d33d6dbe4c0aa833"
+    },
+    {
+      "path": "adaptations/records/migrations/adaptation-navigation-20261121.md",
+      "size": 904,
+      "sha256": "45561450bd1b61bbf5b732ff3f8c3f9d3b0659bbeb330a498bffc29b313e161a"
     },
     {
       "path": "adaptations/records/migrations/bmi260-source-relocation-20261103.json",
@@ -1850,6 +1870,11 @@
       "sha256": "88258a615e8f8b497407435ec77ff917a8237daf2f8d7c41d34bccc01f6d7df4"
     },
     {
+      "path": "adaptations/records/migrations/onexplayer-pl1-8w-20261121.md",
+      "size": 1530,
+      "sha256": "8ef5c3619da34448c03ed2d9289bf13303d5f429e3c3a09829acc446506ba334"
+    },
+    {
       "path": "adaptations/records/migrations/onexplayer-plugin-fixes-20261120.md",
       "size": 1678,
       "sha256": "f99c255bb0ffbc30055dc4b2240f08e171c9e0de59bab2cdadd88c46795d9481"
@@ -1873,6 +1898,11 @@
       "path": "adaptations/records/migrations/s4-deadline-20261120.md",
       "size": 296,
       "sha256": "f672075a350b4cd6039e444630eb394d584de59ca6580095a71f5f8d5c46fabd"
+    },
+    {
+      "path": "adaptations/records/migrations/s4-latest-release-20261121.md",
+      "size": 1198,
+      "sha256": "6f865586c8375cd3dae9bfc33cbdd73dcd4ba72486651a4aa31662a4e1814e75"
     },
     {
       "path": "adaptations/records/migrations/s4-steamos-swap-20261120.md",
@@ -2070,9 +2100,14 @@
       "sha256": "0df9fbd4289a890db80e84e3a8d5036bb79129f851de4d83aed5360ddbb7fe7b"
     },
     {
+      "path": "adaptations/records/x2-mini-g3e-tdp-20261108.md",
+      "size": 1173,
+      "sha256": "bf5298f2a5d62b3ca22be517e402378524e0cf7c3de20e5d6fddb7562faa2181"
+    },
+    {
       "path": "adaptations/resource-build-inputs.json",
-      "size": 11504,
-      "sha256": "727e3b51d67e6967fa00a732f7f39d35a2fa9be372c681f9b2ccaac7ade4ef5c"
+      "size": 11519,
+      "sha256": "e02206fd1f61a6968023c98152a3c53223c81fcf38143046ca53d4e543ef65d3"
     },
     {
       "path": "adaptations/resource-public-source-proof.json",
@@ -2080,14 +2115,9 @@
       "sha256": "ed3ec2e75d2371dbcb4b19e6bb3e7d53abede0ac1e251c9f8fb5479e1a0bef2f"
     },
     {
-      "path": "adaptations/retained-build-inputs.json",
-      "size": 1096,
-      "sha256": "95f0e63c6ff3f7793e0179903807f2d11e1b319127e708e33e720c85a49235c4"
-    },
-    {
       "path": "adaptations/scripts/adaptations.py",
-      "size": 16478,
-      "sha256": "863a4db7f860dbad772677f73733a36e0a80f6575c26e84771b95eee5fb97291"
+      "size": 17376,
+      "sha256": "66dcaab36d2353e755b72680ed2e25d113dfe90593698cdc09df49132627670c"
     },
     {
       "path": "adaptations/scripts/build-complete-bridge.py",
@@ -2106,8 +2136,8 @@
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 35545,
-      "sha256": "bcbe75db3efafacc69b2bd87054a6067a6bac530e8f63fb4014240ab36c5d39a"
+      "size": 37200,
+      "sha256": "43a988656932887b018f1399435b7ecd1699cfe7692ebac776deae26785006cd"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
@@ -2121,8 +2151,8 @@
     },
     {
       "path": "adaptations/scripts/build-s4-split-model.py",
-      "size": 15708,
-      "sha256": "d34be0397079236db70a1ca8490df2d1d85802cf1424ef34ed8418d429c0bc7b"
+      "size": 20065,
+      "sha256": "fb93ebfb28fe4cf6c64a7f43219044847deadb4ddf5f565d4d3ed747c462a3ff"
     },
     {
       "path": "adaptations/scripts/build-shared-base.py",
@@ -2141,8 +2171,8 @@
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
-      "size": 10443,
-      "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
+      "size": 12686,
+      "sha256": "d8bd32f790b4639717fa34d1abf58fbc199009c8aac430b2a1273d392afc32f0"
     },
     {
       "path": "adaptations/scripts/fingerprint_provenance.py",
@@ -2151,8 +2181,8 @@
     },
     {
       "path": "adaptations/scripts/model-identity.py",
-      "size": 14404,
-      "sha256": "4e3b3eaed5269f46a849f2583c40c59ea5571c90cb4312c74d332bd618447b35"
+      "size": 14488,
+      "sha256": "fa9f9de48b254ecadac50f7d80d2df33d3325c34f05bf6fe8f723dedf3113029"
     },
     {
       "path": "adaptations/scripts/prepare-current-inputs.py",
@@ -2175,6 +2205,11 @@
       "sha256": "46ce7a56c46861ead55ee5dddc58d9b5f97eeb5e9865823050ca888214cd359b"
     },
     {
+      "path": "adaptations/scripts/refresh-s4-release.py",
+      "size": 8251,
+      "sha256": "376626bf39375c82d85b4dc19070775bfc83799f894456b989793cd89d08fdda"
+    },
+    {
       "path": "adaptations/scripts/validate-fingerprint-native.py",
       "size": 6086,
       "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
@@ -2186,8 +2221,8 @@
     },
     {
       "path": "adaptations/source-files.txt",
-      "size": 53312,
-      "sha256": "20768213a3bcde363bb0f4073585ca51748a01b5e4e87f7409dd50a13d1dc86d"
+      "size": 53402,
+      "sha256": "12caa27ecdc7d363eca95711493e4d9043e44e4f23ff79bd2ff4deeeec646d80"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -2201,13 +2236,13 @@
     },
     {
       "path": "adaptations/tests/test_adaptations.py",
-      "size": 20523,
-      "sha256": "8eacc37fc0359dd4af3f7c9298d8237ca9dc5bb943e880174ce27882fc0ed53e"
+      "size": 20922,
+      "sha256": "ce1f9ed24afb20191dec4dab42a92bfc2142e5e2baca5e7eee874a0e01e06a67"
     },
     {
       "path": "adaptations/tests/test_common_device_sources.py",
-      "size": 4839,
-      "sha256": "1685259401f90040500738131e5f81d7d1c3aa9e8aca737098cc98f0f483c7ed"
+      "size": 4938,
+      "sha256": "843e262074f862822a336e4922b845e675ba4752b73a5fa3b311d70143a1e367"
     },
     {
       "path": "adaptations/tests/test_fingerprint_kde_pam.py",
@@ -2241,18 +2276,28 @@
     },
     {
       "path": "adaptations/tests/test_index_models.py",
-      "size": 15080,
-      "sha256": "e761120d0d7463a50e74ca1b605d8d30fb11836c4a9d687babfa9746c02521d2"
+      "size": 18075,
+      "sha256": "ac0404a969289dda8829ea424d6dd8ca625e1ac0d835b2ad740a1280a5c1b94d"
     },
     {
       "path": "adaptations/tests/test_model_identity.py",
-      "size": 13791,
-      "sha256": "4e2c99140e44d636d9b75d1407e7fb617f13a27eb5790878401554c3c2d54153"
+      "size": 15689,
+      "sha256": "84809200034f0e85c0de7ef5bd44ed9a4145e18e56e784ee13ea09fa0a308f85"
+    },
+    {
+      "path": "adaptations/tests/test_onexplayer_tdp_sources.py",
+      "size": 4019,
+      "sha256": "062ed04318ce55bbe295d12f4b60bc75d29c2f17c30147ef828b716628c593ef"
     },
     {
       "path": "adaptations/tests/test_pam_input.py",
       "size": 1309,
       "sha256": "1d65766f0b06f7a0c107e2260bbbbd73720c862585ed26abe7f2bbbe97756bb8"
+    },
+    {
+      "path": "adaptations/tests/test_refresh_s4_release.py",
+      "size": 6622,
+      "sha256": "a82f0501d2ce907a3fec7bfe6297d4d7bb9ea5bd8a5dae1032eec306b9cd8cf5"
     },
     {
       "path": "adaptations/tests/test_registry.py",
@@ -2350,14 +2395,9 @@
       "sha256": "f44b93401a26b417d9f3b60da9dc84e5af5bb8999116fe5743278959a86f9666"
     },
     {
-      "path": "adaptations/xevma-kmod-source-lock.json",
-      "size": 388,
-      "sha256": "74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17"
-    },
-    {
       "path": "adaptations/model-source-files.json",
-      "size": 85091,
-      "sha256": "be87ddbd7d7c2cd88dfe791f5ee3c04d0d036c3cd18aa34df67165eea433157b"
+      "size": 86517,
+      "sha256": "3d45fbabf0ecd73c577357282255ad11b02683156da8d463d5c8e72642c9f6d4"
     }
   ]
 }

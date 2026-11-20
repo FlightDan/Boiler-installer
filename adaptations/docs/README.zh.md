@@ -4,12 +4,17 @@
 
 这里收集 Boiler 的设备和机型适配。你可以查看已有机型的资料，复用共用硬件组件，也欢迎提交自己的适配。
 
-| 文档 | 已适配机型 |
-| --- | --- |
-| [TOON 是怎么工作的](TOON.md)<br>[构建机型包和安装器](BUILD.md)<br>[设备索引与签名](REGISTRY.md)<br>[品牌与机型适配资料](ADAPTATIONS.md) | [ONEXPLAYER 3](../brands/onexplayer/oxp3/model.md)<br>[ONEXPLAYER X2 Mini / Mini PRO](../brands/onexplayer/x2-mini/model.md) |
+| 机型 | 适配说明 | 修改构件选择 | 机型源码 |
+| --- | --- | --- | --- |
+| ONEXPLAYER 3 | [安装清单](../brands/onexplayer/oxp3/model.md) | [oxp3.toon](../devices/onexplayer/oxp3.toon) | [源码目录](../brands/onexplayer/oxp3/) |
+| ONEXPLAYER X2 Mini / Mini PRO | [安装清单](../brands/onexplayer/x2-mini/model.md) | [x2-mini.toon](../devices/onexplayer/x2-mini.toon) | [源码目录](../brands/onexplayer/x2-mini/) |
+
+[TOON 指南](TOON.md) · [构建指南](BUILD.md) · [设备索引与签名](REGISTRY.md) · [目录说明](ADAPTATIONS.md)
 
 <details open>
 <summary>如何提交新适配</summary>
+
+[新机型与单部件贡献指南（最低实机要求、开发步骤和 PR 模板）](https://github.com/FlightDan/Boiler-installer/blob/main/docs/CONTRIBUTING_ADAPTATIONS.md)
 
 1. Fork 这个仓库。
 2. 在对应品牌和机型目录添加适配；共用硬件资源放在 `common/`，通过机型 TOON 引用。

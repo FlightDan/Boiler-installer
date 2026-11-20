@@ -155,13 +155,13 @@ components[36]:
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: native-tdp
-    name: 原生 TDP 10–40W 控制
+    name: 原生 TDP · PL1 8–40 W
     recommendation: conditional
     default: false
     dependencies[1]: manager
-    sources[1]: brands/onexplayer/oxp3/scripts/controls/rapl/provider.py
+    sources[2]: brands/onexplayer/oxp3/scripts/controls/rapl/provider.py,brands/onexplayer/common/tdp_sources.py
     status: shared_oxp3_implementation
-    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+    notes: 新版机型包在匹配机型上提供 PL1 8–40 W，SteamOS 与 Decky 共用同一范围。
   - id: overlay
     name: CPU/GPU/APU 功耗与 PVRAM 叠加层
     recommendation: optional
@@ -191,7 +191,7 @@ components[36]:
     recommendation: optional
     default: false
     dependencies[1]: decky
-    sources[2]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py
+    sources[4]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py,brands/onexplayer/common/tdp_sources.py,brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
   - id: intel-cpu-microcode
@@ -217,7 +217,7 @@ components[36]:
     dependencies[1]: decky
     sources[9]: common/sleep/source-lock.json,common/sleep/install.json,common/sleep/runtime/main.py,common/sleep/runtime/dist/index.js,common/sleep/runtime/package.json,common/sleep/runtime/plugin.json,common/sleep/runtime/sleep_control.py,common/sleep/runtime/90-boiler-sleep.conf,common/sleep/runtime/LICENSE
     status: shared_asset
-    notes: 独立 Decky 插件 0.1.5。提供 S4 的 TSC deadline 启动参数选项，并在关闭 S4 时清理由插件创建的配置。
+    notes: 独立 Decky 插件。构建准备从上游最新正式版解析并锁定共享载荷；安装和维护使用已校验的锁定版本。
   - id: oxp3-light
     name: OXP3 Light · 三分区灯光控制
     recommendation: optional
@@ -306,7 +306,7 @@ build:
     common,adaptations/source-lock.json,b57fe2a5c69d0d5e41ba5a9710c0310eedc4a8b2d8b5048bbfb3a429e9aea9fa
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
-    common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
+    common,adaptations/metadata/locks/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
     common,adaptations/fingerprint-source-lock.json,e21c367747cd4e2055b54cbf2eb9ca1b7b5c2c40f0ca2f75fc1f080feaba7285
   inputs[3]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."

@@ -133,6 +133,36 @@ class FirstInstallModelRetention(unittest.TestCase):
 
     def test_unrecognized_contract_does_not_retain(self):
         self.manifest.pop('maintenance_contract'); self.save_manifest(); self.install(device_manifest_sha256=self.anchor); self.assertFalse(self.pointer.exists())
+    def test_file_only_third_model_records_owned_identity_and_restores(self):
+        self.manifest['id'] = 'device:third'
+        self.manifest['components'][0]['id'] = 'third:fixture'
+        self.manifest.pop('maintenance_contract')
+        self.save_manifest()
+        self.install(device_components=['third:fixture'], device_manifest_sha256=self.anchor)
+        engine = Engine(self.root, read_only=True)
+        from maintenance.updates import inventory
+        current = inventory(self.root)
+        views = models.owned_component_views(engine, current['components'])
+        self.assertEqual(set(views['device:third']), {'third:fixture'})
+        from maintenance.__main__ import main
+        from contextlib import redirect_stdout
+        from io import StringIO
+        catalog = {'models': [{'id': 'device:third'}], 'source': {}, 'offline': True}
+        output = StringIO()
+        with patch.object(models, 'catalog', return_value=catalog), redirect_stdout(output):
+            self.assertEqual(main(['--root', str(self.root), 'models', 'options', 'device:third', '--trust-local-test']), 0)
+        options = json.loads(output.getvalue())['result']
+        self.assertTrue(options['ownership_receipt'])
+        self.assertEqual(set(options['installed_components']), {'third:fixture'})
+        (self.state/'models/ownership-third.json').unlink()
+        output = StringIO()
+        with patch.object(models, 'catalog', return_value=catalog), redirect_stdout(output):
+            self.assertEqual(main(['--root', str(self.root), 'models', 'options', 'device:third', '--trust-local-test']), 0)
+        self.assertFalse(json.loads(output.getvalue())['result']['ownership_receipt'])
+        models.record_owned_components(Engine(self.root), 'device:third', self.anchor, ['third:fixture'])
+        self.assertTrue(engine.verify_readonly('third:fixture')['ok'])
+        Engine(self.root).restore(views['device:third']['third:fixture']['transaction'])
+        self.assertEqual(models.owned_component_views(Engine(self.root, read_only=True), inventory(self.root)['components'])['device:third'], {})
     def test_tampered_input_fails_before_component_writes(self):
         (self.package/'data').write_bytes(b'tampered')
         with self.assertRaises(Exception): self.install()

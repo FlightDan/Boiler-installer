@@ -81,7 +81,7 @@ Boiler Installer 是一款运行在 Windows 上的 SteamOS 安装助手。你可
 - [详细安装指南](docs/install/README.md) · [全部文档](docs/INDEX.md)
 - 安装器问题或建议：[提交 Issue](https://github.com/FlightDan/Boiler-installer/issues)
 - 申请更多机型：[在适配仓库提出 Issue](https://github.com/FlightDan/Boiler-adaptations/issues)，请写明品牌、型号和希望支持的内容。
-- 提交机型适配：参照[适配仓库的贡献说明](https://github.com/FlightDan/Boiler-adaptations)，提供机型、系统、内核版本和测试记录，然后在该仓库提交 Pull Request。
+- [贡献整机或单部件适配](docs/CONTRIBUTING_ADAPTATIONS.md) — 最低实机要求、提交步骤与 PR 模板。
 
 <details>
 <summary>展开问题反馈模板</summary>

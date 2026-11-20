@@ -95,6 +95,111 @@ class ModelUITests(unittest.TestCase):
         backend = backend or FakeBackend()
         return ModelUI(dialog, backend, offline=True), backend
 
+    def test_third_model_installed_component_uses_existing_recovery_commands(self):
+        class RecoveryBackend(FakeBackend):
+            def project(self, *args):
+                self.calls.append(('project', *args))
+                return {'installed_models': {'device:third': {'third:repair': {'version': '1.0', 'transaction': 'txn'}},
+                                              'device:other': {'other:repair': {'version': '1.0', 'transaction': 'other'}}},
+                        'pending_transactions': [], 'pending_platform_recovery': None}
+            def recovery(self, *args):
+                self.calls.append(args)
+                return {'ok': True}
+        for action in ('verify', 'restore'):
+            with self.subTest(action=action):
+                backend = RecoveryBackend()
+                dialog = Dialog(['installed', 'third:repair', action, 'back'], confirms=[True])
+                ui, _ = self.ui(dialog, backend)
+                ui.model(dict(MODEL, id='device:third'), CATALOG)
+                self.assertEqual(backend.calls, [('project', 'inventory'),
+                    (action, 'third:repair' if action == 'verify' else 'txn')])
+                self.assertEqual([row[0] for row in dialog.menu_rows[1][1]], ['third:repair'])
+
+    def test_installed_components_refuses_pending_recovery(self):
+        backend = FakeBackend()
+        for barrier in ('pending_transactions', 'pending_platform_recovery', 'pending_model_recovery'):
+            with self.subTest(barrier=barrier):
+                backend.project = Mock(return_value={barrier: ['pending']})
+                dialog = Dialog()
+                ui, _ = self.ui(dialog, backend)
+                ui.installed_components('device:third')
+                backend.project.assert_called_once_with('inventory')
+                self.assertIn('interrupted', dialog.messages[0][0])
+
+    def test_verify_only_scripted_component_offers_static_restore(self):
+        backend = FakeBackend()
+        backend.project = Mock(return_value={'installed_models': {'device:third': {
+            'third:repair': {'version': '1', 'transaction': 'txn', 'scripted': True, 'static_restore': True}}}})
+        backend.recovery = Mock(return_value={'status': 'restored'})
+        dialog = Dialog(['third:repair', 'restore'], confirms=[True])
+        ui, _ = self.ui(dialog, backend)
+        ui.installed_components('device:third')
+        backend.recovery.assert_called_once_with('restore', 'txn')
+
+    def test_bound_script_restore_requires_explicit_review(self):
+        class ScriptBackend(FakeBackend):
+            def project(self, *args):
+                return {'installed_models': {'device:third': {'third:repair': {
+                    'version': '1', 'transaction': 'txn', 'scripted': True, 'script_restore_available': True}}}}
+            def call(self, *args):
+                self.calls.append(args)
+                if args[0] == 'script-restore-plan': return {'review_sha256': 'a'*64, 'transaction': 'txn'}
+                if args[0] == 'script-restore-execute': return {'status': 'restored'}
+                raise AssertionError(args)
+        for confirm in (False, True):
+            backend = ScriptBackend()
+            dialog = Dialog(['third:repair', 'script-restore'], confirms=[confirm])
+            dialog.input = Mock(return_value='/tmp/model package')
+            ui, _ = self.ui(dialog, backend)
+            ui.installed_components('device:third')
+            self.assertEqual(backend.calls[0], ('script-restore-plan', 'device:third', 'third:repair', '/tmp/model package'))
+            self.assertEqual(len(backend.calls), 2 if confirm else 1)
+            if confirm:
+                self.assertEqual(backend.calls[1][-2:], ('--reviewed-sha256', 'a'*64))
+
+    def test_installed_components_reports_missing_receipt(self):
+        backend = FakeBackend()
+        backend.project = Mock(return_value={'installed_models': {}})
+        dialog = Dialog()
+        ui, _ = self.ui(dialog, backend)
+        ui.installed_components('device:third')
+        self.assertIn('No installation record', dialog.messages[0][0])
+
+    def test_installed_model_receipts_isolate_current_ownership(self):
+        from maintenance import models
+        with tempfile.TemporaryDirectory() as directory:
+            engine = Mock()
+            engine.state_dir = Path(directory)
+            engine._state.return_value = {'components': {'first:one': {'transaction': 'a'*32}, 'second:two': {'transaction': 'b'*32}, 'unrelated:three': {'transaction': 'c'*32}}}
+            models.record_owned_components(engine, 'device:first', 'a'*64, ['first:one', 'missing:item'])
+            models.record_owned_components(engine, 'device:second', 'b'*64, ['second:two'])
+            inventory = {'first:one': {'transaction': 'a'*32}, 'second:two': {'transaction': 'b'*32},
+                         'unrelated:three': {'transaction': 'three'}}
+            views = models.owned_component_views(engine, inventory)
+            self.assertEqual(views, {'device:first': {'first:one': inventory['first:one']},
+                                     'device:second': {'second:two': inventory['second:two']}})
+            del inventory['first:one']
+            self.assertEqual(models.owned_component_views(engine, inventory)['device:first'], {})
+
+    def test_gtk_model_view_only_offers_its_recorded_component_actions(self):
+        ui = GtkMaintenance.__new__(GtkMaintenance)
+        ui.lang, ui.body = 'en-US', Mock()
+        ui.clear, ui.text, ui.button, ui.refresh, ui.line = Mock(), Mock(), Mock(), Mock(), Mock()
+        result = {'installed_models': {'device:first': {'first:one': {'transaction': 'one', 'version': '1'}},
+                                       'device:second': {'second:two': {'transaction': 'two', 'version': '2'}}},
+                  'components': {'unrelated:three': {'transaction': 'three'}},
+                  'pending_transactions': [], 'pending_platform_recovery': None}
+        ui.installed_models(result)
+        labels = [call.args[0] for call in ui.button.call_args_list]
+        self.assertIn('Verify files: first:one', labels)
+        self.assertIn('Restore: second:two', labels)
+        self.assertFalse(any('unrelated:three' in label for label in labels))
+        ui.button.reset_mock()
+        result['pending_model_recovery'] = True
+        ui.installed_models(result)
+        self.assertFalse(any('Verify files:' in call.args[0] or 'Restore:' in call.args[0]
+                             for call in ui.button.call_args_list))
+
     def test_review_displays_reviewed_component_and_package_versions(self):
         ui, _ = self.ui(Dialog())
         plan = dict(PLAN, component_versions=[dict(id='fixture:repair', version='1.0.7')],
@@ -126,7 +231,21 @@ class ModelUITests(unittest.TestCase):
         self.assertEqual(ui.run(), 0)
         self.assertEqual(backend.calls, [('list', '--offline')])
         self.assertEqual([row[0] for row in dialog.menu_rows[0][1]],
-                         ['device:oxp3','device:x2-mini','ssd','feedback','language'])
+                         ['device:oxp3','device:x2-mini','installed-models','ssd','feedback','language'])
+
+    def test_offline_unlisted_installed_model_is_accessible_from_text_menu(self):
+        class InstalledBackend(FakeBackend):
+            def project(self, *args):
+                self.calls.append(('project', *args))
+                return {'installed_models': {'device:offline': {'offline:repair': {'transaction':'a'*32, 'version':'1'}}}}
+            def recovery(self, *args):
+                self.calls.append(args)
+                return {'ok':True}
+        dialog = Dialog(['installed-models', 'device:offline', 'offline:repair', 'verify'])
+        backend = InstalledBackend()
+        ui, _ = self.ui(dialog, backend)
+        self.assertEqual(ui.run(), 0)
+        self.assertIn(('verify', 'offline:repair'), backend.calls)
         self.assertIn('Pinned commit', dialog.menu_rows[0][0])
 
     def test_trust_cancel_never_inspects_private_target(self):

@@ -142,6 +142,77 @@ def build(base, anchor, checkout, commit, installer_root, output, version):
     cap['name'] = {'en': 'Battery telemetry' if manifest['id'] == 'device:x2-mini' else 'Battery charging controls', 'zh': '电池状态' if manifest['id'] == 'device:x2-mini' else '电池充电控制'}
     cap['en'], cap['zh'] = cap['name']['en'], cap['name']['zh']
     cap['legacy_notes'] = 'Read-only battery telemetry; charging writes are disabled.' if manifest['id'] == 'device:x2-mini' else 'Battery charge limit and modes; physical-device acceptance remains pending.'
+    # Derive the two runtime implementations from the locked canonical policy.
+    # The localized frontend has its own locked source and base provenance.
+    policy_path = 'brands/onexplayer/common/tdp_sources.py'
+    policy_file = Path(__file__).resolve().parent.parent / policy_path
+    if policy_file.read_bytes() != locked(policy_path):
+        raise ValueError('Builder policy differs from locked canonical source')
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('boiler_tdp_sources', policy_file)
+    policy = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(policy)
+    baseline = json.loads(locked('source-lock.json'))
+    if baseline['source']['commit'] != '72f864e0498c10366493c74608c5ffed62cc99ca':
+        raise ValueError('Unexpected CPU baseline commit')
+    baseline_rows = {row['path']: row for row in baseline['files']}
+    if len(baseline_rows) != len(baseline['files']):
+        raise ValueError('Duplicate CPU baseline source')
+    def update_row(row, data):
+        if 'size' in row: row['size'] = len(data)
+        if 'sha256' in row: row['sha256'] = digest(data)
+    for group_name, target, source in (
+        ('native-tdp', 'var/lib/oxp3-rapl/provider.py', 'rapl/provider.py'),
+        ('oxp3-cpu', 'var/lib/oxp3-cpu/power_control.py', 'cpu/power_control.py'),
+    ):
+        rows = [row for row in integration[group_name]['files'] if row['target'] == target]
+        if len(rows) != 1:
+            raise ValueError('Expected one power target: ' + target)
+        path = prefix + rows[0]['source']
+        changed[path] = policy.transform(source, confined(base, path).read_bytes(), baseline_rows)
+        update_row(rows[0], changed[path])
+        integration[group_name]['version'] = version
+    cpu_target = 'home/deck/homebrew/plugins/OXP3-CPU/dist/index.js'
+    cpu_rows = [row for row in integration['oxp3-cpu']['files'] if row['target'] == cpu_target]
+    if len(cpu_rows) != 1:
+        raise ValueError('Expected one localized CPU frontend')
+    cpu_path = prefix + cpu_rows[0]['source']
+    cpu_source = 'brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js'
+    if frontends.get(cpu_path) != cpu_source or confined(base, cpu_path).read_bytes() != git('show', old_commit + ':' + cpu_source):
+        raise ValueError('Unexpected existing localized CPU frontend')
+    changed[cpu_path] = locked(cpu_source)
+    update_row(cpu_rows[0], changed[cpu_path])
+    test_target = 'var/lib/oxp3-cpu/test_power_control.py'
+    test_rows = [row for row in integration['oxp3-cpu']['files'] if row['target'] == test_target]
+    if len(test_rows) != 1:
+        raise ValueError('Expected one power helper test')
+    test_path = prefix + test_rows[0]['source']
+    test_data = confined(base, test_path).read_bytes()
+    old_test = b'(True, 9, 41,'
+    if test_data.count(old_test) != 1:
+        raise ValueError('Unexpected power helper test: ' + test_path)
+    changed[test_path] = test_data.replace(old_test, b'(True, 7, 41,')
+    update_row(test_rows[0], changed[test_path])
+    tdp_caps = [c for c in manifest['legacy_capabilities'] if c['id'] == 'oxp3:native-tdp']
+    if len(tdp_caps) != 1:
+        raise ValueError('Expected native TDP capability')
+    tdp_cap = tdp_caps[0]
+    tdp_cap['name'] = {'zh': '原生 TDP 8–40W 控制', 'en': 'Native TDP controls · 8–40 W'}
+    tdp_cap['zh'], tdp_cap['en'] = tdp_cap['name']['zh'], tdp_cap['name']['en']
+    tdp_cap['payload_version'] = version
+    tdp_cap['legacy_notes'] = '8–40W 支持仅限精确 OXP3 与 X2 Mini；默认不改变功率。实体设备、安装及维护恢复尚待验收。'
+    cpu_caps = [c for c in manifest['legacy_capabilities'] if c['id'] == 'oxp3:oxp3-cpu']
+    if len(cpu_caps) != 1:
+        raise ValueError('Expected CPU capability')
+    cpu_caps[0]['payload_version'] = version
+    metadata_path = 'payload/legacy/components/catalog.json'
+    metadata = json.loads(confined(base, metadata_path).read_bytes())
+    matches = [row for row in metadata['components'] if row['id'] == 'native-tdp']
+    if len(matches) != 1:
+        raise ValueError('Expected native TDP catalog metadata')
+    matches[0]['name'] = '原生 TDP 8–40W'
+    matches[0]['reason'] = tdp_cap['legacy_notes']
+    changed[metadata_path] = encoded(metadata)
     changed[integration_path] = encoded(integration)
 
     component = json.loads(locked('common/sleep/install.json'))

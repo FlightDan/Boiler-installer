@@ -816,37 +816,42 @@ def set_tsc_deadline_disabled(disabled):
 def run():
     """Systemd entry point for an existing suspend request; never called by RPC."""
     with locked():
-        try:
-            policy = read_policy()
-            state = read_swap_state()
-        except (OSError, RuntimeError, ValueError):
-            command(SLEEP, 'suspend'); return
+        state = read_swap_state()
+        if not state or not state['enabled']:
+            command(SLEEP, 'suspend')
+            return
+
+        policy = read_policy()
         mode = policy['mode']
-        if not state or not state['enabled'] or state['phase'] != 'ready' or mode not in ('hibernate', 'auto'):
-            command(SLEEP, 'suspend'); return
-        try:
-            if mode not in available_modes(): raise RuntimeError('Mode is unavailable')
-            owned_swap(state); swap_signature()
-            if swap_active(): raise RuntimeError('Owned swap is unexpectedly active')
-            swap_location()  # Validate the current page-unit extent before systemd selects it.
-            require_compatible_swaps(allow_owned=False, allow_stock=True)
-            stock_identity = stock_swap_identity() if stock_swap_active() else None
-            restore = {name: path(name).read_text().strip() for name in ('sys/power/resume_offset', 'sys/power/resume')}
-            if restore['sys/power/resume'] != '0:0' or restore['sys/power/resume_offset'] != '0':
-                raise RuntimeError('A resume device is already configured')
-            if mode == 'auto':
-                selected = [x[1:-1] for x in path('sys/power/mem_sleep').read_text().split()
-                            if x.startswith('[') and x.endswith(']')]
-                if len(selected) != 1: raise RuntimeError('Cannot read memory sleep mode')
-                restore['sys/power/mem_sleep'] = selected[0]
-        except (OSError, RuntimeError, subprocess.CalledProcessError):
-            command(SLEEP, 'suspend'); return
+        if mode not in ('hibernate', 'auto'):
+            command(SLEEP, 'suspend')
+            return
+
+        if state['phase'] != 'ready':
+            raise RuntimeError('S4 swap is not ready')
+        if mode not in available_modes():
+            raise RuntimeError(f'S4 mode {mode} is unavailable; check plugin status')
+        owned_swap(state)
+        swap_signature()
+        if swap_active():
+            raise RuntimeError('Owned swap is unexpectedly active')
+        swap_location()  # Validate the current page-unit extent before systemd selects it.
+        require_compatible_swaps(allow_owned=False, allow_stock=True)
+        stock_identity = stock_swap_identity() if stock_swap_active() else None
+        restore = {name: path(name).read_text().strip() for name in ('sys/power/resume_offset', 'sys/power/resume')}
+        if restore['sys/power/resume'] != '0:0' or restore['sys/power/resume_offset'] != '0':
+            raise RuntimeError('A resume device is already configured')
+        if mode == 'auto':
+            selected = [x[1:-1] for x in path('sys/power/mem_sleep').read_text().split()
+                        if x.startswith('[') and x.endswith(']')]
+            if len(selected) != 1:
+                raise RuntimeError('Cannot read memory sleep mode')
+            restore['sys/power/mem_sleep'] = selected[0]
         runtime = path(RUNTIME)
         runtime.parent.mkdir(parents=True, exist_ok=True)
         active_attempted = False
         stock_off_attempted = False
         sleep_attempted = False
-        fallback = False
         stream = runtime.open('x', encoding='utf-8', newline='\n')
         try:
             with stream:
@@ -855,28 +860,21 @@ def run():
             active_attempted = True
             command('usr/bin/swapon', str(path(SWAP_FILE)))
             if not swap_active(): raise RuntimeError('Swap activation was not confirmed')
-            try:
-                require_compatible_swaps(allow_owned=True, allow_stock=bool(stock_identity))
-                if stock_identity:
-                    if stock_swap_identity() != stock_identity or not stock_swap_active():
-                        raise RuntimeError('Stock swap identity or activation changed')
-                    try:
-                        stock_off_attempted = True
-                        command('usr/bin/swapoff', str(path(STOCK_SWAP)))
-                    except subprocess.CalledProcessError:
-                        fallback = True
-                    if not fallback:
-                        if stock_swap_active(): raise RuntimeError('Stock swap deactivation was not confirmed')
-                        if stock_swap_identity() != stock_identity: raise RuntimeError('Stock swap identity changed')
-                        require_compatible_swaps(allow_owned=True)
-                if path('sys/power/resume').read_text().strip() != '0:0' or path('sys/power/resume_offset').read_text().strip() != '0':
-                    raise RuntimeError('A resume device became configured')
-            except (OSError, RuntimeError):
-                if stock_identity: raise
-                fallback = True
-            if not fallback:
-                sleep_attempted = True
-                command(SLEEP, 'hibernate' if mode == 'hibernate' else 'suspend-then-hibernate')
+            require_compatible_swaps(allow_owned=True, allow_stock=bool(stock_identity))
+            if stock_identity:
+                if stock_swap_identity() != stock_identity or not stock_swap_active():
+                    raise RuntimeError('Stock swap identity or activation changed')
+                stock_off_attempted = True
+                command('usr/bin/swapoff', str(path(STOCK_SWAP)))
+                if stock_swap_active():
+                    raise RuntimeError('Stock swap deactivation was not confirmed')
+                if stock_swap_identity() != stock_identity:
+                    raise RuntimeError('Stock swap identity changed')
+                require_compatible_swaps(allow_owned=True)
+            if path('sys/power/resume').read_text().strip() != '0:0' or path('sys/power/resume_offset').read_text().strip() != '0':
+                raise RuntimeError('A resume device became configured')
+            sleep_attempted = True
+            command(SLEEP, 'hibernate' if mode == 'hibernate' else 'suspend-then-hibernate')
         finally:
             try:
                 if active_attempted:
@@ -900,8 +898,6 @@ def run():
                         raise RuntimeError('Stock swap restoration was not confirmed')
             finally:
                 runtime.unlink()
-        if fallback:
-            command(SLEEP, 'suspend')
 
 
 

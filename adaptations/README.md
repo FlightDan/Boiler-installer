@@ -4,12 +4,17 @@
 
 This repository collects device and model adaptations for Boiler. Browse the existing models, reuse shared hardware components, or contribute an adaptation of your own.
 
-| Documentation | Models |
-| --- | --- |
-| [How TOON works](docs/TOON.en.md)<br>[Build a device package and installer](docs/BUILD.en.md)<br>[Device index and signatures](docs/REGISTRY.en.md)<br>[Brand and model adaptation reference](docs/ADAPTATIONS.md) (Chinese) | [ONEXPLAYER 3](brands/onexplayer/oxp3/model.md)<br>[ONEXPLAYER X2 Mini / Mini PRO](brands/onexplayer/x2-mini/model.md) |
+| Model | Adaptation guide | Edit components | Model source |
+| --- | --- | --- | --- |
+| ONEXPLAYER 3 | [Guide](brands/onexplayer/oxp3/model.md) | [oxp3.toon](devices/onexplayer/oxp3.toon) | [Source directory](brands/onexplayer/oxp3/) |
+| ONEXPLAYER X2 Mini / Mini PRO | [Guide](brands/onexplayer/x2-mini/model.md) | [x2-mini.toon](devices/onexplayer/x2-mini.toon) | [Source directory](brands/onexplayer/x2-mini/) |
+
+[TOON guide](docs/TOON.en.md) · [Build guide](docs/BUILD.en.md) · [Device index and signatures](docs/REGISTRY.en.md) · [Repository layout (中文)](docs/ADAPTATIONS.md)
 
 <details open>
 <summary>Contribute an adaptation</summary>
+
+[New handheld or individual component: contribution guide and PR evidence](https://github.com/FlightDan/Boiler-installer/blob/main/docs/CONTRIBUTING_ADAPTATIONS.md)
 
 1. Fork this repository.
 2. Add the adaptation under the right brand and model. Put reusable hardware resources in `common/` and reference them from the model's TOON.

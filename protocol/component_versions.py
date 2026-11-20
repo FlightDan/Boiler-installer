@@ -25,7 +25,7 @@ def version_key(version):
 
 
 def validate_model_requests(rows):
-    if not isinstance(rows, list) or not rows:
+    if not isinstance(rows, list):
         raise ProtocolError('Invalid model resource references')
     requests = {}
     for row in rows:

@@ -22,7 +22,7 @@ $Output = "PATH_TO_NEW_DEVELOPMENT_INDEX.json"
 python -B scripts/toon_catalog.py index-candidate --source-checkout "$AdaptationCheckout" --package "$Package" --output "$Output"
 ```
 
-发布候选的双机型模式需要 OXP3 和 X2 Mini 各一组 `--model PACKAGE ZIP URL`，以及已独立验签的上一份索引和 SHA-256、递增序号、精确的适配仓库和安装器提交及版本。单包发布候选支持 OXP3。工具保留包、指纹、ZIP 和索引校验；候选不代表实机、安装、维护或恢复已验收。在安装器源码根目录运行 `python -B scripts/toon_catalog.py index-candidate --help` 查看参数。
+每个待发布的机型传入一组 `--model PACKAGE ZIP URL`，可以只传新机型。工具从精确提交的机型 TOON 取得身份、设备记录及来源路径。提供独立验签的上一份索引及其摘要、递增序号、精确的适配仓库和安装器提交及机型包版本。
 
 后续版本应先独立验证上一份签名索引，再通过 `--previous-index` 提供它；脚本不会替操作者验证该文件的签名。新序号必须递增，已有撤销记录也要保留。索引中的 `verified_at` 记录的是本地文件清单核对时间。
 

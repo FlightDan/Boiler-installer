@@ -22,7 +22,7 @@ $Output = "PATH_TO_NEW_DEVELOPMENT_INDEX.json"
 python -B scripts/toon_catalog.py index-candidate --source-checkout "$AdaptationCheckout" --package "$Package" --output "$Output"
 ```
 
-The two-model candidate requires one `--model PACKAGE ZIP URL` each for OXP3 and X2 Mini, a separately signature-verified previous index and SHA-256, increasing sequence, exact adaptation and installer commits, and version. Single-package release candidates support OXP3. Package, fingerprint, ZIP, and index checks remain in force; a candidate does not establish hardware, installation, maintenance, or recovery acceptance. Run `python -B scripts/toon_catalog.py index-candidate --help` from the installer source root for options.
+Repeat `--model PACKAGE ZIP URL` for each selected registered model, including a single new model. The committed TOON supplies its identity, device record and source location. Provide the independently verified previous index and digest, increasing sequence, exact adaptation and installer commits, and package version.
 
 For subsequent releases, independently verify the previous signed index before passing it with `--previous-index`; the script does not verify that file's signature for the operator. The sequence must increase and prior revocations must be retained. `verified_at` records when the local artifact inventory was checked.
 

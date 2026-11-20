@@ -266,17 +266,18 @@
     },
     {
       "id": "native-tdp",
-      "name": "原生 TDP 10–40W 控制",
+      "name": "原生 TDP · PL1 8–40 W",
       "recommendation": "conditional",
       "default": false,
       "dependencies": [
         "manager"
       ],
       "sources": [
-        "brands/onexplayer/oxp3/scripts/controls/rapl/provider.py"
+        "brands/onexplayer/oxp3/scripts/controls/rapl/provider.py",
+        "brands/onexplayer/common/tdp_sources.py"
       ],
       "status": "source_reference_only",
-      "notes": "仅保留已公开常规 RAPL 实现；10–40W 不作为其他机型范围。"
+      "notes": "新版机型包在匹配机型上提供 PL1 8–40 W，SteamOS 与 Decky 共用同一范围。"
     },
     {
       "id": "overlay",
@@ -328,7 +329,9 @@
       ],
       "sources": [
         "brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py",
-        "brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py"
+        "brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py",
+        "brands/onexplayer/common/tdp_sources.py",
+        "brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js"
       ],
       "status": "source_reference_only",
       "notes": "仅保留公开常规控制；未纳入工作区新动态功耗研究。"
@@ -384,7 +387,7 @@
         "common/sleep/runtime/LICENSE"
       ],
       "status": "shared_asset",
-      "notes": "独立 Decky 插件 0.1.5。提供 S4 的 TSC deadline 启动参数选项，并在关闭 S4 时清理由插件创建的配置。"
+      "notes": "独立 Decky 插件。构建准备从上游最新正式版解析并锁定共享载荷；安装和维护使用已校验的锁定版本。"
     },
     {
       "id": "oxp3-light",

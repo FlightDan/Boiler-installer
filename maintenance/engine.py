@@ -748,7 +748,7 @@ class Engine:
                     return self._restore_locked(transaction_id,state,path,journal)
             return self._restore_locked(transaction_id,state,path,journal)
 
-    def _restore_locked(self,transaction_id,state,path,journal):
+    def _restore_locked(self,transaction_id,state,path,journal, *, restore_payload=None):
         if journal.get("root")!=self.identity or journal.get("status")!="committed": raise MaintenanceError("Transaction is not restorable")
         cid=journal["component"]["id"]
         from .shared_models import guard_sleep_restore
@@ -760,7 +760,10 @@ class Engine:
         if cid==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),journal['component'],recovery=True):
             raise MaintenanceError('CPU restore requires the explicit fixed offline host entry')
         if state["components"].get(cid,{}).get("transaction")!=transaction_id: raise MaintenanceError("Only active component generation can be restored")
-        if journal["component"].get("hooks"): raise MaintenanceError("Script component requires explicit package restore integration")
+        hooks = journal["component"].get("hooks", {})
+        if (not isinstance(hooks, dict) or set(hooks) - {'apply', 'verify', 'restore'} or
+                (set(hooks) - {'verify'} and (restore_payload is None or 'restore' not in hooks))):
+            raise MaintenanceError("Script component requires explicit package restore integration")
         from .cpu_resources import mutable_operation, preserve_for_restore, matches
         for item in journal["operations"]:
             if not matches(self,journal['component'],item): raise MaintenanceError("Restore refused modified target")
@@ -771,6 +774,22 @@ class Engine:
             raise MaintenanceError("Installed component still requires this component")
         from .adoption_blobs import validate_backups
         validate_backups(self,journal['operations'])
+        for item in journal['operations']:
+            if state['owners'].get(item['target'], {}).get('transaction') != transaction_id:
+                raise MaintenanceError('Restore refused changed ownership')
+        if set(hooks) - {'verify'}:
+            journal['status']='hook_running'; _json_write(path,journal)
+            try:
+                subprocess.run(['/bin/bash',str(confined(restore_payload,hooks['restore'])),str(self.root)],
+                               cwd=restore_payload,env=build_hook_environment(self.root,transaction_id),
+                               check=True,timeout=900)
+                for item in journal['operations']:
+                    if not matches(self,journal['component'],item):
+                        raise MaintenanceError('Restore hook changed a managed target')
+                journal['status']='hook_completed'; _json_write(path,journal)
+            except BaseException:
+                journal['status']='manual_recovery_required'; _json_write(path,journal)
+                raise
         for item in journal["operations"]:
             name=item["target"]
             if name in previous["owners"]: state["owners"][name]=previous["owners"][name]

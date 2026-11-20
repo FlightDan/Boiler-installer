@@ -67,6 +67,24 @@ class ProjectDiscoveryTests(unittest.TestCase):
             match, _ = project.hardware_match(dmi=dmi)
             self.assertEqual(match['status'], 'no-model')
 
+    def test_signed_index_match_is_unique_exact_canonical_and_unrevoked(self):
+        pair = {'manufacturer':'Fixture Vendor', 'model':'Fixture Model'}
+        base = {'status':'no-model', 'manufacturer':pair['manufacturer'], 'product':pair['model']}
+        entry = {'id':'device:new', 'sha256':'a'*64, 'source':{'kind':'github'},
+                 'declared_source':{'kind':'github', 'repository':project.REPOSITORY},
+                 'hardware_matching':{'mode':'advisory-exact-dmi-v1', 'pairs':[pair]}}
+        index = {'packages':[entry], 'revocations':[]}
+        with mock.patch.object(project, 'hardware_match', return_value=(base, None)):
+            self.assertEqual(project._match_signed_index(index)[0]['model_id'], 'device:new')
+            self.assertEqual(project._match_signed_index(dict(index, revocations=['a'*64]))[0]['status'], 'no-model')
+            other = dict(entry, id='device:other', sha256='b'*64)
+            self.assertEqual(project._match_signed_index(dict(index, packages=[entry, other]))[0]['status'], 'ambiguous')
+            self.assertEqual(project._match_signed_index(dict(index, packages=[dict(entry, source={'kind':'local'})]))[0]['status'], 'no-model')
+            self.assertEqual(project._match_signed_index(dict(index, packages=[dict(entry, declared_source={'kind':'github','repository':'other/repo'})]))[0]['status'], 'no-model')
+        offline = dict(base, status='matched', model_id='device:offline')
+        with mock.patch.object(project, 'hardware_match', return_value=(offline, {'id':'device:offline'})):
+            self.assertEqual(project._match_signed_index(index)[0]['status'], 'ambiguous')
+
     def test_legacy_lookup_only_for_no_model_and_fixed_exact_pair(self):
         match = dict(status='no-model', manufacturer='ONE-NETBOOK', product='ONEXPLAYER 3')
         result = project._fallback(match, True)

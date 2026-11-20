@@ -205,7 +205,7 @@
       "sha256": "9b6372dfbc28d138c3def5286fc587135f9acf605ae9eaeaa63543d9742063d7"
     },
     {
-      "path": "adaptations/xevma-kmod-source-lock.json",
+      "path": "adaptations/metadata/locks/xevma-kmod-source-lock.json",
       "size": 388,
       "sha256": "74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17"
     }

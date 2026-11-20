@@ -149,31 +149,72 @@ def gm7() -> dict:
             'version': 1, 'source': GM7, 'source_sha256': digest(relative(GM7))}
 
 
-def model(model_id: str, source: str, policy: dict) -> dict:
-    guide_path = 'devices/onexplayer/' + model_id.split(':', 1)[1] + '.toon'
+def resource_sources() -> dict:
+    """Discover public source records while preserving the published identities."""
+    result = {}
+    for path in sorted((ROOT / 'common').rglob('source.toon')):
+        source = path.relative_to(ROOT).as_posix()
+        value = load(source)
+        if value.get('kind') != 'BoilerCommonDeviceSource':
+            continue
+        identifier = value.get('id')
+        if not isinstance(identifier, str) or not identifier.startswith('resource:') or identifier in result:
+            raise ValueError('invalid or duplicate common resource identity: ' + source)
+        result[identifier] = source
+    if any(result.get(key) != value for key, value in RESOURCES.items()):
+        raise ValueError('published common resources differ')
+    return result
+
+
+def model(model_id: str, source: str, policy: dict, guide_path: str, available: dict) -> dict:
     guide = load(guide_path)
     value = guide.get('resource_model', {}).get('common_references')
     if not isinstance(value, dict) or load(source) != value:
         raise ValueError('generated common references differ from model TOON: ' + source)
-    if value.get('schema_version') != 1 or value.get('kind') != 'BoilerModelCommonReferences' or value.get('source_only') is not True or value.get('model_id') != model_id:
+    if (set(value) - {'schema_version', 'kind', 'model_id', 'source_only', 'resources', 'boot_policies'}
+            or type(value.get('schema_version')) is not int or value['schema_version'] != 1
+            or value.get('kind') != 'BoilerModelCommonReferences' or value.get('source_only') is not True
+            or value.get('model_id') != model_id or not isinstance(value.get('resources'), list)
+            or not isinstance(value.get('boot_policies', []), list)):
         raise ValueError('model common reference identity differs: ' + source)
-    seen = {(row.get('id'), row.get('source')) for row in value.get('resources', []) if isinstance(row, dict)}
-    if seen != set(RESOURCES.items()) or len(value.get('resources', [])) != len(RESOURCES):
-        raise ValueError('model common resources differ: ' + source)
-    policies = value.get('boot_policies')
+    seen = set()
+    for row in value['resources']:
+        if (not isinstance(row, dict) or set(row) != {'id', 'source'}
+                or not isinstance(row['id'], str) or not isinstance(row['source'], str)
+                or available.get(row['id']) != row['source'] or row['id'] in seen):
+            raise ValueError('model common resources differ: ' + source)
+        seen.add(row['id'])
+    policies = value.get('boot_policies', [])
     expected = {'id': policy['id'], 'version': policy['version'], 'source': policy['source'], 'component_ref': 'ssd-gm7-boot-repair'}
-    if policies != [expected]:
+    if policies not in ([], [expected]) or (policies and type(policies[0].get('version')) is not int):
         raise ValueError('model GM7 source provider differs: ' + source)
+    if model_id in MODELS and (seen != set(RESOURCES) or policies != [expected] or MODELS[model_id] != source):
+        raise ValueError('published model common resources differ: ' + source)
     return {'model_id': model_id, 'source': source, 'source_sha256': digest(relative(source)),
-            'resources': [row['id'] for row in value['resources']], 'boot_policy': policy['component_id']}
+            'resources': [row['id'] for row in value['resources']],
+            'boot_policy': policy['component_id'] if policies else None}
+
+
+def model_references():
+    for path in sorted((ROOT / 'devices').glob('*/*.toon')):
+        guide_path = path.relative_to(ROOT).as_posix()
+        guide = load(guide_path)
+        reference = guide.get('resource_model', {}).get('common_references')
+        if reference is not None:
+            source = 'brands/' + path.parent.name + '/' + path.stem + '/common-device-sources.toon'
+            yield guide['runtime']['id'], source, guide_path
 
 
 def build() -> dict:
     validate_codec()
     validate_migration()
-    rows = [resource(identifier, source) for identifier, source in RESOURCES.items()]
+    available = resource_sources()
+    rows = [resource(identifier, source) for identifier, source in sorted(available.items(), key=lambda item: (list(RESOURCES).index(item[0]) if item[0] in RESOURCES else len(RESOURCES), item[0]))]
     policy = gm7()
-    models = [model(identifier, source, policy) for identifier, source in MODELS.items()]
+    models = [model(identifier, source, policy, guide, available)
+              for identifier, source, guide in model_references()]
+    if not set(MODELS) <= {row['model_id'] for row in models}:
+        raise ValueError('published model common references missing')
     return {'schema_version': 1, 'kind': 'BoilerCommonDeviceSourceIndex', 'source_only': True,
             'resources': rows, 'boot_policy': policy, 'models': models}
 
@@ -188,7 +229,7 @@ def main() -> None:
         identity = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(identity)
         views = identity.views(ROOT)
-        for source in MODELS.values():
+        for _, source, _ in model_references():
             relative(source).write_bytes(views[source])
     output = json.dumps(build(), ensure_ascii=False, indent=2) + '\n'
     path = ROOT / INDEX

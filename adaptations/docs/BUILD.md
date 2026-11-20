@@ -1,5 +1,7 @@
 # 构建机型包和安装器
 
+[新机型与单部件贡献指南（最低实机要求、开发步骤和 PR 模板）](https://github.com/FlightDan/Boiler-installer/blob/main/docs/CONTRIBUTING_ADAPTATIONS.md)
+
 [首页](README.zh.md) · [English](BUILD.en.md) · [TOON 指南](TOON.md)
 
 从机型 TOON 找到组件和共用资源，再用 Boiler Installer 的工具准备源码快照与构建输入。本页以适配仓库提交 `3edd6a340b56628785f05365d62349f7d03c63eb` 和安装器提交 `04dce422d0c4831ced6d2b9efdbd852e7b02a724` 为例；使用其他版本时，请同时核对它们各自的输入锁。

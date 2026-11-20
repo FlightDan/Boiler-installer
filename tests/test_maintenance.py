@@ -57,6 +57,30 @@ class MaintenanceTests(unittest.TestCase):
         with self.assertRaises(MaintenanceError): self.engine.restore(tx["transaction"])
         self.assertEqual((self.root/"etc/test").read_bytes(),b"user change")
 
+    def test_verify_only_hook_restore_checks_owned_files(self):
+        tx=self.engine.apply(component(),self.payload)['transaction']
+        path=self.engine._journal(tx)
+        journal=json.loads(path.read_text())
+        journal['component']['hooks']={'verify':'scripts/verify.sh'}
+        path.write_text(json.dumps(journal))
+        (self.root/'etc/test').write_bytes(b'user change')
+        with self.assertRaisesRegex(MaintenanceError, 'modified target'):
+            self.engine.restore(tx)
+        (self.root/'etc/test').write_bytes(b'ok')
+        self.assertEqual(self.engine.restore(tx)['status'], 'restored')
+        self.assertEqual((self.root/'etc/test').read_bytes(), b'original')
+
+    def test_modifying_hook_restore_stays_blocked(self):
+        tx=self.engine.apply(component(),self.payload)['transaction']
+        path=self.engine._journal(tx)
+        journal=json.loads(path.read_text())
+        for phase in ('apply', 'restore'):
+            journal['component']['hooks']={phase:'scripts/hook.sh'}
+            path.write_text(json.dumps(journal))
+            with self.subTest(phase=phase), self.assertRaisesRegex(MaintenanceError, 'package restore integration'):
+                self.engine.restore(tx)
+            self.assertEqual((self.root/'etc/test').read_bytes(), b'ok')
+
     def test_restore_preserves_later_other_component(self):
         a=self.engine.apply(component(),self.payload)
         b=self.engine.apply(component("wifi:intel",target="etc/wifi"),self.payload)

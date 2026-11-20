@@ -192,7 +192,7 @@ class AdaptationCollectionTests(unittest.TestCase):
                     self.update_model(root, mutate)
 
     def test_third_model_gyro_toon_is_validated(self):
-        for case in ('valid', 'no-gyro', 'other-gyro', 'other-gyro-uninventoried', 'missing', 'wrong', 'duplicate', 'identity', 'source-only'):
+        for case in ('valid', 'no-gyro', 'other-gyro', 'other-gyro-uninventoried', 'missing', 'wrong', 'duplicate', 'identity', 'source-only', 'bad-revision', 'bad-inventory'):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 self.copy_collection(root)
@@ -211,6 +211,10 @@ class AdaptationCollectionTests(unittest.TestCase):
                 model['resource_model']['id'] = model['canonical_id']
                 model['device_record_path'] = 'devices/onexplayer-test-model.json'
                 model['guide'] = guide
+                model['source_inventory'] = 'model-source-files.json'
+                model['source_revision'] = {'kind': 'github', 'repository': 'example/contribution', 'commit': 'a'*40}
+                if case == 'bad-revision': model['source_revision']['commit'] = 'main'
+                if case == 'bad-inventory': model['source_inventory'] = 'source-lock.json'
                 for item in model['components']:
                     if item['id'] in ('fingerprint-unlock', 's2s4'):
                         item['default'] = False

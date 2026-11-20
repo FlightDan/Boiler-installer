@@ -127,6 +127,7 @@ class ComponentVersionsTests(unittest.TestCase):
 
     def test_request_pin_and_ambiguous_release_order(self):
         request = dict(id=RESOURCE, version='2.0.0', default=False)
+        self.assertEqual(validate_model_requests([]), {})
         self.assertEqual(validate_model_requests([request]), {RESOURCE: request})
         with self.assertRaises(ProtocolError):
             validate_model_requests([dict(request, version='latest')])

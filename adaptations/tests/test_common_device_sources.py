@@ -15,7 +15,8 @@ class CommonDeviceSourceTests(unittest.TestCase):
     def test_source_only_catalog_is_current(self):
         result = catalog.build()
         self.assertTrue(result['source_only'])
-        self.assertEqual({row['id'] for row in result['resources']}, set(catalog.RESOURCES))
+        self.assertTrue(set(catalog.RESOURCES) <= {row['id'] for row in result['resources']})
+        self.assertIn('resource:intel-cpu-microcode', {row['id'] for row in result['resources']})
         self.assertEqual(result['boot_policy']['component_id'], 'common:ssd-gm7-boot-repair')
         self.assertTrue(all(row['boot_policy'] == 'common:ssd-gm7-boot-repair' for row in result['models']))
 

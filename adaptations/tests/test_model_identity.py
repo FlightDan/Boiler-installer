@@ -189,6 +189,28 @@ class IdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Undeclared common reference view'):
             identity.generate(self.root, check=True)
 
+    def test_component_only_common_source_is_indexed_and_checked(self):
+        source = self.root/'common/gpu/intel/xe/xevmafix-724'
+        destination = self.root/'common/gpu/example/test-source'
+        shutil.copytree(source, destination)
+        record_path = destination/'source.toon'
+        record = identity.common.toon_format.loads(record_path.read_text(encoding='utf-8'), strict=True)
+        record['id'] = 'resource:example-component'
+        record_path.write_text(identity.common.toon_format.dumps(record)+'\n', encoding='utf-8')
+        original_root, original_vendor = identity.common.ROOT, identity.common.VENDOR
+        try:
+            identity.common.ROOT, identity.common.VENDOR = self.root, self.root/'vendor'
+            result = identity.common.build()
+            self.assertIn('resource:example-component', {row['id'] for row in result['resources']})
+            self.assertEqual({row['model_id'] for row in result['models']}, set(identity.common.MODELS))
+            checked = next(row for row in record['files'] if row['availability'] == 'checked-in')
+            path = destination/checked['path']
+            path.write_bytes(path.read_bytes() + b'tampered')
+            with self.assertRaisesRegex(ValueError, 'source bytes differ'):
+                identity.common.build()
+        finally:
+            identity.common.ROOT, identity.common.VENDOR = original_root, original_vendor
+
     def test_same_slug_across_brands_without_legacy_alias(self):
         src = self.root/'brands/onexplayer/oxp3'
         dest = self.root/'brands/example/oxp3'
@@ -211,15 +233,22 @@ class IdentityTests(unittest.TestCase):
         model['device_record_path'] = 'devices/example-oxp3.json'
         model['guide'] = 'brands/example/oxp3/model.md'
         self.save(path, model)
-        with self.assertRaisesRegex(ValueError, 'only for published models'):
-            identity.generate(self.root)
-        return
+        identity.generate(self.root)
         index = identity.common.toon_format.loads((self.root/'models.toon').read_text(encoding='utf-8'), strict=True)
         self.assertEqual({r['id'] for r in index['models']}, {'device:example-oxp3', 'device:onexplayer-oxp3', 'device:onexplayer-x2-mini'})
-        self.assertEqual(json.loads((self.root/'devices/example-oxp3.json').read_bytes())['id'], 'device:example-oxp3')
+        self.assertEqual(json.loads(identity.protocol_views(self.root)['devices/example-oxp3.json'])['id'], 'device:example-oxp3')
         ref = identity.common.toon_format.loads((dest/'common-device-sources.toon').read_text(encoding='utf-8'), strict=True)
         self.assertEqual(ref, refs)
         self.assertNotIn('boot_policies', ref)
+        original_root, original_vendor = identity.common.ROOT, identity.common.VENDOR
+        try:
+            identity.common.ROOT, identity.common.VENDOR = self.root, self.root/'vendor'
+            result = identity.common.build()
+            entry = next(row for row in result['models'] if row['model_id'] == model['canonical_id'])
+            self.assertEqual(entry['resources'], ['resource:bmi260-gyro'])
+            self.assertIsNone(entry['boot_policy'])
+        finally:
+            identity.common.ROOT, identity.common.VENDOR = original_root, original_vendor
         self.assertEqual((self.root/'common-device-source-index.json').read_bytes(), (ROOT/'common-device-source-index.json').read_bytes())
         for slug in ('oxp3', 'x2-mini'):
             name = f'brands/onexplayer/{slug}/common-device-sources.toon'

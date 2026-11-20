@@ -52,7 +52,7 @@ function pluginTranslation(catalog) {
 const catalog = {
   "Disable TSC deadline": ["TSC deadline を無効にする", "TSC deadline 비활성화", "TSC-Deadline deaktivieren", "Désactiver TSC deadline", "Desactivar TSC deadline", "停用 TSC deadline"],
   "Intel devices may need this option for S4 hibernation.": ["Intel 搭載機では、S4 休止にこの設定が必要な場合があります。", "Intel 기기에서 S4 최대 절전을 사용하려면 이 옵션이 필요할 수 있습니다.", "Intel-Geräte benötigen diese Option möglicherweise für den S4-Ruhezustand.", "Sur les appareils Intel, cette option peut être nécessaire pour l’hibernation S4.", "Los dispositivos Intel pueden necesitar esta opción para hibernar en S4.", "Intel 裝置可能需要開啟本選項才能正常 S4 休眠。"],
-  "Restart to apply the timer change.": ["タイマー設定は再起動後に反映されます。", "타이머 설정은 재시작 후 적용됩니다.", "Die Timeränderung wird nach einem Neustart wirksam.", "Redémarrez pour appliquer le réglage du minuteur.", "Reinicia para aplicar el cambio de temporizador.", "重新啟動後套用計時器設定。"],
+  "A restart is required for this change to take effect.": ["変更を適用するには再起動が必要です。", "이 변경 사항을 적용하려면 재시작해야 합니다.", "Diese Änderung wird erst nach einem Neustart wirksam.", "Un redémarrage est nécessaire pour appliquer ce changement.", "Es necesario reiniciar para aplicar este cambio.", "必須重新啟動後才會生效。"],
   "Managed by your boot configuration.": ["起動設定で管理されています。", "부팅 설정에서 관리합니다.", "Wird durch die Startkonfiguration verwaltet.", "Géré par votre configuration de démarrage.", "Lo gestiona la configuración de arranque.", "由現有開機設定管理。"],
   "Unavailable with this boot configuration.": ["現在の起動設定では利用できません。", "현재 부팅 설정에서는 사용할 수 없습니다.", "Mit dieser Startkonfiguration nicht verfügbar.", "Indisponible avec cette configuration de démarrage.", "No disponible con esta configuración de arranque.", "目前的開機設定無法使用此選項。"],
   "boot parameters unavailable": ["起動パラメーターを読み取れません", "부팅 매개변수를 읽을 수 없습니다", "Startparameter nicht verfügbar", "Paramètres de démarrage indisponibles", "Parámetros de arranque no disponibles", "無法讀取開機參數"],
@@ -263,8 +263,8 @@ function Content() {
       disabled: !status.tsc_deadline_available || busy || savingDelay,
       onChange: changeDeadline,
     })) : null,
-    enabled && status?.tsc_deadline_reboot_required ? h(U.PanelSectionRow, {key: "deadline-restart"}, h("small", null,
-      tr("Restart to apply the timer change.", "重启后应用定时器设置。"))) : null,
+    enabled && status?.tsc_deadline_reboot_required === true ? h(U.PanelSectionRow, {key: "deadline-restart"}, h("strong", {role: "status"},
+      tr("A restart is required for this change to take effect.", "必须重启后生效。"))) : null,
     h(U.PanelSectionRow, {key: "delay"}, h(U.SliderField, {
       label: tr("Enter S4", "进入 S4"), value: step, min: 0, max: 5, step: 1, notchCount: 6,
       showValue: true, renderValue: label,
@@ -281,5 +281,11 @@ function Content() {
         }, tr("Retry cleanup", "重试清理"))) : null,
     error ? h(U.PanelSectionRow, {key: "error"}, h("div", null, error)) : null);
 }
-export default () => ({ titleView: h("div", null, "Boiler S2/S4 switcher"), content: h(Content, null) });
+export default () => ({
+  titleView: h("div", null, "Boiler S2/S4 switcher"),
+  content: h(Content, null),
+  icon: h("span", {"aria-hidden": true, style: {
+    display: "inline-flex", alignItems: "baseline", fontSize: "17px", fontWeight: 700, lineHeight: 1,
+  }}, "Z", h("span", {style: {fontSize: "0.75em"}}, "z"), h("span", {style: {fontSize: "0.6em"}}, "z")),
+});
 

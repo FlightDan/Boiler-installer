@@ -71,7 +71,7 @@ def guide(root, model, *, write=False):
     _, after_source = rest_source.split(SOURCE_END)
     source = model['source_revision']
     source_text = ('适配源码来源：`' + source['repository'] + '`，固定提交 `' + source['commit']
-                   + '`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../source-lock.json)。')
+                   + '`。逐文件原路径、大小和 SHA-256 见 [源码库存](../../../' + model['source_inventory'] + ')。')
     expected = before_source + SOURCE_BEGIN + '\n' + source_text + '\n' + SOURCE_END + after_source
     if write:
         path.write_text(expected, encoding='utf-8', newline='\n')
@@ -194,6 +194,8 @@ def prepare(checkout, root=ROOT):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
     for name, model in records(root):
+        if name not in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json'):
+            continue
         model['source_revision'] = source
         model['source_inventory'] = 'source-lock.json'
         local(root, name).write_text(
@@ -216,7 +218,18 @@ def validate_models(root, plan, inventory, current_rows, common):
     for name, model in models:
         if model['kind'] != 'ModelInstallGuide' or model['installable'] is not False:
             raise ValueError('A source guide is not a DevicePackage: '+name)
-        if model['source_revision'] != plan['source'] or model['source_inventory'] != 'source-lock.json':
+        if name in ('brands/onexplayer/oxp3/manifest.json', 'brands/onexplayer/x2-mini/manifest.json'):
+            valid_source = model['source_revision'] == plan['source'] and model['source_inventory'] == 'source-lock.json'
+        else:
+            source = model.get('source_revision')
+            valid_source = (model.get('source_inventory') == 'model-source-files.json'
+                and isinstance(source, dict) and set(source) == {'kind', 'repository', 'commit'}
+                and source.get('kind') == 'github'
+                and isinstance(source.get('repository'), str)
+                and re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', source['repository']) is not None
+                and isinstance(source.get('commit'), str)
+                and re.fullmatch(r'[0-9a-f]{40}', source['commit']) is not None)
+        if not valid_source:
             raise ValueError('Model source revision or inventory differs from the prepared collection: '+name)
         components = {item['id']: item for item in model['components']}
         if len(components) != len(model['components']):

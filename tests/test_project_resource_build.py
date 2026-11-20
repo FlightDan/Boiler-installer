@@ -32,7 +32,7 @@ class ProjectResourceBuildTests(unittest.TestCase):
 
     def test_kmod_transform_is_a_locked_resource_input(self):
         _, lock, _ = builder.check_inputs(ROOT)
-        names = {'adaptations/common/xevma/kmod_transform.py', 'adaptations/xevma-kmod-source-lock.json'}
+        names = {'adaptations/common/xevma/kmod_transform.py', 'adaptations/metadata/locks/xevma-kmod-source-lock.json'}
         self.assertTrue(names <= {row['path'] for row in lock['files']})
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)

@@ -275,6 +275,7 @@ class ModelUI:
                 if catalog.get('offline'):
                     text += '\n' + self.tr('离线：使用已固定的本地指南。', 'Offline: using the pinned local guides.')
                 rows = [(key, self.label(model['name'])) for key, model in models.items()]
+                rows.append(('installed-models', self.tr('本机已安装机型', 'Installed models on this system')))
                 rows.append(('ssd', self.tr('可选 SSD 修复', 'Optional SSD repair')))
                 rows.append(('feedback', self.tr('手动反馈', 'Send feedback')))
                 rows.append(('language', self.tr('界面语言', 'Interface language')))
@@ -289,6 +290,14 @@ class ModelUI:
                     continue
                 if identity == 'ssd':
                     self.ssd_actions()
+                    continue
+                if identity == 'installed-models':
+                    inventory = self.backend.project('inventory')
+                    installed = inventory.get('installed_models', {})
+                    selected = self.dialog.menu(self.tr('选择已安装机型', 'Choose an installed model'),
+                                                [(key, key) for key in installed])
+                    if selected in installed:
+                        self.installed_components(selected)
                     continue
                 self.model(models[identity], catalog)
         except (BackendError, OSError, ValueError, KeyError, TypeError) as error:
@@ -483,6 +492,7 @@ class ModelUI:
             choice = self.dialog.menu(self.label(model['name']) + '\n' + self.compatibility_notice(), [
                 ('options', self.tr('查看选项与维护操作', 'Options and maintenance actions')),
                 ('shared', self.tr('机型附加修复', 'Additional device repairs')),
+                ('installed', self.tr('查看已安装组件与恢复', 'Installed components and recovery')),
                 *([('keyboard', self.tr('屏幕键盘配置与恢复', 'Keyboard configuration and recovery'))] if model['id']=='device:x2-mini' else []),
                 ('guide', self.tr('查看完整适配指南', 'Read the full adaptation guide')),
                 ('back', self.tr('返回机型列表', 'Back to models'))])
@@ -490,6 +500,9 @@ class ModelUI:
                 return
             if choice == 'guide':
                 self.guide(model)
+                continue
+            if choice == 'installed':
+                self.installed_components(model['id'])
                 continue
             command = {'shared':'shared-options','keyboard':'keyboard-options'}.get(choice,'options')
             needs_trust = choice in ('shared','keyboard') or bundle is not None or model['id'] == 'device:oxp3'
@@ -510,6 +523,53 @@ class ModelUI:
             flags = ['--trust-local-test'] if needs_trust and self.trusted else []
             options = self.backend.call(command, model['id'], *flags)
             self.actions(model, options)
+
+    def installed_components(self, model_id):
+        inventory = self.backend.project('inventory')
+        if inventory.get('pending_transactions') or inventory.get('pending_platform_recovery') or inventory.get('pending_model_recovery'):
+            self.dialog.message(self.tr('存在中断的事务，请在维护与恢复页面先恢复。',
+                                        'An interrupted transaction requires recovery in Maintenance and recovery first.'))
+            return
+        models = inventory.get('installed_models', {})
+        if model_id not in models:
+            self.dialog.message(self.tr('没有此机型的安装记录。', 'No installation record exists for this model.'))
+            return
+        components = models[model_id]
+        if not components:
+            self.dialog.message(self.tr('没有已记录的组件。', 'No components are recorded.'))
+            return
+        identity = self.dialog.menu(self.tr('此机型已记录且仍由维护器持有的组件。',
+                                           'Recorded components still owned by maintenance for this model.'),
+                                    [(cid, cid + ' · ' + str(row.get('version', ''))) for cid, row in components.items()])
+        if identity is None:
+            return
+        if identity not in components:
+            raise ValueError('Unknown installed component')
+        action = self.dialog.menu(identity, [('verify', self.tr('验证文件', 'Verify files')),
+                                              *([('restore', self.tr('恢复原始文件', 'Restore original files'))] if components[identity].get('static_restore', not components[identity].get('scripted')) else []),
+                                              *([('script-restore', self.tr('提供当前构件版本的包并恢复', 'Restore with the current component version package'))] if components[identity].get('script_restore_available') else []),
+                                              ('back', self.tr('返回', 'Back'))])
+        if action == 'verify':
+            result = self.backend.recovery('verify', identity)
+            self.dialog.details(json.dumps(result, ensure_ascii=False, indent=2))
+        elif action == 'restore' and components[identity].get('static_restore', not components[identity].get('scripted')):
+            transaction = components[identity].get('transaction')
+            if not transaction:
+                raise ValueError('Installed component has no transaction')
+            if self.dialog.confirm(self.tr('恢复此组件的原始文件？', 'Restore original files for this component?') + '\n' + identity):
+                result = self.backend.recovery('restore', transaction)
+                self.dialog.details(json.dumps(result, ensure_ascii=False, indent=2))
+        elif action == 'script-restore' and components[identity].get('script_restore_available'):
+            directory = self.dialog.input(self.tr('输入当前构件版本的包解压目录路径', 'Enter the extracted package directory for the current component version'))
+            if directory:
+                plan = self.backend.call('script-restore-plan', model_id, identity, directory)
+                if self.dialog.confirm(json.dumps(plan, ensure_ascii=False, indent=2)):
+                    with tempfile.TemporaryDirectory(prefix='boiler-reviewed-restore-') as temporary:
+                        path = Path(temporary)/'plan.json'
+                        path.write_text(json.dumps(plan, ensure_ascii=False), encoding='utf-8')
+                        result = self.backend.call('script-restore-execute', str(path), directory,
+                                                   '--reviewed-sha256', plan['review_sha256'])
+                    self.dialog.details(json.dumps(result, ensure_ascii=False, indent=2))
 
     def unavailable(self, options, model):
         rows = [item for item in options['capabilities'] if not item.get('available')]
@@ -1046,6 +1106,8 @@ class GtkMaintenance:
             else:
                 self.release_options()
             self.line(self.body, self.tr('本机维护', 'Installed components'), 'section-title')
+            self.button(self.tr('已安装机型组件', 'Installed model components'),
+                        lambda: self.operation(lambda: self.backend.project('inventory'), self.installed_models))
             self.button(self.tr('已安装机型与 SSD 维护', 'Installed model and SSD maintenance'), self.legacy)
             if self.result and self.result.get('components'):
                 self.catalog_details(self.result['components'])
@@ -1223,6 +1285,54 @@ class GtkMaintenance:
                 self.button(self.tr('恢复：', 'Restore: ') + identity,
                             lambda transaction=component['transaction']: self.confirm_recovery('restore', transaction))
         self.button(self.tr('返回', 'Back'), lambda: self.show_page('recovery'))
+        self.refresh()
+
+    def installed_models(self, result):
+        self._redisplay = lambda: self.installed_models(result)
+        self.clear(self.tr('已安装机型组件', 'Installed model components'))
+        models = result.get('installed_models', {})
+        if not models:
+            self.text(self.tr('没有机型安装记录。', 'No model installation records.'))
+        for identity, components in models.items():
+            self.line(self.body, identity, 'section-title')
+            if not components:
+                self.text(self.tr('没有仍由维护器持有的组件。', 'No components remain owned by maintenance.'))
+            for cid, component in components.items():
+                self.text(cid + ' · ' + str(component.get('version', '')))
+                if result.get('pending_transactions') or result.get('pending_platform_recovery') or result.get('pending_model_recovery'):
+                    continue
+                self.button(self.tr('验证文件：', 'Verify files: ') + cid,
+                            lambda item=cid: self.confirm_recovery('verify', item))
+                if component.get('transaction') and component.get('static_restore', not component.get('scripted')):
+                    self.button(self.tr('恢复：', 'Restore: ') + cid,
+                                lambda transaction=component['transaction']: self.confirm_recovery('restore', transaction))
+                if component.get('script_restore_available'):
+                    self.button(self.tr('提供当前构件版本的包并恢复：', 'Restore with current component version package: ') + cid,
+                                lambda model=identity, item=cid: self.script_restore_input(model, item))
+        self.button(self.tr('返回', 'Back'), lambda: self.show_page('repairs'))
+        self.refresh()
+
+    def script_restore_input(self, model, component):
+        self.clear(self.tr('提供当前构件版本的包', 'Provide the current component version package'))
+        self.text(self.tr('输入当前构件版本的包解压目录路径。', 'Enter the extracted package directory for the current component version.'))
+        entry = self.gtk.Entry()
+        self.body.pack_start(entry, False, False, 0)
+        self.button(self.tr('审阅计划', 'Review plan'),
+                    lambda: self.operation(lambda: self.backend.call('script-restore-plan', model, component, entry.get_text()),
+                                           lambda plan: self.script_restore_review(plan, entry.get_text())))
+        self.button(self.tr('取消', 'Cancel'), lambda: self.show_page('repairs'))
+        self.refresh()
+
+    def script_restore_review(self, plan, directory):
+        self.clear(self.tr('审阅恢复计划', 'Review restore plan'))
+        self.text(json.dumps(plan, ensure_ascii=False, indent=2))
+        def execute():
+            path = Path(self.session.name)/'reviewed-script-restore.json'
+            path.write_text(json.dumps(plan, ensure_ascii=False), encoding='utf-8')
+            self.operation(lambda: self.backend.call('script-restore-execute', str(path), directory,
+                                                     '--reviewed-sha256', plan['review_sha256']), self.receipt, retry=False)
+        self.button(self.tr('确认并执行', 'Confirm and execute'), execute)
+        self.button(self.tr('取消', 'Cancel'), lambda: self.show_page('repairs'))
         self.refresh()
 
     def inventory_text(self, result):

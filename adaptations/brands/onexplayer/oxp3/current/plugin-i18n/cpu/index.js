@@ -439,7 +439,7 @@ function Content(){
   };
   const queuePowerEdit=(key,rawValue)=>{
     if(!powerAlive.current||powerWritingRef.current)return;
-    const low=key==="pl1"?10:minimumPL2(power);
+    const low=key==="pl1"?pl1Min:minimumPL2(power);
     const high=key==="pl1"?40:80;
     const value=Math.max(low,Math.min(high,Math.round(Number(rawValue))));
     let profileID;
