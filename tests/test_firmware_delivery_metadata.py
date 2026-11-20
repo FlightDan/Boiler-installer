@@ -99,6 +99,13 @@ class FirmwareDeliveryMetadataChecks(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'differs from reviewed lock'):
             packager.validate_integration(ROOT, changed)
 
+    def test_production_rejects_changed_cpu_catalogue_record(self):
+        manifest = preparer.prepare(self.base / 'cpu-integration')
+        changed = copy.deepcopy(manifest)
+        changed['components']['microcode:amd']['files'][0]['sha256'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'CPU microcode inventory differs'):
+            packager.validate_integration(ROOT, changed)
+
     def test_package_inventory_rejects_any_extra_firmware_even_with_metadata_only_manifest(self):
         manifest = preparer.prepare(self.base / 'cache/integration')
         # Validate the full catalogue against the actual reviewed project. The

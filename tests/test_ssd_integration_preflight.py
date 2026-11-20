@@ -1,8 +1,11 @@
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT / 'components'), str(ROOT)]
 import integration
 
 
@@ -22,7 +25,7 @@ class SsdIntegrationPreflightTests(unittest.TestCase):
                 with mock.patch.object(integration, 'release', return_value=source), \
                      mock.patch.object(integration, 'device_plan', return_value=(root, [component], {}, descriptor)), \
                      mock.patch('maintenance.shared_models.check_static_component'), \
-                     mock.patch.object(integration.system_presets, 'prepare', return_value=(None, {})), \
+                     mock.patch.object(integration.system_presets, 'prepare', return_value=(None, {}, None)), \
                      mock.patch.object(integration, 'load_manifest', return_value={}), \
                      mock.patch.object(integration, 'maintenance_api') as writer:
                     with self.assertRaisesRegex(ValueError, 'conflicts|hooks'):

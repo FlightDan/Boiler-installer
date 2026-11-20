@@ -1,4 +1,4 @@
-"""Actual fourteen-resource sources staged as data, with unknown hardware facts."""
+"""Actual model resource sources staged as data, with unknown hardware facts."""
 import contextlib
 import copy
 import hashlib
@@ -20,6 +20,7 @@ from maintenance.resource_runtime import ResourcePool,ResourceSession,ResourceEr
 from maintenance.resource_staging import PURPOSE,CACHE,preflight_cache_stage,stage_cache,inspect_cache_stage
 from maintenance.resource_entrypoints import prepare_cache_only_stage,commit_cache_only_stage,verify_cache_only_stage
 from prepare_payload import build as prepare_payload
+from protocol.resource_pool import decoder
 
 def snapshot(root):
     return {p.relative_to(root).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()}
@@ -33,13 +34,19 @@ class FixtureOwner:
 class CacheStagingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        parse=decoder(ROOT/'adaptations')
+        cls.requested={}
+        for model in ('oxp3', 'x2-mini'):
+            source=ROOT/'adaptations/devices/onexplayer'/f'{model}.toon'
+            guide=parse.loads(source.read_text(encoding='utf-8'),strict=True)
+            cls.requested[f'device:{model}']={row['id'] for row in guide['resource_model']['resources']}
         cls.tmp=tempfile.TemporaryDirectory(prefix='cache-stage-sources-');cls.base=Path(cls.tmp.name)
         spec=importlib.util.spec_from_file_location('cache_stage_pool_builder',ROOT/'scripts/prepare-resource-pool.py')
         builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder)
         cls.pool_root=cls.base/'pool';builder.build(ROOT,cls.pool_root)
         cls.payload=cls.base/'payload';prepare_payload(cls.pool_root,cls.payload)
         cls.pool=ResourcePool.for_local_test(cls.payload/'integration/resource-pool',trust_local_test=True)
-        assert len(cls.pool.catalog['resources'])==14
+        assert {row['id'] for row in cls.pool.catalog['resources']} == set().union(*cls.requested.values())
     @classmethod
     def tearDownClass(cls):cls.tmp.cleanup()
     def setUp(self):
@@ -109,7 +116,7 @@ commit_cache_only_stage(plan,authorize=grant)
         self.assertFalse(proof['currently_staged']);self.assertEqual(proof['resources'],[]);self.assertEqual(before,snapshot(self.root))
         actual=Engine(self.slots['A']['root'],read_only=True)._state()['components']['core:maintenance']['transaction']
         Engine(self.slots['A']['root']).restore(actual)
-    def test_both_models_stage_all_fourteen_without_installing_or_observing_hardware(self):
+    def test_both_models_stage_requested_resources_without_installing_or_observing_hardware(self):
         for model in ('device:oxp3','device:x2-mini'):
             with self.subTest(model=model):
                 if model.endswith('x2-mini'):
@@ -123,7 +130,7 @@ commit_cache_only_stage(plan,authorize=grant)
                     result=stage_cache(plan,authorize=self.grant())
                 self.assertEqual(result['status'],'staged');self.assertEqual(result['activation'],'activation_blocked')
                 self.assertIs(result['hardware_facts_consumed'],False);self.assertIs(result['resource_installation_performed'],False)
-                self.assertEqual(len(result['intent']['resources']),14)
+                self.assertEqual({row['id'] for row in result['intent']['resources']},self.requested[model])
                 self.assertTrue(all(r['status']=='staged' and r['activation']=='activation_blocked' for r in result['intent']['resources']))
                 cpu=next(r for r in result['intent']['resources'] if r['id']=='resource:intel-g3e-public-cpu-controls')
                 self.assertEqual(cpu['activation_requirements']['external_components'],['decky','native-tdp'])
@@ -232,7 +239,7 @@ class MountedCacheStageTests(unittest.TestCase):
                     self.assertEqual(set(Engine(root,read_only=True)._state()['components']),{'core:maintenance'})
                 for operation in reversed(result['core_transactions']):Engine(roots[operation['scope']]).restore(operation['transaction'])
                 self.assertFalse(inspect_cache_stage(result['receipt_path'],slots=slots,shared_home=home)['currently_staged'])
-                print('CACHE_STAGE_REAL_BTRFS_EXT4_14_SOURCES_NO_ACTIVATION=passed',flush=True)
+                print('CACHE_STAGE_REAL_BTRFS_EXT4_REQUESTED_SOURCES_NO_ACTIVATION=passed',flush=True)
             finally:
                 errors=[]
                 for root in reversed(unprotected):

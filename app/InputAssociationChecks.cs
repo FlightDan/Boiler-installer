@@ -98,7 +98,7 @@ internal static class InputAssociationChecks
                     "automatic-import-prevents-mode-switch-before-commit");
                 foreach (var language in new[] { "zh-CN", "en-US" })
                 {
-                    ((RadioButton)window.FindName(language == "en-US" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true;
+                    ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = language;
                     foreach (var width in new[] { 1060d, 640d })
                     {
                         window.Width = width; window.Height = width == 1060 ? 720 : 480; await Flush(window);
@@ -108,7 +108,7 @@ internal static class InputAssociationChecks
                         var path = Path.Combine(directory, language + "-" + width + ".png"); if (Capture((FrameworkElement)window.Content, path)) captures.Add(path);
                     }
                 }
-                ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true; window.Width = 1060; window.Height = 720;
+                ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "zh-CN"; window.Width = 1060; window.Height = 720;
             }, () => stopwatch.Start());
             stopwatch.Stop();
             Require(imagePath.Text == recovery && window.CurrentOptions.DevicePackage != null && Field<bool>(window, "inputAssociationApplied"), "successful-batch-auto-associates-recovery-root-and-device-package");

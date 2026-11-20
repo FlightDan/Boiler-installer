@@ -38,7 +38,7 @@ internal static class InputAssociations
             if (input.Error != null || input.RaucManifest is { IsSupportedByCurrentInstaller: false } || !Roles(input.Kind).Contains(row.Role))
             {
                 issue = input.RaucManifest is { IsSupportedByCurrentInstaller: false } manifest
-                    ? PartitionInventory.L($"SteamOS {manifest.Version} 更新包已识别，但当前安装流程不支持该版本。", $"SteamOS {manifest.Version} update bundle detected, but this installer does not support it.")
+                    ? InstallerI18n.Format($"SteamOS {manifest.Version} 更新包已识别，但当前安装流程不支持该版本。", $"SteamOS {manifest.Version} update bundle detected, but this installer does not support it.")
                     : PartitionInventory.L("请移除无法识别的关联项。", "Remove unsupported assignments.");
                 break;
             }
@@ -224,8 +224,8 @@ public partial class MainWindow
         }
         if (input.RaucManifest is { } update)
             return update.IsSupportedByCurrentInstaller
-                ? PartitionInventory.L($"升级包版本：SteamOS {update.Version}；安装时仍会重建并检查系统镜像。", $"Upgrade package version: SteamOS {update.Version}; the system image will still be rebuilt and checked during installation.")
-                : PartitionInventory.L($"已识别 SteamOS {update.Version}；当前安装流程仅支持 SteamOS {OfficialSystem.Version}。", $"SteamOS {update.Version} detected; this installer currently supports only SteamOS {OfficialSystem.Version}.");
+                ? InstallerI18n.Format($"升级包版本：SteamOS {update.Version}；安装时仍会重建并检查系统镜像。", $"Upgrade package version: SteamOS {update.Version}; the system image will still be rebuilt and checked during installation.")
+                : InstallerI18n.Format($"已识别 SteamOS {update.Version}；当前安装流程仅支持 SteamOS {OfficialSystem.Version}。", $"SteamOS {update.Version} detected; this installer currently supports only SteamOS {OfficialSystem.Version}.");
         if (input.Error != null) return input.Error;
         return input.Kind switch
         {
@@ -291,7 +291,7 @@ public partial class MainWindow
         inputAssociationStatus!.Foreground = BoilerBrush(plan.Conflict != null ? "#A34727" : "#485B73");
         inputAssociationStatus.Text = inputInspectionBusy ? PartitionInventory.L("正在按文件内容识别，可以继续添加文件。", "Identifying file contents. You can keep adding files.")
             : inputAssociationApplied ? PartitionInventory.L("已关联到当前配置，可以继续检查或添加其他文件。", "Associated with the current configuration. Review it or add more files.")
-            : plan.Conflict ?? (plan.Files.Count == 0 ? "" : PartitionInventory.L($"将关联 {plan.Files.Count} 项；其他安装设置保持当前选择。", $"Associate {plan.Files.Count} item(s); retain the current choices for other settings.")
+            : plan.Conflict ?? (plan.Files.Count == 0 ? "" : InstallerI18n.Format($"将关联 {plan.Files.Count} 项；其他安装设置保持当前选择。", $"Associate {plan.Files.Count} item(s); retain the current choices for other settings.")
                 + (plan.Mode != installMode ? "\n" + (plan.Mode == "imported" ? PartitionInventory.L("将切换到完整 IMG 原样刷入，组件配置保留供自定义构建使用。", "Switch to flashing the complete IMG; retain component choices for custom builds.") : PartitionInventory.L("将切换到自定义构建以使用机型适配。", "Switch to custom build to use device adaptation.")) : ""));
     }
 

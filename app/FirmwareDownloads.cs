@@ -6,6 +6,9 @@ namespace OxpInstaller;
 
 internal static class FirmwareDownloads
 {
+    internal static string SourcesUnavailableMessage => PartitionInventory.L(
+        "适用的固件下载源均不可用，安装已停止。请检查 Windows 网络、DNS 或代理后重试；若不需要额外固件，可返回取消对应构件后重新安装。",
+        "All applicable firmware download sources are unavailable; installation has stopped. Check the Windows network, DNS or proxy and retry. If extra firmware is unnecessary, deselect the corresponding components and start again.");
     internal static void ValidatePlan(string plan, string selection, byte[] catalog)
     {
         using var parsed = JsonDocument.Parse(plan);
@@ -26,7 +29,7 @@ internal static class FirmwareDownloads
         if (doc.RootElement.TryGetProperty("graphics_profile", out var graphics) && graphics.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(graphics.GetString())) return true;
         return new[] { "repairs", "wireless" }.Any(key => doc.RootElement.TryGetProperty(key, out var values)
             && values.ValueKind == JsonValueKind.Array && values.EnumerateArray().Any(value =>
-                value.ValueKind == JsonValueKind.String && (InstallerOptions.WirelessComponents.Contains(value.GetString()!)
+                value.ValueKind == JsonValueKind.String && (InstallerOptions.WirelessComponents.Contains(value.GetString()!) || InstallerOptions.CpuComponents.Contains(value.GetString()!)
                     || key == "wireless" && value.GetString() is "intel" or "realtek" or "mediatek")));
     }
 
@@ -53,17 +56,22 @@ internal static class FirmwareDownloads
         ValidatePlan(plan, selection, await File.ReadAllBytesAsync(catalog, token));
         await File.WriteAllTextAsync(planPath, plan, token);
         var destination = Path.Combine(session, "firmware-payload");
-        log(PartitionInventory.L("正在按计划获取所选组件；已有固件不下载。\n", "Fetching only the planned component files; existing firmware is kept.\n"));
+        log(PartitionInventory.L("正在从适用来源获取所选组件；已有固件不下载。\n", "Fetching planned components from applicable sources; existing firmware is kept.\n"));
         if (Directory.Exists(destination)) throw new IOException("Private firmware output already exists.");
+        var sourcesUnavailable = false;
         try
         {
             await Backend.ProcessAsync(Path.Combine(Backend.Root, "runtime/python/python.exe"),
                 ["-B", Path.Combine(Backend.Root, "scripts/download-firmware.py"), "--catalog", catalog, "--plan", planPath,
                     "--output", destination, "--core-payload", Path.Combine(Backend.Root, "cache/integration"),
                     "--cache", Path.Combine(InstallerWorkspace.DirectoryPath, "firmware-content-cache"),
-                    "--locks", Path.Combine(Backend.Root, "components/locks")], log, token);
+                    "--locks", Path.Combine(Backend.Root, "components/locks")], line =>
+                {
+                    if (line.TrimEnd() == "BOILER_FIRMWARE_SOURCES_UNAVAILABLE=1") sourcesUnavailable = true;
+                    log(line);
+                }, token);
         }
-        catch
+        catch (Exception error)
         {
             // ProcessAsync kills the owned downloader on cancellation. Clean its
             // private unpublished output here even when Python cannot run finally.
@@ -76,6 +84,8 @@ internal static class FirmwareDownloads
                 MediaSource.Ordinary(absolute, root, false);
                 Directory.Delete(absolute, recursive: true);
             }
+            if (sourcesUnavailable && error is InvalidOperationException)
+                throw new IOException(SourcesUnavailableMessage, error);
             throw;
         }
         return destination;

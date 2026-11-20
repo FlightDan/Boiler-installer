@@ -132,7 +132,8 @@ internal static class BoilerModelCatalogChecks
                                 prefix + "/" + name + "-maintenance-preserved");
                             InstallerOptions.Validate(plan);
                         }
-                        Require(components.Values.All(box => box.IsChecked == true), prefix + "-all-package-components-default-selected");
+                        Require(components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToHashSet()
+                            .SetEquals(defaultComponents), prefix + "-package-component-defaults-match-policy");
                         Require(boxes.Count == metadata.Count && Selected().SetEquals(eligible), prefix + "-all-available-default-selected");
                         Require(plugins.Where(eligible.Contains).All(identity => boxes[identity].IsChecked == true), prefix + "-every-available-plugin-default-selected");
                         Require(boxes.Where(pair => !eligible.Contains(pair.Key)).All(pair => !pair.Value.IsEnabled && pair.Value.IsChecked != true), prefix + "-unavailable-disabled");
@@ -209,6 +210,19 @@ internal static class BoilerModelCatalogChecks
                                 Require((window.CurrentOptions.DeviceComponents ?? []).ToHashSet().SetEquals(components.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key))
                                     && window.CurrentOptions.Plugins.Contains("core:decky"), prefix + "-static-request-reflects-components-and-decky");
                             }
+                        }
+                        if (components.TryGetValue("boiler:s2s4", out var switcher))
+                        {
+                            var switcherManifest = package.GetProperty("components").EnumerateArray()
+                                .Single(item => item.GetProperty("id").GetString() == "boiler:s2s4");
+                            Require(defaultComponents.Contains("boiler:s2s4") == switcherManifest.GetProperty("default").GetBoolean(),
+                                prefix + "-switcher-follows-model-package-default");
+                            boxes["oxp3:decky"].IsChecked = false;
+                            switcher.IsChecked = true;
+                            Require(boxes["oxp3:decky"].IsChecked == true, prefix + "-switcher-selects-model-decky");
+                            AssertPlan("switcher-selected");
+                            boxes["oxp3:decky"].IsChecked = false;
+                            Require(switcher.IsChecked != true, prefix + "-removing-model-decky-clears-switcher");
                         }
                         Clear(); SelectAll();
                         var beforeLanguage = JsonSerializer.Serialize(window.CurrentOptions.DeviceLegacyOptions);
@@ -668,7 +682,9 @@ internal static class BoilerModelCatalogChecks
         JsonElement Index(object[] packages, string[]? revoked=null) => JsonSerializer.SerializeToElement(new {
             offline=false, index=new { generated_at="2026-11-04T00:00:00Z", sequence=3, packages, revocations=revoked ?? [] } });
         var old=Package("0.1.0-preview.1",'a'); var newest=Package("0.2.0-preview.20261104.1",'b');
-        var future=Package("0.3.0-preview.1",'c',"0.1.6");
+        var future=Package("0.3.0-preview.1",'c',"99.0.0");
+        var component = new { id = "oxp3:microphone", version = "2.0.0", sha256 = new string('e', 64),
+            minimum_engine_version = "0.1.6", component_release = new { resource_id = "resource:onexplayer-microphone", channel = "stable" } };
         var index=Index([old,newest,future]);
         var window=new MainWindow(rehearsal:true) { Width=1060, Height=720, WindowState=WindowState.Normal, ShowActivated=false,
             DeviceIndexLoaderForChecks=_ => Task.FromResult(index), ModelCatalogLoaderForChecks=_ => Task.FromResult(Catalog(bundled:false)),
@@ -682,6 +698,9 @@ internal static class BoilerModelCatalogChecks
                 .Select(i => (JsonElement)i.Tag).Single();
             async Task Refresh(JsonElement next) { index=next; await (Task)Call(window,"LoadDeviceIndexAsync",Field<int>(window,"devicePanelGeneration"),CancellationToken.None)!; await Flush(window); }
             require(OXP().GetProperty("sha256").GetString()==new string('b',64),language+"-highest-compatible-version");
+            await Refresh(Index([newest, component]));
+            require(!list.Items.OfType<ComboBoxItem>().Any(item => item.Tag is JsonElement entry
+                && entry.GetProperty("id").GetString() == "oxp3:microphone"), language+"-standalone-component-is-not-a-model-choice");
             await Refresh(Index([future,newest,old]));
             require(OXP().GetProperty("sha256").GetString()==new string('b',64),language+"-highest-version-independent-of-order");
             await Refresh(Index([old,newest], [new string('b',64)]));
@@ -713,7 +732,7 @@ internal static class BoilerModelCatalogChecks
             list.SelectedItem=list.Items.OfType<ComboBoxItem>().Single(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3");
             await Flush(window);
             Call(window,"CommitDeviceSelection",Activator.CreateInstance(prepared,new string('a',24),new string('a',64),"signed-index",package,null)!);
-            await Refresh(Index([Package("0.1.0-preview.1",'a',"0.1.6"),newest]));
+            await Refresh(Index([Package("0.1.0-preview.1",'a',"99.0.0"),newest]));
             require(window.CurrentOptions.DevicePackage==null,language+"-incompatible-selected-package-cleared");
             await Refresh(Index([old]));
             list.SelectedItem=list.Items.OfType<ComboBoxItem>().Single(i => i.Tag is JsonElement e && e.GetProperty("id").GetString()=="device:oxp3");
@@ -721,6 +740,37 @@ internal static class BoilerModelCatalogChecks
             Call(window,"CommitDeviceSelection",Activator.CreateInstance(prepared,new string('a',24),new string('a',64),"signed-index",package,null)!);
             await Refresh(Index([old,newest],[new string('a',64)]));
             require(window.CurrentOptions.DevicePackage==null,language+"-revoked-selected-package-cleared");
+            object Resolved(string version, char digest, string kernel, char componentDigest) => new
+            {
+                id = "device:oxp3", version, sha256 = new string(digest, 64), name = "Fixture",
+                minimum_engine_version = "0.1.6", compatibility = new { os_versions = new[] { "3.10" }, kernels = new[] { kernel } },
+                component_resolution = new Dictionary<string, object>
+                {
+                    ["oxp3:microphone"] = new { manifest_sha256 = new string(componentDigest, 64) }
+                }
+            };
+            var firstKernel = Resolved("1.0.0", 'a', "kernel-a", 'd');
+            var newerFirstKernel = Resolved("2.0.0", 'b', "kernel-a", 'e');
+            var secondKernel = Resolved("3.0.0", 'c', "kernel-b", 'f');
+            string?[] ModelDigests() => list.Items.OfType<ComboBoxItem>()
+                .Where(item => item.Tag is JsonElement entry && entry.GetProperty("id").GetString() == "device:oxp3")
+                .Select(item => ((JsonElement)item.Tag).GetProperty("sha256").GetString()).ToArray();
+            await Refresh(Index([firstKernel, secondKernel, newerFirstKernel]));
+            require(ModelDigests().SequenceEqual([new string('c', 64), new string('b', 64)]), language+"-newest-package-per-image-profile");
+            await Refresh(Index([firstKernel, secondKernel, newerFirstKernel], [new string('e', 64)]));
+            require(ModelDigests().SequenceEqual([new string('c', 64), new string('a', 64)]), language+"-revoked-component-removes-resolved-variant");
+            JsonElement VersionedPackage(string version) => JsonSerializer.SerializeToElement(new
+            {
+                id = "device:oxp3", version, components = new[] { new { id = "oxp3:microphone" } },
+                component_resolution = new Dictionary<string, object> { ["oxp3:microphone"] = new { version } }
+            });
+            void CommitVersioned(string version, char digest) => Call(window,"CommitDeviceSelection",
+                Activator.CreateInstance(prepared,new string(digest,24),new string(digest,64),"signed-index",VersionedPackage(version),null)!);
+            CommitVersioned("1.0.0", 'a');
+            var componentChoices = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            componentChoices["oxp3:microphone"].IsChecked = false;
+            CommitVersioned("2.0.0", 'b');
+            require(componentChoices["oxp3:microphone"].IsChecked == false, language+"-component-version-change-keeps-user-opt-out");
             foreach (var (low,high) in new[] { ("0.1.0-preview.9","0.1.0-preview.10"), ("0.1.0-preview.10","0.1.0"),
                 ("0.1.0+maintenance.2","0.1.0+maintenance.10"), ("0.1.0-9","0.1.0-alpha"), ("0.1.0","0.2.0-preview.1") })
                 require(DevicePackageVersion.Comparer.Compare(low,high)<0,language+"-protocol-version-order-"+low+"-"+high);

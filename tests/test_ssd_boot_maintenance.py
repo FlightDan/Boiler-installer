@@ -45,6 +45,56 @@ def _private_directory_fixture(*args, **kwargs):
 
 
 class SSDTests(unittest.TestCase):
+    def test_historical_nvme_identity_is_bound_to_live_namespace(self):
+        identifier = '123456789abcdef0123456789abcdef0'
+        serial = '_'.join(identifier[i:i+4] for i in range(0, 32, 4)) + '.'
+        bound = dict(root_partuuid='aaaaaaaa-1111', slot='A', esp_partuuid='bbbbbbbb-2222',
+                     esp_type=s.ESP_TYPE, home_uuid='home-uuid', disk='/dev/nvme0n1',
+                     physical=dict(bus='NVMe', model='Predator SSD GM7 1TB', serial='controller-serial'))
+        historical = s._durable(bound)
+        historical['physical']['serial'] = serial
+        row = dict(path=bound['disk'], type='disk', **{'maj:min': '259:0'}, tran='nvme',
+                   model='Predator SSD GM7 1TB', serial='controller-serial')
+        with tempfile.TemporaryDirectory() as temporary:
+            namespace = Path(temporary) / 'nvme0n1'
+            namespace.mkdir()
+            (namespace/'dev').write_text('259:0\n')
+            (namespace/'nguid').write_text(identifier+'\n')
+            (namespace/'uuid').write_text('12345678-9abc-def0-1234-56789abcdef0\n')
+            real_path = Path
+            def fake_path(value):
+                return Path(temporary) if value == '/sys/class/block' else real_path(value)
+            with mock.patch.object(s, 'Path', side_effect=fake_path), \
+                 mock.patch.object(s, 'run', return_value=json.dumps({'blockdevices':[row]})):
+                matches = lambda old=historical, current=bound, root='/', context=None: s._historical_target_matches(old,current,root,context)
+                self.assertTrue(matches())
+                (namespace/'nguid').write_text('12345678-9abc-def0-1234-56789abcdef0\n')
+                self.assertTrue(matches())
+                original = dict(efi=s._encode(CONFIG), dropin=None)
+                record = dict(version=4, target=copy.deepcopy(historical), original=original,
+                              applied=s._desired(original), status='installed',
+                              provider_owner=dict(component_id='ssd:gm7', manifest_sha256='a'*64))
+                self.assertEqual(s._record(record, bound, root='/'), (original, record['applied']))
+                self.assertEqual(record['target'], historical)
+                with self.assertRaises(MaintenanceError):
+                    s._record(record, bound, root='/offline')
+                self.assertFalse(matches(root='/offline'))
+                self.assertFalse(matches(context=CONTEXT))
+                for key, value in [('slot','B'), ('home_uuid','different')]:
+                    self.assertFalse(matches(old=dict(historical, **{key:value})))
+                for value in (serial.upper(), serial[:-1], '0000_' * 7 + '0000.'):
+                    altered = copy.deepcopy(historical); altered['physical']['serial'] = value
+                    self.assertFalse(matches(old=altered))
+                (namespace/'dev').write_text('259:1\n')
+                self.assertFalse(matches())
+                (namespace/'dev').write_text('259:0\n')
+                (namespace/'uuid').write_text('12345678-9abc-def0-1234-56789abcdef1\n')
+                self.assertFalse(matches())
+                (namespace/'nguid').write_text('0' * 32 + '\n')
+                (namespace/'uuid').write_text('00000000-0000-0000-0000-000000000000\n')
+                zero = copy.deepcopy(historical); zero['physical']['serial'] = '0000_' * 7 + '0000.'
+                self.assertFalse(matches(old=zero))
+
     def test_btrfs_remount_binds_verified_partition_not_anonymous_mount(self):
         uuid = '11111111-2222-3333-4444-555555555555'
         partition = {'path':'/dev/vdc1','maj:min':'252:33'}

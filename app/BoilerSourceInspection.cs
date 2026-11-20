@@ -1,75 +1,51 @@
 using System.IO;
 using System.Text.Json;
-using System.Windows;
-using System.Windows.Controls;
 
 namespace OxpInstaller;
 
 public partial class MainWindow
 {
     private bool sourceInspectionBusy;
-    private bool sourceSkipRequested, bindingPreparationBusy;
-    private string? skippedSourceKey, skippedOfficialKey;
     private CancellationTokenSource? sourceInspection;
     private string? inspectedSourceKey;
     private string? inspectedSourceDigest;
     private JsonElement? inspectedSourceInfo;
     private long? inspectedSourceCapacity;
     private long? CurrentImportedCapacity => installMode == "imported" && CurrentSourceDigest != null ? inspectedSourceCapacity : null;
-    private TextBlock? sourceInfoText;
     private OfficialSourceBinding? inspectedOfficialSource;
     private string? inspectedOfficialKey;
-    private TextBlock? officialSourceInfoText;
-    private string? inspectedSourceMd5, inspectedOfficialMd5;
-    private StackPanel? sourceDigestControls, officialDigestControls;
     private void ResetImageInspection()
     {
         inspectedSourceKey = inspectedSourceDigest = null;
-        skippedSourceKey = null;
-        inspectedSourceMd5 = null;
         inspectedSourceInfo = null; inspectedSourceCapacity = null;
-        if (sourceInfoText != null) sourceInfoText.Text = "";
         PartitionSelector.DefaultCapacityGiB = 128;
     }
     private string SourceInfoKey()
     {
-        var file = new FileInfo(ImagePath.Text);
+        var file = new FileInfo(InputDiscovery.SafePath(ImagePath.Text));
+        if (file.Length == 0) throw new IOException(PartitionInventory.L("系统镜像为空，请重新选择。", "The system image is empty. Select another file."));
         return file.FullName + "|" + file.Length + "|" + file.LastWriteTimeUtc.Ticks + "|" + installMode;
     }
-    private async Task InspectSourceAsync(bool includeOfficial = false)
+    private void ReviewSourceSelection(bool includeOfficial)
     {
-        var key = SourceInfoKey();
-        if (key == skippedSourceKey || key == inspectedSourceKey && inspectedSourceDigest != null)
-        { if (includeOfficial) await InspectOfficialSourceAsync(); return; }
-        sourceInfoText ??= new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) };
-        if (!RecoverySourceSection.Children.Contains(sourceInfoText)) RecoverySourceSection.Children.Add(sourceInfoText);
-        sourceDigestControls = CreateDigestControls(RecoverySourceSection, sourceDigestControls);
-        sourceInfoText.Text = PartitionInventory.L("正在计算镜像 MD5…", "Calculating image MD5…");
-        sourceSkipRequested = false; sourceInspectionBusy = true; sourceInspection = new CancellationTokenSource(); UpdateNavigationState();
-        try
-        {
-            var digest = await ReadSourceDigestAsync(ImagePath.Text, sourceInfoText, sourceDigestControls, sourceInspection.Token);
-            if (key != SourceInfoKey()) throw new IOException("The selected image changed during MD5 calculation.");
-            inspectedSourceInfo = null; inspectedSourceCapacity = null;
-            inspectedSourceKey = key; inspectedSourceDigest = digest.Sha256; inspectedSourceMd5 = digest.Md5;
-            sourceInfoText.Text = DescribeSourceDigest(digest);
-        }
-        catch (OperationCanceledException) when (sourceSkipRequested)
+        var sourceKey = SourceInfoKey();
+        var officialKey = includeOfficial ? OfficialSystem.SourceKey(SelectedOfficialSourcePath()) : null;
+        if (sourceKey != inspectedSourceKey)
         {
             ResetImageInspection();
-            if (key != SourceInfoKey()) throw new IOException("The selected image changed during MD5 calculation.");
-            skippedSourceKey = key; sourceInfoText.Text = SkippedDigestText;
+            inspectedSourceKey = sourceKey;
         }
-        catch (OperationCanceledException) { ResetImageInspection(); throw; }
-        catch { ResetImageInspection(); throw; }
-        finally { sourceDigestControls.Visibility = Visibility.Collapsed; sourceInspectionBusy = false; sourceInspection.Dispose(); sourceInspection = null; UpdateNavigationState(); }
-        if (includeOfficial) await InspectOfficialSourceAsync();
+        if (officialKey != inspectedOfficialKey)
+        {
+            ResetOfficialSourceInspection();
+            inspectedOfficialKey = officialKey;
+        }
     }
+
     private void ResetOfficialSourceInspection()
     {
-        inspectedOfficialSource = null; inspectedOfficialKey = null; skippedOfficialKey = null;
-        inspectedOfficialMd5 = null;
-        if (officialSourceInfoText != null) officialSourceInfoText.Text = "";
+        inspectedOfficialSource = null;
+        inspectedOfficialKey = null;
     }
     private OfficialSourceBinding? CurrentOfficialSourceBinding
     {
@@ -87,121 +63,61 @@ public partial class MainWindow
     {
         try
         {
-            _ = SelectedOfficialSourcePath();
-            if (requireInspection && CurrentOfficialSourceBinding == null && !CurrentOfficialSkipped)
-                return PartitionInventory.L("请在系统来源页点击下一步，计算系统升级源的 MD5。", "Continue from System source to calculate the system upgrade source MD5.");
+            var path = SelectedOfficialSourcePath();
+            if (requireInspection && OfficialSystem.SourceKey(path) != inspectedOfficialKey)
+                return PartitionInventory.L("请返回系统来源页，确认系统升级源后点击下一步。", "Return to System source, confirm the upgrade source, and continue.");
             return null;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { return error.Message; }
     }
-    private async Task InspectOfficialSourceAsync()
+    private bool CurrentSourceReviewed
     {
-        if (CurrentOfficialSourceBinding != null || CurrentOfficialSkipped) return;
-        var path = SelectedOfficialSourcePath(); var key = OfficialSystem.SourceKey(path);
-        officialSourceInfoText ??= new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) };
-        if (!OfficialSourceSection.Children.Contains(officialSourceInfoText)) OfficialSourceSection.Children.Add(officialSourceInfoText);
-        officialDigestControls = CreateDigestControls(OfficialSourceSection, officialDigestControls);
-        officialSourceInfoText.Text = PartitionInventory.L("正在计算系统升级源 MD5…", "Calculating system upgrade source MD5…");
-        sourceSkipRequested = false; sourceInspectionBusy = true; sourceInspection = new CancellationTokenSource(); UpdateNavigationState();
-        try
+        get
         {
-            var digest = await ReadSourceDigestAsync(path, officialSourceInfoText, officialDigestControls, sourceInspection.Token);
-            if (key != OfficialSystem.SourceKey(path)) throw new IOException("The upgrade source changed during MD5 calculation.");
-            inspectedOfficialKey = key;
-            inspectedOfficialSource = new(digest.Path, digest.Sha256, digest.Length, digest.LastWriteUtcTicks);
-            inspectedOfficialMd5 = digest.Md5;
-            officialSourceInfoText.Text = DescribeSourceDigest(digest);
+            try { return inspectedSourceKey != null && SourceInfoKey() == inspectedSourceKey; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { return false; }
         }
-        catch (OperationCanceledException) when (sourceSkipRequested)
-        {
-            ResetOfficialSourceInspection();
-            if (key != OfficialSystem.SourceKey(SelectedOfficialSourcePath())) throw new IOException("The upgrade source changed during MD5 calculation.");
-            skippedOfficialKey = key; officialSourceInfoText.Text = SkippedDigestText;
-        }
-        catch (OperationCanceledException) { ResetOfficialSourceInspection(); throw; }
-        catch { ResetOfficialSourceInspection(); throw; }
-        finally { officialDigestControls.Visibility = Visibility.Collapsed; sourceInspectionBusy = false; sourceInspection.Dispose(); sourceInspection = null; UpdateNavigationState(); }
     }
-    private StackPanel CreateDigestControls(Panel host, StackPanel? controls)
+
+    private async Task PrepareSourceBindingsAsync()
     {
-        if (controls == null)
-        {
-            controls = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
-            controls.Children.Add(new ProgressBar { Height = 7, Minimum = 0, Maximum = 100 });
-            var cancel = new Button { Content = PartitionInventory.L("跳过计算", "Skip calculation"), HorizontalAlignment = HorizontalAlignment.Left,
-                MinHeight = 48, Margin = new Thickness(0, 8, 0, 0) };
-            cancel.Click += (_, _) => { sourceSkipRequested = true; sourceInspection?.Cancel(); cancel.IsEnabled = false; };
-            controls.Children.Add(cancel); host.Children.Add(controls);
-        }
-        ((ProgressBar)controls.Children[0]).Value = 0;
-        ((Button)controls.Children[1]).Content = PartitionInventory.L("跳过计算", "Skip calculation");
-        ((Button)controls.Children[1]).IsEnabled = true;
-        controls.Visibility = Visibility.Visible;
-        return controls;
-    }
-    private async Task<SourceFileDigest> ReadSourceDigestAsync(string path, TextBlock text, StackPanel controls, CancellationToken token)
-    {
-        var reading = true;
-        var progress = new Progress<SourceDigestProgress>(update =>
-        {
-            if (!reading || token.IsCancellationRequested) return;
-            ((ProgressBar)controls.Children[0]).Value = update.Total > 0 ? update.Completed * 100d / update.Total : 0;
-            text.Text = PartitionInventory.L("正在计算 MD5", "Calculating MD5")
-                + $" · {update.Completed * 100d / update.Total:F1}% · {update.Completed / 1048576d:F1} / {update.Total / 1048576d:F1} MiB · {update.BytesPerSecond / 1048576d:F1} MiB/s";
-        });
-        try
-        {
-            var digest = await SourceFileDigest.ComputeAsync(path, update => ((IProgress<SourceDigestProgress>)progress).Report(update), token);
-            token.ThrowIfCancellationRequested();
-            return digest;
-        }
-        finally { reading = false; }
-    }
-    private static string SkippedDigestText => PartitionInventory.L("已跳过 MD5；安装前仍会校验安装源。", "MD5 skipped; the installation source will still be verified before installation.");
-    private bool CurrentSourceSkipped
-    {
-        get { try { return skippedSourceKey != null && SourceInfoKey() == skippedSourceKey; } catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { return false; } }
-    }
-    private bool CurrentOfficialSkipped
-    {
-        get { try { return skippedOfficialKey != null && OfficialSystem.SourceKey(SelectedOfficialSourcePath()) == skippedOfficialKey; } catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { return false; } }
-    }
-    private async Task PrepareSkippedBindingsAsync()
-    {
-        if (bindingPreparationBusy) throw new InvalidOperationException("Source verification is already in progress.");
-        bindingPreparationBusy = true; sourceInspectionBusy = true;
+        if (sourceInspectionBusy) throw new InvalidOperationException("Source verification is already in progress.");
+        var needsImage = CurrentSourceReviewed && inspectedSourceDigest == null;
+        var needsUpgrade = Upgrade310.IsChecked == true && installMode != "imported" && UsePrepared.IsChecked != true
+            && inspectedOfficialKey != null && CurrentOfficialSourceBinding == null;
+        if (!needsImage && !needsUpgrade) return;
+        sourceInspectionBusy = true;
         sourceInspection = new CancellationTokenSource();
         WizardShell.IsEnabled = false;
         ValidationMessage.Text = PartitionInventory.L("正在校验安装源，请稍候…", "Verifying installation sources; please wait…");
         try
         {
-            if (CurrentSourceDigest == null && CurrentSourceSkipped)
+            if (needsImage)
             {
                 var key = SourceInfoKey();
-                var digest = await SourceFileDigest.ComputeAsync(ImagePath.Text, null, sourceInspection.Token, computeMd5: false);
+                if (key != inspectedSourceKey) throw new IOException("The selected image changed after review.");
+                var digest = await SourceFileDigest.ComputeAsync(ImagePath.Text, sourceInspection.Token);
                 sourceInspection.Token.ThrowIfCancellationRequested();
-                if (key != SourceInfoKey() || key != skippedSourceKey) throw new IOException("The selected image changed during verification.");
-                inspectedSourceKey = key; inspectedSourceDigest = digest.Sha256;
+                if (key != SourceInfoKey()) throw new IOException("The selected image changed during verification.");
+                inspectedSourceDigest = digest.Sha256;
             }
-            if (Upgrade310.IsChecked == true && installMode != "imported" && UsePrepared.IsChecked != true && CurrentOfficialSourceBinding == null && CurrentOfficialSkipped)
+            if (needsUpgrade)
             {
-                var path = SelectedOfficialSourcePath(); var key = OfficialSystem.SourceKey(path);
-                var digest = await SourceFileDigest.ComputeAsync(path, null, sourceInspection.Token, computeMd5: false);
+                var path = SelectedOfficialSourcePath();
+                var key = OfficialSystem.SourceKey(path);
+                if (key != inspectedOfficialKey) throw new IOException("The upgrade source changed after review.");
+                var digest = await SourceFileDigest.ComputeAsync(path, sourceInspection.Token);
                 sourceInspection.Token.ThrowIfCancellationRequested();
-                if (key != OfficialSystem.SourceKey(SelectedOfficialSourcePath()) || key != skippedOfficialKey) throw new IOException("The upgrade source changed during verification.");
-                inspectedOfficialKey = key; inspectedOfficialSource = new(digest.Path, digest.Sha256, digest.Length, digest.LastWriteUtcTicks);
+                if (key != OfficialSystem.SourceKey(SelectedOfficialSourcePath())) throw new IOException("The upgrade source changed during verification.");
+                inspectedOfficialSource = new(digest.Path, digest.Sha256, digest.Length, digest.LastWriteUtcTicks);
             }
         }
         finally
         {
-            sourceInspection.Dispose(); sourceInspection = null; sourceInspectionBusy = false; bindingPreparationBusy = false;
+            sourceInspection.Dispose(); sourceInspection = null; sourceInspectionBusy = false;
             WizardShell.IsEnabled = true; UpdateNavigationState();
         }
     }
-    private static string DescribeSourceDigest(SourceFileDigest digest) => Path.GetFileName(digest.Path)
-        + $" · {digest.Length / 1073741824d:F2} GiB\nMD5: {digest.Md5}\n"
-        + (digest.ComparedToReference ? PartitionInventory.L("MD5 与参考值一致。", "MD5 matches the reference value.")
-            : PartitionInventory.L("已计算 MD5；未提供参考值，未核对匹配。", "MD5 calculated; no reference value was provided for comparison."));
     private static string DescribeSourceInfo(JsonElement info)
     {
         var slots = info.GetProperty("slots").EnumerateObject().Select(slot => slot.Name + ": SteamOS " + slot.Value.GetProperty("version").GetString()
@@ -212,21 +128,22 @@ public partial class MainWindow
     {
         var manifest = officialDownloadPanel.CurrentAssociatedInspection?.RaucManifest;
         if (manifest != null)
-            return PartitionInventory.L($"升级包版本：SteamOS {manifest.Version}；当前安装目标为 SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}。",
+            return InstallerI18n.Format($"升级包版本：SteamOS {manifest.Version}；当前安装目标为 SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}。",
                 $"Upgrade package version: SteamOS {manifest.Version}; the current installer target is SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}.");
         if (officialDownloadPanel.AssociatedSourcePath != null && Path.GetExtension(path).Equals(".raucb", StringComparison.OrdinalIgnoreCase))
             return PartitionInventory.L("升级包版本已变化或未识别；请重新拖入以检查当前文件。", "The update bundle version changed or is unavailable; drop the current file again to inspect it.");
         if (Path.GetExtension(path).Equals(".img", StringComparison.OrdinalIgnoreCase))
             return PartitionInventory.L("已选择 rootfs.img，版本将在安装准备时识别。",
                 "rootfs.img selected; its version will be identified during installation preparation.");
-        return PartitionInventory.L($"Valve 官方下载源：SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}。",
+        return InstallerI18n.Format($"Valve 官方下载源：SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}。",
             $"Valve official download source: SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}.");
     }
-    private string? CurrentSourceDigest => inspectedSourceKey != null && File.Exists(ImagePath.Text) && SourceInfoKey() == inspectedSourceKey ? inspectedSourceDigest : null;
+    private string? CurrentSourceDigest => CurrentSourceReviewed ? inspectedSourceDigest : null;
     private string SelectedOfficialSourcePath()
     {
         var path = officialDownloadPanel.AssociatedSourcePath ?? OfficialSystem.RequirePreparedSource();
-        _ = OfficialSystem.SourceKey(path);
+        if (new FileInfo(InputDiscovery.SafePath(path)).Length == 0)
+            throw new IOException(PartitionInventory.L("系统升级源为空，请重新选择。", "The upgrade source is empty. Select another file."));
         return path;
     }
 }

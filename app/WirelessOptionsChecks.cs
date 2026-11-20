@@ -12,17 +12,23 @@ internal static class WirelessOptionsChecks
         var checks = new List<string>();
         void Require(bool ok, string name) { if (!ok) throw new IOException(name); checks.Add(name); }
         HardwareMatchingChecks(Require);
+        await ReviewedTargetChecks(Require);
+        var uiCapture = await ExplicitDetectionUiChecks(Require);
         var panel = new InstallerOptionsPanel();
         var ids = InstallerOptions.WirelessComponents;
-        Require(ids.Count == 6 && ids.SetEquals(InstallerOptions.Catalog.Repairs.Select(item => item.Id)), "six-explicit-wifi-and-bluetooth-options");
+        Require(ids.Count == 6 && ids.IsSubsetOf(InstallerOptions.Catalog.Repairs.Select(item => item.Id)), "six-explicit-wifi-and-bluetooth-options");
         foreach (var mode in new[] { "custom", "vanilla" })
         {
             panel.SetMode(mode);
+            Require(panel.FirmwareNetworkNotice.Visibility == Visibility.Visible
+                && panel.Children.IndexOf(panel.FirmwareNetworkNotice) < panel.Children.IndexOf(panel.RepairsExpander)
+                && !panel.RepairsExpander.IsExpanded, mode + "-network-notice-visible-outside-collapsed-wireless-options");
             Require(panel.RepairsExpander.Visibility == Visibility.Visible && panel.Selection.Repairs.Length == 0, mode + "-generic-starts-visible-and-unselected");
             panel.OptionBoxes["bluetooth:intel"].IsChecked = true;
             Require(((TextBlock)panel.RepairsExpander.Header).Text.Contains("1/6"), mode + "-individual-checkbox-updates-count");
             var pluginChoices = panel.Selection.Plugins;
             panel.SetWirelessContext(mode, hasPackage: true);
+            Require(panel.FirmwareNetworkNotice.Visibility == Visibility.Collapsed, mode + "-package-hides-on-demand-network-notice");
             Require(panel.RepairsExpander.Visibility == Visibility.Collapsed && panel.Selection.Repairs.Length == 0
                 && ids.All(id => panel.OptionBoxes[id].IsChecked == false && !panel.OptionBoxes[id].IsEnabled), mode + "-package-hides-clears-and-disables-wireless");
             Require(pluginChoices.SequenceEqual(panel.Selection.Plugins), mode + "-common-components-preserved");
@@ -120,10 +126,148 @@ internal static class WirelessOptionsChecks
         var nativeDetection = native.detection;
         nativeTimer.Stop();
         Require(nativeDevices.Count <= 16384, "native-present-pnp-enumeration-completes-within-limit");
-        return JsonSerializer.Serialize(new { passed = true, checks,
+        return JsonSerializer.Serialize(new { passed = true, checks, uiCapture,
             nativeHardwareRead = new { devices = nativeDevices.Count, elapsedMs = nativeTimer.ElapsedMilliseconds, components = nativeDetection.Components,
                 note = "Read-only inspection of this Windows host; empty matches do not validate any physical radio." },
             scope = "WPF controls, selection validation and read-only host PnP inspection; no disk, firmware or hardware changes" }, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static async Task<string> ExplicitDetectionUiChecks(Action<bool, string> require)
+    {
+        var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var window = new MainWindow(rehearsal: true) { ShowActivated = false, WindowState = WindowState.Normal,
+            DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()),
+            ModelCatalogLoaderForChecks = _ => Task.FromResult((JsonElement)typeof(BoilerModelCatalogChecks).GetMethod("Catalog", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.Invoke(null, [true])!),
+            DeviceHardwareReaderForChecks = () => null, CurrentHardwareReaderForChecks = () => [] };
+        object? Call(string name, params object?[] args) => typeof(MainWindow).GetMethod(name, flags)!.Invoke(window, args);
+        T Field<T>(string name) => (T)typeof(MainWindow).GetField(name, flags)!.GetValue(window)!;
+        try
+        {
+            var picker = (PartitionPicker)window.FindName("PartitionSelector"); picker.AutomaticReadEnabled = false;
+            window.Show(); window.BoilerModeForChecks("custom"); Call("ChooseGenericInstallation");
+            var options = Field<InstallerOptionsPanel>("optionsPanel");
+            var reads = 0;
+            options.WirelessHardwareReader = () => { Interlocked.Increment(ref reads); return [Radio("Intel Wi-Fi 6 AX201", "Intel", "PCI\\VEN_8086&DEV_06F0", false)]; };
+            options.GraphicsHardwareReader = () => { Interlocked.Increment(ref reads); return new(["graphics:intel-258v"], ["Intel Arc 140V"], 0); };
+            options.CpuHardwareReader = () => "GenuineIntel";
+            window.PreviewStep(2); options.Refresh();
+            require(reads == 0 && !options.HasHardwareTarget, "generic-entry-without-target-does-not-scan");
+            picker.LoadSnapshot(PartitionInventory.ExampleJson, false);
+            picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(row => row.Space != null);
+            picker.CapacityInput.Text = "128";
+            typeof(MainWindow).GetField("acknowledgedSelection", flags)!.SetValue(window, picker.Selection);
+            Call("SyncCurrentHardwareTarget"); window.PreviewStep(2); Call("RefreshCurrentHardwareUi");
+            require(options.HasHardwareTarget && reads == 0, "confirmed-target-entry-does-not-scan");
+            Field<Button>("currentHardwareDetectButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Task.WhenAll(options.ActiveWirelessDetection, options.ActiveGraphicsDetection, options.ActiveCpuDetection);
+            for (var attempt = 0; attempt < 100 && Field<bool>("currentHardwareDetectionBusy"); attempt++) await Task.Delay(10);
+            require(reads == 2 && options.Selection.Repairs.Contains("wifi:intel") && options.Selection.Repairs.Contains("microcode:intel")
+                && options.Selection.Repairs.Contains("cpufreq:intel") && options.Selection.Plugins.Contains("core:maintenance") && options.Selection.GraphicsProfile == "graphics:intel-258v",
+                "explicit-main-window-detect-selects-wireless-and-family-graphics");
+            var path = Path.Combine(InstallerWorkspace.DirectoryPath, "checks", "hardware-selection-" + Guid.NewGuid().ToString("N") + ".png");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            window.Width = 1060; window.Height = 900; window.UpdateLayout();
+            var visualEvidence = path;
+            try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path); }
+            catch (IOException error) { visualEvidence = "blocked: " + error.Message; }
+            options.SetWirelessContext("custom", true);
+            Field<Button>("currentHardwareDetectButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            for (var attempt = 0; attempt < 100 && Field<bool>("currentHardwareDetectionBusy"); attempt++) await Task.Delay(10);
+            require(reads == 2 && !options.Selection.Repairs.Any(id => InstallerOptions.WirelessComponents.Contains(id) || InstallerOptions.IsCpuOption(id)) && options.Selection.GraphicsProfile == null,
+                "model-context-detect-remains-informational");
+            return visualEvidence;
+        }
+        finally { window.Close(); }
+    }
+
+    private static async Task ReviewedTargetChecks(Action<bool, string> require)
+    {
+        var panel = new InstallerOptionsPanel(); panel.SetMode("custom");
+        var first = new InstallerOptionsPanel.HardwarePreferenceTarget(Guid.NewGuid(), "NVME", "FIRST", "ONE", 1000, 100, 200, false);
+        var second = first with { Serial = "TWO", DiskId = Guid.NewGuid() };
+        var wifi = Radio("Intel Wi-Fi 6 AX201", "Intel", "PCI\\VEN_8086&DEV_06F0", bluetooth: false);
+        var reads = 0;
+        panel.WirelessHardwareReader = () => { Interlocked.Increment(ref reads); return [wifi]; };
+        panel.GraphicsHardwareReader = () => new(["graphics:amd-780m"], ["AMD Radeon 780M"], 0);
+        var cpuReads = 0;
+        panel.CpuHardwareReader = () => { Interlocked.Increment(ref cpuReads); return "GenuineIntel"; };
+        panel.SetHardwareTarget(first); panel.Refresh();
+        require(cpuReads == 0 && !panel.Selection.Repairs.Any(InstallerOptions.CpuComponents.Contains), "cpu-refresh-does-not-read-or-select");
+        require(reads == 0, "reviewed-target-refresh-does-not-detect");
+        panel.StartAutomaticHardwareDetection(); await Task.WhenAll(panel.ActiveWirelessDetection, panel.ActiveGraphicsDetection, panel.ActiveCpuDetection);
+        require(panel.OptionBoxes["wifi:intel"].IsChecked == true && panel.Selection.GraphicsProfile == "graphics:amd-780m", "reviewed-target-explicit-detection-applies-matches");
+        require(cpuReads == 1 && panel.Selection.Repairs.Contains("microcode:intel") && panel.Selection.Repairs.Contains("cpufreq:intel") && panel.Selection.Plugins.Contains("core:maintenance"), "cpu-explicit-detection-selects-matching-vendor");
+        panel.OptionBoxes["microcode:amd"].IsChecked = true;
+        require(panel.Selection.Repairs.Contains("microcode:amd") && !panel.Selection.Repairs.Contains("microcode:intel"), "cpu-manual-selection-exclusive");
+        await panel.DetectCpuHardwareAsync();
+        require(panel.Selection.Repairs.Contains("microcode:amd"), "cpu-manual-other-vendor-survives-redetection");
+        panel.OptionBoxes["microcode:amd"].IsChecked = false;
+        await panel.DetectCpuHardwareAsync();
+        require(!panel.Selection.Repairs.Any(InstallerOptions.CpuComponents.Contains) && panel.Selection.Repairs.Contains("cpufreq:intel"), "cpu-manual-false-survives-redetection");
+        panel.OptionBoxes["cpufreq:amd"].IsChecked = true;
+        require(panel.Selection.Repairs.Contains("cpufreq:amd") && !panel.Selection.Repairs.Contains("cpufreq:intel"), "frequency-vendors-exclusive");
+        panel.OptionBoxes["cpufreq:amd"].IsChecked = false;
+        await panel.DetectCpuHardwareAsync(); panel.Refresh();
+        require(!panel.Selection.Repairs.Any(InstallerOptions.CpuFrequencyComponents.Contains), "frequency-manual-false-survives-detection-and-refresh");
+        var independent = second with { Serial = "INDEPENDENT", DiskId = Guid.NewGuid() };
+        panel.SetHardwareTarget(independent);
+        panel.OptionBoxes["microcode:amd"].IsChecked = true;
+        panel.OptionBoxes["microcode:amd"].IsChecked = false;
+        panel.CpuHardwareReader = () => "GenuineIntel";
+        await panel.DetectCpuHardwareAsync();
+        require(!panel.Selection.Repairs.Any(InstallerOptions.CpuComponents.Contains) && panel.Selection.Repairs.Contains("cpufreq:intel"), "microcode-manual-false-does-not-suppress-frequency");
+        var dependent = second with { Serial = "DEPENDENCY", DiskId = Guid.NewGuid() };
+        panel.SetHardwareTarget(dependent);
+        panel.OptionBoxes["core:maintenance"].IsChecked = false;
+        panel.SetHardwareTarget(independent);
+        require(panel.Selection.Repairs.Contains("cpufreq:intel") && panel.Selection.Plugins.Contains("core:maintenance"), "frequency-target-restoration-restores-maintenance-dependency");
+        InstallerOptions.Validate(panel.Selection);
+        panel.SetHardwareTarget(second);
+        panel.CpuHardwareReader = () => "UnknownVendor";
+        await panel.DetectCpuHardwareAsync();
+        require(!panel.Selection.Repairs.Any(InstallerOptions.IsCpuOption), "cpu-unknown-vendor-does-not-guess");
+        panel.CpuHardwareReader = () => throw new IOException("fixture failure");
+        await panel.DetectCpuHardwareAsync();
+        require(!panel.Selection.Repairs.Any(InstallerOptions.CpuComponents.Contains), "cpu-read-failure-keeps-selection");
+        var cpuEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cpuRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        panel.CpuHardwareReader = () => { cpuEntered.TrySetResult(); cpuRelease.Task.GetAwaiter().GetResult(); return "AuthenticAMD"; };
+        var cpuPending = panel.DetectCpuHardwareAsync(); await cpuEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        panel.SetHardwareTarget(first); cpuRelease.SetResult(); await cpuPending;
+        require(!panel.Selection.Repairs.Any(InstallerOptions.IsCpuOption), "cpu-stale-result-does-not-cross-target");
+        panel.SetWirelessContext("custom", true); panel.SetWirelessContext("custom", false);
+        require(!panel.Selection.Repairs.Any(InstallerOptions.IsCpuOption), "cpu-manual-false-survives-provider-change");
+        panel.SetHardwareTarget(second);
+        var manualEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var manualRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        panel.CpuHardwareReader = () => { manualEntered.TrySetResult(); manualRelease.Task.GetAwaiter().GetResult(); return "GenuineIntel"; };
+        var manualCpu = panel.DetectCpuHardwareAsync(); await manualEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        panel.OptionBoxes["microcode:amd"].IsChecked = true; manualRelease.SetResult(); await manualCpu;
+        require(panel.Selection.Repairs.Contains("microcode:amd") && !panel.Selection.Repairs.Contains("microcode:intel"), "cpu-manual-edit-supersedes-pending-result");
+        panel.OptionBoxes["microcode:amd"].IsChecked = false;
+        panel.SetHardwareTarget(second with { Serial = "CANCEL", DiskId = Guid.NewGuid() });
+        var cancelEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        panel.CpuHardwareReader = () => { cancelEntered.TrySetResult(); cancelRelease.Task.GetAwaiter().GetResult(); return "GenuineIntel"; };
+        var cancelCpu = panel.DetectCpuHardwareAsync(); await cancelEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        panel.CancelPendingWirelessDetection(); cancelRelease.SetResult(); await cancelCpu;
+        require(!panel.Selection.Repairs.Any(InstallerOptions.IsCpuOption), "cpu-cancel-discards-pending-result");
+        require(panel.Selection.GraphicsProfile == null && !panel.GraphicsDetectionStatus.Contains("A matching choice was selected") && !panel.GraphicsDetectionStatus.Contains("已选择匹配项"), "new-target-clears-prior-detection-status");
+        panel.SetHardwareTarget(first);
+        panel.OptionBoxes["wifi:intel"].IsChecked = false;
+        panel.GraphicsChoice.SelectedIndex = 0;
+        await panel.DetectWirelessHardwareAsync(); await panel.DetectGraphicsHardwareAsync();
+        require(panel.OptionBoxes["wifi:intel"].IsChecked == false && panel.Selection.GraphicsProfile == null, "reviewed-target-manual-false-and-graphics-none-survive-detection");
+        panel.SetWirelessContext("custom", true); panel.SetWirelessContext("custom", false);
+        require(panel.OptionBoxes["wifi:intel"].IsChecked == false && panel.Selection.GraphicsProfile == null, "reviewed-target-overrides-survive-provider-change");
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        panel.WirelessHardwareReader = () => { entered.TrySetResult(); release.Task.GetAwaiter().GetResult(); return [wifi]; };
+        var pending = panel.DetectWirelessHardwareAsync(); await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        panel.SetHardwareTarget(second); release.SetResult(); await pending;
+        require(panel.Selection.Repairs.Length == 0 && panel.Selection.GraphicsProfile == null, "reviewed-target-rejects-late-detection");
+        panel.SetHardwareTarget(first);
+        require(panel.OptionBoxes["wifi:intel"].IsChecked == false && panel.Selection.GraphicsProfile == null, "reviewed-target-restores-manual-overrides");
     }
 
     private static async Task InFlightChecksAsync(Action<bool, string> require)

@@ -13,6 +13,7 @@ import time
 
 IDENTITY = 'core:system-presets'
 LANGUAGES = {'system', 'zh_CN', 'zh_TW', 'en_US', 'ja_JP', 'ko_KR', 'de_DE', 'fr_FR', 'es_ES', 'ru_RU'}
+IMAGE_LOCALE = re.compile(r'[a-z]{2,3}_[A-Z]{2}\Z')
 PASSWORD_HASH = re.compile(r'\$6\$(?:rounds=\d+\$)?[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}\Z')
 SSH_TARGET = 'etc/systemd/system/multi-user.target.d/50-boiler-ssh.conf'
 SSH_DATA = b'# Boiler offline SSH preset\n[Unit]\nWants=sshd.service\n'
@@ -29,11 +30,12 @@ def selected(options):
 
 
 def validate(options):
-    for key in ('set_deck_password', 'enable_ssh'):
+    for key in ('set_deck_password', 'enable_ssh', 'automatic_system_language'):
         if type(options.get(key, False)) is not bool:
             raise ValueError('Invalid system preset flag: ' + key)
     language = options.get('kde_language', 'system')
-    if not isinstance(language, str) or language not in LANGUAGES:
+    automatic = options.get('automatic_system_language', False)
+    if not isinstance(language, str) or not (IMAGE_LOCALE.fullmatch(language) if automatic else language in LANGUAGES):
         raise ValueError('Unknown system preset language')
     if options.get('install_mode', 'custom') in ('imported', 'local') and selected(options):
         raise ValueError('Imported images cannot receive system presets')
@@ -221,35 +223,52 @@ def _archive_locale(root, language):
         return False
 
 
+class LanguageUnavailable(ValueError):
+    """The image lacks a required locale or KDE translation."""
+
+
 def require_language(root, language):
     generated = any(all(_artifact(root, 'usr/lib/locale/' + name + '/' + category, locale_category=index if index < 6 else index + 1) is not None
                         for index, category in enumerate(LOCALE_CATEGORIES))
                     for name in (language + '.utf8', language + '.UTF-8'))
     if not generated and not _archive_locale(root, language):
-        raise ValueError('Selected language has no generated libc locale in this image')
+        raise LanguageUnavailable('Selected language has no generated libc locale in this image')
     if _artifact(root, 'usr/bin/plasmashell', executable=True) is None:
         raise ValueError('Selected desktop language requires KDE Plasma in the image')
-    if language != 'en_US':
-        folder = language if language in ('zh_CN', 'zh_TW') else language.split('_')[0]
-        magic = _artifact(root, 'usr/share/locale/' + folder + '/LC_MESSAGES/plasmashell.mo', translation=True)
-        if magic not in (b'\xde\x12\x04\x95', b'\x95\x04\x12\xde'):
-            raise ValueError('Selected KDE translation is not installed in this image')
+    if not language.startswith('en_'):
+        folders = (language,) if language.startswith('zh_') else (language, language.split('_')[0])
+        if not any(_artifact(root, 'usr/share/locale/' + folder + '/LC_MESSAGES/plasmashell.mo', translation=True)
+                   is not None for folder in folders):
+            raise LanguageUnavailable('Selected KDE translation is not installed in this image')
+
+
+def language_for_image(root, options):
+    language = options.get('kde_language', 'system')
+    if language == 'system':
+        return language
+    try:
+        require_language(root, language)
+    except LanguageUnavailable:
+        if not options.get('automatic_system_language') or language == 'en_US':
+            raise
+        require_language(root, 'en_US')
+        return 'en_US'
+    return language
 
 
 def prepare(root, options, password_hash=None):
     """Complete target checks and generate bytes without changing the image."""
     validate(options)
     root = Path(root)
-    if not selected(options): return None, {}
+    if not selected(options): return None, {}, 'system'
     from source_profile import release_values
     release_values(root)
     rows = [_line.split(':') for _line in _read(root, 'etc/passwd', required=True).decode().splitlines() if _line.startswith('deck:')]
     if len(rows) != 1 or len(rows[0]) != 7 or not rows[0][2].isdigit() or not rows[0][3].isdigit() or min(int(rows[0][2]), int(rows[0][3])) <= 0 or rows[0][5] != '/home/deck':
         raise ValueError('System presets require one unprivileged deck account with /home/deck')
     files = {}
-    language = options.get('kde_language', 'system')
+    language = language_for_image(root, options)
     if language != 'system':
-        require_language(root, language)
         locale = language + '.UTF-8'
         # Home is shared between A/B slots. Keep it outside per-slot ownership.
         # Agreeing user preferences remain unchanged; conflicting overrides need
@@ -302,7 +321,7 @@ def prepare(root, options, password_hash=None):
         files[SSH_TARGET] = SSH_DATA
     from payload_lock import record
     records = [record('preset/' + target, data, target=target, mode=0o600 if target == 'etc/shadow' else 0o644) for target, data in sorted(files.items())]
-    return dict(schema_version=1, kind='ComponentManifest', id=IDENTITY, version='0.1.0', files=records, requires=[], conflicts=[], hooks={}), files
+    return dict(schema_version=1, kind='ComponentManifest', id=IDENTITY, version='0.1.0', files=records, requires=[], conflicts=[], hooks={}), files, language
 
 
 def apply(engine, component, files):
@@ -322,11 +341,10 @@ def apply(engine, component, files):
 def verify(root, options, engine):
     """Independently check effective preset semantics and private ownership."""
     validate(options)
-    if not selected(options): return
+    if not selected(options): return 'system'
     if not engine.verify_readonly(IDENTITY)['ok']: raise ValueError('System preset managed files differ')
-    language = options.get('kde_language', 'system')
+    language = language_for_image(root, options)
     if language != 'system':
-        require_language(root, language)
         locale = language + '.UTF-8'
         system = _read(root, 'etc/locale.conf', required=True).decode().splitlines()
         for key in ('LANG', 'LC_MESSAGES'):
@@ -347,3 +365,4 @@ def verify(root, options, engine):
         override = _read(root, 'etc/systemd/system/sshd.service')
         unit = override if override is not None else _read(root, 'usr/lib/systemd/system/sshd.service', required=True)
         if b'[Service]' not in unit: raise ValueError('Target SSH service is missing')
+    return language

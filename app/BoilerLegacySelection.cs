@@ -146,7 +146,7 @@ public partial class MainWindow
     private static bool IsStaticDeckyConsumer(CheckBox box)
     {
         if (box.Tag is JsonElement component && component.TryGetProperty("id", out var id)
-            && id.GetString() == "oxp3:fingerprint-unlock") return true;
+            && id.GetString() is "oxp3:fingerprint-unlock" or "boiler:s2s4") return true;
         const string prefix = "home/deck/homebrew/plugins/";
         if (box.Tag is not JsonElement item || !item.TryGetProperty("files", out var files)
             || files.ValueKind != JsonValueKind.Array) return false;

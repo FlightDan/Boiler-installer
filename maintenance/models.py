@@ -467,13 +467,34 @@ def plan_model(root, identity, repairs, plugins, *, action='apply', trust_local_
             raise MaintenanceError('replacement_requires_restore: Restore the installed adaptations before installing a different selection')
         raise MaintenanceError('Model plan is blocked: ' + str(backend.get('reason', backend.get('reasons', ''))))
     info = Path(root).resolve().stat()
+    state = engine._state()
+    component_id = 'oxp3:legacy-adaptation'
+    if action == 'apply':
+        version = next((part['version'] for part in item['package'].get('components', [])
+                        if part['id'] == component_id), None)
+    else:
+        ordinary_backend = backend.get('ordinary') if retained is not None else backend
+        if ordinary_backend is None:
+            version = state['components'].get(component_id, {}).get('version')
+        else:
+            version = ordinary_backend.get('component_version')
+    versions = [dict(id=component_id, version=version)] if version else []
     body = dict(schema_version=1, kind='ReviewedModelPlan', model_id=identity, action=action, scope=SCOPE,
                 selection=choice, package=current['package'], target=current['target'], environment=current['environment'],
                 root=dict(path=str(Path(root).resolve()), device=info.st_dev, inode=info.st_ino),
-                state_sha256=_digest(engine._state()), pending=current.get('pending'),
+                state_sha256=_digest(state), pending=current.get('pending'), component_versions=versions,
                 backend=backend, summary=backend.get('summary', {}), warnings=backend.get('warnings', []))
     body['review_sha256'] = _digest(body)
     return body
+
+
+def _matches_versioned_review(fresh, reviewed):
+    if 'component_versions' not in reviewed and 'component_versions' in fresh:
+        # Older reviewed plans already bind the package and installed state.
+        fresh = {key: value for key, value in fresh.items()
+                 if key not in ('component_versions', 'review_sha256')}
+        fresh['review_sha256'] = _digest(fresh)
+    return fresh == reviewed
 
 
 def _retain(engine, item):
@@ -519,7 +540,7 @@ def execute_model(root, plan, *, reviewed_sha256, trust_local_test=False, runtim
                        action=plan['action'], trust_local_test=True, runtime_root=runtime_root, state_dir=state_dir,
                        acknowledge_update_hold=choice.get('acknowledge_legacy_update_hold') is True,
                        installer_language=choice.get('installer_language', 'en-US'), kde_language=choice.get('kde_language', 'system'))
-    if fresh != plan:
+    if not _matches_versioned_review(fresh, plan):
         raise MaintenanceError('Target, selected options or installed state changed after review; review again')
     engine = Engine(root, state_dir)
     previous = pending(engine)
@@ -553,6 +574,7 @@ def execute_model(root, plan, *, reviewed_sha256, trust_local_test=False, runtim
             receipt_path = directory/(identity + '.json')
             receipt = dict(schema_version=1, kind='ModelActionReceipt', id=identity, model_id=plan['model_id'],
                            action=plan['action'], package=plan['package'], plan_sha256=reviewed_sha256,
+                           component_versions=fresh.get('component_versions', []),
                            status='prepared', scope=SCOPE, previous_pending=previous)
             _json_write(receipt_path, receipt)
             marker = engine.state_dir/'models/pending.json'

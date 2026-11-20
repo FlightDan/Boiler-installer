@@ -127,6 +127,14 @@ class PublicSlimInstallerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'normal Release preview'):
                 release.verify_slim_archive(path)
 
+    def test_explicit_local_slim_keeps_the_same_payload_boundary(self):
+        overrides = {'package_channel': 'local-test', 'source_published': False}
+        path = self.candidate(info_overrides=overrides)
+        self.assertEqual(release.verify_slim_archive(path, local_test=True)['model_package_files'], 0)
+        path = self.candidate(info_overrides=overrides, extra_files={'cache/model-bundles/brand.zip': b'x'})
+        with self.assertRaisesRegex(ValueError, 'device model package bytes'):
+            release.verify_slim_archive(path, local_test=True)
+
     def test_rejects_top_level_model_bundle_bytes(self):
         path = self.candidate(extra_files={'cache/model-bundles/packages/oxp3/manifest.json': b'{}'})
         with self.assertRaisesRegex(ValueError, 'device model package bytes'):

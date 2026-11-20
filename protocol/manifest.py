@@ -30,7 +30,9 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _VERSION = re.compile(r"[0-9]+(?:\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?\Z")
 MAX_MANIFEST = 8 * 1024 * 1024
-ENGINE_VERSION = "0.1.5"
+ENGINE_VERSION = "0.1.7"
+ONEXPLAYER_MICROCODE = 'onexplayer:intel-microcode'
+ONEXPLAYER_MICROCODE_POLICY = {'kind': 'onexplayer-intel-microcode-v1'}
 
 
 def _fail(message):
@@ -220,6 +222,14 @@ def validate_manifest(obj, kind=None):
     if "minimum_engine_version" in obj and not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", str(obj["minimum_engine_version"])):
         _fail("Minimum engine version must be a stable three-part version")
     if actual == "ComponentManifest":
+        if 'microcode_boot_policy' in obj:
+            if (obj['id'] != ONEXPLAYER_MICROCODE or obj['microcode_boot_policy'] != ONEXPLAYER_MICROCODE_POLICY
+                    or obj.get('optional') is not True or obj.get('default') is not False
+                    or obj.get('hooks') or obj.get('requires') or obj.get('conflicts')
+                    or 'dynamic_handler' in obj or 'ssd_boot_policy' in obj or obj.get('retain_owned_paths')
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 7)):
+                _fail('Invalid ONEXPLAYER early microcode provider contract')
         if 'ssd_boot_policy' in obj:
             policy = obj['ssd_boot_policy']
             if (policy != {'id': 'ssd:gm7-boot-repair', 'version': 1}
@@ -324,6 +334,20 @@ def validate_manifest(obj, kind=None):
             validate_manifest(component, "ComponentManifest")
             if component["id"] in ids: _fail("Duplicate component")
             ids.add(component["id"])
+            if component['id'] == ONEXPLAYER_MICROCODE and (
+                    component.get('microcode_boot_policy') != ONEXPLAYER_MICROCODE_POLICY
+                    or obj['id'] not in ('device:oxp3', 'device:x2-mini')
+                    or 'minimum_engine_version' not in obj
+                    or tuple(map(int, obj['minimum_engine_version'].split('.'))) < (0, 1, 7)):
+                _fail('Invalid ONEXPLAYER early microcode package')
+        if any(ONEXPLAYER_MICROCODE in component.get('requires', []) for component in components):
+            _fail('ONEXPLAYER microcode requires explicit selection')
+        if 'component_release' in obj:
+            from .component_versions import validate_release_package
+            validate_release_package(obj)
+        if 'component_resolution' in obj:
+            from .component_versions import validate_model_resolution
+            validate_model_resolution(obj, {item['id']: item['version'] for item in components})
         if ids.intersection(row['id'] for row in obj.get('resources', [])):
             _fail('Model resource ID conflicts with a component')
         if sum('ssd_boot_policy' in c for c in components) > 1:
@@ -346,10 +370,20 @@ def validate_manifest(obj, kind=None):
         if any(not isinstance(i,str) or not _HASH.fullmatch(i) for i in _list(obj,"revocations")): _fail("Invalid revocation digest")
         if "packages" not in obj: _fail("Index package list required")
         seen = set()
+        resource_ids = {}
         for entry in _list(obj, "packages"):
             if not isinstance(entry,dict): _fail("Invalid index entry")
             _identity(entry); _digest(entry); _source(entry.get("source")); _compat(entry.get("compatibility",{}))
             if "hardware_matching" in entry: _hardware_advice(entry["hardware_matching"])
+            if 'component_release' in entry:
+                from .component_versions import validate_release_record
+                validate_release_record(entry, source=entry.get('declared_source'))
+                resource = entry['component_release']['resource_id']
+                if resource_ids.setdefault(entry['id'], resource) != resource:
+                    _fail('Component release changes resource identity')
+            if 'component_resolution' in entry:
+                from .component_versions import validate_model_resolution
+                validate_model_resolution(entry)
             key=(entry["id"],entry["version"])
             if key in seen: _fail("Duplicate index package")
             seen.add(key)

@@ -15,7 +15,10 @@ import re
 import stat
 import zlib
 
-from payload_lock import regular, relative
+if __package__:
+    from .payload_lock import regular, relative
+else:
+    from payload_lock import regular, relative
 
 MAX_IMAGE = 128 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024

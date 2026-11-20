@@ -79,14 +79,14 @@ public partial class MainWindow
             ? associatedInput?.RaucManifest
             : PendingRaucManifest;
         var upgradeDescription = update is { IsSupportedByCurrentInstaller: true }
-            ? PartitionInventory.L($"升级包版本：SteamOS {update.Version}。安装时仍会重建并检查系统镜像。", $"Upgrade package version: SteamOS {update.Version}. The system image is still rebuilt and checked during installation.")
+            ? InstallerI18n.Format($"升级包版本：SteamOS {update.Version}。安装时仍会重建并检查系统镜像。", $"Upgrade package version: SteamOS {update.Version}. The system image is still rebuilt and checked during installation.")
             : update is { } unsupported
-                ? PartitionInventory.L($"已识别 SteamOS {unsupported.Version}；当前安装流程不支持此版本。", $"SteamOS {unsupported.Version} detected; this installer does not support this version.")
+                ? InstallerI18n.Format($"已识别 SteamOS {unsupported.Version}；当前安装流程不支持此版本。", $"SteamOS {unsupported.Version} detected; this installer does not support this version.")
                 : associatedInput?.Kind == InputKind.UpgradeRoot
                     ? PartitionInventory.L("已选择 rootfs.img，版本将在安装准备时识别。", "rootfs.img selected; its version will be identified during installation preparation.")
                     : officialDownloadPanel.AssociatedSourcePath != null
                         ? PartitionInventory.L("升级包文件已改变；请重新拖入以识别当前版本。", "The update bundle changed; drop it again to identify its current version.")
-                    : PartitionInventory.L($"官方下载源：SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}", $"Official download source: SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}");
+                    : InstallerI18n.Format($"官方下载源：SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}", $"Official download source: SteamOS {OfficialSystem.Version} · build {OfficialSystem.Build}");
         UpgradeSourceCard.Configure(PartitionInventory.L("升级包", "Upgrade bundle"),
             upgradeDescription,
             PartitionInventory.L("支持 .raucb 更新包或 rootfs.img；rootfs.img 版本将在安装准备时识别。", "Accepts .raucb update bundles or rootfs.img; rootfs.img version is identified during installation preparation."),

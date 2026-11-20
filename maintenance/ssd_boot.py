@@ -167,6 +167,52 @@ def _durable(bound):
             'physical': {key: ' '.join(physical[key].split()).casefold() for key in ('bus', 'model', 'serial')}}
 
 
+def _historical_target_matches(recorded, bound, root, installer_context):
+    """Compare a historical target to a live binding without changing either."""
+    actual = _durable(bound)
+    if recorded == actual:
+        return True
+    if installer_context is not None or root is None or os.path.abspath(root) != os.path.abspath(os.sep):
+        return False
+    if not isinstance(recorded, dict) or set(recorded) != set(actual):
+        return False
+    old = recorded.get('physical')
+    physical = actual['physical']
+    if (not isinstance(old, dict) or set(old) != set(physical)
+            or any(recorded[k] != actual[k] for k in actual if k != 'physical')
+            or any(old[k] != physical[k] for k in physical if k != 'serial')
+            or old['bus'] != 'nvme' or physical['bus'] != 'nvme'
+            or not isinstance(old['serial'], str)
+            or not re.fullmatch(r'(?:[0-9a-f]{4}_){7}[0-9a-f]{4}\.', old['serial'])):
+        return False
+    disk = bound.get('disk')
+    if not isinstance(disk, str) or not re.fullmatch(r'/dev/nvme[0-9]+n[0-9]+', disk):
+        return False
+    try:
+        rows = json.loads(run('lsblk', '--json', '--nodeps', '--paths', '--output',
+                              'PATH,TYPE,MAJ:MIN,TRAN,MODEL,SERIAL'))['blockdevices']
+        matches = [row for row in rows if row.get('path') == disk and row.get('type') == 'disk']
+        if len(matches) != 1:
+            return False
+        row = matches[0]
+        if (str(row.get('tran', '')).casefold() != 'nvme'
+                or ' '.join((row.get('model') or '').split()).casefold() != physical['model']
+                or ' '.join((row.get('serial') or '').split()).casefold() != physical['serial']):
+            return False
+        device = Path('/sys/class/block') / Path(disk).name
+        dev = (device/'dev').read_text().strip()
+        nguid = (device/'nguid').read_text().strip()
+        namespace_uuid = (device/'uuid').read_text().strip()
+        uuid_pattern = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+        legacy = old['serial'].replace('_', '').removesuffix('.')
+        return (dev == row.get('maj:min') and bool(re.fullmatch(r'[0-9]+:[0-9]+', dev))
+                and bool(re.fullmatch(r'[0-9a-f]{32}|' + uuid_pattern, nguid))
+                and bool(re.fullmatch(uuid_pattern, namespace_uuid)) and legacy != '0' * 32
+                and legacy == nguid.replace('-', '') == namespace_uuid.replace('-', ''))
+    except (OSError, ValueError, TypeError, KeyError):
+        return False
+
+
 @contextlib.contextmanager
 def _efi_directory(root, bound):
     """Traverse the mounted VFAT without interpreting synthetic Unix ownership."""
@@ -332,14 +378,14 @@ def _provider_owner(value):
     return dict(value)
 
 
-def _record(value, bound):
+def _record(value, bound, *, root=None, installer_context=None):
     keys = {'version', 'target', 'original', 'applied', 'status'}
     if not isinstance(value,dict) or value.get('version') not in (2,3,4):
         raise MaintenanceError('SSD repair state is corrupt or belongs to another target')
     version=value['version']
     expected=keys | ({'handoff'} if version == 3 else set()) | ({'provider_owner'} if version == 4 else set())
     if version == 4 and 'handoff' in value: expected.add('handoff')
-    if (set(value) != expected or value['target'] != _durable(bound)
+    if (set(value) != expected or not _historical_target_matches(value['target'], bound, root, installer_context)
             or value['status'] not in ('installed', 'restored')):
         raise MaintenanceError('SSD repair state is corrupt or belongs to another target')
     original, applied = value['original'], value['applied']
@@ -552,12 +598,12 @@ class SSD:
         if pending is not None:
             if action != 'recover':
                 raise MaintenanceError('Interrupted SSD repair requires explicit recovery')
-            if not isinstance(pending, dict) or pending.get('target') != _durable(bound):
+            if not isinstance(pending, dict) or not _historical_target_matches(pending.get('target'), bound, self.root, self.context):
                 raise MaintenanceError('Interrupted SSD repair belongs to a different root or EFI partition')
         elif action == 'recover':
             raise MaintenanceError('No interrupted SSD repair')
         if record is not None:
-            original, applied = _record(record, bound)
+            original, applied = _record(record, bound, root=self.root, installer_context=self.context)
             expected = applied if record['status'] == 'installed' else original
             if pending is None and current != expected:
                 raise MaintenanceError('Managed EFI or drop-in bytes changed; preserve them for inspection')
@@ -609,7 +655,7 @@ class SSD:
         else:
             _legacy_noninstaller_conflicts(self.root,engine)
         if record is not None:
-            original, applied = _record(record, bound)
+            original, applied = _record(record, bound, root=self.root, installer_context=self.context)
             if pending is None and _snapshot(self.root, bound) != (applied if record['status']=='installed' else original):
                 raise MaintenanceError('Managed EFI or drop-in bytes changed; preserve them for inspection')
         return dict(target=bound, available=True, installed=record is not None and record['status']=='installed',
@@ -674,10 +720,10 @@ class SSD:
         if (set(pending) != {'version','target','before','after','old','new'} or pending['version'] != 2):
             raise MaintenanceError('Invalid SSD repair recovery intent')
         before, after = pending['before'], pending['after']
-        new_original, new_applied = _record(pending['new'], bound)
+        new_original, new_applied = _record(pending['new'], bound, root=self.root, installer_context=self.context)
         old = pending['old']
         if old is not None:
-            old_original, old_applied = _record(old, bound)
+            old_original, old_applied = _record(old, bound, root=self.root, installer_context=self.context)
             if (old_original != new_original or old_applied != new_applied
                     or old.get('handoff') != pending['new'].get('handoff')
                     or old.get('provider_owner') != pending['new'].get('provider_owner')):

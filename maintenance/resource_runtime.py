@@ -23,6 +23,14 @@ class ResourceError(MaintenanceError):
     pass
 
 
+def restore_versions(journal):
+    """Describe the managed generations using the rollback journal."""
+    component = journal['component']
+    previous = journal['before_state']['components'].get(component['id'])
+    return dict(installed_version=component['version'],
+                restored_version=previous['version'] if previous else None)
+
+
 class PartialInstall(ResourceError):
     def __init__(self, completed, cause, before_slots):
         self.completed = completed
@@ -328,7 +336,7 @@ class ResourceSession:
                     if any(not compatible(shared, e) for e in environments):
                         raise ResourceError('Shared resource incompatible with one of the slots')
                     receipt = self.shared.apply(shared, self.pool.root, environment=environments[0])
-                    completed.append(dict(receipt, scope='shared-home'))
+                    completed.append(dict(receipt, scope='shared-home', version=shared['version']))
                     record.update(status='applying', transactions=completed)
                     _json_write(group_path, record)
                 if root['files']:
@@ -346,7 +354,7 @@ class ResourceSession:
                             receipt=engine.apply_cpu(current_root,self.pool.root,pool=self.pool,slots=self.slots,slot=slot,environment=self.slots[slot]['environment'])
                         else:
                             receipt = engine.apply(current_root, self.pool.root, environment=self.slots[slot]['environment'])
-                        completed.append(dict(receipt, scope=slot))
+                        completed.append(dict(receipt, scope=slot, version=current_root['version']))
                         record.update(status='applying', transactions=completed)
                         _json_write(group_path, record)
         except Exception as error:
@@ -392,6 +400,8 @@ class ResourceSession:
             if (journal.get('root') != engine.identity or journal.get('component', {}).get('id') != row['component']
                     or journal.get('component', {}).get('resource_group') != record['id']):
                 raise ResourceError('Resource receipt transaction is outside its group')
+            if 'version' in row and row['version'] != journal['component']['version']:
+                raise ResourceError('Resource receipt version differs from its journal')
             seen.add((scope, transaction))
 
     def retained_receipt(self, identity):
@@ -420,7 +430,8 @@ class ResourceSession:
                     continue
                 key = (scope, installed['transaction'])
                 if key not in known:
-                    record['transactions'].append(dict(scope=scope, transaction=installed['transaction'], component=cid, status='committed'))
+                    record['transactions'].append(dict(scope=scope, transaction=installed['transaction'],
+                        component=cid, status='committed', version=journal['component']['version']))
                     known.add(key)
         self._check_receipt_transactions(record)
         # Keep an already published receipt stable when recovery found no work.
@@ -450,15 +461,18 @@ class ResourceSession:
             for identity in identities:
                 resource = self.pool.resource(identity)
                 manifest = component(resource, 'shared-home' if scope == 'shared-home' else 'root-slots', shared_opt=self.shared_opt)
+                installed_state = state['components'].get(identity)
+                versions = dict(expected_version=resource['version'],
+                                installed_version=installed_state['version'] if installed_state else None)
                 if not manifest['files']:
-                    if identity in state['components']:
-                        result.append(dict(component=identity, scope=scope, ok=False, reason='unexpected-installed-scope'))
+                    if installed_state:
+                        result.append(dict(component=identity, scope=scope, ok=False, reason='unexpected-installed-scope', **versions))
                     continue
-                if identity in state['components']:
-                    if state['components'][identity]['version'] != resource['version']:
-                        result.append(dict(component=identity, scope=scope, ok=False, reason='version-mismatch'))
+                if installed_state:
+                    if installed_state['version'] != resource['version']:
+                        result.append(dict(component=identity, scope=scope, ok=False, reason='version-mismatch', **versions))
                     else:
-                        journal = load_json(engine._journal(state['components'][identity]['transaction']))
+                        journal = load_json(engine._journal(installed_state['transaction']))
                         installed = dict(journal.get('component', {}))
                         installed.pop('resource_group', None)
                         from .core_retention import is_resource,decorate
@@ -470,18 +484,18 @@ class ResourceSession:
                             firmware = verification(resource, manifest, journal, engine.root)
                             proof = engine.verify_readonly(identity) if self.read_only else engine.verify(identity)
                             result.append(dict(proof, **{k: v for k, v in firmware.items() if k != 'ok'},
-                                               ok=proof['ok'] and firmware['ok'], scope=scope))
+                                               ok=proof['ok'] and firmware['ok'], scope=scope, **versions))
                             continue
                         if installed != manifest:
-                            result.append(dict(component=identity, scope=scope, ok=False, reason='manifest-mismatch'))
+                            result.append(dict(component=identity, scope=scope, ok=False, reason='manifest-mismatch', **versions))
                         else:
                             proof = engine.verify_readonly(identity) if self.read_only else engine.verify(identity)
                             if resource['install']['kind'] == CPU_KIND:
                                 proof = dict(proof, verification_scope='inactive-files-and-mutable-config-only', activation_verified=False,
                                     production_execution_allowed=False, mutable_configuration=True)
-                            result.append(dict(proof, scope=scope))
+                            result.append(dict(proof, scope=scope, **versions))
                 else:
-                    result.append(dict(component=identity, scope=scope, ok=False, reason='not-installed'))
+                    result.append(dict(component=identity, scope=scope, ok=False, reason='not-installed', **versions))
         return result
 
     def restore(self, receipt, scope):
@@ -517,9 +531,12 @@ class ResourceSession:
             journal = load_json(engine._journal(row['transaction']))
             if journal.get('status') == 'restored':
                 continue
+            versions = restore_versions(journal)
             if row['component']==CPU_ID:
-                result.append(engine.restore_cpu(row['transaction'],pool=self.pool,slots=self.slots,slot=scope))
-            else: result.append(engine.restore(row['transaction']))
+                operation = engine.restore_cpu(row['transaction'],pool=self.pool,slots=self.slots,slot=scope)
+            else:
+                operation = engine.restore(row['transaction'])
+            result.append(dict(operation, component=row['component'], scope=scope, **versions))
         return result
 
     def recover(self, *, cpu_recovery=False):

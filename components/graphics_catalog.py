@@ -88,10 +88,12 @@ def validate_catalog(catalog):
         if (not isinstance(baseline, dict) or set(baseline) != {'version', 'revision'}
                 or baseline['revision'] != revision or not _text(baseline['version'])):
             raise ValueError('Invalid graphics baseline reference')
+        unit_counts = profile['compute_units'] if isinstance(profile['compute_units'], list) else [profile['compute_units']]
         if (set(profile['name']) != {'zh', 'en'} or not all(_text(v) for v in profile['name'].values())
                 or not profile['processors'] or not all(_text(v) for v in profile['processors'])
                 or not _text(profile['graphics_name']) or not _text(profile['architecture'])
-                or type(profile['compute_units']) is not int or not 1 <= profile['compute_units'] <= 128):
+                or not 1 <= len(unit_counts) <= 128
+                or not all(type(count) is int and 1 <= count <= 128 for count in unit_counts)):
             raise ValueError('Invalid documented graphics identity')
         for pci in profile['pci_ids']:
             if (not isinstance(pci, str) or not re.fullmatch(r'(?:1002|8086):[0-9a-f]{4}', pci)

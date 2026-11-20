@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "kind": "CpuMicrocodeSourceSpec",
+  "version": "0.1.0",
+  "sources": {
+    "intel": {
+      "repository": "intel/Intel-Linux-Processor-Microcode-Data-Files",
+      "revision": "d71fe4e2f0f70a49ebbac7f2c7e915f181361974",
+      "tag": "microcode-20261110",
+      "version": "20261110",
+      "licenses": ["license"]
+    },
+    "amd": {
+      "repository": "kernel-firmware/linux-firmware",
+      "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+      "version": "linux-firmware-2ab4ce216003",
+      "licenses": ["LICENSES/LICENSE.amd-ucode", "WHENCE"]
+    }
+  }
+}

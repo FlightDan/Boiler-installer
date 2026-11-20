@@ -152,6 +152,27 @@ class GenericIntegrationChecks(unittest.TestCase):
         with self.assertRaises(ValueError): device_legacy_selection(package, options, [])
         self.assertIsNone(device_legacy_selection({}, {}, []))
 
+    def test_new_ui_languages_keep_immutable_legacy_hook_compatible(self):
+        package, component, options = self.legacy_fixture()
+        package['legacy_kde_languages'].append('zh_TW')
+        for language in ('ja-JP', 'ko-KR', 'de-DE', 'fr-FR', 'es-ES', 'zh-TW'):
+            with self.subTest(language=language):
+                selected = dict(options, installer_language=language, kde_language='zh_TW')
+                choice = device_legacy_selection(package, selected, [component])
+                self.assertEqual(language, selected['installer_language'])
+                self.assertEqual('en-US', choice['installer_language'])
+                self.assertEqual('system', choice['kde_language'])
+        with self.assertRaisesRegex(ValueError, 'Unsupported model language'):
+            device_legacy_selection(package, dict(options, installer_language='ru-RU'), [component])
+
+    def test_selected_system_language_uses_only_the_generic_preset_writer(self):
+        package, component, options = self.legacy_fixture()
+        for selected in (dict(options, kde_language='zh_CN'),
+                         dict(options, kde_language='pt_BR', automatic_system_language=True)):
+            with self.subTest(language=selected['kde_language']):
+                validate_options(selected)
+                self.assertEqual('system', device_legacy_selection(package, selected, [component])['kde_language'])
+
     def test_oxp3_efi_authenticator_does_not_accept_x2_identity(self):
         package, component, options = self.legacy_fixture()
         package['legacy_capabilities'].append(dict(id='oxp3:split-lock', category='repairs', available=True, dependencies=[]))

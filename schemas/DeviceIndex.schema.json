@@ -66,6 +66,29 @@
           "source": {
             "$ref": "definitions.json#/$defs/source"
           },
+          "declared_source": {
+            "$ref": "definitions.json#/$defs/source"
+          },
+          "component_release": {
+            "$ref": "definitions.json#/$defs/componentRelease"
+          },
+          "component_resolution": {
+            "$ref": "definitions.json#/$defs/componentResolution"
+          },
+          "minimum_engine_version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "requires": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "definitions.json#/$defs/id"}
+          },
+          "conflicts": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "definitions.json#/$defs/id"}
+          },
           "compatibility": {
             "$ref": "definitions.json#/$defs/compatibility"
           },

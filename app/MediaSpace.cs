@@ -20,7 +20,7 @@ public static class MediaSpace
     public static void RequireAvailable(string directory, ulong required)
     {
         var available = Available(directory);
-        if (available < required) throw new IOException(PartitionInventory.L(
+        if (available < required) throw new IOException(InstallerI18n.Format(
             $"工作空间不足：可用 {available / 1073741824d:F1} GiB，本阶段需 {required / 1073741824d:F1} GiB。请选择更大的工作目录。",
             $"Workspace space is insufficient: {available / 1073741824d:F1} GiB available, {required / 1073741824d:F1} GiB needed for this stage. Choose another folder."));
     }

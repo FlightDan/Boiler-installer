@@ -15,8 +15,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/boiler-fprintd.service",
-      "size": 550,
-      "sha256": "a49bf9d5718f6e2daceb89619aaa72212e61ea662667d7f8ce361e63c5abcde4"
+      "size": 726,
+      "sha256": "db47b061d0ee41594f8f6a87dd0294fa6e76ec880da48ed7a416f2bebc546935"
     },
     {
       "path": "common/fingerprint/runtime-profile/COPYING",
@@ -25,8 +25,8 @@
     },
     {
       "path": "common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
-      "size": 150,
-      "sha256": "7189936528b25d066fa7c504c8d3a510a68534cd499b9e764726908ec6ea9e54"
+      "size": 233,
+      "sha256": "d103d4e16c31d84e1283b401fe7b0547a4923faa9d680ebf661e2399af8b3a03"
     },
     {
       "path": "common/fingerprint/runtime-profile/profile.json",
@@ -40,18 +40,18 @@
     },
     {
       "path": "common/fingerprint/bridge/index.js",
-      "size": 14560,
-      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb"
+      "size": 22838,
+      "sha256": "d4f8fd00deebdf06ffd958be8d42272329409e861bb4fe711bbd2e886e8fb227"
     },
     {
       "path": "common/fingerprint/bridge/main.py",
-      "size": 3730,
-      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1"
+      "size": 43703,
+      "sha256": "9fffcf215fac1d496d76b2d327180e0564d187354001d7fd68fd58380eae3b1b"
     },
     {
       "path": "common/fingerprint/bridge/package.json",
-      "size": 84,
-      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d"
+      "size": 85,
+      "sha256": "1463c20a384a3d9e14e673966532b29591d9394c371a872b6a3f2178324e819f"
     },
     {
       "path": "common/fingerprint/bridge/plugin.json",
@@ -62,9 +62,24 @@
       "path": "brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules",
       "size": 1520,
       "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/boiler-fte3600.service",
+      "size": 204,
+      "sha256": "aa8b7940fd0ebda217163d23c1e1d7606381c08ed2883cfa61781d5b7c1a7057"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/50-boiler-fte3600.conf",
+      "size": 68,
+      "sha256": "f60df742bc433749ce400834fcbba670b99a25ef37de5091de8cea9ce6af5532"
+    },
+    {
+      "path": "brands/onexplayer/x2-mini/current/fingerprint/fte3600/load.sh",
+      "size": 2192,
+      "sha256": "f9a79c68f7feb5d1f0f7d884eb2ff4215ed11280eb251ddc9f9819412593f5a4"
     }
   ],
   "upstream_lock_sha256": "bfbb3d6f5c541936b61fea648be230f0f8760e7020625d5b48eab0b13ffd8b73",
   "public_bridge_lock": "common/fingerprint/public-bridge-lock.json",
-  "public_bridge_lock_sha256": "bf19b68d45acc6d2733c4c60e30a021c32104c11a642eaa86434e5991bd46d7a"
+  "public_bridge_lock_sha256": "8d40a650e73a66a374731a4abc6148b8fd55695c80a50c94d56e34aa53dd1d9c"
 }

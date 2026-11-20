@@ -183,8 +183,8 @@ public sealed class OfficialDownloadPanel : UserControl
             var inspected = CurrentAssociatedInspection;
             var status = inspected?.RaucManifest is { } manifest
                 ? manifest.IsSupportedByCurrentInstaller
-                    ? L($"检测到 SteamOS {manifest.Version} 更新包；继续后将完成内容校验。", $"SteamOS {manifest.Version} update bundle detected; continue for complete content checks.")
-                    : L($"检测到 SteamOS {manifest.Version} 更新包；当前安装流程不支持此版本。", $"SteamOS {manifest.Version} update bundle detected; this installer does not support it.")
+                    ? InstallerI18n.Format($"检测到 SteamOS {manifest.Version} 更新包；继续后将完成内容校验。", $"SteamOS {manifest.Version} update bundle detected; continue for complete content checks.")
+                    : InstallerI18n.Format($"检测到 SteamOS {manifest.Version} 更新包；当前安装流程不支持此版本。", $"SteamOS {manifest.Version} update bundle detected; this installer does not support it.")
                 : inspected?.Kind == InputKind.UpgradeRoot
                     ? L("已选择 rootfs.img，版本将在安装准备时识别。", "rootfs.img selected; its version will be identified during installation preparation.")
                     : L("本地文件已关联。继续时检查其声明版本与内容。", "Local file associated. Its declared version and contents will be checked when you continue.");

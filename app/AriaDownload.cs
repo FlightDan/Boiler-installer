@@ -11,7 +11,7 @@ namespace OxpInstaller;
 
 public sealed record DownloadOrigin(string Id, string Name, string English, string Version, string Url, string Note, string EnglishNote)
 {
-    public override string ToString() => InstallerI18n.Language == "en-US" ? English : Name;
+    public override string ToString() => InstallerI18n.L(Name, English);
 }
 public sealed record RemoteImage(string Url, long Length, string? ETag, string? Modified, bool Ranges, string FileName);
 public sealed record ImageDownload(int Schema, string Id, string RequestedUrl, RemoteImage Remote, string Status, string? Error, DateTime Updated);

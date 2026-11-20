@@ -30,12 +30,30 @@ public partial class MainWindow
         body.Children.Add(currentHardwareTitle); body.Children.Add(currentHardwareIntro);
         currentHardwareDetectButton = new Button { Name = "DetectCurrentComputerHardware", MinHeight = 38, HorizontalAlignment = HorizontalAlignment.Left, Padding = new(12, 6, 12, 6) };
         System.Windows.Automation.AutomationProperties.SetName(currentHardwareDetectButton, PartitionInventory.L("识别当前电脑硬件", "Detect this computer's hardware"));
-        currentHardwareDetectButton.Click += async (_, _) => await DetectCurrentHardwareAsync();
+        currentHardwareDetectButton.Click += async (_, _) => { StartCurrentHardwareSelection(); await DetectCurrentHardwareAsync(); };
         currentHardwareStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A"), Margin = new(0, 6, 0, 4) };
         currentHardwareResults = new StackPanel();
         body.Children.Add(currentHardwareDetectButton); body.Children.Add(currentHardwareStatus); body.Children.Add(currentHardwareResults);
         RefreshCurrentHardwareUi();
         return panel;
+    }
+
+    private void SyncCurrentHardwareTarget()
+    {
+        InstallerOptionsPanel.HardwarePreferenceTarget? target = null;
+        if (acknowledgedSelection != null)
+        {
+            try { if (acknowledgedSelection == PartitionSelector.Selection) target = InstallerOptionsPanel.HardwareTargetFrom(acknowledgedSelection); }
+            catch (Exception error) when (error is IOException or InvalidOperationException or System.Text.Json.JsonException or ArgumentException) { }
+        }
+        optionsPanel.SetHardwareTarget(target);
+        RefreshCurrentHardwareUi();
+    }
+
+    private void StartCurrentHardwareSelection()
+    {
+        if (!optionsPanel.GenericHardwareAllowed || !optionsPanel.HasHardwareTarget) return;
+        optionsPanel.StartAutomaticHardwareDetection();
     }
 
     private async Task DetectCurrentHardwareAsync()
@@ -55,14 +73,20 @@ public partial class MainWindow
     private void RefreshCurrentHardwareUi()
     {
         if (currentHardwareDetectButton == null || currentHardwareTitle == null || currentHardwareIntro == null || currentHardwareStatus == null || currentHardwareResults == null) return;
+        currentHardwarePanel!.Visibility = selectedDevicePackage == null ? Visibility.Visible : Visibility.Collapsed;
         currentHardwareTitle.Text = PartitionInventory.L("识别当前电脑硬件", "Detect this computer's hardware");
-        currentHardwareIntro.Text = PartitionInventory.L("识别当前 Windows 电脑的部件，辅助选择对应构件。", "Identify components on this Windows computer to help choose matching components.");
+        currentHardwareIntro.Text = optionsPanel.GenericHardwareAllowed
+            ? PartitionInventory.L("识别当前 Windows 电脑；为其他电脑准备外接磁盘时请手动选择。确认安装位置后，识别会按 CPU 品牌选择微码和调频，并选择匹配的无线与核显选项。所有选项仍可调整。", "Detection reads this Windows computer. Select manually for an external disk intended for another computer. After the destination is confirmed, detection selects microcode and CPU frequency by vendor and matching wireless and graphics options. All options remain adjustable.")
+            : PartitionInventory.L("识别当前 Windows 电脑的部件，辅助选择对应构件。", "Identify components on this Windows computer to help choose matching components.");
         System.Windows.Automation.AutomationProperties.SetName(currentHardwareDetectButton, currentHardwareTitle.Text);
         currentHardwareDetectButton.IsEnabled = !currentHardwareDetectionBusy && !CurrentHardwareUiBusy;
-        currentHardwareDetectButton.Content = PartitionInventory.L(currentHardwareDetectionBusy ? "正在识别当前电脑硬件…" : "识别当前电脑硬件", currentHardwareDetectionBusy ? "Detecting this computer's hardware…" : "Detect this computer's hardware");
+        currentHardwareDetectButton.Content = currentHardwareDetectionBusy ? PartitionInventory.L("正在识别当前电脑硬件…", "Detecting this computer's hardware…")
+            : optionsPanel.GenericHardwareAllowed && optionsPanel.HasHardwareTarget ? PartitionInventory.L("识别并选择本机选项", "Detect and select for this computer")
+            : PartitionInventory.L("识别当前电脑硬件", "Detect this computer's hardware");
+        System.Windows.Automation.AutomationProperties.SetName(currentHardwareDetectButton, (string)currentHardwareDetectButton.Content);
         currentHardwareResults.Children.Clear();
         if (currentHardwareDetectionBusy) { currentHardwareStatus.Text = PartitionInventory.L("正在读取当前电脑硬件…", "Reading this computer's hardware…"); return; }
-        if (currentHardwareDetectionError != null) { currentHardwareStatus.Text = PartitionInventory.L("无法读取当前电脑的硬件清单；现有选择保持不变。请重试或手动选择。", "Could not read this computer's hardware inventory; existing selections were kept. Retry or select manually."); return; }
+        if (currentHardwareDetectionError != null) { currentHardwareStatus.Text = PartitionInventory.L("无法读取当前电脑的部件识别清单；请重试或手动选择。", "Could not read this computer's component inventory. Retry or select manually."); return; }
         if (currentHardwareDetection == null) { currentHardwareStatus.Text = PartitionInventory.L("来源：当前电脑。请按识别结果选择构件。", "Source: this computer. Choose components based on the results."); return; }
         currentHardwareStatus.Text = PartitionInventory.L("来源：当前电脑。请按识别结果选择构件。", "Source: this computer. Choose components based on the results.");
         foreach (var result in currentHardwareDetection.Results)

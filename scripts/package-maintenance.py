@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from protocol.manifest import confined, load_json, relative_path, validate_manifest, validate_package
 from maintenance.engine import RUNTIME_FILES
+from maintenance.model_ui_locale import desktop_entry
 
 REPOSITORY = 'FlightDan/Boiler-installer'
 PUBLIC_KEY_SHA256 = 'c3f443312c74bcdc3013d7a9deb306473dc6c3b21f6625319012c9dbdb9b1e86'
@@ -32,9 +33,6 @@ LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
 UI_LAUNCHER = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
                b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
                b'from maintenance.model_ui import main; raise SystemExit(main())\' "$@"\n')
-DESKTOP = ('[Desktop Entry]\nType=Application\nName=Boiler Repairs and Project Updates\nName[zh_CN]=Boiler 修复与项目更新\n'
-           'Comment=Review, install and restore device adaptations\n'
-           'Exec=/usr/local/bin/boiler-maintenance-ui\nIcon=preferences-system\nTerminal=false\nCategories=System;Settings;\n').encode('utf-8')
 
 
 def sha256(data):
@@ -155,6 +153,9 @@ def package(root, output, source_commit, asset_url):
         raise ValueError('Required maintenance sources are absent from the source whitelist')
     if contents.get('scripts/package-maintenance.py') != Path(__file__).read_bytes():
         raise ValueError('Builder differs from the committed public source')
+    locale_source = 'maintenance/model_ui_locale.py'
+    if contents[locale_source] != (ROOT/locale_source).read_bytes():
+        raise ValueError('Desktop entry translations differ from the committed public source')
     if sha256(contents['protocol/trusted-public-key.pem']) != PUBLIC_KEY_SHA256:
         raise ValueError('Ordinary maintenance releases cannot change the existing public key')
     release = release_settings(contents)
@@ -171,7 +172,7 @@ def package(root, output, source_commit, asset_url):
                         size=len(LAUNCHER), sha256=sha256(LAUNCHER), mode=0o755))
     for name,data,target,mode in (
         ('boiler-maintenance-ui',UI_LAUNCHER,'usr/local/bin/boiler-maintenance-ui',0o755),
-        ('Boiler-Maintenance.desktop',DESKTOP,'usr/share/applications/Boiler-Maintenance.desktop',0o644)):
+        ('Boiler-Maintenance.desktop',desktop_entry(),'usr/share/applications/Boiler-Maintenance.desktop',0o644)):
         source='maintenance-runtime/'+name;payload[source]=data
         runtime.append(dict(source=source,target=target,size=len(data),sha256=sha256(data),mode=mode))
     component = dict(schema_version=1, kind='ComponentManifest', id='core:maintenance',

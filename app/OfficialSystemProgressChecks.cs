@@ -85,9 +85,14 @@ internal static class OfficialSystemProgressChecks
         if (!Find<FrameworkElement>(window, destination).IsVisible)
             throw new IOException("Source inspection did not advance: " + message.Text);
     }
-    private static OfficialSourceBinding ReviewedOfficialSource(MainWindow window) =>
-        typeof(MainWindow).GetProperty("CurrentOfficialSourceBinding", PrivateInstance)!.GetValue(window) as OfficialSourceBinding
-            ?? throw new IOException("The second source was not bound by read-only inspection.");
+    private static async Task<OfficialSourceBinding> BindReviewedOfficialSourceAsync(MainWindow window)
+    {
+        var binding = typeof(MainWindow).GetProperty("CurrentOfficialSourceBinding", PrivateInstance)!;
+        if (binding.GetValue(window) != null) throw new IOException("Source navigation hashed the upgrade file before installation.");
+        await (Task)typeof(MainWindow).GetMethod("PrepareSourceBindingsAsync", PrivateInstance)!.Invoke(window, null)!;
+        return binding.GetValue(window) as OfficialSourceBinding
+            ?? throw new IOException("The second source was not bound during installation preparation.");
+    }
 
     internal static async Task<string> RunImportUiAsync(MainWindow window, string bundle)
     {
@@ -132,12 +137,12 @@ internal static class OfficialSystemProgressChecks
             var screenshot = Capture(window, Path.Combine(directory, "local-import.png"));
             Find<TextBox>(window, "ImagePath").Text = recovery;
             await AdvanceAfterSourceInspectionAsync(window, "TargetPage");
-            Require(ReviewedOfficialSource(window).Path == staged && Find<StackPanel>(window, "TargetPage").IsVisible
+            Require((await BindReviewedOfficialSourceAsync(window)).Path == staged && Find<StackPanel>(window, "TargetPage").IsVisible
                 && !Find<StackPanel>(window, "ContentPage").IsVisible, "reviewed-local-pair-advances-to-target-without-component-page");
             return JsonSerializer.Serialize(new { passed = true, checks, directory,
                 status = screenshot.Path == null ? "functional-pass-visual-unavailable" : "functional-pass-visual-review-pending",
                 screenshotReview = screenshot.Path == null ? "unavailable" : "needs_visual_review", screenshots = new[] { screenshot },
-                scope = "Real local RAUC import and read-only recovery VM inspection with SHA-256 binding of both sources. Routes passed; "
+                scope = "Real local RAUC import, source navigation without hashing, and SHA-256 binding of both sources before installation. Routes passed; "
                     + (screenshot.Path == null ? "visual evidence unavailable. " : "saved visual evidence requires review. ")
                     + "No online download, root reconstruction, installation or physical write." }, new JsonSerializerOptions { WriteIndented = true });
         }
@@ -173,8 +178,8 @@ internal static class OfficialSystemProgressChecks
             Require(staged.EndsWith(".raucb") && PanelField<TextBox>(panel, "localPath").Text == staged, "selected-local-raucb-fills-staged-path");
             Require(!File.Exists(Path.Combine(directory, "steamos-3.10", "rootfs.img")), "local-selection-does-not-rebuild-root");
             await AdvanceAfterSourceInspectionAsync(window, "TargetPage");
-            var binding = ReviewedOfficialSource(window);
-            Require(binding.Path == staged, "local-navigation-waits-for-both-source-inspections-and-retains-second-source-binding");
+            var binding = await BindReviewedOfficialSourceAsync(window);
+            Require(binding.Path == staged, "installation-preparation-retains-reviewed-second-source-binding");
             // The bound preparation uses its own directory. Seed only its desync reconstruction;
             // the earlier download/selection/navigation checks ran with an empty workspace.
             var reconstruction = Path.Combine(directory, "official-preparation"); Directory.CreateDirectory(reconstruction);
@@ -185,7 +190,7 @@ internal static class OfficialSystemProgressChecks
             Require(File.Exists(prepared) && File.Exists(Path.Combine(directory, "official-source.json"))
                 && File.Exists(Path.Combine(reconstruction, "complete.txt")), "bound-installation-preparation-rebuilds-root-and-integrates-recovery-in-isolated-session");
             return JsonSerializer.Serialize(new { passed = true, checks, directory,
-                scope = "Real official RAUC download, custom/local combined-page navigation with awaited read-only VM inspections, then bound source preparation in an isolated VM. Desync reuses an existing real root seed. No installation or physical write." }, new JsonSerializerOptions { WriteIndented = true });
+                scope = "Real official RAUC download, custom/local source navigation without full-file hashing, then bound source preparation in an isolated VM. Desync reuses an existing real root seed. No installation or physical write." }, new JsonSerializerOptions { WriteIndented = true });
         }
         finally { workspaceField.SetValue(null, originalWorkspace); panel.RefreshWorkspace(); }
     }
@@ -221,11 +226,11 @@ internal static class OfficialSystemProgressChecks
             Click(window, "ContentTab"); Click(window, "SourceTab");
             Require(Find<TextBox>(window, "ImagePath").Text == invalid && !Find<Button>(window, "NextButton").IsEnabled,
                 "returning-to-combined-source-page-preserves-selection-and-invalid-source-cannot-advance");
-            foreach (var language in new[] { "ChineseLanguage", "EnglishLanguage" })
+            foreach (var language in new[] { "zh-CN", "en-US" })
             foreach (var size in new[] { new Size(1060, 720), new Size(853, 480) })
             foreach (var mode in new[] { "custom", "local" })
             {
-                Find<RadioButton>(window, language).IsChecked = true;
+                Find<ComboBox>(window, "InstallerLanguage").SelectedValue = language;
                 ShowSourceMode(window, mode); window.Width = size.Width; window.Height = size.Height; await FlushLayoutAsync(window);
                 Require(Find<StackPanel>(window, "RecoverySourceSection").IsVisible && Find<StackPanel>(window, "OfficialSourceSection").IsVisible
                     && !Find<StackPanel>(window, "SourceSubitems").IsVisible, "both-inputs-share-source-page-" + mode + language + size);
@@ -269,7 +274,7 @@ internal static class OfficialSystemProgressChecks
         {
             operationField.SetValue(panel, null);
             workspaceField.SetValue(null, originalWorkspace); panel.RefreshWorkspace();
-            Find<RadioButton>(window, originalLanguage == "en-US" ? "EnglishLanguage" : "ChineseLanguage").IsChecked = true;
+            Find<ComboBox>(window, "InstallerLanguage").SelectedValue = originalLanguage;
         }
     }
     internal static async Task<string> RunAsync()

@@ -17,6 +17,7 @@ internal sealed record GuestResources(int MemoryMiB, int CpuCount, string Accel,
 /// </summary>
 internal static class GuestResourcesPolicy
 {
+    internal static readonly AsyncLocal<bool?> InstallationAcceleration = new();
     internal const int HeavyFloorMiB = 4096;
     internal const int OrdinaryFloorMiB = 2048;
     internal const int MinimumMiB = 1024;
@@ -82,9 +83,10 @@ internal static class GuestResourcesPolicy
     {
         var status = new MemoryStatus { Length = (uint)Marshal.SizeOf<MemoryStatus>() };
         var available = GlobalMemoryStatusEx(ref status) ? (long)status.AvailPhys : 0L;
-        var forced = Environment.GetEnvironmentVariable("BOILER_QEMU_ACCEL");
+        var useAcceleration = InstallationAcceleration.Value;
+        var forced = useAcceleration == null ? Environment.GetEnvironmentVariable("BOILER_QEMU_ACCEL") : null;
         return Allocate(task, Environment.ProcessorCount, available, (long)status.TotalPhys,
-            WhpxAvailable(), forced);
+            useAcceleration != false && WhpxAvailable(), forced);
     }
 
     /// <summary>

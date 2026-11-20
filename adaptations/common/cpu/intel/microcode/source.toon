@@ -1,0 +1,24 @@
+schema_version: 1
+kind: BoilerCommonDeviceSource
+id: "resource:intel-cpu-microcode"
+source_only: true
+upstream:
+  repository: intel/Intel-Linux-Processor-Microcode-Data-Files
+  revision: d71fe4e2f0f70a49ebbac7f2c7e915f181361974
+  release: microcode-20261110
+  paths[2]: intel-ucode/06-cc-02,intel-ucode/06-cc-03
+hardware_matching:
+  mode: intel-cpu-signature-and-platform
+  vendor: GenuineIntel
+  family_model_stepping[2]: 06-cc-02,06-cc-03
+compatibility:
+  architectures[1]: x86_64
+  os_ids[1]: steamos
+  os_versions[1]: "3.10"
+files[1]{path,size,sha256,origin,license,availability}:
+  inputs/06-cc-02,165888,2960a456b2c672614487f410e774012e386bddeaefb5a9899b307ef682cb1536,intel/Intel-Linux-Processor-Microcode-Data-Files@d71fe4e2f0f70a49ebbac7f2c7e915f181361974,licenses/Intel-microcode.txt,checked-in
+licenses[1]: licenses/Intel-microcode.txt
+lifecycle:
+  install: pending model integration with the Boiler early initramfs microcode transaction
+  verify: pending signature and revision verification on target hardware
+  restore: pending model boot transaction and original boot file restoration checks

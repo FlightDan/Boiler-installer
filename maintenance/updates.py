@@ -146,7 +146,8 @@ def inventory(root, state_dir=None, *, device_id=None):
         if not pending and platform_recovery is None:
             status = engine.verify_readonly(identity)
         components[identity] = {'version': item['version'], 'transaction': item['transaction'],
-                                'verified': status['ok'], 'modified': status.get('modified', [])}
+                                'verified': status['ok'], 'modified': status.get('modified', []),
+                                'component_release': item.get('component_release')}
     provenance = _provenance(engine)
     info = engine.root.stat()
     return {'schema_version': 1, 'kind': 'InstalledInventory', 'target': {'root': str(engine.root), 'device': info.st_dev, 'inode': info.st_ino},
@@ -168,19 +169,24 @@ def _signed_snapshot(cache, public_key, openssl):
                        'sha256': pointer['sha256'], 'trusted_public_key_sha256': _file_digest(key)}
 
 
-def _check_registry(provenance, anchor):
+def _check_registry(provenance, anchor, components):
     previous = provenance['registries'].get(anchor['id'])
-    if previous and (previous['trusted_public_key_sha256'] != anchor['trusted_public_key_sha256'] or
-                     anchor['sequence'] < previous['sequence'] or
-                     (anchor['sequence'] == previous['sequence'] and anchor['sha256'] != previous['sha256'])):
-        raise UpdateError('Registry rollback, sequence reuse or implicit signing-key replacement refused')
+    anchors = [row['component_release']['index'] for row in components.values()
+               if row.get('component_release') and row['component_release']['index']['id'] == anchor['id']]
+    if previous:
+        anchors.append(previous)
+    for previous in anchors:
+        if (previous['trusted_public_key_sha256'] != anchor['trusted_public_key_sha256'] or
+                anchor['sequence'] < previous['sequence'] or
+                (anchor['sequence'] == previous['sequence'] and anchor['sha256'] != previous['sha256'])):
+            raise UpdateError('Registry rollback, sequence reuse or implicit signing-key replacement refused')
 
 
 def discover(root, index_cache, state_dir=None, *, identity=None, device_id=None, public_key=None, openssl='openssl'):
     current = inventory(root, state_dir, device_id=device_id)
     index, anchor = _signed_snapshot(index_cache, public_key, openssl)
     engine = Engine(root, state_dir, read_only=True)
-    _check_registry(_provenance(engine), anchor)
+    _check_registry(_provenance(engine), anchor, current['components'])
     candidates = []
     for entry in index['packages']:
         if identity and entry['id'] != identity:
@@ -191,8 +197,16 @@ def discover(root, index_cache, state_dir=None, *, identity=None, device_id=None
         candidate['revoked'] = entry['sha256'] in index.get('revocations', [])
         candidate['installed_version'] = current['packages'].get(entry['id'], {}).get('version')
         candidates.append(candidate)
+    from protocol.component_versions import component_releases
+    releases = []
+    for cid, installed in current['components'].items():
+        if identity and identity != cid: continue
+        resource_id = (installed['component_release'] or {}).get('resource_id')
+        for entry in component_releases(index, cid, current['environment'], resource_id=resource_id,
+                                        available_components=current['components']):
+            releases.append(dict(entry, installed_version=installed['version'], installed_release=installed['component_release']))
     return {'schema_version': 1, 'kind': 'UpdateDiscovery', 'index': anchor, 'environment': current['environment'],
-            'candidates': candidates, 'scope': 'signed cached discovery; package compatibility and ownership require a reviewed plan'}
+            'component_releases': releases, 'candidates': candidates, 'scope': 'signed cached discovery; package compatibility and ownership require a reviewed plan'}
 
 
 def refresh_registry(url, signature_url, cache, *, public_key=None, openssl='openssl'):
@@ -205,16 +219,12 @@ def acquire_package(index_cache, identity, version, destination, *, public_key=N
 
 
 def _version_key(version):
-    match = re.fullmatch(r'(\d+(?:\.\d+){1,3})(?:-([A-Za-z0-9.-]+))?(?:\+([A-Za-z0-9.-]+))?', version)
-    if not match:
-        raise UpdateError('Unsupported installed or candidate version')
-    numbers = tuple(map(int, match[1].split('.')))
-    numbers += (0,)*(4-len(numbers))
-    pre = tuple((0, int(part)) if part.isdigit() else (1, part) for part in (match[2] or '').split('.'))
-    revision = ()
-    if match[3] and re.fullmatch(r'maintenance\.\d+', match[3]):
-        revision = (int(match[3].split('.')[1]),)
-    return numbers, 1 if match[2] is None else 0, pre if match[2] else (), revision
+    from protocol.component_versions import version_key
+    from protocol import ProtocolError
+    try:
+        return version_key(version)
+    except ProtocolError as error:
+        raise UpdateError(str(error)) from error
 
 
 def _source_identity(source):
@@ -343,14 +353,16 @@ def _execution_context(root, index_cache, state_dir, plan, public_key, openssl, 
 
 
 def plan_update(root, index_cache, package_dir, identity, version, selected=None, state_dir=None,
-                *, device_id=None, public_key=None, openssl='openssl'):
+                *, device_id=None, public_key=None, openssl='openssl', component_intent=None):
+    if component_intent not in (None, 'downgrade', 'follow'):
+        raise UpdateError('Invalid component update intent')
     current = inventory(root, state_dir, device_id=device_id)
     if current['pending_transactions'] or current.get('pending_platform_recovery'):
         raise UpdateError('Recover or inspect pending maintenance transactions before planning an update')
     engine = Engine(root, state_dir, read_only=True)
     state, provenance = engine._state(), _provenance(engine)
     index, anchor = _signed_snapshot(index_cache, public_key, openssl)
-    _check_registry(provenance, anchor)
+    _check_registry(provenance, anchor, state['components'])
     entry = next((item for item in index['packages'] if item['id'] == identity and item['version'] == version), None)
     if entry is None or entry['sha256'] in index.get('revocations', []):
         raise UpdateError('Package is absent from the signed snapshot or revoked')
@@ -360,11 +372,30 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
         raise UpdateError('Package identity or size differs from signed discovery')
     if package.get('trust', {}).get('status') == 'unsigned-development' or package['source']['kind'] == 'local':
         raise UpdateError('Developer snapshots cannot become normal installed updates')
+    from protocol.component_versions import resolution_revoked
+    if resolution_revoked(package, index.get('revocations', ())):
+        raise UpdateError('Model package contains a revoked component release')
     declared_source_identity = _source_identity(package['source'])
     if not compatible(entry, current['environment']) or not compatible(package, current['environment']):
         raise UpdateError('Package is incompatible with the actual target OS, architecture or kernels')
+    standalone = entry.get('component_release') is not None or package.get('component_release') is not None
+    if component_intent is not None and not standalone:
+        raise UpdateError('Component intent requires a signed standalone release')
+    if standalone:
+        from protocol.component_versions import component_releases, validate_component_release
+        component = validate_component_release(entry, package, current['environment'])
+        cid = component['id']
+        eligible = component_releases(index, cid, current['environment'], resource_id=entry['component_release']['resource_id'],
+                                      available_components=state['components'])
+        if entry not in eligible:
+            raise UpdateError('Component release is not eligible in the signed stable index')
+        if component_intent != 'downgrade' and eligible[0] != entry:
+            raise UpdateError('Default component update requires the newest eligible release')
+        if selected is not None and selected != [cid]:
+            raise UpdateError('Standalone release requires exactly its owned component')
+        selected = [cid]
     prior = provenance['packages'].get(identity)
-    if prior and (prior['source_identity'] != source_identity or _version_key(version) < _version_key(prior['version'])):
+    if prior and (prior['source_identity'] != source_identity or (not standalone and _version_key(version) < _version_key(prior['version']))):
         raise UpdateError('Package downgrade or implicit source repository change refused')
     if prior and _source_identity(prior['declared_source']) != declared_source_identity:
         raise UpdateError('Implicit declared source repository change refused')
@@ -383,13 +414,38 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
     actions = []
     for component in resolved['components']:
         cid = component['id']
+        if component.get('microcode_boot_policy'):
+            raise UpdateError('Use the ONEXPLAYER model maintenance entry for early CPU microcode')
         if cid not in state['components']:
             raise UpdateError('Unowned component requires explicit installation or adoption: '+cid)
         if not current['components'][cid]['verified']:
             raise UpdateError('Installed component changed; preserve edits before upgrade: '+cid)
         old_version = state['components'][cid]['version']
         old_key, new_key = _version_key(old_version), _version_key(component['version'])
-        if new_key < old_key:
+        pref = state['components'][cid].get('component_release')
+        if standalone and cid == identity:
+            previous_component = _read(engine._journal(state['components'][cid]['transaction']))['component']
+            if (previous_component.get('hooks') or not previous_component.get('files')
+                    or any(field in previous_component for field in ('dynamic_handler', 'ssd_boot_policy',
+                                                                     'cpu_mutable_config', 'retain_owned_paths'))):
+                raise UpdateError('Installed component requires its original maintenance lifecycle')
+            if pref and pref['resource_id'] != entry['component_release']['resource_id']:
+                raise UpdateError('Implicit component resource change refused')
+            if pref and pref['source_identity'] != source_identity:
+                raise UpdateError('Implicit component transport source change refused')
+            if pref and (pref['index']['id'] != anchor['id'] or pref['index']['trusted_public_key_sha256'] != anchor['trusted_public_key_sha256'] or
+                    anchor['sequence'] < pref['index']['sequence'] or
+                    (anchor['sequence'] == pref['index']['sequence'] and anchor['sha256'] != pref['index']['sha256'])):
+                raise UpdateError('Component release registry rollback refused')
+            if pref and pref['policy'] == 'pinned' and component_intent is None:
+                raise UpdateError('Pinned component requires explicit follow or downgrade intent')
+            if component_intent == 'downgrade' and new_key >= old_key:
+                raise UpdateError('Explicit downgrade requires a lower component version')
+            if component_intent != 'downgrade' and new_key < old_key:
+                raise UpdateError('Component downgrade requires explicit intent')
+        elif pref and cid in package_ids and new_key != old_key:
+            raise UpdateError('Bundled update cannot replace independently managed component: '+cid)
+        elif new_key < old_key:
             raise UpdateError('Component downgrade refused: '+cid)
         retained = engine.retained_owned(component, state)
         same = _unchanged_component(engine, state, component, retained)
@@ -427,7 +483,7 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
             if conflict in state['components']:
                 raise UpdateError('Installed component conflict: '+conflict)
         actions.append({'id': cid, 'from_version': old_version, 'to_version': component['version'],
-                        'action': 'unchanged' if same and new_key == old_key else 'upgrade', 'scripted': bool(component.get('hooks')),
+                        'action': ('follow' if standalone and cid == identity and component_intent == 'follow' and same and new_key == old_key else 'unchanged' if same and new_key == old_key else 'downgrade' if new_key < old_key else 'upgrade'), 'scripted': bool(component.get('hooks')),
                         'retained_owned_paths': retained})
     scripted = any(item['scripted'] and item['action'] == 'upgrade' and item['id'] in package_ids for item in actions)
     maintenance_entry = _maintenance_entry(package)
@@ -441,6 +497,13 @@ def plan_update(root, index_cache, package_dir, identity, version, selected=None
                                 device_advisory(package, current['environment'])) if warning] + resolved['device_warnings'],
             'maintenance_entry': maintenance_entry, 'execution': execution, 'executable': execution != 'unsupported-model-entry',
             'scope': 'already-owned components; authenticated Engine apply/verify hooks only when declared; per-component transactions, no automatic rollback of a multi-component batch or arbitrary hook effects'}
+    if standalone:
+        if any(action['id'] != identity and action['action'] != 'unchanged' for action in actions):
+            raise UpdateError('Standalone release cannot update dependencies automatically')
+        plan['component_intent'] = component_intent
+        plan['component_release'] = {'resource_id': entry['component_release']['resource_id'],
+                                     'policy': 'pinned' if component_intent == 'downgrade' else 'follow',
+                                     'manifest_sha256': entry['sha256'], 'source_identity': source_identity, 'index': anchor}
     plan['review_sha256'] = _digest(plan)
     return plan
 
@@ -463,7 +526,8 @@ def execute_plan(root, reviewed_plan, index_cache, package_dir, *, reviewed_sha2
     _protected_staging_path(engine.state_dir)
     with _cache_lock(engine.state_dir), _authenticated_payload(package_dir, plan['package']['manifest_sha256'], engine.state_dir) as payload:
         fresh = plan_update(root, index_cache, payload, plan['package']['id'], plan['package']['version'], plan['selected'], state_dir,
-                            device_id=plan['environment'].get('device_id'), public_key=public_key, openssl=openssl)
+                            device_id=plan['environment'].get('device_id'), public_key=public_key, openssl=openssl,
+                            component_intent=plan.get('component_intent'))
         if fresh != plan:
             raise UpdateError('Reviewed update plan became stale; review a fresh plan')
         receipt_dir = engine.state_dir/'updates'
@@ -494,8 +558,10 @@ def execute_plan(root, reviewed_plan, index_cache, package_dir, *, reviewed_sha2
                 authorized_hooks = bool(component.get('hooks')) and plan['execution'] == 'engine-hooks-v1' and component['id'] in plan['package']['component_ids']
                 if component.get('hooks') and not authorized_hooks:
                     raise UpdateError('Hook component is outside the authenticated reviewed package')
-                result = engine.apply(component, payload, allow_hooks=authorized_hooks,
-                                      environment=plan['environment'], expected_state_sha256=expected_state)
+                apply_options = dict(allow_hooks=authorized_hooks, environment=plan['environment'], expected_state_sha256=expected_state)
+                if plan.get('component_release') and component['id'] == plan['package']['id']:
+                    apply_options['component_release'] = plan['component_release']
+                result = engine.apply(component, payload, **apply_options)
                 expected_state = result['state_sha256']
                 receipt['transactions'].append(result)
                 _json_write(receipt_path, receipt)

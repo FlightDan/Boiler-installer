@@ -73,7 +73,7 @@ internal sealed class SharedStoragePanel : StackPanel
         status.Text = boxes.Count == 0
             ? PartitionInventory.L("没有可选的数据分区。可在“安装位置”创建 NTFS 共享分区并刷新磁盘，或直接跳过。", "No eligible data partitions. Create an NTFS shared partition and refresh disks at Installation location, or skip this step.")
             : Selection.Length == 0 ? PartitionInventory.L("尚未选择分区，可以跳过。", "No partitions selected. You can skip this step.")
-            : PartitionInventory.L($"已选择 {Selection.Length} 个分区。", $"{Selection.Length} partition(s) selected.");
+            : InstallerI18n.Format($"已选择 {Selection.Length} 个分区。", $"{Selection.Length} partition(s) selected.");
         if (example) status.Text = PartitionInventory.L("示例布局 · 非实际设备\n", "Example layout · not a real device\n") + status.Text;
     }
     internal void RefreshLanguage()

@@ -58,12 +58,22 @@ class FprintdServiceTests(unittest.TestCase):
         self.assertIn('char-gpiochip rw', allowances)
         self.assertIn('char-uio rw', allowances)
 
-    def test_service_keeps_one_dbus_owner_and_no_borrowed_library_path(self):
+    def test_service_keeps_one_dbus_owner_and_clears_inherited_loader_variables(self):
         text = (PROFILE / 'boiler-fprintd.service').read_text(encoding='utf-8')
         self.assertIn('BusName=net.reactivated.Fprint', text)
         self.assertEqual(text.count('BusName='), 1,
                          'two backends must not race for separate D-Bus names')
-        self.assertIn('UnsetEnvironment=LD_LIBRARY_PATH', text)
+        self.assertIn('UnsetEnvironment=LD_LIBRARY_PATH LD_PRELOAD', text)
+
+    def test_both_activation_paths_give_fprintd_its_private_library_search_path(self):
+        prefix = '/var/lib/oxp3-installer/fingerprint'
+        command = (f'/lib64/ld-linux-x86-64.so.2 --library-path {prefix}/lib '
+                   f'{prefix}/libexec/fprintd')
+        systemd = (PROFILE / 'boiler-fprintd.service').read_text(encoding='utf-8')
+        dbus = (PROFILE / 'net.reactivated.Fprint.service').read_text(encoding='utf-8')
+        self.assertIn(f'ExecStart={command}', systemd.splitlines())
+        self.assertIn(f'Exec={command}', dbus.splitlines())
+        self.assertIn('SystemdService=boiler-fprintd.service', dbus.splitlines())
 
 
 if __name__ == '__main__':

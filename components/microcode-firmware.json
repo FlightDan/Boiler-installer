@@ -1,0 +1,1541 @@
+{
+  "components": {
+    "microcode:amd": {
+      "available": true,
+      "delivery": "on-demand",
+      "files": [
+        {
+          "git_blob": "23c9dd3402636dd1780192515583b39b1d3a977c",
+          "original_source": "amd-ucode/microcode_amd.bin",
+          "sha256": "8a9d9e8b788e31e61cddc03cb1eeab5db99e0f667128943ff0780e6437d2e43e",
+          "size": 12684,
+          "source": "microcode/amd/amd-ucode/microcode_amd.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd.bin"
+        },
+        {
+          "git_blob": "f12ff79a538dd12d0e8c3a8eef7a3dbf27c77312",
+          "original_source": "amd-ucode/microcode_amd_fam15h.bin",
+          "sha256": "9d4a668410e72a4bdb86dc23e4261eca04daa83456ada02504115223f356981a",
+          "size": 7876,
+          "source": "microcode/amd/amd-ucode/microcode_amd_fam15h.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd_fam15h.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd_fam15h.bin"
+        },
+        {
+          "git_blob": "b339424d3bdd7812f6b48116c0ebaf07d9e1e955",
+          "original_source": "amd-ucode/microcode_amd_fam16h.bin",
+          "sha256": "e02ad653b39c975d6c52674b50f23727bb6706bab7b4e5b391a4ce229e7ff121",
+          "size": 3510,
+          "source": "microcode/amd/amd-ucode/microcode_amd_fam16h.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd_fam16h.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd_fam16h.bin"
+        },
+        {
+          "git_blob": "4011bdbb51a9f495d5cef8739411362bb6c65cc5",
+          "original_source": "amd-ucode/microcode_amd_fam17h.bin",
+          "sha256": "966e4b796ec689c618868d08f8a37f347b0e7bfce4ae9df793e08471d363b7d0",
+          "size": 22596,
+          "source": "microcode/amd/amd-ucode/microcode_amd_fam17h.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd_fam17h.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd_fam17h.bin"
+        },
+        {
+          "git_blob": "41154d62f8a6fed0cc62e43a6d0ecf9c4c5e2fb6",
+          "original_source": "amd-ucode/microcode_amd_fam19h.bin",
+          "sha256": "c614d6db8056c5c67a9189b225124127d56990a190305bcb3927d50e132de7dd",
+          "size": 128644,
+          "source": "microcode/amd/amd-ucode/microcode_amd_fam19h.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd_fam19h.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd_fam19h.bin"
+        },
+        {
+          "git_blob": "5105ee1f1f53938285c54c8a9b71e5752e346cd3",
+          "original_source": "amd-ucode/microcode_amd_fam1ah.bin",
+          "sha256": "40ee70e4e898abc9b132ba8a9dfd886d4254d5f4a6942e542001ec8c2a5d022d",
+          "size": 129556,
+          "source": "microcode/amd/amd-ucode/microcode_amd_fam1ah.bin",
+          "target": "usr/lib/firmware/amd-ucode/microcode_amd_fam1ah.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/amd-ucode/microcode_amd_fam1ah.bin"
+        }
+      ],
+      "id": "microcode:amd",
+      "kind": "CpuMicrocodeBundle",
+      "licenses": [
+        {
+          "git_blob": "d882d266bb1cbf41a8f94095ae3042de5f628fc1",
+          "original_source": "LICENSES/LICENSE.amd-ucode",
+          "sha256": "2103bd999f77522c5ab5fd35df0579ed00e2a6b885f6f8ebd444e97ffa482991",
+          "size": 3758,
+          "source": "microcode/amd/LICENSES/LICENSE.amd-ucode",
+          "target": "licenses/LICENSE.amd-ucode",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.amd-ucode"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "original_source": "WHENCE",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "microcode/amd/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "provenance": {
+        "repository": "kernel-firmware/linux-firmware",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "vendor": "amd",
+      "version": "linux-firmware-2ab4ce216003"
+    },
+    "microcode:intel": {
+      "available": true,
+      "delivery": "on-demand",
+      "files": [
+        {
+          "git_blob": "7543c5958943f1d84f6cbb1b9c816c0e085f4f4d",
+          "original_source": "intel-ucode/06-03-02",
+          "sha256": "3d76ee72e8b8ac4a733a7fe55b027c24278c444f1cbc5d78b5c84199471120cf",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-03-02",
+          "target": "usr/lib/firmware/intel-ucode/06-03-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-03-02"
+        },
+        {
+          "git_blob": "6f502e06cb4262eb6434e72b3452e1bc843db822",
+          "original_source": "intel-ucode/06-05-00",
+          "sha256": "698c8dfdc648f5f61e8e797d8e2288636edc82722a3740f28c4cb0b94316b366",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-05-00",
+          "target": "usr/lib/firmware/intel-ucode/06-05-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-05-00"
+        },
+        {
+          "git_blob": "de548de5b540f245435dec638a50e61790d99e19",
+          "original_source": "intel-ucode/06-05-01",
+          "sha256": "3a1537b32b1a67d350647df025b2c10382544a051c709f0ed04c8eacce4a2306",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-05-01",
+          "target": "usr/lib/firmware/intel-ucode/06-05-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-05-01"
+        },
+        {
+          "git_blob": "3444aff4a4b67d2522ef8c208bd1ab9cbd26a6cd",
+          "original_source": "intel-ucode/06-05-02",
+          "sha256": "6c95b2411603af0bbde38a59d2311aacd48b7ec7b99726aae93571d688ed3902",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-05-02",
+          "target": "usr/lib/firmware/intel-ucode/06-05-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-05-02"
+        },
+        {
+          "git_blob": "55878aed78e39c159afaf0d336d876d611d03d06",
+          "original_source": "intel-ucode/06-05-03",
+          "sha256": "cfdb1d91be79d337982a68e4360e11ab9e2720f0da13897b0929a7f3a4e3cab5",
+          "size": 8192,
+          "source": "microcode/intel/intel-ucode/06-05-03",
+          "target": "usr/lib/firmware/intel-ucode/06-05-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-05-03"
+        },
+        {
+          "git_blob": "fd9a8a73939717726f593053f5196e81b4938a40",
+          "original_source": "intel-ucode/06-06-00",
+          "sha256": "a662324e98d9febfdb2f874c6fb689b7027dea05cb9b4b101ac9bbace691d1b5",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-06-00",
+          "target": "usr/lib/firmware/intel-ucode/06-06-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-06-00"
+        },
+        {
+          "git_blob": "522c0dbc8e082b45b87cfc7020117362dd53abde",
+          "original_source": "intel-ucode/06-06-05",
+          "sha256": "05ae5b2064a86b440655c8ad1bab523f29ad5b00754a372504c02d97cd145a52",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-06-05",
+          "target": "usr/lib/firmware/intel-ucode/06-06-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-06-05"
+        },
+        {
+          "git_blob": "d3aa9cea138f71895605b1d251fd1ee3cd76ab9b",
+          "original_source": "intel-ucode/06-06-0a",
+          "sha256": "2db5c640096d8eb8e06bc44dc1970c35feddb065c57ff35e9a7c4619cdd0f487",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-06-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-06-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-06-0a"
+        },
+        {
+          "git_blob": "6e38e60b4619dcaff2e566f25b502cdb070db3d9",
+          "original_source": "intel-ucode/06-06-0d",
+          "sha256": "50ea7040d1067bcacb7200994baf642f660eb796aaa6d6a004d9117ca561a90a",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-06-0d",
+          "target": "usr/lib/firmware/intel-ucode/06-06-0d",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-06-0d"
+        },
+        {
+          "git_blob": "e0307155515071a095765550493b18a93041d361",
+          "original_source": "intel-ucode/06-07-01",
+          "sha256": "0248cd7a9a2093bcde3bb2e14ac99f98336a89fb63faf234af31a43739ef8384",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-07-01",
+          "target": "usr/lib/firmware/intel-ucode/06-07-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-07-01"
+        },
+        {
+          "git_blob": "d6c9bb7b3b1404066ed0b3a33dc77b3a0f5d83f2",
+          "original_source": "intel-ucode/06-07-02",
+          "sha256": "dd39eb584d99f1389b65e061c4799d2826479adfa16d2b11b6a1c87dc0fca16c",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-07-02",
+          "target": "usr/lib/firmware/intel-ucode/06-07-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-07-02"
+        },
+        {
+          "git_blob": "ad8bfe4ac57ce88c536b7e9cc8e09de749ad5840",
+          "original_source": "intel-ucode/06-07-03",
+          "sha256": "f05729bb4f1c22fea672ab6a5ea7d3ff319b1d4e7919d9c7900fd2e4c66cdf62",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-07-03",
+          "target": "usr/lib/firmware/intel-ucode/06-07-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-07-03"
+        },
+        {
+          "git_blob": "b40b4c08e149f1ad2fb5e1fcd56de2cbc1342fd0",
+          "original_source": "intel-ucode/06-08-01",
+          "sha256": "7b9ecfcd9bb959dc3ba3e9c7ecc0ee736ddacb3ce35eb3bc26c65f1c89d95c92",
+          "size": 10240,
+          "source": "microcode/intel/intel-ucode/06-08-01",
+          "target": "usr/lib/firmware/intel-ucode/06-08-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-08-01"
+        },
+        {
+          "git_blob": "659c72cac2a7c1cc1a3ffea0a8c7bed34c3e8e96",
+          "original_source": "intel-ucode/06-08-03",
+          "sha256": "89309dc269a594ae97c6b8bf91f147f377d6ca65cc97c0a1566cc06442e65e2e",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-08-03",
+          "target": "usr/lib/firmware/intel-ucode/06-08-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-08-03"
+        },
+        {
+          "git_blob": "35096c050b8d60474aaab556e6c98d04ae8f3db7",
+          "original_source": "intel-ucode/06-08-06",
+          "sha256": "dd90fc7684fcd47e9fe38849cb54c49a8bcbfbda2a2b3776662521362ccdba79",
+          "size": 10240,
+          "source": "microcode/intel/intel-ucode/06-08-06",
+          "target": "usr/lib/firmware/intel-ucode/06-08-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-08-06"
+        },
+        {
+          "git_blob": "fd67bdd61922abfb047dd215a8cf48b8f871da66",
+          "original_source": "intel-ucode/06-08-0a",
+          "sha256": "0e6f043737168b0642c65cb3a7ebcf8f833fbe189e0ca2f6e787caadbb8dab40",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-08-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-08-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-08-0a"
+        },
+        {
+          "git_blob": "e3d63427bebc449a45c2eaf850d3e87dec272a10",
+          "original_source": "intel-ucode/06-09-05",
+          "sha256": "920df9c5d9f2a9fe77a038bbc3f3a9a3de557c2a10a034a2876643dddfd96f90",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/06-09-05",
+          "target": "usr/lib/firmware/intel-ucode/06-09-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-09-05"
+        },
+        {
+          "git_blob": "184c3f496663f8d321a5e1c5bcc5c54792b287dc",
+          "original_source": "intel-ucode/06-0a-00",
+          "sha256": "7aaf89aefb2156cca5eae0fe604219d7887b574c76178536d2ac089cc80dd8bb",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-0a-00",
+          "target": "usr/lib/firmware/intel-ucode/06-0a-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0a-00"
+        },
+        {
+          "git_blob": "2fef7ceef57febacb2fe112aa4e107fe2599c8a0",
+          "original_source": "intel-ucode/06-0a-01",
+          "sha256": "0a2a00d8d1a32746118c99ba403788c04f53092c480aa77c4b8b5264d90c0d95",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-0a-01",
+          "target": "usr/lib/firmware/intel-ucode/06-0a-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0a-01"
+        },
+        {
+          "git_blob": "92fbf6a1c48df88cd31089f4a4184725f3304b0e",
+          "original_source": "intel-ucode/06-0b-01",
+          "sha256": "2e1b3b00930b3004fca198ccdb8988da728b52edc362c4273a8e59617fcebcc4",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-0b-01",
+          "target": "usr/lib/firmware/intel-ucode/06-0b-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0b-01"
+        },
+        {
+          "git_blob": "e08e73c716b6589cf995556e51ff4bcb310cb1e2",
+          "original_source": "intel-ucode/06-0b-04",
+          "sha256": "52c0ca930ca60d54f8e2e3d00b54e864126037ec233c72ada1ebf39cf69d8d1c",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-0b-04",
+          "target": "usr/lib/firmware/intel-ucode/06-0b-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0b-04"
+        },
+        {
+          "git_blob": "d11772c7340096f1c84da5f5495c558acc83d13f",
+          "original_source": "intel-ucode/06-0d-06",
+          "sha256": "6d6b523f4ef84e8551298e6f33ff6816f5dd6f1d36f30d4ca6bdab542ccd4351",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/06-0d-06",
+          "target": "usr/lib/firmware/intel-ucode/06-0d-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0d-06"
+        },
+        {
+          "git_blob": "d31fa24037d9cdbc7d61c1ab84e00889cdb3d7d9",
+          "original_source": "intel-ucode/06-0e-08",
+          "sha256": "2abd5148b6a5c1649e5c4ac2c93177e00954e9c702762e329e03231fd396832a",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-0e-08",
+          "target": "usr/lib/firmware/intel-ucode/06-0e-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0e-08"
+        },
+        {
+          "git_blob": "e2b5a54ff2ca993a94e0d182267f79b35dc3b81f",
+          "original_source": "intel-ucode/06-0e-0c",
+          "sha256": "beb929266a76fcad9dff65745c2faa350f858a93f25ea0c8f23c7bddc7288ae2",
+          "size": 8192,
+          "source": "microcode/intel/intel-ucode/06-0e-0c",
+          "target": "usr/lib/firmware/intel-ucode/06-0e-0c",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0e-0c"
+        },
+        {
+          "git_blob": "8f31db533ebcdef4d04096d510cb8a86ac0734d5",
+          "original_source": "intel-ucode/06-0f-02",
+          "sha256": "c3dc11ca075f84481f4931a18224c2fef0fe7b42e30f500e217e042a5de7c0a3",
+          "size": 8192,
+          "source": "microcode/intel/intel-ucode/06-0f-02",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-02"
+        },
+        {
+          "git_blob": "0efcffbeb37291e955a0806f23a8c57d0783f39c",
+          "original_source": "intel-ucode/06-0f-06",
+          "sha256": "a8680137c1f3fa94e8726f5a25be9f214a56592f61cf9cc9e17ffa134107a5a8",
+          "size": 12288,
+          "source": "microcode/intel/intel-ucode/06-0f-06",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-06"
+        },
+        {
+          "git_blob": "5e75b6c6211fee71cb42ac91bc25de62b00bb7b4",
+          "original_source": "intel-ucode/06-0f-07",
+          "sha256": "ea4e091bacefcd64de25cffa5c4ca39e47c43c4fb1c511144d823d3224922f0c",
+          "size": 8192,
+          "source": "microcode/intel/intel-ucode/06-0f-07",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-07"
+        },
+        {
+          "git_blob": "436e607f5055cb500ad1ee94163d481e794b4012",
+          "original_source": "intel-ucode/06-0f-0a",
+          "sha256": "02e202a3894df3a07e5115756949f051660ca477105b39df5c5a008bcc2f0abd",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-0f-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-0a"
+        },
+        {
+          "git_blob": "1907ec62c4e89ecdd20fbf9b21afdb642003a725",
+          "original_source": "intel-ucode/06-0f-0b",
+          "sha256": "1878ae3c984211f71fce097bab9abab56571eed472d3a14727cdb4388e47bfc2",
+          "size": 28672,
+          "source": "microcode/intel/intel-ucode/06-0f-0b",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-0b",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-0b"
+        },
+        {
+          "git_blob": "d7e6227788f7525fbba8c0f75561c50d467ef1a6",
+          "original_source": "intel-ucode/06-0f-0d",
+          "sha256": "a69519185fc34417a16635e93389c0c9af0f2963fd07b281c1ce0a81058f3ca7",
+          "size": 12288,
+          "source": "microcode/intel/intel-ucode/06-0f-0d",
+          "target": "usr/lib/firmware/intel-ucode/06-0f-0d",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-0f-0d"
+        },
+        {
+          "git_blob": "4e81f9540cf614a6c5f4ac7b3e2904a4c6d81e24",
+          "original_source": "intel-ucode/06-16-01",
+          "sha256": "bc83452333b63be3cb14abab855f092a930920d73978aaaf619f453b9fd9e179",
+          "size": 12288,
+          "source": "microcode/intel/intel-ucode/06-16-01",
+          "target": "usr/lib/firmware/intel-ucode/06-16-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-16-01"
+        },
+        {
+          "git_blob": "93a69eb9b1519453f0016ae575f43386c2b806b0",
+          "original_source": "intel-ucode/06-17-06",
+          "sha256": "36e09767b0b8b60fb95a53e9ca85e291d74bdde9909408bce242b14ffdeac756",
+          "size": 20480,
+          "source": "microcode/intel/intel-ucode/06-17-06",
+          "target": "usr/lib/firmware/intel-ucode/06-17-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-17-06"
+        },
+        {
+          "git_blob": "cc6bc811e821cb9e74af4586edc982a44a8712e6",
+          "original_source": "intel-ucode/06-17-07",
+          "sha256": "dd0150e636ff0d97f5f841c9da0b6e46654dab14987a5d611db386ac277b68d6",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-17-07",
+          "target": "usr/lib/firmware/intel-ucode/06-17-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-17-07"
+        },
+        {
+          "git_blob": "2275d658e283284e861669c7a4f754b29f769ba4",
+          "original_source": "intel-ucode/06-17-0a",
+          "sha256": "416423f7d8dcab017f98e473c0cb1c8bce83711ffdfb578dd9a38b9302225794",
+          "size": 24576,
+          "source": "microcode/intel/intel-ucode/06-17-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-17-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-17-0a"
+        },
+        {
+          "git_blob": "4604f50e051b4fdb7513b3be8a09c4365fda0b01",
+          "original_source": "intel-ucode/06-1a-04",
+          "sha256": "53492c2bbc2ea3ba10eca377f24399c8f2fea6fc36305a7259f24f6fc324137e",
+          "size": 14336,
+          "source": "microcode/intel/intel-ucode/06-1a-04",
+          "target": "usr/lib/firmware/intel-ucode/06-1a-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1a-04"
+        },
+        {
+          "git_blob": "154e08c826df1e16df683f0acee7e0bf3fdb3b71",
+          "original_source": "intel-ucode/06-1a-05",
+          "sha256": "ce1c8248066c2126d509ad7c68168586280c69332f06629da02a678b9e9a4ba7",
+          "size": 12288,
+          "source": "microcode/intel/intel-ucode/06-1a-05",
+          "target": "usr/lib/firmware/intel-ucode/06-1a-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1a-05"
+        },
+        {
+          "git_blob": "db30b527acac77bd773d7b83acbf60c82743debc",
+          "original_source": "intel-ucode/06-1c-02",
+          "sha256": "6daf066e09d7ee9da6141ffdb6179936a6efa55743398d517a4109f8f7f8d69e",
+          "size": 15360,
+          "source": "microcode/intel/intel-ucode/06-1c-02",
+          "target": "usr/lib/firmware/intel-ucode/06-1c-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1c-02"
+        },
+        {
+          "git_blob": "5dcbe9aca9ad15b89e25fb9d3aeea3cd38bb882d",
+          "original_source": "intel-ucode/06-1c-0a",
+          "sha256": "e04b43210b32d6c85e520b31ebae76239984d134426eda877e31e655202953f6",
+          "size": 20480,
+          "source": "microcode/intel/intel-ucode/06-1c-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-1c-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1c-0a"
+        },
+        {
+          "git_blob": "fc9c5f4333cc8ac1daaccfb388c70c0e059fa255",
+          "original_source": "intel-ucode/06-1d-01",
+          "sha256": "c76253b2ba998cb97f35f871c5202a887ba3609d1ae6c49eeba938a6c439cd39",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-1d-01",
+          "target": "usr/lib/firmware/intel-ucode/06-1d-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1d-01"
+        },
+        {
+          "git_blob": "b692f51dd2b7ca0cb34636f738095580dfa04da5",
+          "original_source": "intel-ucode/06-1e-05",
+          "sha256": "0f74ee09443587e736f7c86a526544e59baed17f20f0dfab7f8183ccdca96388",
+          "size": 9216,
+          "source": "microcode/intel/intel-ucode/06-1e-05",
+          "target": "usr/lib/firmware/intel-ucode/06-1e-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-1e-05"
+        },
+        {
+          "git_blob": "f63ee5581eb3ff789f7480ef20ed3a8f403b1f02",
+          "original_source": "intel-ucode/06-25-02",
+          "sha256": "1fb8bb2e4a052706f31c82360c745645b56173276dbc8e0bb9463458b0239600",
+          "size": 9216,
+          "source": "microcode/intel/intel-ucode/06-25-02",
+          "target": "usr/lib/firmware/intel-ucode/06-25-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-25-02"
+        },
+        {
+          "git_blob": "06bbbc501d7c3f4606109f9b1ed67a81c48da7b7",
+          "original_source": "intel-ucode/06-25-05",
+          "sha256": "4833aceb498cd019f8f9e5c6cdb77034d05e3f5053946ab447a640b52de8564b",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/06-25-05",
+          "target": "usr/lib/firmware/intel-ucode/06-25-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-25-05"
+        },
+        {
+          "git_blob": "355f3745f6a4c298e6b4590b2888fbae39d5772d",
+          "original_source": "intel-ucode/06-26-01",
+          "sha256": "395cf1ada738e9d9fbc4b81210cf491c649278cb09ba68b6a83fba3d49590b1a",
+          "size": 10240,
+          "source": "microcode/intel/intel-ucode/06-26-01",
+          "target": "usr/lib/firmware/intel-ucode/06-26-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-26-01"
+        },
+        {
+          "git_blob": "844fc1fdb8eb54ffc6f36e8dc4bbee910580f993",
+          "original_source": "intel-ucode/06-2a-07",
+          "sha256": "fb8db8e9c3f37c3cec6e013e77c89aef33a101ec2a37dd6101ceac9a89ec32ab",
+          "size": 12288,
+          "source": "microcode/intel/intel-ucode/06-2a-07",
+          "target": "usr/lib/firmware/intel-ucode/06-2a-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2a-07"
+        },
+        {
+          "git_blob": "2a78b4a4d290114a0a5479f868b52c2758ed384b",
+          "original_source": "intel-ucode/06-2c-02",
+          "sha256": "6d39860414c836e949761ae152c8cf53da9519ffc0636efbacd5800eb3fa6cf8",
+          "size": 11264,
+          "source": "microcode/intel/intel-ucode/06-2c-02",
+          "target": "usr/lib/firmware/intel-ucode/06-2c-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2c-02"
+        },
+        {
+          "git_blob": "29eb3e9dd1ad3ba40a40a0eb1813b3e58e17aada",
+          "original_source": "intel-ucode/06-2d-06",
+          "sha256": "dfd62187f3a84b9682b82c0237d51533be6bfbb11e1602e616b155dd46c74dc8",
+          "size": 18432,
+          "source": "microcode/intel/intel-ucode/06-2d-06",
+          "target": "usr/lib/firmware/intel-ucode/06-2d-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2d-06"
+        },
+        {
+          "git_blob": "23926a049adca32578eb09c10d4b500de0734432",
+          "original_source": "intel-ucode/06-2d-07",
+          "sha256": "8e90c594b0fe2360c0b42b10e74c1210773f2ec1259075c373a47ed6f14f5669",
+          "size": 19456,
+          "source": "microcode/intel/intel-ucode/06-2d-07",
+          "target": "usr/lib/firmware/intel-ucode/06-2d-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2d-07"
+        },
+        {
+          "git_blob": "1ec04021835532123a2c7a7b88e6a506928a9709",
+          "original_source": "intel-ucode/06-2e-06",
+          "sha256": "2acd1587447ddb558f1d2d08f797930cbbeef54adeab29c1ff045f3634d89883",
+          "size": 9216,
+          "source": "microcode/intel/intel-ucode/06-2e-06",
+          "target": "usr/lib/firmware/intel-ucode/06-2e-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2e-06"
+        },
+        {
+          "git_blob": "8cebe97f86094d8421e57fc545dfaf18a23e01e2",
+          "original_source": "intel-ucode/06-2f-02",
+          "sha256": "e0677d50704ae75e00606ccd3fe8ee5d824b8e045a7d53cfde367b2db37cc001",
+          "size": 14336,
+          "source": "microcode/intel/intel-ucode/06-2f-02",
+          "target": "usr/lib/firmware/intel-ucode/06-2f-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-2f-02"
+        },
+        {
+          "git_blob": "513dc1a8c29f55c12583faf8a5d05383326d2db6",
+          "original_source": "intel-ucode/06-37-08",
+          "sha256": "274de36c289c0a39adc6752c1b1f39dd6842a649356472db9400d8746084c699",
+          "size": 104448,
+          "source": "microcode/intel/intel-ucode/06-37-08",
+          "target": "usr/lib/firmware/intel-ucode/06-37-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-37-08"
+        },
+        {
+          "git_blob": "26d15c8070ab1309f4dd353f78e48da3a30f6c2a",
+          "original_source": "intel-ucode/06-37-09",
+          "sha256": "a4bf916f7d98981d3835b4e9d4803ed8c74c408119568bdaf5dd83d09ee21605",
+          "size": 52224,
+          "source": "microcode/intel/intel-ucode/06-37-09",
+          "target": "usr/lib/firmware/intel-ucode/06-37-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-37-09"
+        },
+        {
+          "git_blob": "896e410ca9db41c81a79e37534e2ad44ee9a2905",
+          "original_source": "intel-ucode/06-3a-09",
+          "sha256": "ca2fa408851d20e4f9993f5a3b60d41f17a6ae3b8c4bfa0b730fd162abaea885",
+          "size": 14336,
+          "source": "microcode/intel/intel-ucode/06-3a-09",
+          "target": "usr/lib/firmware/intel-ucode/06-3a-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3a-09"
+        },
+        {
+          "git_blob": "275df730de3144a0adce37bce1628f66b900c8ca",
+          "original_source": "intel-ucode/06-3c-03",
+          "sha256": "2af41bcbe3412aec07c720e2be6ebdd092adaf8a7635efef6c5480a0b53a185d",
+          "size": 23552,
+          "source": "microcode/intel/intel-ucode/06-3c-03",
+          "target": "usr/lib/firmware/intel-ucode/06-3c-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3c-03"
+        },
+        {
+          "git_blob": "a788b3c367cf750746c01176eee3d139672b1efc",
+          "original_source": "intel-ucode/06-3d-04",
+          "sha256": "33c8eb1ab12d4d901711c91a0858937edb811c40358d2fd7ce502bb5e01149eb",
+          "size": 19456,
+          "source": "microcode/intel/intel-ucode/06-3d-04",
+          "target": "usr/lib/firmware/intel-ucode/06-3d-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3d-04"
+        },
+        {
+          "git_blob": "b60f219ea3f00e3dc7bcb9979863b42eca86db13",
+          "original_source": "intel-ucode/06-3e-04",
+          "sha256": "6fcbd4b05b272fdd5be168cdf1cec0eb7c883d14d2ff96d90ab6f034bd18de2f",
+          "size": 16384,
+          "source": "microcode/intel/intel-ucode/06-3e-04",
+          "target": "usr/lib/firmware/intel-ucode/06-3e-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3e-04"
+        },
+        {
+          "git_blob": "41b2d07cd338fc4acf2cfd2ec90d0b0242ace359",
+          "original_source": "intel-ucode/06-3e-06",
+          "sha256": "eccff59e7ccf333e370c1b31d44b1b03578c9d7ab3af9aff32bea7c0ea086762",
+          "size": 11264,
+          "source": "microcode/intel/intel-ucode/06-3e-06",
+          "target": "usr/lib/firmware/intel-ucode/06-3e-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3e-06"
+        },
+        {
+          "git_blob": "21a97de3e533966925f4c8946553754d23ba3ee5",
+          "original_source": "intel-ucode/06-3e-07",
+          "sha256": "a23b284827934dbf0afbe38d7e7f2bb32855121aacee286749cd93bc0bcfadf6",
+          "size": 17408,
+          "source": "microcode/intel/intel-ucode/06-3e-07",
+          "target": "usr/lib/firmware/intel-ucode/06-3e-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3e-07"
+        },
+        {
+          "git_blob": "41a9d903b9512226ba4df223f2d133f2a76ef29f",
+          "original_source": "intel-ucode/06-3f-02",
+          "sha256": "78021d5f3de826d80061317bcba9fbaa17c813626fcf3cb4b19a2f1cfa2dad52",
+          "size": 38912,
+          "source": "microcode/intel/intel-ucode/06-3f-02",
+          "target": "usr/lib/firmware/intel-ucode/06-3f-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3f-02"
+        },
+        {
+          "git_blob": "5f87dd2fabdec83129e4cf443293b0114c885606",
+          "original_source": "intel-ucode/06-3f-04",
+          "sha256": "eeeb4225736331f4bbf0276c9bb4f4ae2b28fdce8308171244f5341c08e524b4",
+          "size": 23552,
+          "source": "microcode/intel/intel-ucode/06-3f-04",
+          "target": "usr/lib/firmware/intel-ucode/06-3f-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-3f-04"
+        },
+        {
+          "git_blob": "1fe82fd8665250c761b8525b193ff7306152c2e3",
+          "original_source": "intel-ucode/06-45-01",
+          "sha256": "b65ad0fdb9e8f40e252e8fb2398124a1db3d2f234a0e146f531d2d555466d9e8",
+          "size": 22528,
+          "source": "microcode/intel/intel-ucode/06-45-01",
+          "target": "usr/lib/firmware/intel-ucode/06-45-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-45-01"
+        },
+        {
+          "git_blob": "36a651f48395a1440c947907216c08e1feb17edf",
+          "original_source": "intel-ucode/06-46-01",
+          "sha256": "dbe695d3c75656648e3fad413ba40ec028d8eee6a21689628dd3bbbfab41911a",
+          "size": 25600,
+          "source": "microcode/intel/intel-ucode/06-46-01",
+          "target": "usr/lib/firmware/intel-ucode/06-46-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-46-01"
+        },
+        {
+          "git_blob": "b8dbcb570cf40160b6316dad7f0af107bc61e1de",
+          "original_source": "intel-ucode/06-47-01",
+          "sha256": "dce369d38787c633fa96050c668be7295852f1ec730863bdecfaf25b0e30d6e6",
+          "size": 14336,
+          "source": "microcode/intel/intel-ucode/06-47-01",
+          "target": "usr/lib/firmware/intel-ucode/06-47-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-47-01"
+        },
+        {
+          "git_blob": "f23284f7848ccd22dec188d57b3c0e1c1a77db99",
+          "original_source": "intel-ucode/06-4c-03",
+          "sha256": "bc42b04ed3ae6d2c2f954c16347aa08283014acc7e9fbf801c2690dc42c81038",
+          "size": 69632,
+          "source": "microcode/intel/intel-ucode/06-4c-03",
+          "target": "usr/lib/firmware/intel-ucode/06-4c-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-4c-03"
+        },
+        {
+          "git_blob": "b0b003bbdceb2fd682f82725db799b5f545a1d92",
+          "original_source": "intel-ucode/06-4c-04",
+          "sha256": "11045e50e2a617def5c2f6227cd6eaf0a565f0a5772b8da2422b432d77ed6a0f",
+          "size": 68608,
+          "source": "microcode/intel/intel-ucode/06-4c-04",
+          "target": "usr/lib/firmware/intel-ucode/06-4c-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-4c-04"
+        },
+        {
+          "git_blob": "7c66bec29428c1c988cf3830f9e7ed038719b489",
+          "original_source": "intel-ucode/06-4d-08",
+          "sha256": "c3787d95a1e0f0609c991b8c79093edaac16b0fd76e3530cbcc6dd4f5187221a",
+          "size": 84992,
+          "source": "microcode/intel/intel-ucode/06-4d-08",
+          "target": "usr/lib/firmware/intel-ucode/06-4d-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-4d-08"
+        },
+        {
+          "git_blob": "0dfe3e6e53052085faa051dd77970bbe908bebb9",
+          "original_source": "intel-ucode/06-4e-03",
+          "sha256": "2bbc1de08a66818f3f30f91e398d4ce0653a0a135954d4b12a9fe24d4da90819",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-4e-03",
+          "target": "usr/lib/firmware/intel-ucode/06-4e-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-4e-03"
+        },
+        {
+          "git_blob": "453381b6eace210995c8093bd9fd1ccb4948628c",
+          "original_source": "intel-ucode/06-55-03",
+          "sha256": "cb6a0b69128ef381d007468e8c5bdfa9f89e4f1538449bb9f9e5b0e79ee94727",
+          "size": 36864,
+          "source": "microcode/intel/intel-ucode/06-55-03",
+          "target": "usr/lib/firmware/intel-ucode/06-55-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-55-03"
+        },
+        {
+          "git_blob": "e8f7ca1998b65c745cf8846e4f5eb94f8a41b715",
+          "original_source": "intel-ucode/06-55-04",
+          "sha256": "b75a5431e28a23dc2d663bc19fe5f24541d85b6e142e6583a8f25dd95190003d",
+          "size": 44032,
+          "source": "microcode/intel/intel-ucode/06-55-04",
+          "target": "usr/lib/firmware/intel-ucode/06-55-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-55-04"
+        },
+        {
+          "git_blob": "923b87da8296cde6b7aa7481ddb1a740efd8cedb",
+          "original_source": "intel-ucode/06-55-05",
+          "sha256": "ad42a775379c6051a11ea8077bb475aec6d74712296ccdc3b7bac1a0f209ca5c",
+          "size": 47104,
+          "source": "microcode/intel/intel-ucode/06-55-05",
+          "target": "usr/lib/firmware/intel-ucode/06-55-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-55-05"
+        },
+        {
+          "git_blob": "4412b803cc66f7aad8c0ec8f395f36064a53deda",
+          "original_source": "intel-ucode/06-55-07",
+          "sha256": "7eac096f672ed5e6736334630eb55f70e752ebcb8f8c60268bd58bacbfd4d474",
+          "size": 39936,
+          "source": "microcode/intel/intel-ucode/06-55-07",
+          "target": "usr/lib/firmware/intel-ucode/06-55-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-55-07"
+        },
+        {
+          "git_blob": "150bede517563d54f10a72ecaac36e35c1b8c0a1",
+          "original_source": "intel-ucode/06-55-0b",
+          "sha256": "61a2b7c8e2d9e982f6e7318bcccf76568d2f781e00e2d92ba9145a3135bfec87",
+          "size": 30720,
+          "source": "microcode/intel/intel-ucode/06-55-0b",
+          "target": "usr/lib/firmware/intel-ucode/06-55-0b",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-55-0b"
+        },
+        {
+          "git_blob": "2b4c64d027fbf370802a0a7f285fac66f88aa7ac",
+          "original_source": "intel-ucode/06-56-02",
+          "sha256": "40804ca9e17addf3b4a894f708fb87a066952f2a602872ba07fec4b61aee6d2a",
+          "size": 32768,
+          "source": "microcode/intel/intel-ucode/06-56-02",
+          "target": "usr/lib/firmware/intel-ucode/06-56-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-56-02"
+        },
+        {
+          "git_blob": "b4d965ff618af157954b1ecf39d6142e15406655",
+          "original_source": "intel-ucode/06-56-03",
+          "sha256": "1c43dfa1d454e5dbcb2153ba3f5a0d9f79a6fa1d64e95e963a06706b1c71b5ea",
+          "size": 28672,
+          "source": "microcode/intel/intel-ucode/06-56-03",
+          "target": "usr/lib/firmware/intel-ucode/06-56-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-56-03"
+        },
+        {
+          "git_blob": "4d66e5532d92feddfe82e9bb57dbc10b4fc0729d",
+          "original_source": "intel-ucode/06-56-04",
+          "sha256": "d0cd5a6e8a1557475384337698bec98ca31a50a797bba0ef07c1626a22f29aa0",
+          "size": 27648,
+          "source": "microcode/intel/intel-ucode/06-56-04",
+          "target": "usr/lib/firmware/intel-ucode/06-56-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-56-04"
+        },
+        {
+          "git_blob": "57ef2142c27f0b70dbd39a6c568ba963ddd15d90",
+          "original_source": "intel-ucode/06-56-05",
+          "sha256": "ab75a3b550b1ba4249b998ef7fed95b1091abba96cbe06aa3e289366fdfd8682",
+          "size": 23552,
+          "source": "microcode/intel/intel-ucode/06-56-05",
+          "target": "usr/lib/firmware/intel-ucode/06-56-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-56-05"
+        },
+        {
+          "git_blob": "387e1e23f7e0993b5e823103af39f9dca92a6e11",
+          "original_source": "intel-ucode/06-5c-02",
+          "sha256": "5c613a6765d59c41a400f8450f3347ee4f6a919a9f8568747a4fde9b83b3f6f1",
+          "size": 15360,
+          "source": "microcode/intel/intel-ucode/06-5c-02",
+          "target": "usr/lib/firmware/intel-ucode/06-5c-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-5c-02"
+        },
+        {
+          "git_blob": "2c62d23dc7fd8c895a0f8f834064f04b3f89c2f3",
+          "original_source": "intel-ucode/06-5c-09",
+          "sha256": "a7e990163be8b269384037f00f56cadd2604588b888c49e7b0b43baa38be0b21",
+          "size": 17408,
+          "source": "microcode/intel/intel-ucode/06-5c-09",
+          "target": "usr/lib/firmware/intel-ucode/06-5c-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-5c-09"
+        },
+        {
+          "git_blob": "efc63ee18f7bdde91811f08ba1dc085f7f97a6cb",
+          "original_source": "intel-ucode/06-5c-0a",
+          "sha256": "52acbee81c6dc78c2cb1515a650064ab51800af137b11d4d6ef0433320c4d2ad",
+          "size": 16384,
+          "source": "microcode/intel/intel-ucode/06-5c-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-5c-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-5c-0a"
+        },
+        {
+          "git_blob": "4c52210b71917a5032c9f14fd7e2a7d83ac7aeeb",
+          "original_source": "intel-ucode/06-5e-03",
+          "sha256": "15e96637a89012390e2c254effad092fc9535912b709ffa316069fc5606efb65",
+          "size": 109568,
+          "source": "microcode/intel/intel-ucode/06-5e-03",
+          "target": "usr/lib/firmware/intel-ucode/06-5e-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-5e-03"
+        },
+        {
+          "git_blob": "cc6c50ea9da4ea38382fed4fec1a4fb68f31e8d3",
+          "original_source": "intel-ucode/06-5f-01",
+          "sha256": "a61ab250e94a53c5acd8da6cbc33fa2bcae040c9d9222a09c7cec7b694968322",
+          "size": 11264,
+          "source": "microcode/intel/intel-ucode/06-5f-01",
+          "target": "usr/lib/firmware/intel-ucode/06-5f-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-5f-01"
+        },
+        {
+          "git_blob": "22e36d2b651f17c65d5f7f1b6600fcd7e1973234",
+          "original_source": "intel-ucode/06-66-03",
+          "sha256": "7b291fa54f25261e68de7d337c9c6b4fa2bbadee9dfa8d17ad1317b9e63f4793",
+          "size": 87040,
+          "source": "microcode/intel/intel-ucode/06-66-03",
+          "target": "usr/lib/firmware/intel-ucode/06-66-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-66-03"
+        },
+        {
+          "git_blob": "ab203913cfe59938b854e11f43c4d00406c67d79",
+          "original_source": "intel-ucode/06-6a-05",
+          "sha256": "ec16b02ea163e8fb781b3b61b7bc58b416a7270178353a0e7aa8be6fd20ffc25",
+          "size": 283648,
+          "source": "microcode/intel/intel-ucode/06-6a-05",
+          "target": "usr/lib/firmware/intel-ucode/06-6a-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-6a-05"
+        },
+        {
+          "git_blob": "264f59b9b1e6e3c2553bf8c881397f522ba0e957",
+          "original_source": "intel-ucode/06-6a-06",
+          "sha256": "8d6c054b51986b4289c4e991d5833315cbc371f4df767983f43ae1d269f28ef4",
+          "size": 309248,
+          "source": "microcode/intel/intel-ucode/06-6a-06",
+          "target": "usr/lib/firmware/intel-ucode/06-6a-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-6a-06"
+        },
+        {
+          "git_blob": "057950b260a6fae66397e405de6f80b7323ff951",
+          "original_source": "intel-ucode/06-6c-01",
+          "sha256": "4d70dad7f4c4f13df12dec61dfd7087a23a5a85213a0f0b2d501b164b34e85b8",
+          "size": 301056,
+          "source": "microcode/intel/intel-ucode/06-6c-01",
+          "target": "usr/lib/firmware/intel-ucode/06-6c-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-6c-01"
+        },
+        {
+          "git_blob": "ac377e9e5e200531370cef572b35b5d204744165",
+          "original_source": "intel-ucode/06-7a-01",
+          "sha256": "ed98581aaaf8791d505be86f61ce4ebafd28b414ea59c32e217f6cc8c37e0d9d",
+          "size": 76800,
+          "source": "microcode/intel/intel-ucode/06-7a-01",
+          "target": "usr/lib/firmware/intel-ucode/06-7a-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-7a-01"
+        },
+        {
+          "git_blob": "25ed1f0f3159cd3f36ae47a349b6ba56dfcbedd1",
+          "original_source": "intel-ucode/06-7a-08",
+          "sha256": "d37cdd957f03d92bff08d4d2607cdad7f4cd1be8229d7d2591ac9161266e393b",
+          "size": 76800,
+          "source": "microcode/intel/intel-ucode/06-7a-08",
+          "target": "usr/lib/firmware/intel-ucode/06-7a-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-7a-08"
+        },
+        {
+          "git_blob": "eb4f61828cf450893212479463d75f2280c39e2e",
+          "original_source": "intel-ucode/06-7e-05",
+          "sha256": "cb6f7af9cb21e4e1b29e74fbe635980d3f836773131cd7414163162f01bdc243",
+          "size": 115712,
+          "source": "microcode/intel/intel-ucode/06-7e-05",
+          "target": "usr/lib/firmware/intel-ucode/06-7e-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-7e-05"
+        },
+        {
+          "git_blob": "ee577b3281e670509eee0dccc4a9be346d0d0399",
+          "original_source": "intel-ucode/06-8a-01",
+          "sha256": "d7029d47e8ee440fe6be4ea8c044238568eadb65cbb698091dcc6f6535463e9e",
+          "size": 34816,
+          "source": "microcode/intel/intel-ucode/06-8a-01",
+          "target": "usr/lib/firmware/intel-ucode/06-8a-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8a-01"
+        },
+        {
+          "git_blob": "6cbf8811ef062e60ae5af3028f4a331194db1bb8",
+          "original_source": "intel-ucode/06-8c-01",
+          "sha256": "efe83e312b90f7fe4b8f75260087edf03e048d2f4f80caef2ef631c842714bb3",
+          "size": 112640,
+          "source": "microcode/intel/intel-ucode/06-8c-01",
+          "target": "usr/lib/firmware/intel-ucode/06-8c-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8c-01"
+        },
+        {
+          "git_blob": "91ca264a31c428c57d83d81c103a72b526a21537",
+          "original_source": "intel-ucode/06-8c-02",
+          "sha256": "3d85590a0d1abced7f480bf95d5bfff1fc3121a1401571c9cc43960cda6beefc",
+          "size": 99328,
+          "source": "microcode/intel/intel-ucode/06-8c-02",
+          "target": "usr/lib/firmware/intel-ucode/06-8c-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8c-02"
+        },
+        {
+          "git_blob": "531c30e0a1a13757df74189a4b3054372c06210b",
+          "original_source": "intel-ucode/06-8d-01",
+          "sha256": "20b65b22457c835ed7d71b30c0ddcf9665cdbbe1ffe307e7ce69fa7fb9066336",
+          "size": 105472,
+          "source": "microcode/intel/intel-ucode/06-8d-01",
+          "target": "usr/lib/firmware/intel-ucode/06-8d-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8d-01"
+        },
+        {
+          "git_blob": "af8f21a383137b435cb66a3443f593879995ea93",
+          "original_source": "intel-ucode/06-8e-09",
+          "sha256": "d8c8e053e21bcf29499345b597e665d8709f86ac27dd17807bbb239e85cacc58",
+          "size": 212992,
+          "source": "microcode/intel/intel-ucode/06-8e-09",
+          "target": "usr/lib/firmware/intel-ucode/06-8e-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8e-09"
+        },
+        {
+          "git_blob": "5170e0fec4158e899ac93423549e9f436eaf5694",
+          "original_source": "intel-ucode/06-8e-0a",
+          "sha256": "368784c15e2e3538352974b8fe32a4150da09ac19d0005121c75db336d55a7c0",
+          "size": 105472,
+          "source": "microcode/intel/intel-ucode/06-8e-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-8e-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8e-0a"
+        },
+        {
+          "git_blob": "afd84dce20b5f61c6b08c112d0d810a91ae391af",
+          "original_source": "intel-ucode/06-8e-0b",
+          "sha256": "97a671535d920d4e55e615b265b91016afe17b6a0e293c9a7d64d7bb6d589f86",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-8e-0b",
+          "target": "usr/lib/firmware/intel-ucode/06-8e-0b",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8e-0b"
+        },
+        {
+          "git_blob": "45a7c81bd386e666e1fcbe4b49249de01165476d",
+          "original_source": "intel-ucode/06-8e-0c",
+          "sha256": "6f60c60e426e29c872dd1d35bf9f35cac2366cb3fc9053d7622fafe1b689728b",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-8e-0c",
+          "target": "usr/lib/firmware/intel-ucode/06-8e-0c",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8e-0c"
+        },
+        {
+          "git_blob": "d22d70add9042f537cf53f4760cea27a6b34fce3",
+          "original_source": "intel-ucode/06-8f-07",
+          "sha256": "d9633b3ddf943c27de0d58989afcf450f57a8f393cd2cf008c0836f43191ea63",
+          "size": 596992,
+          "source": "microcode/intel/intel-ucode/06-8f-07",
+          "target": "usr/lib/firmware/intel-ucode/06-8f-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8f-07"
+        },
+        {
+          "git_blob": "243b93899d88f3a5a0f4121f08e2978235b08c0f",
+          "original_source": "intel-ucode/06-8f-08",
+          "sha256": "f0d11543a1ac122963cc5a642147a57fb4b03709d9b9ed1f33e1cd57817ee115",
+          "size": 1225728,
+          "source": "microcode/intel/intel-ucode/06-8f-08",
+          "target": "usr/lib/firmware/intel-ucode/06-8f-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-8f-08"
+        },
+        {
+          "git_blob": "a218207d386fb4862bd13d3d6fb8c5c74c4e769e",
+          "original_source": "intel-ucode/06-96-01",
+          "sha256": "1771049d0db5b354e77ebe1cc063badaa8c16fd81e22707a75ec904b06db0174",
+          "size": 20480,
+          "source": "microcode/intel/intel-ucode/06-96-01",
+          "target": "usr/lib/firmware/intel-ucode/06-96-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-96-01"
+        },
+        {
+          "git_blob": "485396cef5df07218425cdaea8d70fe76a290dac",
+          "original_source": "intel-ucode/06-97-02",
+          "sha256": "331e26dd94309aa9419342a66f9b07e7338e9080fe8372bc1335dc670d1bb1b0",
+          "size": 227328,
+          "source": "microcode/intel/intel-ucode/06-97-02",
+          "target": "usr/lib/firmware/intel-ucode/06-97-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-97-02"
+        },
+        {
+          "git_blob": "485396cef5df07218425cdaea8d70fe76a290dac",
+          "original_source": "intel-ucode/06-97-05",
+          "sha256": "331e26dd94309aa9419342a66f9b07e7338e9080fe8372bc1335dc670d1bb1b0",
+          "size": 227328,
+          "source": "microcode/intel/intel-ucode/06-97-05",
+          "target": "usr/lib/firmware/intel-ucode/06-97-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-97-05"
+        },
+        {
+          "git_blob": "7b9a998f966878b638c7628ce7f0288464ec81f2",
+          "original_source": "intel-ucode/06-9a-03",
+          "sha256": "176940cb2251131fbe7c64d7e8db4d9c36d26bda824d34a9f6d244d03b49999f",
+          "size": 225280,
+          "source": "microcode/intel/intel-ucode/06-9a-03",
+          "target": "usr/lib/firmware/intel-ucode/06-9a-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9a-03"
+        },
+        {
+          "git_blob": "a6cb81282287885cb3af939e7343400515323237",
+          "original_source": "intel-ucode/06-9a-04",
+          "sha256": "ec8d853571eba77ce3fe9840f1f1519b5eedcf1b6cfa7a4cd40c062adcd60144",
+          "size": 345088,
+          "source": "microcode/intel/intel-ucode/06-9a-04",
+          "target": "usr/lib/firmware/intel-ucode/06-9a-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9a-04"
+        },
+        {
+          "git_blob": "404028c9a3cff2a34af21df552a8f54374263b2a",
+          "original_source": "intel-ucode/06-9c-00",
+          "sha256": "2e07c2ea90c3074f68c0ba2bebf4fcf3a999ff144afcc34f1d7f0f81a9bcc2d0",
+          "size": 20480,
+          "source": "microcode/intel/intel-ucode/06-9c-00",
+          "target": "usr/lib/firmware/intel-ucode/06-9c-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9c-00"
+        },
+        {
+          "git_blob": "a6dfbcaef0e451408a5623958f4ebf3b86101d73",
+          "original_source": "intel-ucode/06-9e-09",
+          "sha256": "ab884b0060cee11f64dafdbe0659f647d058b510274e1331322b88dd83080e6a",
+          "size": 108544,
+          "source": "microcode/intel/intel-ucode/06-9e-09",
+          "target": "usr/lib/firmware/intel-ucode/06-9e-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9e-09"
+        },
+        {
+          "git_blob": "7eb1a98f8e68b14d013048a62bab2dd52e13814e",
+          "original_source": "intel-ucode/06-9e-0a",
+          "sha256": "615aaa46ae45cd60f79d0d33b875752222f2f5e7109a1e4c523ee10c0d6b6db6",
+          "size": 105472,
+          "source": "microcode/intel/intel-ucode/06-9e-0a",
+          "target": "usr/lib/firmware/intel-ucode/06-9e-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9e-0a"
+        },
+        {
+          "git_blob": "04a59977098633504da1166c2c40ab2976ab1c32",
+          "original_source": "intel-ucode/06-9e-0b",
+          "sha256": "212a25b0184d783abeac7b698105553747e4abd7dc35121e5a04a5b34be02d8c",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-9e-0b",
+          "target": "usr/lib/firmware/intel-ucode/06-9e-0b",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9e-0b"
+        },
+        {
+          "git_blob": "ba36a02a0ef9792c6ded8ebce9ebae32baa3e875",
+          "original_source": "intel-ucode/06-9e-0c",
+          "sha256": "65738658537a6d201f0d94b7205e39ca4ec3f39c56fcc9a73f314214103fb9d6",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-9e-0c",
+          "target": "usr/lib/firmware/intel-ucode/06-9e-0c",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9e-0c"
+        },
+        {
+          "git_blob": "e4c29b5e36a06e0a2c633386b69c346cb74ed822",
+          "original_source": "intel-ucode/06-9e-0d",
+          "sha256": "976f45becb07fc6a7dcb2352b286a43cf5ccc6fab34b0b598aceb354d2b235d3",
+          "size": 106496,
+          "source": "microcode/intel/intel-ucode/06-9e-0d",
+          "target": "usr/lib/firmware/intel-ucode/06-9e-0d",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-9e-0d"
+        },
+        {
+          "git_blob": "bfd70de66fa4831c2f458c7823f62abbeb75c7c0",
+          "original_source": "intel-ucode/06-a5-02",
+          "sha256": "6555e891e6df43cfe9fdf3d7293158cc6107f2efeed80b55cec7ed24e307ecba",
+          "size": 97280,
+          "source": "microcode/intel/intel-ucode/06-a5-02",
+          "target": "usr/lib/firmware/intel-ucode/06-a5-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a5-02"
+        },
+        {
+          "git_blob": "674e83b3a16529bfbb3313002ef29d59329b179d",
+          "original_source": "intel-ucode/06-a5-03",
+          "sha256": "b6bf97b444e3864b624d7ce8635172b8fee48dda7a00a4d99202d0f1c0fc838c",
+          "size": 98304,
+          "source": "microcode/intel/intel-ucode/06-a5-03",
+          "target": "usr/lib/firmware/intel-ucode/06-a5-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a5-03"
+        },
+        {
+          "git_blob": "d7761aa9f7b870dc3bae9d3f2f3f8ebe9baedbb1",
+          "original_source": "intel-ucode/06-a5-05",
+          "sha256": "bc9d8ee2a7981a6296f003e6a216fdf58b48ebb76be9a39719df711da6652452",
+          "size": 97280,
+          "source": "microcode/intel/intel-ucode/06-a5-05",
+          "target": "usr/lib/firmware/intel-ucode/06-a5-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a5-05"
+        },
+        {
+          "git_blob": "a5176828e170fe8923440b6b006b7a9c8ad0f112",
+          "original_source": "intel-ucode/06-a6-00",
+          "sha256": "acc3519096d3ad446b070b8379470dde177ea8358a159884c8db098d5c052831",
+          "size": 98304,
+          "source": "microcode/intel/intel-ucode/06-a6-00",
+          "target": "usr/lib/firmware/intel-ucode/06-a6-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a6-00"
+        },
+        {
+          "git_blob": "a2c2aef81b5cf60cdf502a772a8f4c1d30031665",
+          "original_source": "intel-ucode/06-a6-01",
+          "sha256": "092b8da46db50e4b4f9d5c1516980004d17648b6d3ddba3405dd8af9a0c9edf8",
+          "size": 97280,
+          "source": "microcode/intel/intel-ucode/06-a6-01",
+          "target": "usr/lib/firmware/intel-ucode/06-a6-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a6-01"
+        },
+        {
+          "git_blob": "07c0f417ded8e91bcad49228a1d28a1fd64a4d82",
+          "original_source": "intel-ucode/06-a7-01",
+          "sha256": "4f3cfaf4c35090fe32e86dcff381e58e1c906dd6a0325c1406c59352750f803d",
+          "size": 109568,
+          "source": "microcode/intel/intel-ucode/06-a7-01",
+          "target": "usr/lib/firmware/intel-ucode/06-a7-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-a7-01"
+        },
+        {
+          "git_blob": "9276b49e539ba70f77f7c4b75bba22ebc3ef4864",
+          "original_source": "intel-ucode/06-aa-04",
+          "sha256": "c1295a2c7c38797e07fdcf28a07c11271909be295dd264e3adfcc221850d3712",
+          "size": 141312,
+          "source": "microcode/intel/intel-ucode/06-aa-04",
+          "target": "usr/lib/firmware/intel-ucode/06-aa-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-aa-04"
+        },
+        {
+          "git_blob": "0846cb1d1b562f74db48dfc3fc36831a4f1cc5ac",
+          "original_source": "intel-ucode/06-ad-01",
+          "sha256": "9edb3868cf48d7d94fdc07cd5b6d746d6635ba0173870d5d9bd0d4bae47df2e5",
+          "size": 3329024,
+          "source": "microcode/intel/intel-ucode/06-ad-01",
+          "target": "usr/lib/firmware/intel-ucode/06-ad-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-ad-01"
+        },
+        {
+          "git_blob": "9b58c98f8f97fe6999c751491bed22877bdefdf4",
+          "original_source": "intel-ucode/06-ae-01",
+          "sha256": "ed834cbfc9826407a1491d1f3ece4d72cda36d622c22f0842c005058ce4b8606",
+          "size": 1647616,
+          "source": "microcode/intel/intel-ucode/06-ae-01",
+          "target": "usr/lib/firmware/intel-ucode/06-ae-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-ae-01"
+        },
+        {
+          "git_blob": "7c310275cba3d574190043ae61c9ce079f83bbec",
+          "original_source": "intel-ucode/06-af-03",
+          "sha256": "6c9f654e1dd3333b9e0d765316689587dfcd2c3121758e18c8950b291bf97d33",
+          "size": 1542144,
+          "source": "microcode/intel/intel-ucode/06-af-03",
+          "target": "usr/lib/firmware/intel-ucode/06-af-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-af-03"
+        },
+        {
+          "git_blob": "fad2ff32d5770ccbf8d6a8b23ebc1525f086230f",
+          "original_source": "intel-ucode/06-b5-00",
+          "sha256": "a1645454fcccbdc5e48279e544ad364b66ee229dea1dcbdbefefb64061a5b46c",
+          "size": 137216,
+          "source": "microcode/intel/intel-ucode/06-b5-00",
+          "target": "usr/lib/firmware/intel-ucode/06-b5-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-b5-00"
+        },
+        {
+          "git_blob": "93ded41b5ec9699b55829f60131f83667fd74f6e",
+          "original_source": "intel-ucode/06-b7-01",
+          "sha256": "b44b64226a0592240216396f9de11a8cf63b55f7455f261dba342d2103b8e859",
+          "size": 246784,
+          "source": "microcode/intel/intel-ucode/06-b7-01",
+          "target": "usr/lib/firmware/intel-ucode/06-b7-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-b7-01"
+        },
+        {
+          "git_blob": "93ded41b5ec9699b55829f60131f83667fd74f6e",
+          "original_source": "intel-ucode/06-b7-04",
+          "sha256": "b44b64226a0592240216396f9de11a8cf63b55f7455f261dba342d2103b8e859",
+          "size": 246784,
+          "source": "microcode/intel/intel-ucode/06-b7-04",
+          "target": "usr/lib/firmware/intel-ucode/06-b7-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-b7-04"
+        },
+        {
+          "git_blob": "dc90f59f01fb70820e104e6ef1a89cb9bff68e1a",
+          "original_source": "intel-ucode/06-ba-02",
+          "sha256": "184f72215da596c1bd05e5fbb032fb7a7bf897a32fad5274fe01da115c07a047",
+          "size": 224256,
+          "source": "microcode/intel/intel-ucode/06-ba-02",
+          "target": "usr/lib/firmware/intel-ucode/06-ba-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-ba-02"
+        },
+        {
+          "git_blob": "dc90f59f01fb70820e104e6ef1a89cb9bff68e1a",
+          "original_source": "intel-ucode/06-ba-03",
+          "sha256": "184f72215da596c1bd05e5fbb032fb7a7bf897a32fad5274fe01da115c07a047",
+          "size": 224256,
+          "source": "microcode/intel/intel-ucode/06-ba-03",
+          "target": "usr/lib/firmware/intel-ucode/06-ba-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-ba-03"
+        },
+        {
+          "git_blob": "6672b19e50e231803a020eb3c21962d20392c95f",
+          "original_source": "intel-ucode/06-bd-01",
+          "sha256": "6beeebf6e05038d31770f0d64d76f7c426800a7e51dc11c5c56d98d779e4b786",
+          "size": 81920,
+          "source": "microcode/intel/intel-ucode/06-bd-01",
+          "target": "usr/lib/firmware/intel-ucode/06-bd-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-bd-01"
+        },
+        {
+          "git_blob": "fb949dc6317e0a63c693f55a76e356062e5e7c03",
+          "original_source": "intel-ucode/06-be-00",
+          "sha256": "93cf190f9e7bbe5361076dd5201df3d05af1be68e400c9308acb5eadbe52fb2f",
+          "size": 142336,
+          "source": "microcode/intel/intel-ucode/06-be-00",
+          "target": "usr/lib/firmware/intel-ucode/06-be-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-be-00"
+        },
+        {
+          "git_blob": "485396cef5df07218425cdaea8d70fe76a290dac",
+          "original_source": "intel-ucode/06-bf-02",
+          "sha256": "331e26dd94309aa9419342a66f9b07e7338e9080fe8372bc1335dc670d1bb1b0",
+          "size": 227328,
+          "source": "microcode/intel/intel-ucode/06-bf-02",
+          "target": "usr/lib/firmware/intel-ucode/06-bf-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-bf-02"
+        },
+        {
+          "git_blob": "485396cef5df07218425cdaea8d70fe76a290dac",
+          "original_source": "intel-ucode/06-bf-05",
+          "sha256": "331e26dd94309aa9419342a66f9b07e7338e9080fe8372bc1335dc670d1bb1b0",
+          "size": 227328,
+          "source": "microcode/intel/intel-ucode/06-bf-05",
+          "target": "usr/lib/firmware/intel-ucode/06-bf-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-bf-05"
+        },
+        {
+          "git_blob": "44f95f7ea4a789b740d5c85d49650dda1e5ad664",
+          "original_source": "intel-ucode/06-c5-02",
+          "sha256": "468e5b1f2b9b9b1af0b7a7ee63940e5a16a52813d57e770c424c9866df08f189",
+          "size": 91136,
+          "source": "microcode/intel/intel-ucode/06-c5-02",
+          "target": "usr/lib/firmware/intel-ucode/06-c5-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-c5-02"
+        },
+        {
+          "git_blob": "44f95f7ea4a789b740d5c85d49650dda1e5ad664",
+          "original_source": "intel-ucode/06-c6-02",
+          "sha256": "468e5b1f2b9b9b1af0b7a7ee63940e5a16a52813d57e770c424c9866df08f189",
+          "size": 91136,
+          "source": "microcode/intel/intel-ucode/06-c6-02",
+          "target": "usr/lib/firmware/intel-ucode/06-c6-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-c6-02"
+        },
+        {
+          "git_blob": "33db17f75a2efc40b2e89a7b08fefadb1869139a",
+          "original_source": "intel-ucode/06-cc-02",
+          "sha256": "2960a456b2c672614487f410e774012e386bddeaefb5a9899b307ef682cb1536",
+          "size": 165888,
+          "source": "microcode/intel/intel-ucode/06-cc-02",
+          "target": "usr/lib/firmware/intel-ucode/06-cc-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-cc-02"
+        },
+        {
+          "git_blob": "33db17f75a2efc40b2e89a7b08fefadb1869139a",
+          "original_source": "intel-ucode/06-cc-03",
+          "sha256": "2960a456b2c672614487f410e774012e386bddeaefb5a9899b307ef682cb1536",
+          "size": 165888,
+          "source": "microcode/intel/intel-ucode/06-cc-03",
+          "target": "usr/lib/firmware/intel-ucode/06-cc-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-cc-03"
+        },
+        {
+          "git_blob": "d770f0febeb211dbc44fe35e45239afd3a3840a7",
+          "original_source": "intel-ucode/06-cf-02",
+          "sha256": "2355e55cc04549290a4610f8c0613c57a3d9ca48d87a22ee235fef5be19f0e92",
+          "size": 569344,
+          "source": "microcode/intel/intel-ucode/06-cf-02",
+          "target": "usr/lib/firmware/intel-ucode/06-cf-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-cf-02"
+        },
+        {
+          "git_blob": "0c5ec2d8355610004560126644703b0d52a42a92",
+          "original_source": "intel-ucode/06-d5-01",
+          "sha256": "4edd4f51eaa7de93514f69d9899817f0bd817d20b402ed88c844e8840a2840f7",
+          "size": 84992,
+          "source": "microcode/intel/intel-ucode/06-d5-01",
+          "target": "usr/lib/firmware/intel-ucode/06-d5-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-d5-01"
+        },
+        {
+          "git_blob": "93ded41b5ec9699b55829f60131f83667fd74f6e",
+          "original_source": "intel-ucode/06-d7-00",
+          "sha256": "b44b64226a0592240216396f9de11a8cf63b55f7455f261dba342d2103b8e859",
+          "size": 246784,
+          "source": "microcode/intel/intel-ucode/06-d7-00",
+          "target": "usr/lib/firmware/intel-ucode/06-d7-00",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-d7-00"
+        },
+        {
+          "git_blob": "2632894fda6a471354d6e3bc224816b8da3cbc70",
+          "original_source": "intel-ucode/06-dd-01",
+          "sha256": "0f61dd0a7c99be2ec5a4801189937289811632d99c4da39ef061996ffe858704",
+          "size": 1504256,
+          "source": "microcode/intel/intel-ucode/06-dd-01",
+          "target": "usr/lib/firmware/intel-ucode/06-dd-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/06-dd-01"
+        },
+        {
+          "git_blob": "ba616bbee65044519ea8562e2af960b34cf2a0af",
+          "original_source": "intel-ucode/0f-00-07",
+          "sha256": "0ab3400c054575af3979ea8a419992a6c7e2259c589e207b03676aebe8cab548",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/0f-00-07",
+          "target": "usr/lib/firmware/intel-ucode/0f-00-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-00-07"
+        },
+        {
+          "git_blob": "62bd0ded7eff130cf86a5e099fbbed6afeec5a3d",
+          "original_source": "intel-ucode/0f-00-0a",
+          "sha256": "78bf6fdeefde7934e2e3ae3a44b0b2c713974ccc6713e99bd09f229039a335c8",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/0f-00-0a",
+          "target": "usr/lib/firmware/intel-ucode/0f-00-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-00-0a"
+        },
+        {
+          "git_blob": "a789e0d8e829a35c9e1f8661221440fc3daf4d9c",
+          "original_source": "intel-ucode/0f-01-02",
+          "sha256": "a06ad0cd47fd29cc6dbebe6d5e853d7171cd7df298c5e67f13e40ffd7fe6e592",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-01-02",
+          "target": "usr/lib/firmware/intel-ucode/0f-01-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-01-02"
+        },
+        {
+          "git_blob": "0240ed72e8270723a98d5bf1cfe8e51d14f60b2f",
+          "original_source": "intel-ucode/0f-02-04",
+          "sha256": "c3ee7e3252b3ee2018f1b464ccedd3658714a7793531cfb9196bc6f2a54d4a66",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/0f-02-04",
+          "target": "usr/lib/firmware/intel-ucode/0f-02-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-02-04"
+        },
+        {
+          "git_blob": "592851b8fc686abc83a9c01581ed9200617b5306",
+          "original_source": "intel-ucode/0f-02-05",
+          "sha256": "77effb924b56b41b255f6c1486c76461c8b3190e72287f16f76ac580ee1cebd1",
+          "size": 8192,
+          "source": "microcode/intel/intel-ucode/0f-02-05",
+          "target": "usr/lib/firmware/intel-ucode/0f-02-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-02-05"
+        },
+        {
+          "git_blob": "1fe95c1dc2190a7647a1a539c0e24a3701b72f70",
+          "original_source": "intel-ucode/0f-02-06",
+          "sha256": "56340cc81aef247113267050029a039b23d0e578d3b5a43bfbcf0d3e1388004f",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-02-06",
+          "target": "usr/lib/firmware/intel-ucode/0f-02-06",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-02-06"
+        },
+        {
+          "git_blob": "c382e13150153f7b521ee2ac99574f12e4a9357d",
+          "original_source": "intel-ucode/0f-02-07",
+          "sha256": "4fdc4e999dc3084855ecf977444d633114385424faec71ad6b51e857d687cc92",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/0f-02-07",
+          "target": "usr/lib/firmware/intel-ucode/0f-02-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-02-07"
+        },
+        {
+          "git_blob": "6fd5a0730827580667206233838b1b72d9bbad5b",
+          "original_source": "intel-ucode/0f-02-09",
+          "sha256": "c093feda1740139c02f57caaa486fc36f23c09426541d43ff8130fbfa3925516",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/0f-02-09",
+          "target": "usr/lib/firmware/intel-ucode/0f-02-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-02-09"
+        },
+        {
+          "git_blob": "00271ee25e789b1519a9f074b239fd05ae47b3ca",
+          "original_source": "intel-ucode/0f-03-02",
+          "sha256": "676888bcf442195c0b3a3799cd009bdcc521fbfcfbd84798d76c9809c10a510c",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-03-02",
+          "target": "usr/lib/firmware/intel-ucode/0f-03-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-03-02"
+        },
+        {
+          "git_blob": "10300a2bb92b77c81d5ef9168f25d1ee261ff365",
+          "original_source": "intel-ucode/0f-03-03",
+          "sha256": "5c4ad3321bdc4a7cd630533aa00c5cea07ad077e564eb9bac65ccc5ca49db5f4",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-03-03",
+          "target": "usr/lib/firmware/intel-ucode/0f-03-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-03-03"
+        },
+        {
+          "git_blob": "27f2b9b27f60626eb61dea8a85474c8c79229005",
+          "original_source": "intel-ucode/0f-03-04",
+          "sha256": "503852781748569f62eb68cc847cff0f9ad72bacdd7f421d7d7b4c4613ab18a5",
+          "size": 7168,
+          "source": "microcode/intel/intel-ucode/0f-03-04",
+          "target": "usr/lib/firmware/intel-ucode/0f-03-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-03-04"
+        },
+        {
+          "git_blob": "6ddf1047566906c0dda9fb7cdd6f197607c1e9c8",
+          "original_source": "intel-ucode/0f-04-01",
+          "sha256": "c1da0e6bb653d67c07a3046e0ca6861f78e46ca59d6642bf71944797d9a16fc8",
+          "size": 10240,
+          "source": "microcode/intel/intel-ucode/0f-04-01",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-01",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-01"
+        },
+        {
+          "git_blob": "0ed7e18fd7aafa096a08fa96c9f516104baaec92",
+          "original_source": "intel-ucode/0f-04-03",
+          "sha256": "beaa222d3730e69d7cf9983a340e35039a2858c9e4b57d023f5eb4b7ed937a43",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-04-03",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-03",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-03"
+        },
+        {
+          "git_blob": "669f65966cf00e14f2f1e2349f3f692a39afb665",
+          "original_source": "intel-ucode/0f-04-04",
+          "sha256": "839e8dac30e8b97b7740261c5e581cbce2d09f88989858045565ceba391157bd",
+          "size": 3072,
+          "source": "microcode/intel/intel-ucode/0f-04-04",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-04"
+        },
+        {
+          "git_blob": "0d2190c32cf0750cffe7717d2012e5373a913e72",
+          "original_source": "intel-ucode/0f-04-07",
+          "sha256": "7d9a242b67331526a3633042c96b61e880cecbc327dcce574ba81707d1147eec",
+          "size": 3072,
+          "source": "microcode/intel/intel-ucode/0f-04-07",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-07",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-07"
+        },
+        {
+          "git_blob": "bd874986faf3dfec9cb519d8acff75cc93c64456",
+          "original_source": "intel-ucode/0f-04-08",
+          "sha256": "c68f7b04af3b6d4fd9c942c356e69c4997c0677ea4fa67ddbd4affbffbd53d95",
+          "size": 9216,
+          "source": "microcode/intel/intel-ucode/0f-04-08",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-08"
+        },
+        {
+          "git_blob": "3307178dfb8395afbf8746bf6a05b77a8b01873f",
+          "original_source": "intel-ucode/0f-04-09",
+          "sha256": "96217d1ec127192263015efcde27c1aa49e56a99d401d1a656800b578f58c250",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-04-09",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-09",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-09"
+        },
+        {
+          "git_blob": "c64296f21bf2565b19735e29011abb93fe3a7fc5",
+          "original_source": "intel-ucode/0f-04-0a",
+          "sha256": "0b7867e5e5b5bdc074f66a747b0637858a51de2dcb30073e0923cdf88faa915b",
+          "size": 4096,
+          "source": "microcode/intel/intel-ucode/0f-04-0a",
+          "target": "usr/lib/firmware/intel-ucode/0f-04-0a",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-04-0a"
+        },
+        {
+          "git_blob": "dbf381c0605f585d578ddea0fb78d94f90140b3d",
+          "original_source": "intel-ucode/0f-06-02",
+          "sha256": "fddb8c39f348deeaee062f0353ba0c52847015c1aae822366d7ae151bc3b77dd",
+          "size": 3072,
+          "source": "microcode/intel/intel-ucode/0f-06-02",
+          "target": "usr/lib/firmware/intel-ucode/0f-06-02",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-06-02"
+        },
+        {
+          "git_blob": "9572727136c0f384486673bbc97dcfbb4ec82c83",
+          "original_source": "intel-ucode/0f-06-04",
+          "sha256": "fd5f7a1f1a207908f5395af3ed0c0b58ab0a96a100e87ded962a557ae0d070da",
+          "size": 6144,
+          "source": "microcode/intel/intel-ucode/0f-06-04",
+          "target": "usr/lib/firmware/intel-ucode/0f-06-04",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-06-04"
+        },
+        {
+          "git_blob": "d02b9dc0ad55c7802b1d65551f8d670643d2d5b4",
+          "original_source": "intel-ucode/0f-06-05",
+          "sha256": "f7a7756629757a3a2cacd467eaaec0d1b1d33e7faf0995a96659bc3fc4b32ff1",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-06-05",
+          "target": "usr/lib/firmware/intel-ucode/0f-06-05",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-06-05"
+        },
+        {
+          "git_blob": "bdc81f40506674629b8c05201ec72d80fbff37c8",
+          "original_source": "intel-ucode/0f-06-08",
+          "sha256": "26a47493b04b770f6b45a27dd12e01a8e07c2011681d9d725ad08b3fad5fffe5",
+          "size": 2048,
+          "source": "microcode/intel/intel-ucode/0f-06-08",
+          "target": "usr/lib/firmware/intel-ucode/0f-06-08",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/intel-ucode/0f-06-08"
+        }
+      ],
+      "id": "microcode:intel",
+      "kind": "CpuMicrocodeBundle",
+      "licenses": [
+        {
+          "git_blob": "cb763c91a318a95af3a4537e30b7dc46f1cf3d71",
+          "original_source": "license",
+          "sha256": "03efb1491c7e899feb2665fa299363e64035e5444c1b8bc1f6ebed30de964e12",
+          "size": 1677,
+          "source": "microcode/intel/license",
+          "target": "licenses/license",
+          "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/license"
+        }
+      ],
+      "provenance": {
+        "repository": "intel/Intel-Linux-Processor-Microcode-Data-Files",
+        "revision": "d71fe4e2f0f70a49ebbac7f2c7e915f181361974",
+        "tag": "microcode-20261110",
+        "url": "https://raw.githubusercontent.com/intel/Intel-Linux-Processor-Microcode-Data-Files/d71fe4e2f0f70a49ebbac7f2c7e915f181361974/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "vendor": "intel",
+      "version": "20261110"
+    }
+  },
+  "kind": "CpuMicrocodeCatalogue",
+  "schema": 1,
+  "spec_sha256": "c903fcafbc95ad19baa05d60b0f9d22c979239443560f1bb776a0d691d7ab9eb",
+  "version": "0.1.0"
+}

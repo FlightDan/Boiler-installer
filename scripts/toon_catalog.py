@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 ADAPTATIONS = ROOT/'adaptations'
 ADAPTERS = {
     'shared-v1': ('adaptations/brands/onexplayer/oxp3/bridge/scripts/build-shared-adaptations.py',
@@ -287,7 +288,9 @@ def validate_model(model, path):
     for row in model['components']:
         require(isinstance(row,dict) and set(row)==fields,'Invalid component fields')
         require(isinstance(row['id'],str) and re.fullmatch('[a-z][a-z0-9-]*',row['id']) and row['id'] not in components,'Duplicate/invalid component ID')
-        require(row['recommendation'] in LEVELS and (row['default'] is False or (row['default'] is True and model['id'] in ('guide:oxp3', 'guide:x2-mini') and row['id']=='fingerprint-unlock')),'Guide recommendation cannot enable installation defaults')
+        packaged_default = model['id'] in ('guide:oxp3', 'guide:x2-mini') and row['id'] in ('fingerprint-unlock', 's2s4')
+        require(row['recommendation'] in LEVELS and (row['default'] is False or (row['default'] is True and packaged_default)),
+                'Guide recommendation cannot enable installation defaults')
         require(all(isinstance(row[k],str) and row[k] for k in ('name','status','notes')),'Missing component description/status')
         for key in ('dependencies','sources'):
             require(isinstance(row[key],list) and all(isinstance(v,str) for v in row[key]) and len(set(row[key]))==len(row[key]),'Invalid component '+key)
@@ -419,8 +422,11 @@ def validate_resource_model_source(value, path):
     require(type(value['schema_version']) is int and value['schema_version']==1 and value['kind']=='BoilerModelResourceSource', 'Invalid model resource source schema: '+str(path))
     require(isinstance(value['id'],str) and re.fullmatch(r'device:[a-z][a-z0-9-]*',value['id']) and isinstance(value['name'],str) and value['name'].strip() and isinstance(value['parameters'],dict), 'Invalid resource model identity')
     matching=value['hardware_matching'];require(isinstance(matching,dict) and set(matching)=={'mode','pairs'} and matching['mode']=='advisory-exact-dmi-v1' and isinstance(matching['pairs'],list) and len(matching['pairs'])<=32 and all(isinstance(x,dict) and set(x)=={'manufacturer','model'} and all(isinstance(x[k],str) and x[k].strip() for k in ('manufacturer','model')) for x in matching['pairs']), 'Invalid advisory model names')
-    rows=value['resources'];require(isinstance(rows,list) and bool(rows) and all(isinstance(r,dict) and 'id' in r and set(r)<={'id','default'} and ('default' not in r or type(r['default']) is bool) and isinstance(r['id'],str) and re.fullmatch(r'resource:[a-z0-9][a-z0-9-]*',r['id']) for r in rows), 'Invalid resource references')
-    ids=[r['id'] for r in rows];require(len(ids)==len(set(ids)),'Duplicate resource reference')
+    from protocol.component_versions import validate_model_requests
+    try:
+        validate_model_requests(value['resources'])
+    except ValueError as error:
+        raise CatalogError(str(error)) from error
     if 'hdr' in value:
         hdr=value['hdr'];require(isinstance(hdr,dict) and set(hdr)=={'profile','full_frame','peak'} and isinstance(hdr['profile'],str) and type(hdr['full_frame']) is int and type(hdr['peak']) is int, 'Invalid resource HDR settings')
     return value

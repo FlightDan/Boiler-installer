@@ -381,6 +381,7 @@ public static class Backend
             }
         }
         CopyDirectory(Path.Combine(Root, "guest"), Path.Combine(payload, "tasks"));
+        if (task == "integration-check") File.Copy(Path.Combine(Root, "scripts/download-firmware.py"), Path.Combine(payload, "tasks/download-firmware.py"));
         File.Copy(Path.Combine(Root, "guest/payload-launcher.sh"), Path.Combine(payload, "launcher.sh"));
         if (task is "firmware-plan" or "integration" or "integration-verify" or "integration-check" or "integration-delta-check" or "physical-readiness")
         {
@@ -407,14 +408,15 @@ public static class Backend
                         throw new IOException("Device package trust is missing.");
                     var from = Path.Combine(Root, "cache/device-packages", name);
                     var target = Path.Combine(payload, "device-packages", name);
+                    var deviceManifest = await BoilerProtocol.RunAsync(["package", from, "--manifest-sha256", digest], token);
                     if (plan.RootElement.GetProperty("device_trust").GetString() == "signed-index")
                     {
                         var index = await BoilerProtocol.RunAsync(["cached-index", BoilerProtocol.RegistryCache], token);
                         if (!index.GetProperty("packages").EnumerateArray().Any(p => p.GetProperty("sha256").GetString() == digest)
-                            || (index.TryGetProperty("revocations", out var revoked) && revoked.EnumerateArray().Any(p => p.GetString() == digest)))
+                            || (index.TryGetProperty("revocations", out var revoked) && revoked.EnumerateArray().Any(p => p.GetString() == digest))
+                            || MainWindow.IsRevokedDeviceEntry(deviceManifest, index))
                             throw new IOException("机型包已撤销或已不在当前目录中，请重新选择。 / Device package revoked or absent from current index; select it again.");
                     }
-                    await BoilerProtocol.RunAsync(["package", from, "--manifest-sha256", digest], token);
                     // import-device validates the copied tree against the manifest it
                     // copied and returns that anchored digest; asserting equality here
                     // keeps the same binding without a second full package hash.

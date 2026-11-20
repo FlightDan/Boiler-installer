@@ -29,6 +29,32 @@ public static class OptionsChecks
         Require(ContentColor() == Color.FromRgb(134, 239, 172), "visited-content-keeps-completed-state");
         var panel = BoilerCustomBuildChecks.Options(window);
         var catalog = InstallerOptions.Catalog;
+        Require(InstallerOptionsPanel.MatchCpuVendor("GenuineIntel") == "microcode:intel"
+            && InstallerOptionsPanel.MatchCpuVendor("AuthenticAMD") == "microcode:amd"
+            && InstallerOptionsPanel.MatchCpuVendor("unknown") == null, "cpu-vendor-exact-match-only");
+        Require(InstallerOptions.CpuComponents.All(id => !panel.Selection.Repairs.Contains(id)), "cpu-microcode-starts-unselected");
+        Require(FirmwareDownloads.Selected("{\"repairs\":[\"microcode:intel\"]}"), "cpu-microcode-enters-download-planning");
+        Require(InstallerOptions.CpuFrequencyComponents.All(id => !panel.Selection.Repairs.Contains(id))
+            && !FirmwareDownloads.Selected("{\"repairs\":[\"cpufreq:intel\"]}"), "cpu-frequency-starts-unselected-and-needs-no-download");
+        InstallerOptions.Validate(new SelectedOptions(1, ["microcode:intel", "cpufreq:intel"], ["core:maintenance"], "en-US", "system"));
+        try { InstallerOptions.Validate(new SelectedOptions(1, ["cpufreq:amd", "cpufreq:intel"], ["core:maintenance"], "en-US", "system")); throw new InvalidOperationException("Both frequency vendors accepted"); }
+        catch (IOException) { events.Add("cpu-frequency-vendors-exclusive"); }
+        try { InstallerOptions.Validate(new SelectedOptions(1, ["cpufreq:intel"], [], "en-US", "system")); throw new InvalidOperationException("Frequency without maintenance accepted"); }
+        catch (IOException) { events.Add("cpu-frequency-requires-maintenance"); }
+        foreach (var mode in new[] { "local", "imported" })
+        {
+            try { InstallerOptions.Validate(new SelectedOptions(1, ["cpufreq:intel"], ["core:maintenance"], "en-US", "system", InstallMode: mode)); throw new InvalidOperationException("Frequency injection accepted"); }
+            catch (IOException) { events.Add(mode + "-rejects-cpu-frequency"); }
+        }
+        var digest = new string('a', 64);
+        try { InstallerOptions.Validate(new SelectedOptions(1, ["cpufreq:intel"], ["core:maintenance"], "en-US", "system", DevicePackage: digest[..24], DeviceManifestSha256: digest, DeviceTrust: "developer-session")); throw new InvalidOperationException("Package with frequency accepted"); }
+        catch (IOException) { events.Add("package-rejects-cpu-frequency"); }
+        try { InstallerOptions.ValidateDeploymentPolicy(new SelectedOptions(1, ["microcode:intel"], [], "en-US", "system"), Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))); throw new InvalidOperationException("Missing CPU metadata accepted"); }
+        catch (IOException) { events.Add("cpu-microcode-requires-metadata"); }
+        try { InstallerOptions.Validate(new SelectedOptions(1, ["microcode:amd", "microcode:intel"], [], "en-US", "system")); throw new InvalidOperationException("Both CPU vendors accepted"); }
+        catch (IOException) { events.Add("cpu-vendors-exclusive"); }
+        try { InstallerOptions.Validate(new SelectedOptions(1, ["microcode:amd"], [], "en-US", "system", InstallMode: "local")); throw new InvalidOperationException("CPU injection into local image accepted"); }
+        catch (IOException) { events.Add("cpu-microcode-rejects-local-image"); }
         Require(window.FindName("PhysicalMode") == null,"physical-mode-checkbox-removed");
         Require(((CheckBox)window.FindName("Upgrade310")).IsChecked==true,"official-3.10-source-selected-by-default");
         var modeBanner = ((TextBlock)window.FindName("ModeBanner")).Text;
@@ -80,16 +106,18 @@ public static class OptionsChecks
         var boxes = panel.OptionBoxes;
         Require(new[] { "steamgriddb", "protondb", "tabmaster", "css-loader", "autoflatpaks", "deck-settings", "hltb", "animation-changer" }
             .All(id => !boxes.ContainsKey(id)), "user-installed-third-party-plugins-are-not-bundled-options");
-        ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "zh-CN";
         Require(boxes["wifi:intel"].IsChecked == false, "chinese-language-does-not-select-wireless-firmware");
-        ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "en-US";
         Require(boxes["wifi:intel"].IsChecked == false, "english-language-does-not-select-wireless-firmware");
+        Require(panel.Selection.AutomaticSystemLanguage && panel.Selection.KdeLanguage == "en_US",
+            "user-interface-switch-updates-automatic-target-language");
         boxes["wifi:intel"].IsChecked = true;
-        ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
-        ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "zh-CN";
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "en-US";
         Require(boxes["wifi:intel"].IsChecked == true, "explicit-wireless-choice-survives-language-change");
         boxes["wifi:intel"].IsChecked = false;
-        ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true;
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "zh-CN";
         Require(boxes["wifi:intel"].IsChecked == false, "explicit-wireless-opt-out-survives-chinese");
         Require(!panel.Selection.Repairs.Contains("wifi:intel"), "disabled-repair-is-absent-from-request");
         boxes["core:decky"].IsChecked = false;
@@ -101,17 +129,59 @@ public static class OptionsChecks
         }
         catch (IOException error) when (error.Message != "unknown-option-was-accepted") { events.Add("unknown-option-refused"); }
         boxes["core:decky"].IsChecked = true;
-        ((RadioButton)window.FindName("EnglishLanguage")).IsChecked = true;
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "en-US";
         Require(InstallerI18n.Language == "en-US" && ((Button)window.FindName("NextButton")).Content.ToString() == "Next", "english-navigation-applied");
         Require(((TextBlock)window.FindName("ModeBanner")).Text.Contains("Back up"),"backup-warning-translated");
         Require(((TextBlock)boxes["wifi:intel"].Content).Text.Contains("Intel Wi-Fi firmware"), "english-repair-label-applied");
         Require(boxes["wifi:intel"].IsChecked == false && boxes["core:decky"].IsChecked == true, "language-switch-preserves-user-choices");
         Require(boot.WindowsChoice.IsChecked == true && boot.Seconds.Text == "2" && boot.InstallChoice.IsChecked == true, "language-switch-preserves-refind-settings");
         var kde = panel.KdeChoice; kde.SelectedIndex = 1;
-        Require(panel.Selection.KdeLanguage == "zh_CN" && panel.Selection.InstallerLanguage == "en-US", "kde-language-independent-of-installer-language");
+        Require(panel.Selection.KdeLanguage == "zh_CN" && panel.Selection.InstallerLanguage == "en-US" && !panel.Selection.AutomaticSystemLanguage,
+            "manual-kde-language-independent-of-installer-language");
         var json = JsonSerializer.Serialize(panel.Selection); var roundtrip = JsonSerializer.Deserialize<SelectedOptions>(json)!;
         InstallerOptions.Validate(roundtrip); Require(roundtrip.KdeLanguage == "zh_CN" && !roundtrip.Repairs.Contains("wifi:intel"), "selection-roundtrip-retains-language-and-opt-outs");
-        ((RadioButton)window.FindName("ChineseLanguage")).IsChecked = true; Require(((Button)window.FindName("NextButton")).Content.ToString() == "下一步", "chinese-navigation-restored");
+        var languagePicker = (ComboBox)window.FindName("InstallerLanguage");
+        var next = (Button)window.FindName("NextButton");
+        Require(languagePicker.Items.Count == 8 && catalog.Languages.ToHashSet().SetEquals(InstallerI18n.Languages.Select(x => x.Tag)),
+            "eight-language-picker-and-validation-agree");
+        foreach (var (input, expected) in new[]
+        {
+            ("ja-JP", "ja-JP"), ("ko-KR", "ko-KR"), ("de-CH", "de-DE"), ("fr-CA", "fr-FR"),
+            ("es-419", "es-ES"), ("zh-HK", "zh-TW"), ("zh-Hant", "zh-TW"), ("zh-Hans-SG", "zh-CN"),
+            ("en-GB", "en-US"), ("ru-RU", "en-US"), ("", "en-US")
+        })
+            Require(InstallerI18n.DetectLanguage(input) == expected, "detects-ui-culture-" + input);
+        var recentField = typeof(MainWindow).GetField("recent", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        var originalRecent = recentField.GetValue(window);
+        recentField.SetValue(window, new InstallationSession(1, "fixture", InstallationTargetKind.InternalShared,
+            "fixture.img", true, "awaiting-device-boot", "complete", null, null, DateTime.UtcNow, Physical: true));
+        foreach (var option in InstallerI18n.Languages.Where(option => option.Tag is not ("en-US" or "zh-CN")))
+        {
+            languagePicker.SelectedValue = option.Tag;
+            Require(InstallerI18n.Language == option.Tag && window.Language.IetfLanguageTag.Equals(option.Tag, StringComparison.OrdinalIgnoreCase)
+                && next.Content is string nextLabel && nextLabel != "Next"
+                && languagePicker.ToolTip is string pickerLabel && pickerLabel != "Interface language" && pickerLabel != "界面语言",
+                "switches-ui-to-" + option.Tag);
+            Require(panel.Selection.InstallerLanguage == option.Tag && panel.Selection.KdeLanguage == "zh_CN"
+                && !panel.Selection.Repairs.Contains("wifi:intel") && panel.Selection.Plugins.Contains("core:decky"),
+                "preserves-selections-in-" + option.Tag);
+            Require(((TextBlock)window.FindName("BootPrerequisitesMessage")).Text.Contains("BitLocker", StringComparison.Ordinal),
+                "boot-safety-notice-remains-visible-in-" + option.Tag);
+            Require(((TextBlock)window.FindName("RecentText")).Text == InstallerI18n.L(
+                "上次安装写入完成，可以启动 SteamOS。", "The last installation was written successfully. You can boot SteamOS."),
+                "recent-task-status-remains-visible-in-" + option.Tag);
+            var decky = catalog.Plugins.Single(item => item.Id == "core:decky");
+            Require(panel.Describe().Contains(InstallerI18n.L(decky.Zh, decky.En), StringComparison.Ordinal),
+                "review-label-uses-current-language-" + option.Tag);
+            InstallerOptions.Validate(panel.Selection);
+            Require(InstallerI18n.L("未收录的标签", "Unlisted test label") == "Unlisted test label",
+                "missing-translation-falls-back-to-english-" + option.Tag);
+            var modelName = JsonSerializer.SerializeToElement(new { zh = "机型描述", en = "Device description" });
+            Require(InstallerI18n.TryLocalizedValue(modelName, out var name) && name.GetString() == "Device description",
+                "model-metadata-falls-back-to-english-" + option.Tag);
+        }
+        recentField.SetValue(window, originalRecent);
+        ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = "zh-CN"; Require(((Button)window.FindName("NextButton")).Content.ToString() == "下一步", "chinese-navigation-restored");
         foreach (var size in new[] { new Size(850, 620), new Size(1060, 790), new Size(1280, 800) })
         {
             window.Width = size.Width; window.Height = size.Height; window.PreviewStep(2); window.UpdateLayout();
@@ -135,7 +205,7 @@ public static class OptionsChecks
                     && !panel.Describe().Contains("系统更新") && !panel.Describe().Contains("system updates"),
                     "no-system-update-pause-disclosure-" + language);
                 var expected = InstallerOptions.DefaultKdeLanguage;
-                Require(panel.Selection.KdeLanguage == expected && InstallerOptions.Defaults.KdeLanguage == expected,
+                Require(panel.Selection.KdeLanguage == expected && InstallerOptions.Defaults.KdeLanguage == expected && panel.Selection.AutomaticSystemLanguage,
                     "desktop-default-follows-windows-" + language);
                 var selection = panel.Selection;
                 InstallerOptions.Validate(selection);
@@ -144,7 +214,10 @@ public static class OptionsChecks
                 InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN"); panel.Refresh();
                 Require(panel.Selection.KdeLanguage == expected,
                     "untouched-desktop-keeps-windows-language-" + language);
-                Require(changes == 0, "installer-language-does-not-edit-desktop-plan-" + language);
+                Require(changes == 0, "translating-labels-does-not-edit-desktop-plan-" + language);
+                panel.FollowInterfaceLanguage("ja-JP");
+                Require(panel.Selection.KdeLanguage == "ja_JP" && panel.Selection.AutomaticSystemLanguage,
+                    "automatic-target-follows-explicit-interface-choice-" + language);
                 changes = 0;
                 foreach (var manual in new[] { "system", "zh_TW", "zh_CN", "en_US" })
                 {
@@ -152,6 +225,7 @@ public static class OptionsChecks
                     panel.KdeChoice.SelectedItem = panel.KdeChoice.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == manual);
                     Require(previous == manual ? changes == 0 : changes > 0, "manual-desktop-language-notifies-plan-" + language + "-" + manual);
                     changes = 0;
+                    panel.FollowInterfaceLanguage("ko-KR");
                     InstallerI18n.SetLanguage("zh-CN"); panel.Refresh();
                     InstallerI18n.SetLanguage("en-US"); panel.Refresh();
                     Require(panel.Selection.KdeLanguage == manual && changes == 0,
@@ -159,6 +233,9 @@ public static class OptionsChecks
                     var roundtrip = JsonSerializer.Deserialize<SelectedOptions>(JsonSerializer.Serialize(panel.Selection))!;
                     Require(roundtrip.KdeLanguage == manual, "desktop-language-roundtrip-" + language + "-" + manual);
                 }
+                panel.KdeChoice.SelectedItem = panel.KdeChoice.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == "auto");
+                Require(panel.Selection.KdeLanguage == "ko_KR" && panel.Selection.AutomaticSystemLanguage,
+                    "return-to-automatic-uses-latest-interface-choice-" + language);
             }
         }
         finally { InstallerI18n.SetLanguage(original); }

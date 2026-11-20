@@ -42,6 +42,23 @@ def planned_home(table, selection, disk_size):
     return (end // 512) - home['start']
 
 
+def require_clean_home(node, check=subprocess.run):
+    """Accept only a home filesystem that e2fsck finds clean.
+
+    Exit 1 means e2fsck corrected errors. Growing that repaired filesystem and
+    writing it to the user's disk would change the data silently, so any
+    non-zero result stops the install before the first disk write.
+    """
+    result = check(['e2fsck', '-pf', node], check=False)
+    if result.returncode != 0:
+        raise RuntimeError('Home filesystem needs repair (e2fsck exit %d); stopped before growing it' % result.returncode)
+
+
+def grow_home(node, check=subprocess.run):
+    require_clean_home(node, check)
+    run('resize2fs', node)
+
+
 def expand(selection):
     if Path('/sys/class/dmi/id/sys_vendor').read_text().strip() != 'QEMU':
         raise RuntimeError('Managed VM required')
@@ -86,10 +103,7 @@ def expand(selection):
         time.sleep(0.1)
     node = '/tmp/oxp-capacity-home'
     os.mknod(node, stat.S_IFBLK | 0o600, os.makedev(major, minor))
-    check = subprocess.run(['e2fsck', '-pf', node], check=False)
-    if check.returncode not in (0, 1):
-        raise RuntimeError('Home filesystem check failed')
-    run('resize2fs', node)
+    grow_home(node)
     metadata = superblock(node)
     blocks = int.from_bytes(metadata[4:8], 'little')
     if int.from_bytes(metadata[96:100], 'little') & 0x80:

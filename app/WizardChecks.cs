@@ -20,9 +20,9 @@ public static class WizardChecks
         void Require(bool value, string name) { if (!value) throw new IOException(name + ": " + Find<TextBlock>("ValidationMessage").Text); checks.Add(name); }
         var picker = Find<PartitionPicker>("PartitionSelector"); picker.AutomaticReadEnabled = false;
         window.WindowState = WindowState.Normal; window.ShowActivated = false; window.Show(); BootSetupChecks.Acknowledge(window);
-        foreach (var language in new[] { "ChineseLanguage", "EnglishLanguage" })
+        foreach (var language in new[] { "zh-CN", "en-US" })
         {
-            Find<RadioButton>(language).IsChecked = true;
+            Find<ComboBox>("InstallerLanguage").SelectedValue = language;
             Click("TargetTab");
             picker.LoadSnapshot(PartitionInventory.ExampleJson, false);
             picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(r => r.Space != null);
@@ -117,9 +117,9 @@ public static class WizardChecks
         Click("ResultTab");
         Require(Find<StackPanel>("ResultPage").IsVisible && Find<Border>("IncompleteCard").IsVisible && Find<TextBlock>("IncompleteItems").Text.Split('\n').Length == 4, "finish-lists-all-four-incomplete-steps");
         Require(Red("NavReview") && Red("NavProgress") && Red("NavResult"), "unfinished-review-progress-result-are-red");
-        Find<RadioButton>("EnglishLanguage").IsChecked = true;
+        Find<ComboBox>("InstallerLanguage").SelectedValue = "en-US";
         Require(Find<TextBlock>("IncompleteHeading").Text == "Some items are incomplete" && Find<TextBlock>("IncompleteItems").Text.Contains("Location:"), "incomplete-summary-supports-english");
-        Find<RadioButton>("ChineseLanguage").IsChecked = true;
+        Find<ComboBox>("InstallerLanguage").SelectedValue = "zh-CN";
         foreach (var pair in new[] { ("BootTab", "BootPage"), ("ContentTab", "ContentPage"), ("ReviewTab", "ReviewPage"), ("TargetTab", "TargetPage"), ("ProgressTab", "ProgressPage"), ("SourceTab", "SourcePage"), ("ResultTab", "ResultPage"), ("TargetTab", "TargetPage") })
         {
             Click(pair.Item1);

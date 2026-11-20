@@ -286,7 +286,7 @@ internal static class BoilerAdaptationChecks
                 Require(window.CurrentOptions.DeviceComponents!.SequenceEqual(["device:fixture-optional"]), language + "-bulk-opt-out-preserves-explicit-choice");
                 BoilerCustomBuildChecks.FindChoice(window, "device:fixture-optional")!.IsChecked = false; await Flush(window);
                 Field<TextBox>(window, "customSearch").Clear(); await Flush(window);
-                ((RadioButton)window.FindName(language == "zh-CN" ? "EnglishLanguage" : "ChineseLanguage")).IsChecked = true; await Flush(window);
+                ((ComboBox)window.FindName("InstallerLanguage")).SelectedValue = language == "zh-CN" ? "en-US" : "zh-CN"; await Flush(window);
                 Require(window.CurrentOptions.DeviceComponents!.Length == 0 && !options.RepairsExpander.IsVisible, language + "-language-switch-keeps-package-choice-and-no-wireless");
                 Require(((TextBlock)window.FindName("PageSubtitle")).Text == MainWindow.DeviceOptionsDescription(), language + "-language-switch-updates-options-description");
                 await Capture((FrameworkElement)window.Content, Path.Combine(directory, language + "-package-options.png"), captures, captureErrors);

@@ -25,6 +25,40 @@ from resources import model_source
 
 MODELS = (('device:oxp3', 'oxp3'), ('device:x2-mini', 'x2-mini'))
 CURRENT_GUIDES = {f'devices/onexplayer/{model}.toon' for _, model in MODELS}
+MICROCODE_ROOT = 'common/cpu/intel/microcode/'
+MICROCODE_ID = 'onexplayer:intel-microcode'
+
+
+def model_microcode(guide, snapshot, toon, inventory, version):
+    requests = [c for c in guide['components'] if c['id'] == 'intel-cpu-microcode']
+    if not requests:
+        return None, {}
+    required = [MICROCODE_ROOT + p for p in ('source.toon', 'inputs/06-cc-02', 'licenses/Intel-microcode.txt')]
+    if len(requests) != 1 or requests[0].get('default') is not False or set(requests[0].get('sources', [])) != set(required) or len(requests[0]['sources']) != 3:
+        raise ValueError('Invalid model microcode TOON request')
+    source = toon.loads(confined(snapshot, required[0]).read_text(encoding='utf-8'), strict=True)
+    files = source.get('files', [])
+    if (source.get('id') != 'resource:intel-cpu-microcode' or len(files) != 1
+            or files[0].get('path') != 'inputs/06-cc-02'
+            or files[0].get('license') != 'licenses/Intel-microcode.txt'
+            or source.get('licenses') != ['licenses/Intel-microcode.txt']):
+        raise ValueError('Invalid canonical Intel microcode source')
+    records = []
+    targets = ('usr/lib/firmware/intel-ucode/06-cc-02',
+               'usr/share/licenses/boiler-firmware/microcode/intel/Intel-microcode.txt')
+    for path, target in zip(required[1:], targets):
+        item = inventory.get('adaptations/' + path)
+        if item is None:
+            raise ValueError('Model microcode source missing from snapshot: ' + path)
+        records.append(dict(source=path, target=target, size=item['size'], sha256=item['sha256'], mode=420))
+    if (records[0]['size'], records[0]['sha256']) != (files[0]['size'], files[0]['sha256']):
+        raise ValueError('Microcode input differs from canonical source TOON')
+    component = dict(schema_version=1, kind='ComponentManifest', id=MICROCODE_ID, version=version,
+                     name=requests[0].get('name', 'Intel CPU microcode'), optional=True, default=False,
+                     selection_policy='explicit-opt-in',
+                     files=records, requires=[], conflicts=[], hooks={},
+                     microcode_boot_policy={'kind': 'onexplayer-intel-microcode-v1'}, minimum_engine_version='0.1.7')
+    return component, {path: inventory['adaptations/' + path] for path in required[1:]}
 
 
 def collect_sources(snapshot, guide, guide_path, toon, inventory):
@@ -34,8 +68,9 @@ def collect_sources(snapshot, guide, guide_path, toon, inventory):
     for component in guide['components']:
         name = component['id']
         sources = component.get('sources', [])
-        if not sources and component.get('status') in ('implementation_missing', 'external_plugin', 'external_boiler_core'):
-            pending.append({'component': name, 'status': component['status']})
+        status = component.get('status')
+        if status == 'external_boiler_core' or (not sources and status in ('implementation_missing', 'external_plugin')):
+            pending.append({'component': name, 'status': status})
         for path in sources:
             selected.add(path)
     spec = guide['resource_model']
@@ -76,6 +111,8 @@ def selected_components(guide, manifest):
     wanted.update(row['id'] for row in declaration.get('definitions', []))
     if any(row['id'] == 'fingerprint-unlock' for row in guide['components']):
         wanted.add('oxp3:fingerprint-unlock')
+    if any(row['id'] == 's2s4' for row in guide['components']):
+        wanted.add('boiler:s2s4')
     if guide['resource_model'].get('common_references', {}).get('boot_policies'):
         wanted.update(c['id'] for c in manifest['components'] if 'ssd_boot_policy' in c)
     found = {c['id']: c for c in manifest['components']}
@@ -447,8 +484,17 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
         for name in missing_components:
             unresolved.append({'model': identity, 'component': name, 'reason': 'requested package component missing'})
         rows = {row['path']: row for row in manifest['files']}
+        model_cpu, cpu_rows = model_microcode(guide, snapshot, toon, inventory, version)
+        if model_cpu:
+            if any(c['id'] == MICROCODE_ID for c in components):
+                raise ValueError('Duplicate model microcode component')
+            components.append(model_cpu)
+            pending[:] = [p for p in pending if not (p.get('model') == identity and p.get('component') == 'intel-cpu-microcode')]
+            for path, row in cpu_rows.items():
+                rows[path] = dict(path=path, size=row['size'], sha256=row['sha256'])
         provider_roots = fixed_provider_files(project, package_dir, identity, rows)
         chosen, source_mappings = set(provider_roots), {}
+        source_mappings.update({path: path for path in cpu_rows})
         # Every bundled fingerprint runtime needs the notices from its existing
         # validated input package; these are not test or device evidence files.
         if any(c['id'] == 'oxp3:fingerprint-unlock' for c in components):
@@ -484,6 +530,12 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
                             source_mappings[old] = source
         for component in components:
             chosen.update(row['source'] for row in component.get('files', []))
+            if component['id'] == 'boiler:s2s4':
+                for row in component['files']:
+                    source = row['source']
+                    if source not in sources or not source.startswith('common/sleep/runtime/'):
+                        raise ValueError('Switcher runtime member was not selected by model TOON: ' + source)
+                    source_mappings[source] = source
             chosen.update(component.get('hooks', {}).values())
             if component.get('hooks') and component['id'] != 'oxp3:legacy-adaptation':
                 unresolved.append({'model': identity, 'component': component['id'],
@@ -498,6 +550,20 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
             integration_name = 'payload/legacy/integration/manifest.json'
             integration = json_document(confined(package_dir, integration_name).read_bytes())
             chosen.add(integration_name)
+            if any(c['id'] == 'boiler:s2s4' for c in components):
+                battery = 'brands/onexplayer/common/battery/power/'
+                plugin = 'home/deck/homebrew/plugins/OXP3-battery/'
+                paths = {plugin+'main.py': battery+'battery-plugin-main.py',
+                         plugin+'dist/index.js': battery+'battery-plugin-index.js'}
+                if identity == 'device:x2-mini':
+                    x2 = 'brands/onexplayer/x2-mini/current/'
+                    paths.update({'var/lib/oxp3-battery/battery_control.py': x2+'power/battery_control.py',
+                                  'etc/systemd/system/oxp3-battery.service': x2+'battery-compat.service'})
+                mapped = {entry['target']: 'payload/legacy/integration/'+entry['source']
+                          for entry in integration['charging']['files'] if entry['target'] in paths}
+                if set(mapped) != set(paths) or not set(paths.values()) <= sources:
+                    raise ValueError('Split Battery runtime differs from model TOON: ' + identity)
+                source_mappings.update({logical: paths[target] for target, logical in mapped.items()})
             available = {row['id'].removeprefix('oxp3:') for row in manifest.get('legacy_capabilities', [])
                          if row.get('available') is True}
             capability_names = {name.removeprefix('oxp3:') for name in declared} & available
@@ -583,6 +649,13 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
         for name in sorted(chosen):
             if name not in rows:
                 raise ValueError('Component file missing from input manifest: ' + name)
+        switcher_license = 'common/sleep/runtime/LICENSE'
+        if switcher_license in source_mappings:
+            license_record = rows[switcher_license]
+            for name in chosen:
+                row = rows[name]
+                if PurePosixPath(name).name == 'LICENSE' and (row['size'], row['sha256']) == (license_record['size'], license_record['sha256']):
+                    source_mappings[name] = switcher_license
         resource_mappings, resource_extras, resource_records = {}, {}, {}
         be201_descriptor = None
         declared_resources = {row['id'] for row in guide['resource_model'].get('resources', [])}
@@ -713,6 +786,11 @@ def prepare_models(project, packages, *, version, resource_pool=None, allow_inco
                 resource_row['default'] = declaration['default']
             generated['resources'] = [resource_row]
         generated['components'] = components
+        if model_cpu:
+            if _version_key(generated.get('minimum_engine_version', '0.0.0')) < _version_key('0.1.7'):
+                generated['minimum_engine_version'] = '0.1.7'
+            shared = generated.setdefault('shared_adaptations', {'kind': 'boiler-shared-static-v1'})
+            shared['components'] = list(dict.fromkeys([*shared.get('components', []), MICROCODE_ID]))
         generated['files'] = [rows[name] for name in sorted(chosen)]
         # A brand candidate inherits its base selection contract. Re-assert the
         # shared gates here so a package built from one base cannot ship a

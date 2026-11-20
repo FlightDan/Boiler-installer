@@ -11,6 +11,8 @@ import time
 from payload_lock import checked, relative
 from wireless import resolve as resolve_wireless, selected as selected_wireless, plan_required
 import graphics
+import microcode
+import cpufreq
 import system_presets
 
 CORE = {'core:decky', 'core:maintenance'}
@@ -26,6 +28,8 @@ def validate_options(options):
     if not isinstance(options, dict) or options.get('schema') != 1:
         raise ValueError('SelectedOptions schema 1 required')
     graphics_profile = graphics.selected(options)
+    microcode_profile = microcode.selected(options)
+    cpufreq_profile = cpufreq.selected(options)
     for key in ('repairs', 'plugins', 'device_components'):
         values = options.get(key, [])
         if key == 'device_components' and values is None: values = []
@@ -64,6 +68,12 @@ def validate_options(options):
         raise ValueError('Wireless firmware requires generic installation without a device package')
     if graphics_profile and (package or options.get('install_mode', 'custom') not in ('custom', 'vanilla')):
         raise ValueError('Graphics firmware requires generic installation without a device package')
+    if microcode_profile and (package or options.get('install_mode', 'custom') not in ('custom', 'vanilla')):
+        raise ValueError('CPU microcode requires generic installation without a device package')
+    if cpufreq_profile and (package or options.get('install_mode', 'custom') not in ('custom', 'vanilla')):
+        raise ValueError('CPU frequency scaling requires generic installation without a device package')
+    if cpufreq_profile and 'core:maintenance' not in options.get('plugins', []):
+        raise ValueError('CPU frequency scaling requires retained maintenance')
     system_presets.validate(options)
     if options.get('storage_mounts'):
         raise ValueError('Storage mounts require an approved generic policy')
@@ -77,7 +87,10 @@ def merged_firmware_plan(root, manifest, options):
     overlap = set(records).intersection(gpu_records)
     if overlap:
         raise ValueError('Conflicting firmware component ownership: ' + ', '.join(sorted(overlap)))
-    return dict(records, **gpu_records), dict(plans, **gpu_plans)
+    cpu_records, cpu_plans = microcode.plan_required(root, manifest, microcode.selected(options))
+    if (set(records) | set(gpu_records)).intersection(cpu_records):
+        raise ValueError('Conflicting CPU microcode component ownership')
+    return dict(records, **gpu_records, **cpu_records), dict(plans, **gpu_plans, **cpu_plans)
 
 
 def release(root):
@@ -135,7 +148,7 @@ def device_plan(payload, options, source):
     from protocol import validate_package, resolve_plan, compatible, device_advisory
     folder = payload / 'device-packages' / package_id
     package = validate_package(folder, expected_manifest_sha256=options['device_manifest_sha256'])
-    if package.get('purpose') == 'maintenance':
+    if 'component_release' in package or package.get('purpose') == 'maintenance':
         raise ValueError('Maintenance-only packages cannot be selected for image installation')
     hardware_id = package.get('device_id', package['id'].split(':', 1)[-1])
     environment = dict(architecture='x86_64', os_id=source['ID'], os_version=source['VERSION_ID'], device_id=hardware_id,
@@ -179,6 +192,7 @@ def device_plan(payload, options, source):
         else:
             raise ValueError('The embedded recovery contract is unsupported for this model')
     validate_fingerprint_provider(plan['components'], options)
+    validate_sleep_provider(plan['components'], options)
     warning = device_advisory(package, environment)
     descriptor = dict(id=package['id'], version=package['version'],
                       manifest_sha256=options['device_manifest_sha256'], trust=options['device_trust'],
@@ -228,6 +242,16 @@ def validate_fingerprint_provider(components, options):
         raise ValueError('Fingerprint unlock requires the selected device Decky provider')
 
 
+def validate_sleep_provider(components, options):
+    from maintenance.shared_models import SLEEP_COMPONENT
+    selected = {item['id'] for item in components}
+    if SLEEP_COMPONENT not in selected:
+        return
+    legacy = options.get('device_legacy_options') or {}
+    if ('oxp3:legacy-adaptation' not in selected or 'oxp3:decky' not in legacy.get('plugins', [])):
+        raise ValueError('Boiler S2/S4 switcher requires the selected model Decky provider')
+
+
 def device_legacy_selection(package, options, components):
     """Translate only the package's declared OXP3 data contract, never source code."""
     requested = options.get('device_legacy_options')
@@ -242,8 +266,9 @@ def device_legacy_selection(package, options, components):
     chosen = set(requested['repairs'] + requested['plugins'])
     if 'oxp3:decky' in chosen and 'core:decky' in set(options.get('repairs', []) + options.get('plugins', [])):
         raise ValueError('Legacy and generic Decky installations conflict')
+    # The generic per-slot transaction owns both manual and automatic locale presets.
     choice = validated_selection(package, requested['repairs'], requested['plugins'],
-        installer_language=options.get('installer_language'), kde_language=options.get('kde_language'),
+        installer_language=options.get('installer_language'), kde_language='system',
         acknowledge_update_hold=requested.get('acknowledge_legacy_update_hold'))
     choice['kde_language'] = choice['kde_language'].replace('-', '_')
     if choice['kde_language'] not in package.get('legacy_kde_languages', []):
@@ -359,7 +384,7 @@ def verify_device_components(root, payload, options, slot, installed, model_revi
     validate_options(options)
     if slot not in ('A', 'B'): raise ValueError('Unknown verification slot')
     selected_graphics = graphics.selected(options)
-    recorded = set(installed) - CORE - WIRELESS - {system_presets.IDENTITY} - ({selected_graphics} if selected_graphics else set())
+    recorded = set(installed) - CORE - WIRELESS - microcode.IDS - cpufreq.IDS - {system_presets.IDENTITY} - ({selected_graphics} if selected_graphics else set())
     if SSD_REPAIR not in (options.get('device_components') or []):
         recorded.discard(SSD_REPAIR)
     if not options.get('device_package'):
@@ -373,6 +398,11 @@ def verify_device_components(root, payload, options, slot, installed, model_revi
     for component in components:
         if component.get('ssd_boot_policy'):
             continue  # Independently verified by the fixed SSD handler.
+        if component['id'] == 'onexplayer:intel-microcode':
+            from maintenance.onexplayer_microcode import verify
+            if not verify(root, engine)['ok']:
+                raise ValueError('Device managed microcode files differ')
+            continue
         if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
             from maintenance.keyboard_models import installer_verify
             installer_verify(root, component, slot)
@@ -475,8 +505,10 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     choices = list(dict.fromkeys(options.get('repairs', []) + options.get('plugins', [])))
     vendors = selected_wireless(options)
     graphics_profile = graphics.selected(options)
-    firmware_ids = [wireless_identity(vendor) for vendor in vendors] + ([graphics_profile] if graphics_profile else [])
-    unknown = set(choices) - CORE - WIRELESS - {SSD_REPAIR}
+    microcode_profile = microcode.selected(options)
+    cpufreq_profile = cpufreq.selected(options)
+    firmware_ids = [wireless_identity(vendor) for vendor in vendors] + ([graphics_profile] if graphics_profile else []) + ([microcode_profile] if microcode_profile else [])
+    unknown = set(choices) - CORE - WIRELESS - microcode.IDS - cpufreq.IDS - {SSD_REPAIR}
     if SSD_REPAIR in choices and ssd_identity != SSD_REPAIR:
         raise ValueError('The selected common SSD repair lacks bound destination evidence')
     if (ssd_identity is not None) != (ssd_context is not None and ssd_plan is not None):
@@ -496,6 +528,9 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         for component in device_components:
             if component.get('ssd_boot_policy'):
                 if component['id'] != ssd_identity: raise ValueError('Selected package SSD provider lacks bound target evidence')
+            elif component['id'] == 'onexplayer:intel-microcode':
+                if 'core:maintenance' not in choices:
+                    raise ValueError('Model CPU microcode requires retained maintenance')
             elif component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
                 from maintenance.keyboard_models import installer_plan
                 dynamic_plans[component['id']] = installer_plan(root, component, slot)
@@ -535,7 +570,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
             owner=selected_ssd_provider_owner(ssd_identity,device_components,descriptor)
             if ssd_plan.get('provider_owner') != owner:
                 raise ValueError('Reviewed SSD provider identity changed after preflight')
-    preset_component, preset_files = system_presets.prepare(root, options, password_hash)
+    preset_component, preset_files, preset_language = system_presets.prepare(root, options, password_hash)
     if not choices and not firmware_ids and not device_components and preset_component is None:
         result['status'] = 'no-components-selected'
         _stage_mark(slot, 'no-components', clock)
@@ -561,13 +596,22 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         records, current_plan = merged_firmware_plan(root, manifest, options)
         if downloaded.get('slots', {}).get(slot) != dict(records=records, plans=current_plan):
             raise ValueError('Target firmware state changed after download planning')
-    generic_selected = set(choices) & (CORE | WIRELESS) | set(firmware_ids)
+    generic_selected = set(choices) & (CORE | WIRELESS | cpufreq.IDS) | set(firmware_ids)
     generic_components = [dict(manifest.get(identity, {}).get('component', {}), id=identity,
                                conflicts=manifest.get(identity, {}).get('component', manifest.get(identity, {})).get('conflicts', []))
                           for identity in generic_selected]
     planned_components = [*generic_components, *device_components, *([preset_component] if preset_component else [])]
     check_conflicts(planned_components,
                     generic_selected | {item['id'] for item in device_components} | ({system_presets.IDENTITY} if preset_component else set()))
+    model_cpu_plan = None
+    model_cpu = next((item for item in device_components if item['id'] == 'onexplayer:intel-microcode'), None)
+    if model_cpu:
+        from maintenance.onexplayer_microcode import review
+        model_cpu_plan = review(DeviceCheckEngine(root, read_only=True), model_cpu, package_root)
+        other_targets = {entry['target'] for item in planned_components if item is not model_cpu
+                         for entry in item.get('files', [])}
+        if set(model_cpu_plan['targets']).intersection(other_targets):
+            raise ValueError('Model CPU microcode output conflicts with another selected component')
     if ssd_identity is not None or fixed_model is not None:
         from maintenance.ssd_boot import TARGET, DROPIN
         boot_paths = [TARGET.casefold()]
@@ -592,12 +636,19 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                 if any(name == target or name.startswith(target + '/') or target.startswith(name + '/') for target in targets):
                     raise ValueError('System preset target conflicts with selected component')
     # Complete read-only validation precedes target writes.
+    if cpufreq_profile:
+        expected = cpufreq.metadata(Path(__file__).resolve().parents[1])[cpufreq_profile]
+        if manifest.get(cpufreq_profile) != expected:
+            raise ValueError('CPU frequency scaling payload differs from the reviewed installer source')
+        for entry in expected['files']:
+            checked(payload / 'integration', entry)
     for component_id in set(choices) & CORE:
         if not isinstance(manifest.get(component_id), dict) or manifest[component_id].get('available') is not True:
             raise FileNotFoundError('Selected payload unavailable: ' + component_id)
         for record in manifest[component_id].get('files', []): checked(payload / 'integration', record)
     records, plans = merged_firmware_plan(root, manifest, options)
     writes = {target: checked(payload / 'integration', entry) for target, entry in records.items()}
+    shared_boot_writes, shared_boot_proof = {}, None
     if graphics_profile:
         import graphics_boot
         graphics_plan = plans[graphics_profile]
@@ -614,19 +665,33 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         if set(boot_writes).intersection(other_targets):
             raise ValueError('Graphics early-boot output conflicts with another selected component')
         graphics_plan.update(firmware_files=list(graphics_plan['files']),
-                             files=sorted([*graphics_plan['files'], *boot_writes]), early_boot_proof=proof,
+                             files=sorted([*graphics_plan['files'], *([] if microcode_profile else boot_writes)]), early_boot_proof=proof,
                              early_boot='firmware-appended-original-preserved' if boot_writes
                              else 'existing-initramfs-coverage-verified')
         writes.update(boot_writes)
+    if microcode_profile:
+        import microcode_boot
+        candidates = {target: writes[target] for target in records if target.startswith('usr/lib/firmware/' + ('intel-ucode/' if microcode_profile == 'microcode:intel' else 'amd-ucode/'))}
+        shared_boot_writes, shared_boot_proof = microcode_boot.prepare(root, microcode_profile, candidates,
+            graphics_writes=boot_writes if graphics_profile else None, graphics_proof=proof if graphics_profile else None)
+        other_targets = set(records)
+        for component in planned_components:
+            other_targets.update(entry['target'] for entry in component.get('files', []))
+        if set(shared_boot_writes).intersection(other_targets):
+            raise ValueError('CPU microcode early-boot output conflicts with another selected component')
+        writes.update(shared_boot_writes)
+        plans[microcode_profile].update(early_boot='early-cpio-before-initramfs', early_boot_proof=shared_boot_proof)
+        if graphics_profile:
+            plans[graphics_profile].update(early_boot='shared-cpu-graphics-boot-transaction', early_boot_proof=shared_boot_proof)
     _stage_mark(slot, 'payload-hash', clock)
     licenses = {}
     for identity in firmware_ids:
-        if not plans[identity]['files'] and identity != graphics_profile:
+        if not plans[identity]['files'] and identity not in (graphics_profile, microcode_profile):
             licenses[identity] = []
             continue
         entries = manifest[identity].get('licenses', [])
         if not entries: raise ValueError('Firmware redistribution licenses missing: ' + identity)
-        license_directory = identity.replace(':', '/') if identity.startswith(('bluetooth:', 'graphics:')) else identity.removeprefix('wifi:')
+        license_directory = identity.replace(':', '/') if identity.startswith(('bluetooth:', 'graphics:', 'microcode:')) else identity.removeprefix('wifi:')
         licenses[identity] = [('licenses/' + license_directory + '/' + Path(entry['source']).name,
             'usr/share/licenses/boiler-firmware/' + license_directory + '/' + Path(entry['source']).name,
             checked(payload / 'integration', entry)) for entry in entries]
@@ -643,6 +708,8 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     # selected; the fixed handler can then be reviewed on the real target.
     if package_root and (device_components or descriptor.get('be201_firmware')) and 'core:maintenance' in choices:
         retained_item = retained_model_preflight(engine, package_root, options)
+    if model_cpu and retained_item is None:
+        raise ValueError('Model CPU microcode requires a retainable model maintenance package')
     _stage_mark(slot, 'model-preflight', clock)
     if 'core:maintenance' in choices:
         component = manifest['core:maintenance']['component']
@@ -651,6 +718,12 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
         result['components']['core:maintenance'] = dict(status='files_installed', operation=operation)
         result['install_plan']['components'].append(component)
     _stage_mark(slot, 'core-maintenance', clock)
+    if cpufreq_profile:
+        component = manifest[cpufreq_profile]['component']
+        operation = engine.apply(component, payload / 'integration')
+        result['components'][cpufreq_profile] = dict(status='files_installed', operation=operation,
+            runtime='not_validated', activation='first_boot_required', vendor=cpufreq_profile.split(':', 1)[1])
+        result['install_plan']['components'].append(component)
     if plans:
         # This staging path is on the VM's ephemeral tmpfs, never the image.
         import tempfile
@@ -673,9 +746,27 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
                 operation = engine.apply(component, staged)
                 result['components'][component_id] = dict(status='files_installed', operation=operation, **plan)
                 result['install_plan']['components'].append(component)
+            if shared_boot_writes:
+                boot_plan = dict(plans[microcode_profile], files=sorted(shared_boot_writes),
+                                 requires=[microcode_profile] + ([graphics_profile] if graphics_profile else []),
+                                 early_boot_proof=shared_boot_proof)
+                component = firmware_component('core:firmware-boot', boot_plan, writes, staged)
+                operation = engine.apply(component, staged)
+                result['install_plan']['components'].append(component)
+                result['install_plan']['firmware_boot'] = dict(component='core:firmware-boot', operation=operation,
+                    cpu=microcode_profile, graphics=graphics_profile, proof=shared_boot_proof)
     _stage_mark(slot, 'firmware', clock)
     for component in device_components:
         if component.get('ssd_boot_policy'): continue
+        if component['id'] == 'onexplayer:intel-microcode':
+            from maintenance.onexplayer_microcode import apply_locked
+            with engine._lock():
+                engine._recover()
+                operation = apply_locked(engine, component, package_root, model_cpu_plan)
+            result['components'][component['id']] = dict(status='files_installed', runtime='not_validated',
+                operation=operation, hardware=model_cpu_plan['hardware'], early_boot_proof=model_cpu_plan['proof'])
+            result['install_plan']['components'].append(model_cpu_plan['derived'])
+            continue
         if component.get('dynamic_handler') or component['id'] == 'x2-mini:keyboard':
             from maintenance.keyboard_models import installer_execute
             operation = installer_execute(root, component, slot, dynamic_plans[component['id']])
@@ -709,7 +800,7 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     if preset_component:
         operation = system_presets.apply(engine, preset_component, preset_files)
         result['components'][system_presets.IDENTITY] = dict(status='files_installed', operation=operation,
-            language=options.get('kde_language', 'system'), password_set=options.get('set_deck_password', False),
+            language=preset_language, password_set=options.get('set_deck_password', False),
             ssh_enabled=options.get('enable_ssh', False), activation='next-boot')
         result['install_plan']['components'].append(preset_component)
     _stage_mark(slot, 'presets', clock)

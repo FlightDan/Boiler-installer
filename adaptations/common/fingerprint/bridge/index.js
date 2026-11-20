@@ -83,27 +83,93 @@ function steamLanguage() {
   try { return fingerprintLanguage(globalThis.navigator?.language); } catch (_) { return 'en'; }
 }
 const panelText = {
-  en: {title:'Fingerprint', toggle:'Fingerprint unlock', description:'Experimental', status:'Status',
-    enrolled:'Enrolled', empty:'No prints', unavailable:'Unavailable', checking:'Checking', enroll:'Enroll',
-    guide:'Desktop → System Settings → Users → Configure Fingerprints'},
-  zh: {title:'指纹', toggle:'指纹解锁', description:'实验功能', status:'状态',
-    enrolled:'已录入', empty:'未录入', unavailable:'不可用', checking:'检查中', enroll:'录入',
-    guide:'桌面 → 系统设置 → 用户 → 配置指纹'}
+  en: {
+    title: 'Fingerprint', toggle: 'Fingerprint unlock', description: 'Experimental',
+    list: 'Fingerprints', add: 'Add fingerprint', print: 'Fingerprint', cancel: 'Cancel',
+    identifying: 'Complete system authentication, then scan an unenrolled finger.',
+    center: 'Touch the center of your finger. Lift and touch again.',
+    edge: 'Lightly touch with the same finger. Lift and touch again.',
+    edgeTitle: 'Change your grip: scan the fingertip edge',
+    press: 'Touch the sensor with the same finger. Lift and touch again.',
+    swipe: 'Swipe the same finger across the sensor again.',
+    scan: 'Scan the same finger again.',
+    retrySwipe: 'Scan could not be used. Swipe the same finger again.',
+    retryScan: 'Scan could not be used. Scan the same finger again.',
+    retry: 'Scan could not be used. Lift, shift slightly, and touch again.', complete: 'Fingerprint added.',
+    starting: 'Starting enrollment…', busy: 'The reader is busy. Try again.',
+    full: 'Fingerprint limit reached (6).', failed: 'Enrollment stopped. Try again.',
+    repair:'Reinstall fingerprint support', repairing:'Installing…', repairFailed:'Failed',
+    errors: {
+      list: 'Could not read saved fingerprints.',
+      agent: 'Could not open the system authentication prompt.',
+      authorization: 'System authentication was denied or cancelled.',
+      duplicate: 'This finger is already saved. Use a different finger.',
+      capture: 'Enrollment did not complete. Try again.',
+      'retry-timeout': 'No new scan was received. Enrollment ended. You can add a fingerprint again.',
+      session: 'Could not start enrollment in this Steam session.'
+    }
+  },
+  zh: {
+    title: '指纹', toggle: '指纹解锁', description: '实验功能',
+    list: '指纹列表', add: '添加指纹', print: '指纹', cancel: '取消',
+    identifying: '请完成系统身份验证，再采集尚未录入的手指。',
+    center: '轻触指腹中央，抬起后再轻触。',
+    edge: '用同一根手指轻触，抬起后再轻触。',
+    edgeTitle: '换个握姿，采集指尖边缘',
+    press: '用同一根手指轻触传感器，抬起后再轻触。',
+    swipe: '用同一根手指再次划过传感器。',
+    scan: '请再次采集同一根手指。',
+    retrySwipe: '这次采样未通过，请用同一根手指再次划过传感器。',
+    retryScan: '这次采样未通过，请再次采集同一根手指。',
+    retry: '这次采样未通过。抬起手指，稍换位置再按一次。', complete: '指纹已添加。',
+    starting: '正在开始录入…', busy: '指纹识别器正忙，请重试。',
+    full: '已达到 6 枚指纹的上限。', failed: '录入已中断，请重试。',
+    repair:'重新安装指纹支持', repairing:'安装中…', repairFailed:'失败',
+    errors: {
+      list: '无法读取已录入的指纹。',
+      agent: '无法打开系统授权窗口。',
+      authorization: '系统授权被拒绝或取消。',
+      duplicate: '这根手指已录入，请换一根。',
+      capture: '录入未完成，请重试。',
+      'retry-timeout': '没有收到下一次采样，录入已结束。可以重新添加。',
+      session: '无法在当前 Steam 会话启动录入。'
+    }
+  }
 };
+
+export function enrollmentPrompt(state, language) {
+  if (!state || state.result === 'cancelled') return '';
+  const text = panelText[language === 'zh' ? 'zh' : 'en'];
+  if (state.result === 'sampling' || state.result === 'retry') {
+    const progress = Number.isInteger(state.total) && state.total > 0
+      ? state.samples + '/' + state.total + ' · ' : '';
+    if (state.result === 'retry') {
+      const instruction = state.scan_type === 'swipe' ? text.retrySwipe
+        : state.scan_type === 'press' ? text.retry : text.retryScan;
+      return progress + instruction;
+    }
+    if (state.guided) return progress + (state.samples < 4 ? text.center : text.edge);
+    const instruction = state.scan_type === 'swipe' ? text.swipe
+      : state.scan_type === 'press' ? text.press : text.scan;
+    return progress + instruction;
+  }
+  if (state.result === 'unavailable') return text.errors[state.reason] || text.failed;
+  return text[state.result] || '';
+}
 
 export default () => {
 const internal = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 let api;
 try { api = internal.connect(2, 'Boiler Fingerprint Unlock'); }
 catch (_) { api = internal.connect(1, 'Boiler Fingerprint Unlock'); }
-const backend = { verify: api.callable('verify'), cancel: api.callable('cancel'), status: api.callable('status') };
+const backend = { verify: api.callable('verify'), cancel: api.callable('cancel'), enroll: api.callable('enroll'), progress: api.callable('enroll_progress'), fingerprints: api.callable('fingerprints'), status: api.callable('status'), repair: api.callable('repair') };
 const key = 'boiler.fingerprint.enabled';
 let settingsFault = false;
 const enabled = () => { if (settingsFault) return false; try { const value = localStorage.getItem(key); return value === null || value === '1'; } catch { settingsFault = true; return false; } };
 const store = () => window.securitystore;
 const locked = () => { try { return !!store()?.IsLockScreenActive(); } catch { return false; } };
 let generation = 0, previous = false, timer, retryTimer, inFlight = false, mounted = true, deviceRetries = 0;
-let cancelBarrier = Promise.resolve(), visualState = null, successTimer;
+let cancelBarrier = Promise.resolve(), listBarrier = Promise.resolve(), enrollBarrier = Promise.resolve(), visualState = null, successTimer, enrolling = false, listing = false, cancelFailed = false;
 // Capture the actual lock-screen container before Steam starts its exit transition.
 function lockScreenElement() {
   try {
@@ -167,7 +233,11 @@ function show(state) { visualState = state; visual.render(state); }
 function abort(preserveSuccess = false) {
   generation++; clearTimeout(retryTimer); retryTimer = undefined;
   if (!preserveSuccess) stopSuccess();
-  cancelBarrier = cancelBarrier.then(() => backend.cancel()).catch(() => {});
+  cancelBarrier = cancelBarrier.then(() => backend.cancel()).then(result => { cancelFailed = result?.cancelled === false; }).catch(() => { cancelFailed = true; });
+}
+function abortEnrollment() {
+  abort();
+  cancelBarrier = cancelBarrier.then(() => Promise.allSettled([listBarrier, enrollBarrier]));
 }
 function schedule(current, delay = 500) {
   clearTimeout(retryTimer);
@@ -202,30 +272,130 @@ async function attempt() {
 }
 function Content() {
   const [on, setOn] = SP_REACT.useState(enabled());
+  const [inventory, setInventory] = SP_REACT.useState(null);
+  const [enrollment, setEnrollment] = SP_REACT.useState(null);
   const [status, setStatus] = SP_REACT.useState(null);
-  const text = panelText[steamLanguage()];
+  const [fixing, setFixing] = SP_REACT.useState(false);
+  const [fixFailed, setFixFailed] = SP_REACT.useState(false);
+  const language = steamLanguage();
+  const text = panelText[language];
+
+  async function refresh() {
+    if (locked()) return;
+    listing = true;
+    try {
+      listBarrier = backend.fingerprints();
+      const response = await listBarrier;
+      if (mounted && !locked()) setInventory(response);
+    } catch (_) {
+      if (mounted && !locked()) setInventory({result:'unavailable', reason:'list'});
+    } finally { listing = false; }
+  }
+
   SP_REACT.useEffect(() => {
-    let live = true, pending = false;
-    const refresh = async () => {
-      if (!live || pending || locked()) return;
-      pending = true;
-      try { const value = await backend.status(); if (live) setStatus(value); }
-      catch (_) { if (live) setStatus({available:false}); }
-      finally { pending = false; }
+    let live = true, statusTimer, waitingForRepair = false;
+    const retry = () => { if (live) statusTimer = setTimeout(checkStatus, 2000); };
+    async function checkStatus() {
+      if (!live || !mounted) return;
+      if (locked() || enrolling || listing || fixing) { retry(); return; }
+      try {
+        const value = await backend.status();
+        if (!live || !mounted) return;
+        setStatus(value);
+        if (value?.available && waitingForRepair) {
+          waitingForRepair = false;
+          await refresh();
+        }
+        if (value?.busy || value?.repairable) {
+          waitingForRepair = true;
+          retry();
+        }
+      } catch (_) {
+        if (live && mounted) setStatus({available:false});
+      }
+    }
+    async function load() {
+      await refresh();
+      if (live) await checkStatus();
+    }
+    load();
+    return () => { live = false; clearTimeout(statusTimer); if (enrolling || listing) abortEnrollment(); };
+  }, [fixing]);
+
+  async function startEnrollment() {
+    if (enrolling || listing || locked()) return;
+    enrolling = true;
+    setEnrollment({result:'starting', samples:0});
+    let polling = true;
+    const poll = async () => {
+      while (polling && mounted && enrolling && !locked()) {
+        try {
+          const state = await backend.progress();
+          if (polling && mounted && !locked() && state?.result !== 'idle') setEnrollment(state);
+        } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
     };
-    refresh();
-    return () => { live = false; };
-  }, []);
-  const row = (label, value) => SP_REACT.createElement(DFL.PanelSectionRow, {key:label},
-    SP_REACT.createElement(DFL.Field, {label, focusable:false}, value));
-  return SP_REACT.createElement(DFL.PanelSection, {title:text.title},
-    SP_REACT.createElement(DFL.PanelSectionRow, null, SP_REACT.createElement(DFL.ToggleField, {
-      label:text.toggle, description:text.description, checked:on,
-      onChange: value => { try { localStorage.setItem(key, value ? '1':'0'); } catch (_) { settingsFault = true; } setOn(enabled()); if (!value || !enabled()) abort(); else if (locked()) { if (!previous) { previous = true; deviceRetries = 0; } abort(); attempt(); } }
-    })),
-    row(text.status, status ? (status.available ? (status.enrolled ? text.enrolled : text.empty) : text.unavailable) : text.checking),
-    row(text.enroll, text.guide));
+    poll();
+    try {
+      enrollBarrier = backend.enroll();
+      const result = await enrollBarrier;
+      polling = false;
+      if (mounted && !locked()) {
+        setEnrollment(cancelFailed ? {result:'unavailable'} : result);
+        if (result?.result === 'complete' || result?.result === 'full') await refresh();
+      }
+    } catch (_) {
+      if (mounted && !locked()) setEnrollment({result:'unavailable'});
+    } finally { polling = false; enrolling = false; }
+  }
+
+  const h = SP_REACT.createElement;
+  const count = inventory?.result === 'available' ? inventory.count : 0;
+  const limit = inventory?.limit ?? 6;
+  const full = count >= limit;
+  const edgePhase = enrollment?.guided && ['sampling', 'retry'].includes(enrollment.result)
+    && enrollment.samples >= 4 && enrollment.samples < enrollment.total;
+  const message = enrollmentPrompt(enrollment, language)
+    || (full ? text.full : enrollmentPrompt(inventory, language));
+  const list = h(DFL.PanelSection, {title:text.list},
+    ...Array.from({length:count}, (_, index) =>
+      h(DFL.PanelSectionRow, {key:index},
+        h(DFL.Field, {label:text.print + ' ' + (index + 1), focusable:false}))),
+    edgePhase && h(DFL.PanelSectionRow, null,
+      h('div', {role:'status', 'aria-live':'polite', style:{fontSize:'1.2em', fontWeight:'bold'}}, text.edgeTitle)),
+    message && h(DFL.PanelSectionRow, null, h('div', {role:'status', 'aria-live':'polite'}, message)),
+    h(DFL.PanelSectionRow, null, h(DFL.ButtonItem, {
+      disabled: !enrolling && (full || !inventory || listing),
+      onClick: () => {
+        if (!enrolling) {
+          if (inventory?.result === 'available' && !full) startEnrollment();
+          else refresh();
+          return;
+        }
+        backend.cancel().then(result => {
+          if (result?.cancelled === false) { cancelFailed = true; setEnrollment({result:'unavailable'}); }
+        }).catch(() => { cancelFailed = true; setEnrollment({result:'unavailable'}); });
+      }
+    }, enrolling ? text.cancel : text.add)));
+  return h(SP_REACT.Fragment || 'div', null,
+    h(DFL.PanelSection, {title:text.title},
+      h(DFL.PanelSectionRow, null, h(DFL.ToggleField, {
+        label:text.toggle, description:text.description, checked:on,
+        onChange: value => { try { localStorage.setItem(key, value ? '1':'0'); } catch (_) { settingsFault = true; } setOn(enabled()); if (!value || !enabled()) abort(); else if (locked()) { if (!previous) { previous = true; deviceRetries = 0; } abort(); attempt(); } }
+      }))),
+    list,
+    fixFailed && h(DFL.PanelSectionRow, null,
+      h(DFL.Field, {label:text.repair, focusable:false}, text.repairFailed)),
+    (fixing || (status?.repairable && !status.busy && !status.available)) && h(DFL.PanelSectionRow, null,
+      h(DFL.ButtonItem, {layout:'below', disabled:fixing || enrolling, onClick: async () => {
+        if (fixing || enrolling || locked()) return;
+        setFixing(true); setFixFailed(false);
+        try { setFixFailed(!(await backend.repair())?.ok); }
+        catch (_) { setFixFailed(true); }
+        finally { setFixing(false); }
+      }}, fixing ? text.repairing : text.repair)));
 }
-  timer = setInterval(() => { const active = locked(); if (active !== previous) { previous = active; if (active) deviceRetries = 0; if (active && enabled()) { if (successTimer) stopSuccess(); attempt(); } else abort(!active && !!successTimer); } else if (active && enabled() && visualState && visualState !== 'success') { visual.render(visualState); } }, 300);
+  timer = setInterval(() => { const active = locked(); if (active !== previous) { previous = active; if (active) { deviceRetries = 0; if (enrolling || listing) abortEnrollment(); } if (active && enabled()) { if (successTimer) stopSuccess(); attempt(); } else abort(!active && !!successTimer); } else if (active && enabled() && visualState && visualState !== 'success') { visual.render(visualState); } }, 300);
   return {name:'Boiler Fingerprint Unlock', titleView:SP_REACT.createElement('div', null, panelText[steamLanguage()].title), content:SP_REACT.createElement(Content), icon:SP_REACT.createElement('div', null, '◉'), onDismount(){mounted = false; clearInterval(timer); abort();}};
 };

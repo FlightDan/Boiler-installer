@@ -4,8 +4,8 @@
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -155,14 +155,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-880m": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -311,14 +311,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-ai-z2-extreme": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -467,14 +467,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z1": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -623,14 +623,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z1-extreme": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -779,14 +779,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z2": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -935,14 +935,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z2-a": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -1075,14 +1075,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z2-extreme": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -1231,14 +1231,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:amd-z2-go": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -1371,14 +1371,106 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
+    },
+    "graphics:intel-258v": {
+      "available": true,
+      "baseline": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
+      },
+      "delivery": "on-demand",
+      "drivers": [
+        "xe"
+      ],
+      "evidence": [
+        "https://www.intel.com/content/www/us/en/products/sku/240957/intel-core-ultra-7-processor-258v-12m-cache-up-to-4-80-ghz/specifications.html",
+        "https://github.com/torvalds/linux/blob/v6.17/include/drm/intel/pciids.h",
+        "https://github.com/torvalds/linux/blob/v6.17/drivers/gpu/drm/xe/xe_uc_fw.c",
+        "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE",
+        "https://cdrdv2-public.intel.com/828731/Intel%20Core%20Ultra%20Processors%20Series%202%20-%20LNL%20Quick%20Reference%20Guide%20v2.0.pdf"
+      ],
+      "files": [
+        {
+          "git_blob": "c61e919a3c5c9d3eeb6033f9353fb6c99387c414",
+          "sha256": "eb6f1283f714b9a8af3492802d1478e774e7795e09d75b56865ddaca3ae07abc",
+          "size": 60448,
+          "source": "graphics/intel-258v/firmware/i915/xe2lpd_dmc.bin",
+          "target": "usr/lib/firmware/i915/xe2lpd_dmc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/i915/xe2lpd_dmc.bin"
+        },
+        {
+          "git_blob": "f1782ff3c86ac1c79b06c951d109e066e100d45e",
+          "sha256": "b9a28846de2df43e8464cb783f965efe3a20df54da26392576583a4e0f4bbef1",
+          "size": 1163264,
+          "source": "graphics/intel-258v/firmware/xe/lnl_gsc_1.bin",
+          "target": "usr/lib/firmware/xe/lnl_gsc_1.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/lnl_gsc_1.bin"
+        },
+        {
+          "git_blob": "3746d47cf5afe70d5f81a0cd804e3b585db44660",
+          "sha256": "76c05623b1602802a8852cd5e6d8b36948acd648e7f2e2ea7cacb119f16b7be6",
+          "size": 348992,
+          "source": "graphics/intel-258v/firmware/xe/lnl_guc_70.bin",
+          "target": "usr/lib/firmware/xe/lnl_guc_70.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/lnl_guc_70.bin"
+        },
+        {
+          "git_blob": "db6d5a0ba2e7fccf2aca0b02ada53d7f512a6b48",
+          "sha256": "320e765cbe42b0f5f95333794a6a00a4e67246d6ad8393b59b64efdc3506cfe9",
+          "size": 643072,
+          "source": "graphics/intel-258v/firmware/xe/lnl_huc.bin",
+          "target": "usr/lib/firmware/xe/lnl_huc.bin",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/xe/lnl_huc.bin"
+        }
+      ],
+      "id": "graphics:intel-258v",
+      "kind": "GraphicsFirmwareBundle",
+      "licenses": [
+        {
+          "git_blob": "2492b8d83d876279318ef535f27f8fe415d8f0c8",
+          "sha256": "8542aeabf2761935122d693561e16766ce1bcc2b0d003204f9040b7d6d929f2e",
+          "size": 2080,
+          "source": "graphics/intel-258v/licenses/LICENSE.i915",
+          "target": "licenses/LICENSE.i915",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.i915"
+        },
+        {
+          "git_blob": "9fd201d2254695b1f4c851fef80704143a6cc535",
+          "sha256": "26b3c946f1f378ff25bb3bb7c365d108a2bc0bf08619e5e08bc0e4f9aaa6ee1e",
+          "size": 2041,
+          "source": "graphics/intel-258v/licenses/LICENSE.xe",
+          "target": "licenses/LICENSE.xe",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/LICENSES/LICENSE.xe"
+        },
+        {
+          "git_blob": "ddb9228dff683a1f334541195b3a5e2167e83cd1",
+          "sha256": "eab46b7cf7e27334da4d84a779926e5e123eed1c0b882b93900c244ca4381765",
+          "size": 451055,
+          "source": "graphics/intel-258v/licenses/WHENCE",
+          "target": "licenses/WHENCE",
+          "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/WHENCE"
+        }
+      ],
+      "metadata_available": true,
+      "note": "Lunar Lake Xe2 family shared by Intel Core Ultra 200V processors with Arc 130V or 140V. GuC, HuC, GSC and Xe2LPD display firmware paths are selected by the Lunar Lake platform in the xe driver, independent of processor SKU. Windows suggestions use Lunar Lake display PCI identity. The existing profile ID is retained for previously saved plans. Runtime behavior requires physical-device validation.",
+      "payload_cached": false,
+      "provenance": {
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/2ab4ce216003ee2c2396c69e19455e4379b0e1f0/"
+      },
+      "runtime": "not_validated",
+      "schema": 1,
+      "status": "experimental-baseline",
+      "version": "0.1.0-baseline.3"
     },
     "graphics:intel-g3": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -1470,14 +1562,14 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     },
     "graphics:intel-g3-extreme": {
       "available": true,
       "baseline": {
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
-        "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-        "version": "0.1.0-baseline.1"
+        "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+        "version": "0.1.0-baseline.3"
       },
       "delivery": "on-demand",
       "drivers": [
@@ -1569,12 +1661,12 @@
       "runtime": "not_validated",
       "schema": 1,
       "status": "experimental-baseline",
-      "version": "0.1.0-baseline.1"
+      "version": "0.1.0-baseline.3"
     }
   },
   "kind": "GraphicsFirmwareBaseline",
   "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0",
   "schema": 1,
-  "spec_sha256": "5ba4d263c6c24450d84461aceebecb11f07c31aa3f410512bb066e19cc21b151",
-  "version": "0.1.0-baseline.1"
+  "spec_sha256": "3d212cdedb7b23fe3c21a932ed066a80a254f5d32760da7b4dbf11ec3ee87bfb",
+  "version": "0.1.0-baseline.3"
 }

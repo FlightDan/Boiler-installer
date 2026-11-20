@@ -37,7 +37,7 @@ public partial class MainWindow
 
     private void PromoteDeviceMode()
     {
-        var inspected = installMode == "vanilla" && CurrentSourceDigest != null;
+        var inspected = installMode == "vanilla" && CurrentSourceReviewed;
         installMode = "custom";
         if (inspected) inspectedSourceKey = SourceInfoKey();
     }
@@ -228,7 +228,7 @@ public partial class MainWindow
     private static string PreviewText(JsonElement owner, string property, string fallback)
     {
         if (!owner.TryGetProperty(property, out var value)) return fallback;
-        if (value.ValueKind == JsonValueKind.Object && value.TryGetProperty(InstallerI18n.Language == "en-US" ? "en" : "zh", out var localized)) value = localized;
+        if (InstallerI18n.TryLocalizedValue(value, out var localized)) value = localized;
         if (value.ValueKind != JsonValueKind.String) return fallback;
         var text = value.GetString() ?? fallback;
         return text.Length <= 512 ? text : text[..512] + "…";

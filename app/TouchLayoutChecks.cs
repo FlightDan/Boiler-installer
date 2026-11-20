@@ -92,7 +92,7 @@ internal static class TouchLayoutChecks
         foreach (var english in new[] { false, true })
         foreach (var size in new[] { new Size(640,360), new Size(800,450), new Size(853,480), new Size(960,540), new Size(1280,720), new Size(1280,800), new Size(1920,1080) })
         {
-            Find<RadioButton>(english ? "EnglishLanguage" : "ChineseLanguage").IsChecked = true;
+            Find<ComboBox>("InstallerLanguage").SelectedValue = english ? "en-US" : "zh-CN";
             window.Width = size.Width; window.Height = size.Height; window.UpdateLayout();
             void Inside(FrameworkElement element, string name)
             {
@@ -108,7 +108,7 @@ internal static class TouchLayoutChecks
                 var footer = Find<Button>(step == 5 ? "StopButton" : "NextButton");
                 var suffix = $"{(english ? "en" : "zh")}-{size.Width}x{size.Height}-step{step}";
                 Inside(footer,"footer-visible-" + suffix);
-                Inside(Find<RadioButton>("ChineseLanguage"),"language-visible-" + suffix);
+                Inside(Find<ComboBox>("InstallerLanguage"),"language-visible-" + suffix);
                 Require(footer.ActualHeight >= 48, "footer-touch-height-" + suffix);
                 var scroll = Find<ScrollViewer>("PageScroll");
                 Require(scroll.ActualHeight >= 80 && scroll.PanningMode == PanningMode.VerticalOnly, "vertical-touch-content-room-" + suffix);

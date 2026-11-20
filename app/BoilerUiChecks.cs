@@ -103,11 +103,10 @@ internal static class BoilerUiChecks
                     var homeScroll = FindDescendant<ScrollViewer>(home, "HomeScroll");
                     var panel = FindDescendant<StackPanel>(home, "HomeContent");
                     var choices = FindDescendant<UniformGrid>(home, "HomeChoices");
-                    var languagePanel = FindDescendant<WrapPanel>(home, "HomeLanguages");
+                    var languagePicker = FindDescendant<ComboBox>(home, "HomeLanguage");
                     var modeButtons = choices?.Children.OfType<Button>()
                         .Where(button => button.Tag is string tag && tag is "custom" or "imported" or "vanilla")
                         .ToDictionary(button => (string)button.Tag, StringComparer.Ordinal);
-                    var languageButtons = languagePanel?.Children.OfType<Button>().ToArray();
                     var homeExitButton = FindHomeExitButton(home);
                     var wizardShell = Find<Grid>(window, "WizardShell");
                     var sidebarSource = Find<Button>(window, "SourceTab");
@@ -131,7 +130,8 @@ internal static class BoilerUiChecks
                     Check(choices != null && choices.Columns == (size.Width >= 960 ? 3 : 1),
                         $"home-choice-columns-match-window-width-{language}-{FormatSize(size)}",
                         new { columns = choices?.Columns, expectedColumns = size.Width >= 960 ? 3 : 1, width = choices?.ActualWidth });
-                    Check(languageButtons is { Length: 2 }, $"home-has-two-language-buttons-{language}-{FormatSize(size)}");
+                    Check(languagePicker?.Items.Count == 8 && Equals(languagePicker.SelectedValue, language),
+                        $"home-language-picker-lists-eight-languages-{language}-{FormatSize(size)}");
                     Check(homeExitButton != null && homeExitButton.IsVisible,
                         $"home-exit-action-visible-{language}-{FormatSize(size)}");
 
@@ -148,7 +148,7 @@ internal static class BoilerUiChecks
                         scroll = homeScroll == null ? null : new { homeScroll.ViewportWidth, homeScroll.ViewportHeight, homeScroll.ExtentWidth, homeScroll.ExtentHeight, homeScroll.ScrollableHeight },
                         scrollable = homeScrollable
                     });
-                    if (homeScroll != null && modeButtons != null && languageButtons != null && homeExitButton != null)
+                    if (homeScroll != null && modeButtons != null && languagePicker != null && homeExitButton != null)
                     {
                         foreach (var (mode, button) in modeButtons)
                         {
@@ -164,17 +164,15 @@ internal static class BoilerUiChecks
                                 $"home-{mode}-card-is-one-focusable-action-{language}-{FormatSize(size)}",
                                 new { nestedButtons, nestedFocusableControls });
                         }
-                        foreach (var (button, index) in languageButtons.Select((button, index) => (button, index)))
-                        {
-                            Check(button.MinHeight >= 48 && button.ActualWidth >= 48 && button.ActualHeight >= 48,
-                                $"home-language-{index}-target-at-least-48dip-{language}-{FormatSize(size)}",
-                                new { minWidth = button.MinWidth, minHeight = button.MinHeight, width = button.ActualWidth, height = button.ActualHeight });
-                        }
+                        var pickerBounds = BoundsRelativeTo(languagePicker, root);
+                        Check(languagePicker.ActualHeight >= 48 && IsWithinRoot(languagePicker, root)
+                            && pickerBounds.Left >= root.ActualWidth / 2 && pickerBounds.Top < 110,
+                            $"home-language-picker-is-top-right-and-touch-sized-{language}-{FormatSize(size)}");
                         Check(size.Height >= 480 || homeScrollable,
                             $"home-content-scrollable-at-short-height-{language}-{FormatSize(size)}",
                             new { scrollableHeight = homeScroll.ScrollableHeight, viewportHeight = homeScroll.ViewportHeight });
 
-                        var focusTargets = modeButtons.Values.Cast<FrameworkElement>().Concat(languageButtons)
+                        var focusTargets = modeButtons.Values.Cast<FrameworkElement>().Append(languagePicker)
                             .Append(homeExitButton).ToArray();
                         var focus = await TraverseFocusAsync(modeButtons["custom"], home, root,
                             focusTargets, requireCycle: true, maxSteps: 64);
@@ -192,25 +190,22 @@ internal static class BoilerUiChecks
                     }
 
                     var alternateLanguage = language == "en-US" ? "zh-CN" : "en-US";
-                    var alternateLanguageButton = FindHomeLanguageButton(home, alternateLanguage);
-                    Check(alternateLanguageButton != null,
-                        $"home-language-button-found-for-routed-change-{alternateLanguage}-{FormatSize(size)}");
-                    if (alternateLanguageButton != null)
+                    if (languagePicker != null)
                     {
-                        RaiseClick(alternateLanguageButton);
+                        languagePicker.SelectedValue = alternateLanguage;
                         await FlushLayoutAsync(window);
                         Check(InstallerI18n.Language == alternateLanguage,
-                            $"home-language-routed-click-changes-language-{alternateLanguage}-{FormatSize(size)}");
+                            $"home-language-selection-changes-language-{alternateLanguage}-{FormatSize(size)}");
                         var alternateHome = GetHomeScreen(window);
-                        var originalLanguageButton = alternateHome == null ? null : FindHomeLanguageButton(alternateHome, language);
-                        Check(originalLanguageButton != null,
-                            $"home-original-language-button-found-after-routed-change-{language}-{FormatSize(size)}");
-                        if (originalLanguageButton != null)
+                        var alternatePicker = alternateHome == null ? null : FindDescendant<ComboBox>(alternateHome, "HomeLanguage");
+                        Check(alternatePicker != null,
+                            $"home-language-picker-found-after-language-change-{language}-{FormatSize(size)}");
+                        if (alternatePicker != null)
                         {
-                            RaiseClick(originalLanguageButton);
+                            alternatePicker.SelectedValue = language;
                             await FlushLayoutAsync(window);
                             Check(InstallerI18n.Language == language,
-                                $"home-language-routed-click-restores-language-{language}-{FormatSize(size)}");
+                                $"home-language-selection-restores-language-{language}-{FormatSize(size)}");
                         }
                     }
 
@@ -255,9 +250,7 @@ internal static class BoilerUiChecks
                         var sourcePageScroll = Find<ScrollViewer>(window, "PageScroll");
                         var sourceNext = Find<Button>(window, "NextButton");
                         var sourceBack = Find<Button>(window, "BackButton");
-                        var sourceLanguagePanel = Find<UniformGrid>(window, "InstallerLanguage");
-                        var sourceChinese = Find<RadioButton>(window, "ChineseLanguage");
-                        var sourceEnglish = Find<RadioButton>(window, "EnglishLanguage");
+                        var sourceLanguagePicker = Find<ComboBox>(window, "InstallerLanguage");
                         var sourceHint = Find<TextBlock>(window, "SourceFooterHint");
                         if (root.ActualHeight < 420)
                             Check(sourceHint.Visibility == Visibility.Collapsed,
@@ -266,7 +259,7 @@ internal static class BoilerUiChecks
                             Check(sourceHint.Visibility == Visibility.Visible,
                                 $"{mode}-source-footer-restores-supplementary-hint-{language}-{FormatSize(size)}");
                         Check(sourceFooter.IsVisible && sourceNext.IsVisible && sourceBack.IsVisible == (mode != "imported")
-                            && sourceLanguagePanel.IsVisible && sourceChinese.IsVisible && sourceEnglish.IsVisible,
+                            && sourceLanguagePicker.IsVisible && Equals(sourceLanguagePicker.SelectedValue, language),
                             $"{mode}-source-has-fixed-footer-and-sidebar-back-home-{language}-{FormatSize(size)}");
                         Check(!sourceNext.IsEnabled,
                             $"{mode}-empty-source-keeps-next-disabled-{language}-{FormatSize(size)}");
@@ -317,7 +310,7 @@ internal static class BoilerUiChecks
                         var sourceFilePickers = FindSourceFilePickerButtons(source);
                         Check(sourceFilePickers.Length > 0,
                             $"{mode}-source-has-an-enabled-file-picker-{language}-{FormatSize(size)}");
-                        var sourceFocusTargets = new List<FrameworkElement> { backHome, sourceChinese, sourceEnglish };
+                        var sourceFocusTargets = new List<FrameworkElement> { backHome, sourceLanguagePicker };
                         sourceFocusTargets.AddRange(sourceFilePickers);
                         if (sourceNext.IsEnabled) sourceFocusTargets.Add(sourceNext);
                         var sourceNavigationScroll = FindSidebarNavigationScroll(window);
@@ -400,8 +393,8 @@ internal static class BoilerUiChecks
                         var homeAfterBack = GetHomeScreen(window);
                         Check(homeAfterBack?.IsVisible == true && !wizardShell.IsVisible && InstallerI18n.Language == language,
                             $"{mode}-back-home-returns-and-preserves-language-{language}-{FormatSize(size)}");
-                        Check((language == "en-US" ? Find<RadioButton>(window, "EnglishLanguage") : Find<RadioButton>(window, "ChineseLanguage")).IsChecked == true,
-                            $"{mode}-back-home-language-selection-remains-checked-{language}-{FormatSize(size)}");
+                        Check(homeAfterBack != null && Equals(FindDescendant<ComboBox>(homeAfterBack, "HomeLanguage")?.SelectedValue, language),
+                            $"{mode}-back-home-language-selection-remains-selected-{language}-{FormatSize(size)}");
                         if (verifySidebarReentry)
                         {
                             var localCardAfterReturn = homeAfterBack == null ? null : FindHomeModeButton(homeAfterBack, "imported");
@@ -440,9 +433,7 @@ internal static class BoilerUiChecks
                         var footer = Find<Grid>(window, "PageFooter");
                         var back = Find<Button>(window, "BackButton");
                         var next = Find<Button>(window, "NextButton");
-                        var installerLanguagePanel = Find<UniformGrid>(window, "InstallerLanguage");
-                        var chinese = Find<RadioButton>(window, "ChineseLanguage");
-                        var english = Find<RadioButton>(window, "EnglishLanguage");
+                        var wizardLanguagePicker = Find<ComboBox>(window, "InstallerLanguage");
                         var sidebarBackHome = Find<Button>(window, "BackHomeButton");
                         var activePage = Find<StackPanel>(window, mode == "imported" ? "SourcePage" : "ContentPage");
                         var wirelessPanel = BoilerCustomBuildChecks.Options(window);
@@ -458,7 +449,7 @@ internal static class BoilerUiChecks
                             requestedWindowDip = ToSize(size),
                             clientAreaDip = new { widthDip = root.ActualWidth, heightDip = root.ActualHeight },
                             footer = new { backVisible = back.IsVisible, nextVisible = next.IsVisible, bounds = BoundsDescription(footer, root) },
-                            languageControls = new { chineseVisible = chinese.IsVisible, englishVisible = english.IsVisible, bounds = BoundsDescription(installerLanguagePanel, root) },
+                            languageControls = new { pickerVisible = wizardLanguagePicker.IsVisible, bounds = BoundsDescription(wizardLanguagePicker, root) },
                             sidebarBackHomeVisible = sidebarBackHome.IsVisible,
                             pageScroll = new { pageScroll.ViewportWidth, pageScroll.ViewportHeight, pageScroll.ExtentWidth, pageScroll.ExtentHeight, pageScroll.ScrollableHeight }
                         });
@@ -468,15 +459,17 @@ internal static class BoilerUiChecks
                         Check(activePage.IsVisible, $"{mode}-active-page-visible-{language}-{FormatSize(size)}", pageName);
                         Check(footer.IsVisible && next.IsVisible && (mode == "imported" ? !back.IsVisible : back.IsVisible),
                             $"{mode}-footer-visible-{language}-{FormatSize(size)}");
-                        Check(installerLanguagePanel.IsVisible && chinese.IsVisible && english.IsVisible,
-                            $"{mode}-language-controls-visible-{language}-{FormatSize(size)}");
+                        var pickerBounds = BoundsRelativeTo(wizardLanguagePicker, root);
+                        Check(wizardLanguagePicker.IsVisible && wizardLanguagePicker.Items.Count == 8 && pickerBounds.Left >= root.ActualWidth / 2
+                            && pickerBounds.Top < 60 && wizardLanguagePicker.ActualHeight >= 48,
+                            $"{mode}-language-picker-is-top-right-and-touch-sized-{language}-{FormatSize(size)}");
                         if (mode == "imported") Check(sidebarBackHome.IsVisible && sidebarBackHome.IsEnabled,
                             $"{mode}-sidebar-back-home-visible-{language}-{FormatSize(size)}");
 
                         var inBounds = mode == "imported"
-                            ? new FrameworkElement[] { footer, next, sidebarBackHome, installerLanguagePanel, chinese, english }
+                            ? new FrameworkElement[] { footer, next, sidebarBackHome, wizardLanguagePicker }
                                 .Select((element, index) => (element, new[] { "footer", "next", "back-home", "language-panel", "language-zh", "language-en" }[index]))
-                            : new FrameworkElement[] { footer, next, back, installerLanguagePanel, chinese, english }
+                            : new FrameworkElement[] { footer, next, back, wizardLanguagePicker }
                                 .Select((element, index) => (element, new[] { "footer", "next", "back", "language-panel", "language-zh", "language-en" }[index]));
                         foreach (var (element, name) in inBounds)
                         {
@@ -485,9 +478,9 @@ internal static class BoilerUiChecks
                                 BoundsDescription(element, root));
                         }
                         var hitTargets = mode == "imported"
-                            ? new FrameworkElement[] { next, sidebarBackHome, chinese, english }
+                            ? new FrameworkElement[] { next, sidebarBackHome, wizardLanguagePicker }
                                 .Select((element, index) => (element, new[] { "next", "back-home", "language-zh", "language-en" }[index]))
-                            : new FrameworkElement[] { next, back, chinese, english }
+                            : new FrameworkElement[] { next, back, wizardLanguagePicker }
                                 .Select((element, index) => (element, new[] { "next", "back", "language-zh", "language-en" }[index]));
                         foreach (var (element, name) in hitTargets)
                         {
@@ -506,8 +499,8 @@ internal static class BoilerUiChecks
                                 new { scrollableHeight = pageScroll.ScrollableHeight, viewportHeight = pageScroll.ViewportHeight });
 
                         var focusTargets = mode == "imported"
-                            ? new List<FrameworkElement> { sidebarBackHome, chinese, english }
-                            : new List<FrameworkElement> { next, back, chinese, english };
+                            ? new List<FrameworkElement> { sidebarBackHome, wizardLanguagePicker }
+                            : new List<FrameworkElement> { next, back, wizardLanguagePicker };
                         if (mode == "imported") focusTargets.AddRange(FindSourceFilePickerButtons(activePage));
                         if (mode == "imported" && next.IsEnabled) focusTargets.Add(next);
                         var navigationScroll = FindSidebarNavigationScroll(window);
@@ -604,9 +597,7 @@ internal static class BoilerUiChecks
 
     private static void SetLanguage(MainWindow window, string language)
     {
-        var target = (RadioButton)window.FindName(language == "en-US" ? "EnglishLanguage" : "ChineseLanguage");
-        target.IsChecked = true;
-        if (InstallerI18n.Language != language) InstallerI18n.SetLanguage(language);
+        Find<ComboBox>(window, "InstallerLanguage").SelectedValue = language;
     }
 
     private static void SetWindowSize(Window window, Size size)
@@ -622,14 +613,6 @@ internal static class BoilerUiChecks
     private static Button? FindHomeModeButton(Border home, string mode) =>
         FindDescendant<UniformGrid>(home, "HomeChoices")?.Children.OfType<Button>()
             .FirstOrDefault(button => button.Tag is string tag && tag == mode);
-
-    private static Button? FindHomeLanguageButton(Border home, string language) =>
-        FindDescendant<WrapPanel>(home, "HomeLanguages")?.Children.OfType<Button>()
-            .FirstOrDefault(button => button.Tag is string tag && tag == language
-                || language == "en-US" && (button.Name.Contains("English", StringComparison.OrdinalIgnoreCase)
-                    || ButtonText(button).Contains("English", StringComparison.OrdinalIgnoreCase))
-                || language == "zh-CN" && (button.Name.Contains("Chinese", StringComparison.OrdinalIgnoreCase)
-                    || ButtonText(button).Contains("中文", StringComparison.Ordinal)));
 
     private static Button? FindHomeExitButton(Border home) => Descendants(home).OfType<Button>()
         .FirstOrDefault(button => button.Name.Contains("exit", StringComparison.OrdinalIgnoreCase)

@@ -47,18 +47,95 @@ class SharedLifecycle(unittest.TestCase):
 
     def test_apply_verify_restore_preserves_original(self):
         target = self.root/'etc/shared-test.conf'; target.parent.mkdir(); target.write_bytes(b'original\n')
-        self.execute(self.make_plan())
+        versions = [{'id': 'x2-mini:battery', 'version': '0.2.0'}]
+        install = self.make_plan()
+        self.assertEqual(install['component_versions'], versions)
+        self.assertEqual(self.execute(install)['component_versions'], versions)
         self.assertEqual(target.read_bytes(), b'system-default-no-sleep\n')
-        self.assertTrue(self.execute(self.make_plan('verify'))['result']['verified'])
-        self.execute(self.make_plan('restore'))
+        verify = self.make_plan('verify')
+        verify.pop('component_versions')
+        verify.pop('review_sha256')
+        verify['review_sha256'] = shared._digest(verify)
+        receipt = self.execute(verify)
+        self.assertTrue(receipt['result']['verified'])
+        self.assertEqual(receipt['component_versions'], versions)
+        self.assertEqual(self.execute(self.make_plan('restore'))['component_versions'], versions)
         self.assertEqual(target.read_bytes(), b'original\n')
         self.assertIsNone(shared.options(self.root, 'device:x2-mini', **self.kw)['current'])
+
+    def test_verify_and_restore_label_the_installed_version(self):
+        engine = Engine(self.root)
+        item = shared.package('device:x2-mini', engine, self.runtime, True)
+        installed = dict(item['components'][0], version='0.1.9')
+        (self.root/'etc').mkdir()
+        engine.apply(installed, item['directory'])
+        for action in ('verify', 'restore'):
+            with self.subTest(action=action):
+                plan = self.make_plan(action)
+                self.assertEqual(plan['component_versions'], [{'id': installed['id'], 'version': '0.1.9'}])
 
     def test_changed_target_invalidates_review(self):
         plan = self.make_plan()
         target = self.root/'etc/shared-test.conf'; target.parent.mkdir(); target.write_bytes(b'changed')
         with self.assertRaisesRegex(MaintenanceError, 'changed'):
             self.execute(plan)
+
+    def test_additive_microcode_keeps_existing_model_and_restores_boot_bytes(self):
+        from components import graphics_boot
+        from maintenance import onexplayer_microcode as microcode
+        self.execute(self.make_plan())
+        Engine(self.root).apply(dict(schema_version=1, kind='ComponentManifest', id='core:maintenance',
+                                     version='0.2.0+maintenance.29', files=[]), self.root)
+        engine = Engine(self.root, read_only=True)
+        model_pointer = engine.state_dir/'models/package-x2-mini.json'
+        shared_pointer = engine.state_dir/'models/shared-x2-mini.json'
+        anchors = [path.read_bytes() for path in (model_pointer, shared_pointer)]
+        original_battery = engine._state()['components']['x2-mini:battery']
+        package = self.runtime/'cache/model-bundles/packages/x2-mini'
+        value = json.loads((package/'manifest.json').read_bytes())
+        value.update(version='0.1.0-localtest.2', minimum_engine_version='0.1.7')
+        sources = Path(__file__).resolve().parents[1]/'adaptations/common/cpu/intel/microcode'
+        files = []
+        for source, target in (('inputs/06-cc-02', microcode.BLOB_TARGET),
+                               ('licenses/Intel-microcode.txt', microcode.LICENSE_TARGET)):
+            path = package/source
+            path.parent.mkdir(parents=True, exist_ok=True)
+            data = (sources/source).read_bytes()
+            path.write_bytes(data)
+            size, digest = microcode.INPUTS[target]
+            files.append(dict(source=source, target=target, size=size, sha256=digest))
+            value['files'].append(dict(path=source, size=size, sha256=digest))
+        value['components'].append(dict(schema_version=1, kind='ComponentManifest', id=microcode.IDENTITY,
+            version='0.1.0', minimum_engine_version='0.1.7', optional=True, default=False,
+            microcode_boot_policy={'kind': 'onexplayer-intel-microcode-v1'}, files=files))
+        value['shared_adaptations']['components'].append(microcode.IDENTITY)
+        raw = (json.dumps(value)+'\n').encode()
+        (package/'manifest.json').write_bytes(raw)
+        descriptor = self.runtime/'cache/model-bundles/manifest.json'
+        index = json.loads(descriptor.read_bytes())
+        index['packages'][0].update(version=value['version'], manifest_sha256=hashlib.sha256(raw).hexdigest())
+        descriptor.write_text(json.dumps(index))
+        boot = self.root/'boot/initramfs-stock.img'
+        boot.parent.mkdir()
+        original = graphics_boot._fragment({'init': b'fixture'}, {})
+        boot.write_bytes(original)
+
+        def plan(action, **kwargs):
+            return shared.plan(self.root, 'device:x2-mini', [microcode.IDENTITY], action=action, **kwargs)
+
+        self.execute(plan('apply', **self.kw))
+        self.assertNotEqual(original, boot.read_bytes())
+        sidecar = next((engine.state_dir/'models/microcode-packages').iterdir())
+        self.assertEqual({'manifest.json', 'inputs/06-cc-02', 'licenses/Intel-microcode.txt'},
+                         {p.relative_to(sidecar).as_posix() for p in sidecar.rglob('*') if p.is_file()})
+        retained_only = dict(self.kw, runtime_root=self.runtime/'no-bundle')
+        for action in ('verify', 'restore'):
+            reviewed = plan(action, **retained_only)
+            result = shared.execute(self.root, reviewed, reviewed_sha256=reviewed['review_sha256'], **retained_only)
+            self.assertTrue(result['result']['verified'])
+        self.assertEqual(original, boot.read_bytes())
+        self.assertEqual(anchors, [path.read_bytes() for path in (model_pointer, shared_pointer)])
+        self.assertEqual(original_battery, engine._state()['components']['x2-mini:battery'])
 
     def test_modified_install_verify_fails_restore_refuses(self):
         self.execute(self.make_plan())
@@ -161,6 +238,19 @@ class SharedUI(unittest.TestCase):
         args = next(args for args in backend.calls if args[0] == 'plan')
         self.assertNotIn('--acknowledge-update-hold', args)
         self.assertNotIn('--installer-language', args)
+
+
+class MicrocodeModelIdentity(unittest.TestCase):
+    def test_existing_manual_package_dmi_is_still_compared_exactly(self):
+        from types import SimpleNamespace
+        engine = SimpleNamespace(root=Path('/'))
+        package = dict(hardware_matching=dict(mode='manual', automatic_selection=False,
+                       dmi=dict(sys_vendor='ONE-NETBOOK', product_name='ONEXPLAYER 3')))
+        with patch.object(Path, 'read_text', side_effect=['ONE-NETBOOK\n', 'ONEXPLAYER 3\n']):
+            shared._check_live_microcode_model(engine, package)
+        with patch.object(Path, 'read_text', side_effect=['ONE-NETBOOK\n', 'ONEXPLAYER X2 Mini\n']):
+            with self.assertRaisesRegex(MaintenanceError, 'Running model does not match'):
+                shared._check_live_microcode_model(engine, package)
 
 
 if __name__ == '__main__':

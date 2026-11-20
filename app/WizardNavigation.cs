@@ -43,7 +43,7 @@ public partial class MainWindow
             if (physicalInstallation && selection.Example)
                 return PartitionInventory.L("请选择真实磁盘的未分配空间。", "Select unallocated space on a real disk.");
             if (CurrentImportedCapacity is long minimum && selection.Capacity < minimum)
-                return PartitionInventory.L($"此镜像至少需要 {PartitionInventory.SizeText(minimum)}，请增大安装容量或选择更大的目标空间。", $"This image needs at least {PartitionInventory.SizeText(minimum)}. Increase the installation capacity or choose a larger destination.");
+                return InstallerI18n.Format($"此镜像至少需要 {PartitionInventory.SizeText(minimum)}，请增大安装容量或选择更大的目标空间。", $"This image needs at least {PartitionInventory.SizeText(minimum)}. Increase the installation capacity or choose a larger destination.");
             return null;
         }
         catch (Exception error) when (error is InvalidOperationException or IOException or ArgumentException)
@@ -69,7 +69,7 @@ public partial class MainWindow
                 BoilerImage.WorkspaceBudget(ImagePath.Text, physicalInstallation));
             if (includeOfficial && installMode != "imported" && UsePrepared.IsChecked != true && Upgrade310.IsChecked == true
                 && OfficialSourceIssue(requireInspection) is string officialIssue) return officialIssue;
-            if (requireInspection && CurrentSourceDigest == null && !CurrentSourceSkipped) return PartitionInventory.L("请在系统来源页点击下一步，计算镜像 MD5。", "Continue from System source to calculate the image MD5.");
+            if (requireInspection && !CurrentSourceReviewed) return PartitionInventory.L("请返回系统来源页，确认镜像后点击下一步。", "Return to System source, confirm the image, and continue.");
             return null;
         }
         catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException or UnauthorizedAccessException)
@@ -190,10 +190,13 @@ public partial class MainWindow
         ContentPage.IsEnabled = idle;
         StoragePage.IsEnabled = false;
         BootPage.IsEnabled = idle;
+        ReviewAcceleration.IsEnabled = ReviewAccelerationAction.IsEnabled = idle && !DownloadsBusy && !finished;
         PhysicalConsent.IsEnabled = idle;
-        BackButton.IsEnabled = InstallerLanguage.IsEnabled = idle && !DownloadsBusy;
+        BackButton.IsEnabled = idle && !DownloadsBusy;
+        InstallerLanguage.IsEnabled = BackButton.IsEnabled && !PartitionSelector.IsBusy;
+        if (homeLanguage != null) homeLanguage.IsEnabled = InstallerLanguage.IsEnabled;
         NextButton.IsEnabled = idle && !DownloadsBusy && (step != 1 || SourceIssue() == null) && (step != 3 || contentIssue == null);
-        UsePrepared.IsEnabled = optionsPanel.IsEnabled = !DownloadsBusy;
+        UsePrepared.IsEnabled = optionsPanel.IsEnabled = optionsPanel.AccountAccessPanel.IsEnabled = !DownloadsBusy;
         Upgrade310.IsEnabled = idle && !DownloadsBusy && UsePrepared.IsChecked != true && installMode is not ("imported" or "local");
         downloadPanel.IsEnabled = idle && !officialDownloadPanel.IsBusy && !sourceInspectionBusy;
         officialDownloadPanel.IsEnabled = idle && !downloadPanel.IsBusy && !sourceInspectionBusy;

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerFingerprintPamModuleInput",
+  "package": {
+    "distribution": "SteamOS",
+    "name": "fprintd",
+    "version": "1.94.5-2",
+    "architecture": "x86_64",
+    "filename": "fprintd-1.94.5-2-x86_64.pkg.tar.zst",
+    "sha256": "f95ebba56a53be578f6e03d34aa9448e38b3e4d538e6f318112f5eebab1a58db",
+    "signature_key_fingerprint": "889B5EBDDD505A683621900DAF1D2199EF0A3CCF"
+  },
+  "module": {
+    "archive_path": "usr/lib/security/pam_fprintd.so",
+    "logical_source": "fingerprint/kde/pam_fprintd.so",
+    "size": 26664,
+    "sha256": "bb8c568cb72f87608ec71fa19de4787807a7131e3dda23c7fef2aca6744c013e",
+    "availability": "explicit-external-input"
+  },
+  "upstream_source": "https://gitlab.freedesktop.org/libfprint/fprintd",
+  "license": "GPL-2.0-or-later",
+  "license_file": "licenses/GPL-2.0.txt",
+  "upstream_version": "1.94.5",
+  "upstream_tag": "v1.94.5"
+}

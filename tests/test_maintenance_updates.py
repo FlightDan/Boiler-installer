@@ -115,6 +115,10 @@ class MaintenanceUpdateTests(unittest.TestCase):
                  'generated_at': '2026-10-23T00:00:00Z', 'revocations': [digest] if revoked else [],
                  'packages': [{'id': manifest['id'], 'version': manifest['version'], 'size': len(data), 'sha256': digest,
                                'source': {'kind': 'github', 'repository': repository, 'commit': 'b'*40}, 'compatibility': manifest['compatibility']}]}
+        if 'component_release' in manifest:
+            index['packages'][0]['component_release'] = manifest['component_release']
+            index['packages'][0]['declared_source'] = manifest['source']
+            index['packages'][0]['minimum_engine_version'] = manifest['minimum_engine_version']
         raw = json.dumps(index, sort_keys=True).encode()
         raw_digest = hashlib.sha256(raw).hexdigest()
         generation = self.cache/raw_digest
@@ -132,6 +136,94 @@ class MaintenanceUpdateTests(unittest.TestCase):
 
     def target_bytes(self):
         return {path.relative_to(self.root).as_posix(): path.read_bytes() for path in self.root.rglob('*') if path.is_file()}
+
+    def standalone(self, version, data):
+        package = self.package(version=version, components=lambda payload: [self.component(payload, 'oxp3:microphone', version, data)])
+        manifest = package[1]
+        manifest['id'] = 'oxp3:microphone'
+        manifest['source'] = {'kind': 'github', 'repository': 'FlightDan/Boiler-adaptations', 'commit': 'a'*40}
+        manifest['compatibility'] = dict(manifest['components'][0]['compatibility'], device_ids=['oxp3'])
+        manifest['component_release'] = {'resource_id': 'resource:onexplayer-microphone', 'channel': 'stable'}
+        manifest['minimum_engine_version'] = '0.1.6'
+        (package[0]/'manifest.json').write_text(json.dumps(manifest))
+        return package
+
+    def component_plan(self, package, **kwargs):
+        return updates.plan_update(self.root, self.cache, package[0], 'oxp3:microphone', package[1]['version'],
+                                   device_id='oxp3', public_key=self.public_key, openssl=self.openssl or 'openssl', **kwargs)
+
+    def test_standalone_downgrade_pin_follow_and_bundled_guard(self):
+        original = self.component(self.old, 'oxp3:microphone', '1.0.0', b'old runtime\n')
+        self.engine.apply(original, self.old, environment=self.environment)
+        higher = self.standalone('2.0.0', b'higher')
+        self.sign_index(higher)
+        self.execute(self.component_plan(higher), higher)
+        lower = self.standalone('1.0.0', b'old runtime\n')
+        self.sign_index(lower, sequence=11)
+        with self.assertRaisesRegex(updates.UpdateError, 'downgrade'):
+            self.component_plan(lower)
+        self.execute(self.component_plan(lower, component_intent='downgrade'), lower)
+        row = updates.inventory(self.root, device_id='oxp3')['components']['oxp3:microphone']
+        self.assertEqual(row['component_release']['policy'], 'pinned')
+        self.assertEqual(row['version'], '1.0.0')
+        with self.assertRaisesRegex(updates.UpdateError, 'Pinned'):
+            self.component_plan(lower)
+        bundle = self.package(components=lambda payload: [self.component(payload, 'oxp3:microphone', '2.0.0', b'new')])
+        self.sign_index(bundle, sequence=12)
+        with self.assertRaisesRegex(updates.UpdateError, 'independently managed'):
+            self.plan(bundle)
+        self.sign_index(lower, sequence=13)
+        resume = self.component_plan(lower, component_intent='follow')
+        self.assertEqual(resume['actions'][0]['action'], 'follow')
+        self.execute(resume, lower)
+        self.assertEqual(updates.inventory(self.root, device_id='oxp3')['components']['oxp3:microphone']['component_release']['policy'], 'follow')
+        state_path = self.engine.state_dir/'state.json'
+        state = json.loads(state_path.read_text())
+        generation = state['components']['oxp3:microphone']['transaction']
+        journal_path = self.engine._journal(generation)
+        journal = json.loads(journal_path.read_text())
+        journal['status'] = 'applying'
+        journal_path.write_text(json.dumps(journal))
+        self.assertIn(generation, self.engine.recover())
+        state = json.loads(state_path.read_text())
+        self.assertEqual(state['components']['oxp3:microphone']['component_release']['policy'], 'pinned')
+        state['components']['oxp3:microphone']['component_release']['policy'] = 'follow'
+        state_path.write_text(json.dumps(state))
+        with self.assertRaisesRegex(MaintenanceError, 'committed generation'):
+            self.engine._state()
+
+    def test_component_commit_advances_registry_before_batch_provenance(self):
+        original = self.component(self.old, 'oxp3:microphone', '1.0.0', b'original')
+        self.engine.apply(original, self.old, environment=self.environment)
+        release = self.standalone('2.0.0', b'new file')
+        self.sign_index(release, sequence=10)
+        plan = self.component_plan(release)
+        original_write = updates._json_write
+
+        def fail_batch_commit(path, data):
+            if path == self.engine.state_dir/'updates.json':
+                raise OSError('fixture batch interruption')
+            return original_write(path, data)
+
+        with mock.patch.object(updates, '_json_write', side_effect=fail_batch_commit):
+            with self.assertRaisesRegex(OSError, 'batch interruption'):
+                self.execute(plan, release)
+        older_index = self.package()
+        self.sign_index(older_index, sequence=9)
+        with self.assertRaisesRegex(updates.UpdateError, 'Registry rollback'):
+            self.plan(older_index)
+
+    def test_component_release_cannot_replace_a_scripted_generation(self):
+        original = self.component(self.old, 'oxp3:microphone', '2.0.0', b'original')
+        installed = self.engine.apply(original, self.old, environment=self.environment)
+        path = self.engine._journal(installed['transaction'])
+        journal = json.loads(path.read_text())
+        journal['component']['hooks'] = {'apply': 'scripts/previous-generation.sh'}
+        path.write_text(json.dumps(journal))
+        release = self.standalone('1.0.0', b'older')
+        self.sign_index(release)
+        with self.assertRaisesRegex(updates.UpdateError, 'original maintenance lifecycle'):
+            self.component_plan(release, component_intent='downgrade')
 
     def test_verified_wrong_channel_never_changes_cache_pointer(self):
         from protocol import fetch

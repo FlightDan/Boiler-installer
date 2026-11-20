@@ -27,7 +27,9 @@ internal static class ComponentOutcomeChecks
             new SelectedOptions(1, [], [], "en-US", "system", EnableSsh: true),
             new SelectedOptions(1, [], [], "en-US", "system", SetDeckPassword: true) })
         {
-            var presetRows = new[] { Row("A", "core:system-presets"), Row("B", "core:system-presets") };
+            JsonElement PresetRow(string slot, string language) => JsonSerializer.SerializeToElement(new {
+                slot, id = "core:system-presets", status = "files_installed", language });
+            var presetRows = new[] { PresetRow("A", preset.KdeLanguage), PresetRow("B", preset.KdeLanguage) };
             ComponentOutcome.Validate(presetRows, preset);
             foreach (var invalid in new[] { Array.Empty<JsonElement>(), presetRows[..1],
                 new[] { presetRows[0], Row("B", "core:system-presets", "failed") } })
@@ -35,6 +37,20 @@ internal static class ComponentOutcomeChecks
                 var refused = false;
                 try { ComponentOutcome.Validate(invalid, preset); } catch (IOException) { refused = true; }
                 if (!refused) throw new IOException("Incomplete system preset reports accepted.");
+            }
+            if (preset.KdeLanguage != "system")
+            {
+                var english = new[] { PresetRow("A", "en_US"), PresetRow("B", "en_US") };
+                ComponentOutcome.Validate(english, preset with { AutomaticSystemLanguage = true });
+                foreach (var (invalid, selection) in new[] {
+                    (english, preset),
+                    (new[] { presetRows[0], english[1] }, preset with { AutomaticSystemLanguage = true }),
+                    (new[] { presetRows[0], Row("B", "core:system-presets") }, preset) })
+                {
+                    try { ComponentOutcome.Validate(invalid, selection); }
+                    catch (IOException) { continue; }
+                    throw new IOException("Unreviewed system language accepted.");
+                }
             }
         }
         var ssdOptions = new SelectedOptions(1, [SsdBootRepair.Option], ["core:maintenance"], "en-US", "system");

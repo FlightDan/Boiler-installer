@@ -44,6 +44,10 @@ def _legacy_lock_required(journal):
 
 
 RUNTIME_FILES = (
+    'components/cpufreq.py', 'components/cpufreq_runtime.py',
+    'components/microcode.py', 'components/microcode_boot.py', 'components/microcode-firmware.json',
+    'components/microcode-sources.json', 'components/graphics.py', 'components/graphics_boot.py',
+    'components/payload_lock.py', 'components/wireless.py',
     'maintenance/ssd_boot.py', 'maintenance/model_efi.py', 'components/ssd_boot.py', 'components/oxp3_efi_provider.py', 'components/oxp3_efi_provider.lock.json',
     'components/x2_efi_provider.py', 'components/x2_efi_provider.lock.json', 'components/x2_efi_provider.hdr1100.lock.json',
     'components/oxp3_full_efi_provider.py', 'components/oxp3_full_efi_provider.lock.json',
@@ -56,11 +60,14 @@ RUNTIME_FILES = (
     'maintenance/core_retention.py',
     'maintenance/__init__.py', 'maintenance/__main__.py', 'maintenance/engine.py',
     'maintenance/plugins.py', 'maintenance/updates.py', 'maintenance/adoption_blobs.py', 'maintenance/live_root.py',
-    'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/shared_models.py', 'maintenance/project.py',
+    'maintenance/models.py', 'maintenance/model_ui.py', 'maintenance/model_ui_locale.py',
+    'maintenance/shared_models.py', 'maintenance/project.py',
+    'maintenance/onexplayer_microcode.py',
     'maintenance/resource_runtime.py', 'maintenance/resource_entrypoints.py', 'maintenance/firmware_resources.py', 'maintenance/be201_model_resource.py', 'maintenance/cpu_resources.py', 'maintenance/resource_cli.py',
     'maintenance/feedback.py', 'maintenance/reporter.py', 'maintenance/release.json',
     'protocol/__init__.py', 'protocol/__main__.py', 'protocol/fetch.py', 'protocol/local.py', 'protocol/brand_bundle.py',
     'protocol/manifest.py', 'protocol/model_catalog.py', 'protocol/model_options.py', 'protocol/capability_gates.py',
+    'protocol/component_versions.py',
     'protocol/trusted-public-key.pem',
     'protocol/resource_pool.py', 'protocol/resource_selection.py', 'protocol/resource_import.py', 'protocol/firmware_contract.py', 'protocol/cpu_contract.py', 'adaptations/toon-parser-lock.json',
     'components/model-catalog/lock.json',
@@ -366,6 +373,13 @@ class Engine:
         state=_read(path)
         if state.get("schema_version")!=1 or state.get("root")!=self.identity or not isinstance(state.get("owners"),dict) or not isinstance(state.get("components"),dict):
             raise MaintenanceError("State belongs to another mounted root or unsupported version")
+        for cid, row in state['components'].items():
+            release = row.get('component_release')
+            if release is not None:
+                journal = _read(self._journal(row['transaction']))
+                if (journal.get('status') not in ('committed', 'applying', 'restoring') or journal.get('root') != self.identity or
+                        journal.get('component', {}).get('id') != cid or journal.get('component_release') != release):
+                    raise MaintenanceError('Component release preference does not match its committed generation')
         return state
 
     def _journal(self,identity):
@@ -513,10 +527,13 @@ class Engine:
                 result.append(dict(target=name,snapshot=current,transaction=transaction))
         return result
 
-    def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None):
+    def apply(self,component,payload_root,*,allow_hooks=False,environment=None,expected_state_sha256=None,hook_environment=None,component_release=None):
         validate_manifest(component,"ComponentManifest")
         if component.get('ssd_boot_policy'):
             raise MaintenanceError('SSD boot providers require the fixed reviewed SSD handler')
+        from protocol.manifest import ONEXPLAYER_MICROCODE
+        if component['id'] == ONEXPLAYER_MICROCODE:
+            raise MaintenanceError('ONEXPLAYER microcode requires the fixed reviewed early-boot handler')
         from protocol.cpu_contract import IDENTITY as CPU_ID
         from .cpu_resources import permitted
         if component.get('id')==CPU_ID and not permitted(self,getattr(self,'_cpu_permit',None),component,recovery=False):
@@ -557,14 +574,19 @@ class Engine:
                 legacy_required=_legacy_lock_required(prior)
             from .adoption_blobs import _legacy_lock
             with _legacy_lock(self) if legacy_required else contextlib.nullcontext():
-                result = self._apply_locked(component,payload_root,hooks,state,identity,hook_environment,legacy_required)
+                result = self._apply_locked(component,payload_root,hooks,state,identity,hook_environment,legacy_required,component_release)
                 warning = device_advisory(component, environment or {})
                 if warning: result['device_warning'] = warning
                 return result
 
-    def _apply_locked(self,component,payload_root,hooks,state,identity,hook_environment,legacy_required):
+    def _apply_locked(self,component,payload_root,hooks,state,identity,hook_environment,legacy_required,
+                      component_release=None, *, expected_preimages=None):
         from .adoption_blobs import capture, payload_snapshot, observe, _hash_file, MAX_FILE, MAX_TOTAL, MAX_OPERATIONS
         from protocol.cpu_contract import mutable_target
+        if component.get('microcode_boot_policy'):
+            raise MaintenanceError('The early microcode package declaration must be derived for the target')
+        if component_release is None and state['components'].get(component['id'], {}).get('component_release'):
+            raise MaintenanceError('Independently managed component requires a reviewed release')
         mutable = mutable_target(component)
         if component.get('dynamic_handler') or component.get('id') == 'x2-mini:keyboard':
             raise MaintenanceError('Dynamic keyboard requires the fixed host handler')
@@ -577,6 +599,8 @@ class Engine:
         if len(component.get('files',[]))+len(retained) > MAX_OPERATIONS:
             raise MaintenanceError('Component operation limit exceeded')
         entries=component.get("files",[])
+        if expected_preimages is not None and set(expected_preimages) != {entry['target'] for entry in entries}:
+            raise MaintenanceError('Reviewed targets differ from derived component files')
         for entry in entries:
             target=self._target(entry["target"]); key=entry["target"]
             if key.casefold() in targets: raise MaintenanceError("Duplicate target")
@@ -590,6 +614,8 @@ class Engine:
             try: _hash_file(source,entry)
             except MaintenanceError as error: raise ProtocolError(str(error)) from error
             before=observe(self,target)
+            if expected_preimages is not None and before != expected_preimages[key]:
+                raise MaintenanceError('Reviewed target changed during transaction preparation: '+key)
             total+=entry['size']+before.get('size',0)
             if total > MAX_TOTAL: raise MaintenanceError('Transaction exceeds binary backup limit')
             owner=state["owners"].get(key)
@@ -629,6 +655,8 @@ class Engine:
         if old_paths - {op["target"] for op in operations}: raise MaintenanceError("Upgrade drops owned files; explicit restore is required")
         journal={"schema_version":1,"id":identity,"root":self.identity,"status":"prepared","component":component,
                  "operations":operations,"before_state":state,"legacy_lock_required":legacy_required}
+        release = component_release
+        if release is not None: journal['component_release'] = release
         path=self._journal(identity); _json_write(path,journal)
         try:
             journal["status"]="applying"; _json_write(path,journal)
@@ -669,6 +697,7 @@ class Engine:
             for item in operations: next_state["owners"][item["target"]]={"component":component["id"],"transaction":identity,"sha256":item["after"].get("sha256")}
             next_state["components"][component["id"]]={"version":component["version"],"transaction":identity,
                 "requires":component.get("requires",[]),"conflicts":component.get("conflicts",[])}
+            if release is not None: next_state['components'][component['id']]['component_release'] = release
             _json_write(self.state_dir/"state.json",next_state)
             journal["status"]="committed"; _json_write(path,journal)
         except BaseException:
@@ -722,6 +751,8 @@ class Engine:
     def _restore_locked(self,transaction_id,state,path,journal):
         if journal.get("root")!=self.identity or journal.get("status")!="committed": raise MaintenanceError("Transaction is not restorable")
         cid=journal["component"]["id"]
+        from .shared_models import guard_sleep_restore
+        guard_sleep_restore(self, cid)
         from .core_retention import guard_restore
         guard_restore(self,journal)
         from protocol.cpu_contract import IDENTITY as CPU_ID

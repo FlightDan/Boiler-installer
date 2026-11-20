@@ -52,7 +52,7 @@ class ModelCatalogTests(unittest.TestCase):
                 guide=json.loads((root/'prepared/adaptations/brands/onexplayer'/identity/'manifest.json').read_bytes())
                 self.assertTrue(next(item for item in guide['components'] if item['id']=='fingerprint-unlock')['default'])
 
-    def test_current_guides_allow_only_canonical_fingerprint_defaults(self):
+    def test_current_guides_allow_canonical_packaged_defaults(self):
         catalog=json.loads((ROOT/'adaptations/adaptations.json').read_bytes())
         rows={row['guide_id']:row for row in catalog_records(catalog)}
         source={'repository':REPOSITORY,'commit':'a'*40,'subtree':''}
@@ -61,12 +61,19 @@ class ModelCatalogTests(unittest.TestCase):
             guide=json.loads((ROOT/'adaptations'/path).read_bytes())
             rendered=guide_model(guide,path,source,row)
             self.assertFalse(rendered['installable'])
-            self.assertEqual([item['id'] for item in rendered['components'] if item['default']],['fingerprint-unlock'])
+            defaults = {'fingerprint-unlock', 's2s4'}
+            self.assertTrue(all(item['id'] in defaults for item in rendered['components'] if item['default']))
+            if not any(item['id'] == 's2s4' for item in guide['components']):
+                guide['components'].append(dict(id='s2s4', name='Boiler S2/S4 switcher', recommendation='optional',
+                    default=False, dependencies=['decky'], sources=[], status='shared_asset', notes='Switch sleep mode.'))
+            next(item for item in guide['components'] if item['id']=='s2s4')['default']=True
+            rendered=guide_model(guide,path,source,row)
+            self.assertEqual({item['id'] for item in rendered['components'] if item['default']}, defaults)
             historical=copy.deepcopy(guide)
             next(item for item in historical['components'] if item['id']=='fingerprint-unlock')['default']=False
             self.assertFalse(guide_model(historical,path,source,row)['installable'])
             invalid=copy.deepcopy(guide)
-            next(item for item in invalid['components'] if item['id']!='fingerprint-unlock')['default']=True
+            next(item for item in invalid['components'] if item['id'] not in defaults)['default']=True
             with self.assertRaisesRegex(ProtocolError,'Invalid model option metadata'):
                 guide_model(invalid,path,source,row)
             wrong_path=path.replace('brands/onexplayer/','brands/other/')
@@ -123,7 +130,7 @@ class ModelCatalogTests(unittest.TestCase):
             pl4=next(item for item in x2['components'] if item['id']=='pl4-175w')
             self.assertEqual(pl4['recommendation'],'pending')
             self.assertFalse(x2['installable'])
-            self.assertTrue(all(item['default'] is False or item['id']=='fingerprint-unlock' for item in x2['components']))
+            self.assertTrue(all(item['default'] is False or item['id'] in ('fingerprint-unlock', 's2s4') for item in x2['components']))
             self.assertIn('/Boiler-adaptations/blob/'+'a'*40+'/brands/',x2['guide_url'])
 
     def test_known_fingerprint_defaults_and_false_values_reach_runtime(self):

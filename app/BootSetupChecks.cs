@@ -57,7 +57,7 @@ internal static class BootSetupChecks
         {
             // Check entry into the warning from the location page in both languages.
             if (Find<Grid>("BootPrerequisitesOverlay").IsVisible) Acknowledge(window);
-            Find<RadioButton>(english ? "EnglishLanguage" : "ChineseLanguage").IsChecked = true;
+            Find<ComboBox>("InstallerLanguage").SelectedValue = english ? "en-US" : "zh-CN";
             window.SecureBootPreflight = () => FirmwareBoot.RequireSecureBootDisabled([1]);
             Click("BootPrerequisitesShow");
             Find<CheckBox>("BootPrerequisitesConsent").IsChecked = true;
@@ -134,7 +134,7 @@ internal static class BootSetupChecks
             window.Width = 1280;
             panel.InstallChoice.IsChecked = false; window.PreviewStep(0);
         }
-        Find<RadioButton>("ChineseLanguage").IsChecked = true;
+        Find<ComboBox>("InstallerLanguage").SelectedValue = "zh-CN";
         Refuse(() => InstallationController.ValidateRequest(new(InstallationTargetKind.ExternalDisk, "absent.img", false, Physical: true, MakeDefaultBoot: true)), "external-request-cannot-change-firmware");
         Refuse(() => InstallationController.ValidateRequest(new(InstallationTargetKind.InternalShared, "absent.img", false, MakeDefaultBoot: true)), "rehearsal-request-cannot-change-firmware");
         var oldRequest = JsonSerializer.Deserialize<InstallationRequest>("{\"Kind\":0,\"Source\":\"absent.img\",\"Prepared\":false}")!;

@@ -13,6 +13,7 @@ from urllib.parse import unquote, urlparse
 from xml.etree import ElementTree
 
 from protocol import compatible, device_advisory, validate_manifest
+from protocol.component_versions import component_releases, validate_component_release
 from protocol.fetch import cached_index, fetch_index
 from protocol.manifest import MAX_MANIFEST, _decode_json, confined
 from protocol.model_catalog import REPOSITORY, ROOT, load_models, remote_bytes
@@ -22,7 +23,7 @@ from .engine import Engine, MaintenanceError, _read as read_journal
 
 DEVICE = 'https://github.com/' + REPOSITORY + '/releases/latest/download'
 GENERIC_REPO = 'FlightDan/Boiler-installer'
-REGISTRIES = {'device': 'registry:boiler-devices', 'maintenance': 'registry:boiler-maintenance'}
+REGISTRIES = {'device': 'registry:boiler-devices', 'component': 'registry:boiler-devices', 'maintenance': 'registry:boiler-maintenance'}
 CORE = 'bundle:maintenance'
 CORE_TARGETS = {
     'usr/local/bin/boiler-maintenance', 'usr/local/bin/boiler-maintenance-ui',
@@ -245,6 +246,10 @@ def _identity(stream, identity):
             raise MaintenanceError('Only the generic maintenance bundle is permitted in this channel')
         return None
     match, _ = hardware_match()
+    if stream == 'component':
+        if match.get('status') != 'matched':
+            raise MaintenanceError('Component update requires a matched live model')
+        return match['model_id'].removeprefix('device:')
     if match.get('model_id') != identity:
         raise MaintenanceError('Signed device update must match this live model')
     return identity.removeprefix('device:')
@@ -275,18 +280,59 @@ def inventory(root):
     return result
 
 
-def acquire(session, stream, identity, version):
-    _identity(stream, identity)
-    cache = Path(session) / stream
+def acquire(session, stream, identity, version, *, root='/'):
+    device_id = _identity(stream, identity)
+    cache = Path(session) / ('device' if stream == 'component' else stream)
     index = _registry(cached_index(cache), stream)
     entry = _entry(index, identity, version)
     _transport(entry, stream)
+    if stream == 'component':
+        environment = updates.target_environment(root, device_id=device_id)
+        if entry not in component_releases(index, identity, environment):
+            raise MaintenanceError('Component release is incompatible with the live system')
     destination = _package_path(session, stream, entry)
     if destination.is_dir():
         from protocol import validate_package
         package = validate_package(destination, expected_manifest_sha256=entry['sha256'])
         return dict(package=package, directory=str(destination), manifest_sha256=entry['sha256'])
     return updates.acquire_package(cache, identity, version, destination)
+
+
+def _component_entry(root, cache, index, entry, identity, device_id):
+    current = updates.inventory(root, device_id=device_id)
+    owner = current['components'].get(identity)
+    if not owner:
+        raise MaintenanceError('Component release requires an installed owner')
+    updates.discover(root, cache, identity=identity, device_id=device_id)
+    resource_id = (owner.get('component_release') or {}).get('resource_id')
+    if (entry not in component_releases(index, identity, current['environment'], resource_id=resource_id,
+                                       available_components=current['components']) or
+            entry.get('declared_source', {}).get('repository') != REPOSITORY):
+        raise MaintenanceError('Component release is not eligible from the canonical source')
+    return owner
+
+
+def component_check(root, session):
+    from .models import _privileged
+    _privileged()
+    device_id = _identity('component', '')
+    current = updates.inventory(root, device_id=device_id)
+    with _private_index(session, 'component') as (cache, index):
+        updates.discover(root, cache, device_id=device_id)
+    candidates = []
+    for identity, owner in current['components'].items():
+        resource_id = (owner.get('component_release') or {}).get('resource_id')
+        for entry in component_releases(index, identity, current['environment'], resource_id=resource_id,
+                                        available_components=current['components']):
+            if entry.get('declared_source', {}).get('repository') != REPOSITORY:
+                continue
+            item = dict(entry, compatible=True, installed_version=owner['version'],
+                        policy=(owner.get('component_release') or {}).get('policy', 'follow'))
+            item['update_available'] = updates._version_key(entry['version']) > updates._version_key(owner['version'])
+            item['older_than_installed'] = updates._version_key(entry['version']) < updates._version_key(owner['version'])
+            item['resume_available'] = not item['older_than_installed']
+            candidates.append(item)
+    return dict(id='component', status='ready', candidates=candidates)
 
 
 def _read(path, maximum):
@@ -300,7 +346,7 @@ def _read(path, maximum):
 @contextmanager
 def _private_index(session, stream):
     """The privileged updater only locks and reads its own verified cache."""
-    source = Path(session) / stream
+    source = Path(session) / ('device' if stream == 'component' else stream)
     pointer = _decode_json(_read(source / 'current.json', 4096))
     generation = pointer.get('generation')
     if not isinstance(generation, str) or not SHA256.fullmatch(generation):
@@ -319,7 +365,7 @@ def _private_index(session, stream):
 
 
 def _validate_channel(stream, entry, package):
-    repository = REPOSITORY if stream == 'device' else GENERIC_REPO
+    repository = REPOSITORY if stream in ('device', 'component') else GENERIC_REPO
     if package['source'].get('repository') != repository:
         raise MaintenanceError('Update payload source differs from its project repository')
     if stream == 'maintenance':
@@ -335,7 +381,7 @@ def _validate_channel(stream, entry, package):
         raise MaintenanceError('Signed declared source differs from the package')
 
 
-def reviewed_update(root, session, stream, identity, version, *, components=None, plan=None, digest=None):
+def reviewed_update(root, session, stream, identity, version, *, components=None, plan=None, digest=None, component_intent=None):
     from .models import _privileged, check_pending
     _privileged()
     device_id = _identity(stream, identity)
@@ -348,9 +394,14 @@ def reviewed_update(root, session, stream, identity, version, *, components=None
         raw = _read(confined(source, 'manifest.json'), MAX_MANIFEST)
         if len(raw) != entry['size'] or hashlib.sha256(raw).hexdigest() != entry['sha256']:
             raise MaintenanceError('Package manifest differs from the signed index')
-        _validate_channel(stream, entry, validate_manifest(_decode_json(raw), 'DevicePackage'))
+        package = validate_manifest(_decode_json(raw), 'DevicePackage')
+        _validate_channel(stream, entry, package)
+        if stream == 'component':
+            _component_entry(root, cache, index, entry, identity, device_id)
+            validate_component_release(entry, package, updates.target_environment(root, device_id=device_id))
         if plan is None:
-            reviewed = updates.plan_update(root, cache, source, identity, version, components, device_id=device_id)
+            reviewed = updates.plan_update(root, cache, source, identity, version, components, device_id=device_id,
+                                           **({'component_intent': component_intent} if stream == 'component' else {}))
             if reviewed['device_warnings']:
                 raise MaintenanceError('Update compatibility differs from the matched TOON model')
             return reviewed
@@ -365,13 +416,15 @@ def dispatch(args):
         raise MaintenanceError('Desktop project maintenance requires the live Linux root')
     if args.project_command == 'check':
         return check(args.root, args.session, offline=args.offline)
+    if args.project_command == 'components':
+        return component_check(args.root, args.session)
     if args.project_command == 'inventory':
         return inventory(args.root)
     if args.project_command == 'acquire':
-        return acquire(args.session, args.stream, args.identity, args.version)
+        return acquire(args.session, args.stream, args.identity, args.version, root=args.root)
     if args.project_command == 'plan':
         return reviewed_update(args.root, args.session, args.stream, args.identity, args.version,
-                               components=args.component)
+                               components=args.component, component_intent=args.component_intent)
     plan = _decode_json(_read(args.plan, MAX_MANIFEST))
     return reviewed_update(args.root, args.session, args.stream, plan['package']['id'],
                            plan['package']['version'], plan=plan, digest=args.reviewed_sha256)

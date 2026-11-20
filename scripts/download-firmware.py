@@ -8,8 +8,10 @@ import re
 from pathlib import Path
 import shutil
 import sys
+import struct
 import tempfile
 import urllib.request
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -19,12 +21,19 @@ from wireless import component_identity, selected, validate_metadata, validate_r
 from integration import validate_options
 from protocol.manifest import _filesystem_path
 import graphics
+import microcode
+import cpufreq
 from graphics_catalog import firmware_metadata as graphics_metadata
 
 REVISION = '2ab4ce216003ee2c2396c69e19455e4379b0e1f0'
 BASE = 'https://kernel.googlesource.com/pub/scm/linux/kernel/git/firmware/linux-firmware/+/' + REVISION + '/'
 MIRROR = 'https://gitlab.com/kernel-firmware/linux-firmware/-/raw/' + REVISION + '/'
+TUNA = 'https://mirrors.tuna.tsinghua.edu.cn/git/linux-firmware.git/git-upload-pack'
 CORE = {'core:decky', 'core:maintenance'}
+
+
+class FirmwareSourcesUnavailable(OSError):
+    pass
 
 
 def source_url(item):
@@ -32,10 +41,62 @@ def source_url(item):
     source = relative(item['source']).as_posix()
     if not re.fullmatch(r'[A-Za-z0-9._/-]+', source): raise ValueError('Nonportable canonical firmware URL path')
     match = re.fullmatch(r'https://kernel\.googlesource\.com/pub/scm/linux/kernel/git/firmware/linux-firmware/\+/([0-9a-f]{40})/([A-Za-z0-9._/-]+)', str(item.get('url', '')))
-    if match is None or match[2] != source: raise ValueError('Firmware URL differs from fixed upstream source')
+    intel = re.fullmatch(r'https://raw\.githubusercontent\.com/intel/Intel-Linux-Processor-Microcode-Data-Files/([0-9a-f]{40})/([A-Za-z0-9._/-]+)', str(item.get('url', '')))
+    if not ((match is not None and match[2] == source) or (intel is not None and intel[2] == source)):
+        raise ValueError('Firmware URL differs from fixed upstream source')
     if not isinstance(item.get('git_blob'), str) or not re.fullmatch('[0-9a-f]{40}', item['git_blob']):
         raise ValueError('Canonical Git blob required')
     return source
+
+
+def _pkt(data):
+    return f'{len(data) + 4:04x}'.encode('ascii') + data
+
+
+def _tuna_blob(opener, item):
+    request = urllib.request.Request(
+        TUNA, data=_pkt(('want ' + item['git_blob'] + ' no-progress\n').encode('ascii')) + b'0000' + _pkt(b'done\n'),
+        headers={'Content-Type': 'application/x-git-upload-pack-request',
+                 'Accept': 'application/x-git-upload-pack-result'})
+    # zlib compressBound, plus packet, pack header, object header and checksum.
+    size = item['size']
+    limit = size + (size >> 12) + (size >> 14) + (size >> 25) + 13 + 128
+    with opener.open(request, timeout=90) as response:
+        raw = response.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError('Firmware pack exceeds bounded response size')
+    if not raw.startswith(b'0008NAK\nPACK'):
+        raise OSError('Firmware mirror does not support the required Git pack response')
+    pack = raw[8:]
+    if len(pack) < 32:
+        raise ValueError('Truncated firmware pack')
+    version, count = struct.unpack('>II', pack[4:12])
+    if version != 2 or count != 1:
+        raise OSError('Firmware mirror returned an unsupported Git pack')
+    pos = 12
+    byte = pack[pos]; pos += 1
+    if (byte >> 4) & 7 != 3:
+        raise OSError('Firmware mirror returned an unsupported Git object')
+    declared = byte & 15
+    shift = 4
+    while byte & 128:
+        if pos >= len(pack) - 20 or shift > 63:
+            raise ValueError('Invalid firmware pack object header')
+        byte = pack[pos]; pos += 1
+        declared |= (byte & 127) << shift
+        shift += 7
+    if declared != size:
+        raise ValueError('Firmware pack object size differs from lock')
+    try:
+        inflater = zlib.decompressobj()
+        data = inflater.decompress(pack[pos:], size + 1)
+    except zlib.error as error:
+        raise ValueError('Invalid compressed firmware pack') from error
+    if len(data) != size or not inflater.eof or inflater.unconsumed_tail or len(inflater.unused_data) != 20:
+        raise ValueError('Invalid firmware pack length or trailing data')
+    if hashlib.sha1(pack[:-20]).digest() != pack[-20:]:
+        raise ValueError('Firmware pack checksum differs')
+    return data
 
 
 def fetch_bytes(item):
@@ -48,13 +109,41 @@ def fetch_bytes(item):
             # A CDN/login redirect must never broaden this fixed-origin policy.
             raise ValueError('Firmware origin redirects are forbidden')
     opener = urllib.request.build_opener(Redirects())
+    if item['url'].startswith('https://raw.githubusercontent.com/'):
+        try:
+            with opener.open(item['url'], timeout=90) as response:
+                return response.read(item['size'] + 1)
+        except OSError:
+            api = 'https://api.github.com/repos/intel/Intel-Linux-Processor-Microcode-Data-Files/git/blobs/' + item['git_blob']
+            try:
+                request = urllib.request.Request(api, headers={'User-Agent': 'Boiler-firmware-download'})
+                with opener.open(request, timeout=90) as response:
+                    raw = response.read(((item['size'] + 2) // 3) * 4 + 65537)
+            except OSError as error:
+                raise FirmwareSourcesUnavailable('Could not download Intel CPU microcode from raw.githubusercontent.com or api.github.com') from error
+            limit = ((item['size'] + 2) // 3) * 4 + 65536
+            if len(raw) > limit:
+                raise ValueError('Intel microcode Git response exceeds size bound')
+            result = json.loads(raw)
+            if result.get('sha') != item['git_blob'] or result.get('encoding') != 'base64' or result.get('size') != item['size']:
+                raise ValueError('Intel microcode Git object metadata differs')
+            return base64.b64decode(''.join(result['content'].split()), validate=True)
+    try:
+        return _tuna_blob(opener, item)
+    except OSError:
+        pass
     try:
         with opener.open(mirror + source, timeout=90) as response:
             return response.read(item['size'] + 1)
-    except (OSError, TimeoutError):
+    except OSError:
         # Gitiles encodes content, so bound the encoded response too.
-        with opener.open(origin + source + '?format=TEXT', timeout=90) as response:
-            encoded = response.read(((item['size'] + 2) // 3) * 4 + 1)
+        try:
+            with opener.open(origin + source + '?format=TEXT', timeout=90) as response:
+                encoded = response.read(((item['size'] + 2) // 3) * 4 + 1)
+        except OSError as error:
+            raise FirmwareSourcesUnavailable(
+                f'Could not download {source} from mirrors.tuna.tsinghua.edu.cn, gitlab.com or kernel.googlesource.com'
+            ) from error
         return base64.b64decode(encoded, validate=True)
 
 
@@ -142,6 +231,20 @@ def _graphics_catalog_records(identity, bundle):
     return firmware,licenses
 
 
+def _microcode_catalog_records(identity, bundle):
+    expected = microcode.firmware_metadata(ROOT).get(identity)
+    if expected is None or bundle != expected:
+        raise ValueError('CPU microcode catalogue differs from its pinned source inventory')
+    microcode.validate_metadata(bundle, identity)
+    firmware, licenses = {}, {}
+    for category, destination in (('files', firmware), ('licenses', licenses)):
+        for entry in bundle[category]:
+            original = dict(entry, source=entry['original_source'])
+            source_url(original)
+            destination[entry['target']] = (entry, original)
+    return firmware, licenses
+
+
 def download(catalog_path, plan_path, output, core_payload, cache_root, lock_root=None, fetch=None):
     """Validate first, then atomically publish one complete private payload root."""
     catalog_data = _filesystem_path(Path(catalog_path)).read_bytes()
@@ -155,21 +258,25 @@ def download(catalog_path, plan_path, output, core_payload, cache_root, lock_roo
     chosen = {component_identity(value) for value in selected(options)}
     gpu = graphics.selected(options)
     if gpu: chosen.add(gpu)
+    cpu = microcode.selected(options)
+    if cpu: chosen.add(cpu)
     choices = options.get('repairs', []) + options.get('plugins', [])
-    core = set(choices) & CORE
+    core = set(choices) & (CORE | cpufreq.IDS)
     slot_names = set(plan.get('slots', {}))
     if slot_names != {'A', 'B'} and (chosen or slot_names): raise ValueError('Both target slots are required')
     components, canonical = catalog['components'], {}
     for identity in chosen:
         if not isinstance(components.get(identity), dict): raise ValueError('Selected firmware catalog is unavailable')
         if components[identity].get('available') is False: raise ValueError('Selected firmware catalog is unavailable')
-        if identity.startswith('graphics:'):
+        if identity.startswith('microcode:'):
+            canonical[identity] = _microcode_catalog_records(identity, components[identity])
+        elif identity.startswith('graphics:'):
             canonical[identity] = _graphics_catalog_records(identity, components[identity])
         else:
             transport, vendor = identity.split(':', 1)
             validate_metadata(components[identity], vendor, transport)
             canonical[identity] = _catalog_records(identity, components[identity], lock_root or ROOT / 'components/locks')
-    required, license_owners = {}, ({gpu} if gpu else set())
+    required, license_owners = {}, ({gpu} if gpu else set()) | ({cpu} if cpu else set())
     for slot in plan['slots'].values():
         if not isinstance(slot, dict) or not isinstance(slot.get('records'), dict) or not isinstance(slot.get('plans'), dict):
             raise ValueError('Invalid firmware slot plan')
@@ -184,7 +291,11 @@ def download(catalog_path, plan_path, output, core_payload, cache_root, lock_roo
             if identity.startswith('graphics:') and (component_plan.get('coverage') != 'runtime_dependent' or component_plan.get('runtime') != 'not_validated'):
                 raise ValueError('Graphics hardware coverage must remain runtime dependent')
             if component_plan['files']: license_owners.add(identity)
-            for target in component_plan['files']:
+            targets = list(canonical[identity][0]) if identity.startswith('microcode:') else component_plan['files']
+            if identity.startswith('microcode:') and (not set(component_plan['files']).issubset(targets)
+                    or component_plan.get('runtime') != 'not_validated' or component_plan.get('coverage') != 'runtime_dependent'):
+                raise ValueError('Invalid CPU microcode image plan')
+            for target in targets:
                 entry = canonical[identity][0].get(target)
                 if entry is None: raise ValueError('Unknown firmware target in plan: ' + str(target))
                 if target in expected: raise ValueError('Duplicate firmware owner in slot plan')
@@ -204,6 +315,8 @@ def download(catalog_path, plan_path, output, core_payload, cache_root, lock_roo
     local = {}
     for identity in core:
         bundle = components.get(identity, {})
+        if identity in cpufreq.IDS and bundle != cpufreq.metadata(ROOT)[identity]:
+            raise ValueError('CPU frequency inventory differs from current source: ' + identity)
         if bundle.get('available') is not True: raise ValueError('Selected core component unavailable')
         for category in ('files', 'licenses', 'notices'):
             for entry in bundle.get(category, []): local[entry['source']] = checked(_filesystem_path(Path(core_payload)), entry)
@@ -237,5 +350,9 @@ if __name__ == '__main__':
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--locks', type=Path)
     args = parser.parse_args()
-    result = download(args.catalog, args.plan, args.output, args.core_payload, args.cache, args.locks)
+    try:
+        result = download(args.catalog, args.plan, args.output, args.core_payload, args.cache, args.locks)
+    except FirmwareSourcesUnavailable:
+        print('BOILER_FIRMWARE_SOURCES_UNAVAILABLE=1', file=sys.stderr, flush=True)
+        raise
     print(json.dumps(dict(schema=1, output=str(result), status='complete')))

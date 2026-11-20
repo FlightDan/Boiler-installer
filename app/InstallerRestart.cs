@@ -17,6 +17,16 @@ internal static class InstallerRestart
         RedirectStandardOutput = true, RedirectStandardError = true
     };
 
+    internal static ProcessStartInfo WindowsBootNextStartInfo() => new(Path.Combine(Environment.SystemDirectory, "bcdedit.exe"))
+    {
+        ArgumentList = { "/set", "{fwbootmgr}", "bootsequence", "{bootmgr}" },
+        UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
+    };
+
+    internal static Task RestartWindowsAsync(string logPath) => FirmwareBoot.WithWindowsBootNextAsync(
+        () => RunAsync(WindowsBootNextStartInfo(), Path.ChangeExtension(logPath, "boot.jsonl")),
+        () => RunAsync(StartInfo(defaultBoot: true), logPath));
+
     // Checks exercise this same runner with harmless child processes, never shutdown.
     internal static async Task RunAsync(ProcessStartInfo start, string logPath)
     {
@@ -30,7 +40,7 @@ internal static class InstallerRestart
         // Persist the attempt before launching: successful /t 0 may end the app
         // before any subsequent records can be saved.
         Record(new { stage = "prepared", utc = DateTime.UtcNow, host = Environment.MachineName,
-            executable = start.FileName, arguments = start.Arguments });
+            executable = start.FileName, arguments = start.ArgumentList.Count == 0 ? start.Arguments : string.Join(" ", start.ArgumentList) });
         using var process = new Process { StartInfo = start };
         try
         {
@@ -46,7 +56,7 @@ internal static class InstallerRestart
             Record(new { stage = "exited", utc = DateTime.UtcNow, pid = process.Id,
                 exitCode = code, exitCodeHex = hex, stdout = output, stderr = error });
             if (code != 0)
-                throw new IOException(PartitionInventory.L($"重启命令失败（退出码 {code} / {hex}）。", $"Restart command failed (exit code {code} / {hex}).")
+                throw new IOException(InstallerI18n.Format($"重启命令失败（退出码 {code} / {hex}）。", $"Restart command failed (exit code {code} / {hex}).")
                     + "\n" + (error + "\n" + output).Trim());
         }
         catch (Exception error)

@@ -1,0 +1,8 @@
+schema_version: 1
+kind: BoilerFingerprintPamSource
+source_only: false
+availability: external-locked
+build_input_required: true
+lock: common/fingerprint/kde/pam-module-lock.json
+external_file: usr/lib/security/pam_fprintd.so
+logical_source: fingerprint/kde/pam_fprintd.so

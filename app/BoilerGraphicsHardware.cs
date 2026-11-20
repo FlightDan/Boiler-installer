@@ -36,6 +36,12 @@ internal static class BoilerGraphicsHardware
     private static readonly Regex IntelArcG3 = new(
         @"\bArc\s+G3\b(?!\s+Extreme)|\bB370\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex IntelArcLunarLake = new(
+        @"\bArc(?:\(TM\)|™)?\s+(?:Graphics\s+)?1[34]0V\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex GenericIntelGraphics = new(
+        @"^\s*Intel(?:\(R\)|®)?\s+(?:Arc(?:\(TM\)|™)?\s+)?Graphics\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
     private static readonly Regex OtherIntelGpuFamily = new(
         @"\b(?:Iris|UHD\s+Graphics|HD\s+Graphics)\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -261,6 +267,10 @@ internal static class BoilerGraphicsHardware
         HashSet<string> processorTiers)
     {
         if (HasContradictoryGpuBrand(name, "8086") || OtherIntelGpuFamily.IsMatch(name)) return null;
+        if (candidate.PciIds.All(id => id.Vendor == "8086" && id.Device is "6420" or "64A0" or "64B0"))
+            return IntelArcLunarLake.IsMatch(name) || GenericIntelGraphics.IsMatch(name)
+                ? "graphics:intel-258v" : null;
+        if (IntelArcLunarLake.IsMatch(name)) return null;
 
         var hardwareTiers = new HashSet<string>(StringComparer.Ordinal);
         var unsupportedHardwareId = false;

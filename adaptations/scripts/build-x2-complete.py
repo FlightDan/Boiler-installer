@@ -191,7 +191,7 @@ def finalize_xevma_loader(directory, root, changes):
     loader_path.write_bytes(transformer.transform(loader_path.read_bytes()))
     return loader_name
 
-def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, recipe=None):
+def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, recipe=None, x2_power_profile=False):
     root = Path(root).resolve(); adaptations = Path(adaptations or root/'adaptations').resolve()
     sys.path.insert(0, str(root))
     from protocol.manifest import validate_package
@@ -235,9 +235,17 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     expected_lock = (json.dumps(lock_builder.build(base, bridge_overlay, hdr_overlay, adaptations=adaptations), sort_keys=True, indent=2)+'\n').encode()
     require(regular(root, 'components/x2_efi_provider.hdr1100.lock.json').read_bytes() == expected_lock,
             'X2 provider closure differs from reviewed source inputs')
+    power_changes, power_removed = set(), set()
+    if x2_power_profile:
+        profile_path = regular(adaptations, 'scripts/x2_power_profile.py')
+        require(sha(profile_path) == '158afea4301c5fe0400d7cfa6392dc8c055987ddd55d25942b8636fa8866a890', 'X2 power profile source differs from reviewed bytes')
+        spec = importlib.util.spec_from_file_location('boiler_x2_power_profile', profile_path)
+        profile = importlib.util.module_from_spec(spec); spec.loader.exec_module(profile)
+        power_changes, power_removed = profile.finalize(directory, adaptations, regular)
     generated = {GENERATED} if refresh_maintenance(directory) else set()
+    generated.update(power_changes)
     generated.add(finalize_xevma_loader(directory, root, changes))
-    metadata = document(encoded(baseline)); metadata['id'] = IDENTITY; metadata['device_id'] = 'x2-mini'; metadata['version'] = VERSION
+    metadata = document(encoded(baseline)); metadata['id'] = IDENTITY; metadata['device_id'] = 'x2-mini'; metadata['version'] = '2026.11.18.2' if x2_power_profile else VERSION
     metadata['minimum_engine_version'] = '0.1.4'
     metadata.pop('oxp3_efi_contract', None)
     metadata['x2_efi_contract'] = {'kind':'x2-split-lock-efi-v1','component':'oxp3:legacy-adaptation'}
@@ -248,7 +256,7 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     for item in metadata['components']:
         item['minimum_engine_version'] = '0.1.4'
         if item['id'] == 'oxp3:xevmafix': item['version'] = '2026.10.29+kernel7.2.4.2'
-    metadata['components'][0]['version'] = VERSION
+    metadata['components'][0]['version'] = metadata['version']
     metadata['components'][0]['name'] = {'zh':'X2 Mini 完整共用适配','en':'X2 Mini complete shared adaptations'}
     metadata['hardware_matching'] = {'mode':'manual','automatic_selection':False,
         'note':'Model-name mismatch is advisory; actual component interfaces and dependencies retain their checks.'}
@@ -258,9 +266,16 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     metadata['complete_reuse'] = {'kind':'boiler-x2-complete-reuse-v1','base_manifest_sha256':BASE_ANCHOR,
         'base_source':baseline['source'],
         'components':components,'legacy_capabilities':capabilities,'hdr_mapping':{'paper_white_nits':mapping['full_frame'],'peak_nits':mapping['peak']}}
+    if x2_power_profile:
+        power = next(item for item in metadata['legacy_capabilities'] if item['id'] == 'oxp3:charging')
+        power['targets'] = [row['target'] for row in document(regular(directory, 'payload/legacy/integration/manifest.json').read_bytes())['charging']['files']]
+        power['name'] = {'zh':'X2 Mini 电池信息与休眠设置','en':'X2 Mini battery telemetry and sleep settings'}
+        for language in ('zh', 'en'):
+            if language in power: power[language] = power['name'][language]
+        metadata['source']['x2_power_profile'] = 'x2-telemetry-sleep-v1'
     (directory/REUSE_RECORD).write_bytes(encoded(metadata['complete_reuse']))
     for name, row in originals.items():
-        if name not in changes and name not in generated:
+        if name not in changes and name not in generated and name not in power_removed:
             require(sha(regular(directory,name)) == row['sha256'], 'Unrelated base asset changed: '+name)
     require(all(sha(regular(directory,name)) == row['sha256'] for name,row in originals.items() if name.startswith(CPU_PREFIX)), 'Public CPU baseline changed')
     rows = inventory(directory); metadata['files'] = rows
@@ -271,13 +286,13 @@ def build(base, bridge_overlay, hdr_overlay, output, *, root, adaptations=None, 
     verify_x2_provider(directory, root/'components/x2_efi_provider.hdr1100.lock.json')
     require([row['id'] for row in final['components']] == components and [row['id'] for row in final['legacy_capabilities']] == capabilities,
             'Final package lost complete inherited scope')
-    archive = output/('boiler-device-x2-mini-'+VERSION+'.zip'); deterministic_zip(directory,archive,rows)
+    archive = output/('boiler-device-x2-mini-'+metadata['version']+'.zip'); deterministic_zip(directory,archive,rows)
     imported = import_local(archive, output/'verified-import', developer=True)
     validate_package(output/'verified-import', expected_manifest_sha256=manifest_sha)
     report = dict(kind='X2CompleteReuseBuildVerification',build_verified=True,full_x2_adaptation_complete=True,
-        hardware_acceptance=False,official_release=False,deployment_executed=False,id=IDENTITY,version=VERSION,
+        hardware_acceptance=False,official_release=False,deployment_executed=False,id=IDENTITY,version=metadata['version'],
         archive=archive.name,size=archive.stat().st_size,sha256=sha(archive),manifest_sha256=manifest_sha,
-        all_base_assets_preserved=True,inherited_components=components,inherited_legacy_capabilities=capabilities,
+        all_base_assets_preserved=not x2_power_profile,removed_power_files=sorted(power_removed),inherited_components=components,inherited_legacy_capabilities=capabilities,
         base_inventory_files=len(originals),files=len(rows),allowed_differences=sorted(set(changes)|generated),
         identity_metadata_changed=True,package_record=REUSE_RECORD)
     (output/'verification.json').write_bytes(encoded(report))
@@ -290,6 +305,6 @@ def main():
     parser.add_argument('--hdr-overlay',type=Path,required=True); parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     print(json.dumps(build(args.base,args.bridge_overlay,args.hdr_overlay,args.output,
-        root=args.project_root,adaptations=args.adaptations_root),ensure_ascii=False,indent=2))
+        root=args.project_root,adaptations=args.adaptations_root,x2_power_profile=True),ensure_ascii=False,indent=2))
 
 if __name__ == '__main__': main()

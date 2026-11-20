@@ -70,6 +70,26 @@ internal static class BoilerCustomBuildChecks
             ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
             window.Show(); window.BoilerModeForChecks("custom");
             var options = Field<InstallerOptionsPanel>("optionsPanel");
+            Call("ChooseGenericInstallation");
+            var settings = Field<Expander>("customSettings");
+            Require(options.FirmwareNetworkNotice.Parent == (StackPanel)window.FindName("ComponentOptionsHost")
+                && options.FirmwareNetworkNotice.Visibility == Visibility.Visible && !settings.IsExpanded,
+                "network notice is visible above collapsed settings");
+            window.PreviewStep(2);
+            if (captureScreenshots)
+            {
+                var languages = (ComboBox)window.FindName("InstallerLanguage");
+                foreach (var (language, width) in new[] { ("zh-CN", 1060), ("en-US", 640) })
+                {
+                    languages.SelectedItem = languages.Items.OfType<ComboBoxItem>().Single(item => (string)item.Tag == language);
+                    window.Width = width; window.UpdateLayout();
+                    var path = Path.Combine(directory, "firmware-network-" + language + ".png");
+                    try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path); captures.Add(path); }
+                    catch (IOException error) { visualBlocked.Add(error.Message); break; }
+                }
+                window.Width = 1060;
+                languages.SelectedItem = languages.Items.OfType<ComboBoxItem>().Single(item => (string)item.Tag == originalLanguage);
+            }
             var indexPath = Path.Combine(Backend.Root, "cache", "model-bundles", "manifest.json");
             var bytes = BundledModelManifest.Read("device:oxp3");
             var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
@@ -123,7 +143,9 @@ internal static class BoilerCustomBuildChecks
                 ["intel-xevma"] = ["resource:intel-xevmafix-724", "oxp3:xevmafix", "x2-mini:xevmafix", "generic:xevmafix"],
                 ["intel-be201-firmware"] = ["resource:intel-be201-firmware", "wifi:intel"],
                 ["realtek-alc245-speaker"] = ["resource:oxp3-speaker-route", "oxp3:speaker-route"],
-                ["bmi260-gyro"] = ["resource:bmi260-gyro"]
+                ["bmi260-gyro"] = ["resource:bmi260-gyro"],
+                ["fingerprint-bf63112"] = [],
+                ["fingerprint-fte3600"] = []
             };
             var enabledBuildIds = ((System.Collections.IEnumerable)Call("CustomBuildRows")!).Cast<object>()
                 .Where(row => ((CheckBox)row.GetType().GetProperty("Source")!.GetValue(row)!).IsEnabled)

@@ -112,17 +112,12 @@ class OverlayTests(unittest.TestCase):
         overlay.load_protocol(INSTALLER)
         with tempfile.TemporaryDirectory() as name:
             root=Path(name);base=root/'base';base.mkdir()
-            base_pins={'hdr_overlay_sha256':'1'*64,'bridge_overlay_sha256':'2'*64}
-            def package(decky=True):
+            def package(wifi=False,decky=True):
                 return {'schema_version':1,'kind':'DevicePackage','id':'device:oxp3','version':'0.1.0-test.1',
-                    'source':{'kind':'local','path':'fixture',
-                              'hdr_overlay_sha256':base_pins['hdr_overlay_sha256'],
-                              'bridge_overlay_sha256':base_pins['bridge_overlay_sha256']},'compatibility':{},'files':[],
+                    'source':{'kind':'local','path':'fixture'},'compatibility':{},'files':[],
                     'components':[{'schema_version':1,'kind':'ComponentManifest','id':'oxp3:legacy-adaptation',
                         'version':'0.1.0-test.1','files':[]}],
-                    # oxp3:wifi is present but never consulted here: the BE201
-                    # ownership boundary lives in the installer's protocol.manifest.
-                    'legacy_capabilities':[{'id':'oxp3:wifi','available':True,'default':False},
+                    'legacy_capabilities':[{'id':'oxp3:wifi','available':wifi,'default':False},
                                            {'id':'oxp3:decky','available':decky,'default':False}],
                     'selection_contract':{'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'},
                     'shared_adaptations':{'kind':'boiler-shared-static-v1','components':[],'warnings':[]}}
@@ -138,7 +133,7 @@ class OverlayTests(unittest.TestCase):
                 return overlay.build(base,sha(good),root/'native','a'*64,source_hash,output,model_id='device:oxp3',
                     installer_root=INSTALLER,release=True,version='0.2.0-preview.1',
                     source_repository=overlay.REPOSITORY,source_commit='c'*40,authority_root=ROOT,installer_commit='d'*40)
-            with mock.patch.object(overlay,'release_inputs'),mock.patch.object(overlay.prep,'prepare',side_effect=prepare):
+            with mock.patch.object(overlay,'release_inputs'),mock.patch.object(overlay,'read_pam_input',return_value=b'pam fixture'),mock.patch.object(overlay.prep,'prepare',side_effect=prepare):
                 report=run(root/'first');second=run(root/'second')
                 self.assertEqual(report['sha256'],second['sha256'])
                 result=json.loads((root/'first/package/manifest.json').read_bytes())
@@ -154,16 +149,9 @@ class OverlayTests(unittest.TestCase):
                 self.assertEqual(report['base_source']['commit'],overlay.BASE_AUTHORITY_COMMIT)
                 self.assertEqual(report['installer_source']['commit'],'d'*40)
                 self.assertNotIn(str(root),json.dumps(report))
-                # A released overlay keeps naming its builder commit, and the
-                # base's reviewed overlay pins survive at the top level. The EFI
-                # provider selects its lock by hdr_overlay_sha256; losing it
-                # silently falls back to the pre-HDR1100 lock.
-                self.assertEqual(result.get('hdr_overlay_sha256'), base_pins['hdr_overlay_sha256'])
-                self.assertEqual(result.get('bridge_overlay_sha256'), base_pins['bridge_overlay_sha256'])
-                self.assertNotIn('hdr_overlay_sha256', result['source'])
-                for bad in (package(decky=False),):
+                for bad in (package(wifi=True),package(decky=False)):
                     raw=encoded(bad);(base/'manifest.json').write_bytes(raw)
-                    with self.assertRaisesRegex(ValueError,'Decky or legacy selection contract'):
+                    with self.assertRaisesRegex(ValueError,'Decky or BE201'):
                         overlay.build(base,sha(raw),root/'native','a'*64,source_hash,root/'rejected',model_id='device:oxp3',
                             installer_root=INSTALLER,release=True,version='0.2.0-preview.1',source_repository=overlay.REPOSITORY,
                             source_commit='c'*40,authority_root=ROOT,installer_commit='d'*40)

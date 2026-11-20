@@ -1,0 +1,7 @@
+[Unit]
+Description=X2 Mini battery compatibility service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes

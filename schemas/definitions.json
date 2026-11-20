@@ -5,6 +5,17 @@
     "id": {"type":"string","pattern":"^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9_.-]*$"},
     "version": {"type":"string","pattern":"^[0-9]+(?:\\.[0-9]+){1,3}(?:[-+][A-Za-z0-9.+-]+)?$"},
     "sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "componentRelease": {
+      "type":"object","additionalProperties":false,"required":["resource_id","channel"],
+      "properties":{"resource_id":{"type":"string","pattern":"^resource:[a-z0-9][a-z0-9_.-]*$"},"channel":{"enum":["stable","preview"]}}
+    },
+    "componentResolution": {
+      "type":"object","minProperties":1,"propertyNames":{"$ref":"#/$defs/id"},
+      "additionalProperties":{"type":"object","additionalProperties":false,
+        "required":["version","resource_id","manifest_sha256","index_sha256","source"],
+        "properties":{"version":{"$ref":"#/$defs/version"},"resource_id":{"type":"string","pattern":"^resource:[a-z0-9][a-z0-9_.-]*$"},
+          "manifest_sha256":{"$ref":"#/$defs/sha256"},"index_sha256":{"$ref":"#/$defs/sha256"},"source":{"$ref":"#/$defs/source"}}}
+    },
     "path": {"type":"string","minLength":1,"pattern":"^(?!/)(?!.*\\\\)(?!.*:)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\u0000-\\u001f]+$"},
     "compatibility": {
       "type":"object","additionalProperties":false,

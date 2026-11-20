@@ -134,8 +134,36 @@ class ModelFirmwareTests(unittest.TestCase):
         refs = [{'resource': IDENTITY}]
         receipt = session.install(refs, [IDENTITY])
         self.assertEqual(len(receipt['transactions']), 2)
+        self.assertEqual({row['version'] for row in receipt['transactions']}, {'1.0.0'})
         self.assertTrue(all(row['ok'] for row in session.verify([IDENTITY])))
         for slot in ('A', 'B'):
-            session.restore(receipt, slot)
+            restored, = session.restore(receipt, slot)
+            self.assertEqual(restored['installed_version'], '1.0.0')
+            self.assertIsNone(restored['restored_version'])
         self.assertEqual(old.read_bytes(), b'prior firmware')
         self.assertFalse((self.slots['B']['root'] / target).exists())
+
+    def test_versions_follow_each_slot_and_managed_restore_generation(self):
+        refs = [{'resource': IDENTITY}]
+        original = model_resource_pool(self.root, trust_local_test=True)
+        ResourceSession(original, self.slots, self.home).install(refs, [IDENTITY])
+        parser = decoder()
+        record = original.resource(IDENTITY)
+        record['version'] = '1.1.0'
+        raw = (parser.dumps(record)+'\n').encode('utf-8')
+        (self.root/RESOURCE).write_bytes(raw)
+        row = next(row for row in self.manifest['files'] if row['path'] == RESOURCE)
+        row.update(size=len(raw), sha256=hashlib.sha256(raw).hexdigest())
+        self.write_manifest()
+        newer = model_resource_pool(self.root, trust_local_test=True)
+        session = ResourceSession(newer, self.slots, self.home)
+        mismatch = session.verify([IDENTITY])
+        self.assertEqual({(row['scope'], row['installed_version'], row['expected_version'], row['reason'])
+                          for row in mismatch},
+                         {('A', '1.0.0', '1.1.0', 'version-mismatch'), ('B', '1.0.0', '1.1.0', 'version-mismatch')})
+        upgraded = session.install(refs, [IDENTITY])
+        self.assertEqual({row['version'] for row in upgraded['transactions']}, {'1.1.0'})
+        restored, = session.restore(upgraded, 'A')
+        self.assertEqual((restored['installed_version'], restored['restored_version']), ('1.1.0', '1.0.0'))
+        self.assertEqual({(row['scope'], row['installed_version'], row['ok']) for row in session.verify([IDENTITY])},
+                         {('A', '1.0.0', False), ('B', '1.1.0', True)})

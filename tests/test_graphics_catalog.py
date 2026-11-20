@@ -26,13 +26,20 @@ class GraphicsCatalogueChecks(unittest.TestCase):
 
     def test_distinct_hardware_families_and_confirmed_gpu_names_are_retained(self):
         profiles = {item['id']: item for item in self.catalogue['profiles']}
-        self.assertEqual(11, len(profiles))
+        self.assertEqual(12, len(profiles))
         self.assertEqual(['AMD Ryzen 7 7840U', 'AMD Ryzen 7 8840U'], profiles['graphics:amd-780m']['processors'])
         self.assertEqual('RDNA3', profiles['graphics:amd-780m']['architecture'])
         self.assertEqual('RDNA3.5', profiles['graphics:amd-880m']['architecture'])
         self.assertEqual('RDNA2', profiles['graphics:amd-z2-go']['architecture'])
         self.assertEqual(['8086:b080', '8086:b082'], profiles['graphics:intel-g3-extreme']['pci_ids'])
         self.assertEqual('Intel Arc B390', profiles['graphics:intel-g3-extreme']['graphics_name'])
+        lunar_lake = profiles['graphics:intel-258v']
+        self.assertEqual(9, len(lunar_lake['processors']))
+        self.assertIn('Intel Core Ultra 5 226V', lunar_lake['processors'])
+        self.assertIn('Intel Core Ultra 9 288V', lunar_lake['processors'])
+        self.assertEqual('Intel Arc 130V / 140V', lunar_lake['graphics_name'])
+        self.assertEqual([7, 8], lunar_lake['compute_units'])
+        self.assertNotIn('258V', lunar_lake['name']['zh'])
         self.assertFalse({'7800', '8800'} & {item['token'] for item in self.catalogue['requests']})
         for profile in profiles.values():
             self.assertTrue(profile['install_available'])
@@ -50,6 +57,8 @@ class GraphicsCatalogueChecks(unittest.TestCase):
             lambda v: v['requests'][0].update(token='7800'),
             lambda v: v['firmware_origin'].update(revision='main'),
             lambda v: v['delivery'].update(installer_bundled_binaries=True),
+            lambda v: v['profiles'][-1].update(compute_units=[]),
+            lambda v: v['profiles'][-1].update(compute_units=[7, False]),
         ]
         for mutate in mutations:
             value = copy.deepcopy(self.catalogue)
@@ -82,6 +91,10 @@ class GraphicsCatalogueChecks(unittest.TestCase):
         self.assertIn('usr/lib/firmware/xe/ptl_guc_70.bin', intel_paths)
         self.assertIn('usr/lib/firmware/i915/xe3lpd_3002_dmc.bin', intel_paths)
         self.assertNotIn('usr/lib/firmware/i915/xe3p_lpd_dmc.bin', intel_paths)
+        self.assertEqual({
+            'usr/lib/firmware/xe/lnl_guc_70.bin', 'usr/lib/firmware/xe/lnl_huc.bin',
+            'usr/lib/firmware/xe/lnl_gsc_1.bin', 'usr/lib/firmware/i915/xe2lpd_dmc.bin',
+        }, {f['target'] for f in bundles['graphics:intel-258v']['files']})
 
     def test_changed_spec_rejects_stale_snapshot_and_cross_family_records(self):
         with tempfile.TemporaryDirectory() as temporary:

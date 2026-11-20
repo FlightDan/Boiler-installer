@@ -34,12 +34,25 @@ def load_protocol(installer_root):
 
 spec = importlib.util.spec_from_file_location('fingerprint_prepare', Path(__file__).with_name('prepare-fingerprint.py'))
 prep = importlib.util.module_from_spec(spec); spec.loader.exec_module(prep)
-VERSION = '0.1.0-localtest.20261104.fingerprint.10'
+VERSION = '0.1.0-localtest.20261104.fingerprint.12'
+X2_VERSION = '0.1.0-localtest.20261104.fingerprint.13'
+PAM_LOCK = 'common/fingerprint/kde/pam-module-lock.json'
+PAM_SHA256 = 'bb8c568cb72f87608ec71fa19de4787807a7131e3dda23c7fef2aca6744c013e'
+PAM_SIZE = 26664
+FTE_DIR = 'brands/onexplayer/x2-mini/current/fingerprint/fte3600/'
+FTE_MODULE_SHA256 = '7e608fe13335f8b6781f84af090a7cd829e29531f0b64d032447bf8006efbe22'
+FTE_MODULE_SIZE = 647200
+FTE_TARGETS = {
+    'boiler-fte3600.service': ('etc/systemd/system/boiler-fte3600.service', 0o644),
+    '50-boiler-fte3600.conf': ('etc/systemd/system/boiler-fprintd.service.d/50-boiler-fte3600.conf', 0o644),
+    'load.sh': ('var/lib/oxp3-installer/fingerprint/fte3600/load.sh', 0o755),
+    'fte3600.ko': ('var/lib/oxp3-installer/fingerprint/fte3600/fte3600.ko', 0o644),
+}
 REPOSITORY = 'FlightDan/Boiler-adaptations'
 INSTALLER_REPOSITORY = 'FlightDan/Boiler-installer'
 BASE_AUTHORITY_COMMIT = '3edd6a340b56628785f05365d62349f7d03c63eb'
 RELEASE_BASES = {'device:oxp3':'3b4c7dce1c6850dd2e3601ef44542676f904a66eeae9d2ce14ad00e3aa9ddbb2',
-                 'device:x2-mini':'edbc2e66e36a2e35b9de73ae848a9236dc52857114ef47646bf54bab94c6a607'}
+                 'device:x2-mini':'96ef91e8b7909ad9a345eef1feed1aac90156e6846e9c2f75fc265d006b273f8'}
 RELEASE_NATIVE = 'a51df24539a63ad82e74ac6b911f28835da19211ee50fd7c90457f15db20936f'
 PLUGIN = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
 NATIVE = 'var/lib/oxp3-installer/fingerprint/'
@@ -163,34 +176,55 @@ def release_inputs(model_id, base_sha256, native_sha256, version, authority_root
             raise ValueError('Authority source inventory differs: '+row['path'])
 
 
-def build(base, base_sha256, runtime, native_sha256, source_sha256, output, model_id=None, *, installer_root, release=False, version=None, source_commit=None, source_repository=None, authority_root=None, installer_commit=None):
+def read_pam_input(pam_module):
+    if pam_module is None: raise ValueError('Explicit locked PAM module required')
+    pam_lock = json.loads((SOURCE_ROOT/PAM_LOCK).read_bytes())
+    pam_record = pam_lock.get('module', {})
+    if pam_record.get('size') != PAM_SIZE or pam_record.get('sha256') != PAM_SHA256:
+        raise ValueError('Unexpected PAM module lock')
+    pam_data = Path(pam_module).read_bytes()
+    if len(pam_data) != PAM_SIZE or digest(pam_data) != PAM_SHA256:
+        raise ValueError('PAM module differs from locked bytes')
+    return pam_data
+
+
+def build(base, base_sha256, runtime, native_sha256, source_sha256, output, model_id=None, *, installer_root, release=False, version=None, source_commit=None, source_repository=None, authority_root=None, installer_commit=None, fte_module=None, pam_module=None):
     if release:
         if source_repository != REPOSITORY or authority_root is None: raise ValueError('Explicit authority source required')
         release_inputs(model_id, base_sha256, native_sha256, version, authority_root, source_commit, installer_root, installer_commit)
     elif any(v is not None for v in (version, source_commit, source_repository, authority_root, installer_commit)):
         raise ValueError('Release metadata requires explicit release mode')
     load_protocol(installer_root)
-    package_version = version if release else VERSION
+    package_version = version if release else (X2_VERSION if model_id == 'device:x2-mini' else VERSION)
     base, output = Path(base).resolve(), Path(output).absolute()
     if output.exists(): raise ValueError('Fresh immutable output required')
     package = validate_package(base, expected_manifest_sha256=base_sha256)
     identity = package.get('id')
     if identity not in MODEL_RULES or (model_id is not None and identity != model_id) or any(x['id'] == 'oxp3:fingerprint-unlock' for x in package['components']):
         raise ValueError('Expected matching supported model base without fingerprint component')
+    pam_data = read_pam_input(pam_module)
+    if identity == 'device:x2-mini':
+        if fte_module is None: raise ValueError('X2 requires an explicit locked FTE3600 module')
+        lock = json.loads((SOURCE_ROOT/FTE_DIR/'module-lock.json').read_bytes())
+        if lock.get('size') != FTE_MODULE_SIZE or lock.get('sha256') != FTE_MODULE_SHA256:
+            raise ValueError('Unexpected FTE3600 module lock')
+        module_data = Path(fte_module).read_bytes()
+        if len(module_data) != lock['size'] or digest(module_data) != lock['sha256']:
+            raise ValueError('FTE3600 module differs from locked bytes')
+        if not release: package_version = X2_VERSION
+    elif fte_module is not None:
+        raise ValueError('FTE3600 module is X2-only')
     if not isinstance(package.get('shared_adaptations', {}).get('components'), list):
         raise ValueError('Base package lacks static maintenance contract')
     if release:
         legacy=package.get('legacy_capabilities', [])
+        wifi=[row for row in legacy if row.get('id')=='oxp3:wifi']
         decky=[row for row in legacy if row.get('id')=='oxp3:decky']
-        # BE201 is not checked here. The installer's protocol.manifest rejects a
-        # package that makes the legacy oxp3:wifi handler available while it also
-        # declares resource:intel-be201-firmware; that is the single ownership
-        # boundary. Repeating a weaker form of it in this overlay gave one rule
-        # two definitions and left the base unpinnable.
-        if (len(decky)!=1 or decky[0].get('available') is not True
+        if (len(wifi)!=1 or wifi[0].get('available') is not False or wifi[0].get('default') is not False
+                or len(decky)!=1 or decky[0].get('available') is not True
                 or package.get('selection_contract')!={'kind':'oxp3-legacy-options-v1','component':'oxp3:legacy-adaptation'}
                 or not any(row['id']=='oxp3:legacy-adaptation' for row in package['components'])):
-            raise ValueError('Base model lacks reviewed Decky or legacy selection contract')
+            raise ValueError('Base model lacks reviewed Decky or BE201 safety contract')
     prep.prepare(runtime, native_sha256, source_sha256, output/'prepared')
     stage = output/'package'; stage.mkdir()
     for row in package['files']:
@@ -198,17 +232,7 @@ def build(base, base_sha256, runtime, native_sha256, source_sha256, output, mode
         shutil.copyfile(confined(base, row['path']), target)
     package = json.loads(encoded(package)); package['version'] = package_version
     if release:
-        # The release source names the builder commit and nothing else. The
-        # reviewed overlay pins the base carried must survive that replacement:
-        # the EFI provider picks its lock from hdr_overlay_sha256, and dropping
-        # it silently falls back to the pre-HDR1100 lock, which then fails on
-        # the very files this base legitimately changed. They move to the
-        # top level, where lock_for() already looks for them.
-        prior_source = package.get('source', {})
-        carried = {key: prior_source[key] for key in ('hdr_overlay_sha256', 'bridge_overlay_sha256')
-                   if isinstance(prior_source.get(key), str)}
         package['source'] = {'kind':'github','repository':source_repository,'commit':source_commit}
-        package.update(carried)
         package['trust'] = {'status':'index-signature-required','official_release':False}
         package['minimum_engine_version'] = '0.1.5'
     component = {'schema_version':1,'kind':'ComponentManifest','id':'oxp3:fingerprint-unlock','version':package_version,
@@ -225,6 +249,11 @@ def build(base, base_sha256, runtime, native_sha256, source_sha256, output, mode
     for name, target in [MODEL_RULES[identity], *TARGETS.items()]:
         data = confined(prepared/'sources', name).read_bytes()
         add(data, 'fingerprint/profile/'+name, target, 0o644)
+    add(pam_data, 'fingerprint/kde/pam_fprintd.so', 'usr/lib/security/pam_fprintd.so', 0o755)
+    if identity == 'device:x2-mini':
+        for name, (target, mode) in FTE_TARGETS.items():
+            data = module_data if name == 'fte3600.ko' else confined(prepared/'sources', FTE_DIR+name).read_bytes()
+            add(data, 'fingerprint/fte3600/'+name, target, mode)
     native_manifest = json.loads((prepared/'native/runtime-manifest.json').read_bytes())
     for row in native_manifest['files']:
         name = row['path']
@@ -258,6 +287,13 @@ def build(base, base_sha256, runtime, native_sha256, source_sha256, output, mode
                          (SOURCE_ROOT/'fingerprint-source-lock.json','bridge-source-lock.json'),
                          (prepared/'sources'/SHARED_PROFILE/'COPYING','COPYING')):
         target=stage/'fingerprint/evidence'/name; shutil.copyfile(source,target)
+    shutil.copyfile(SOURCE_ROOT/PAM_LOCK, stage/'fingerprint/evidence/pam-module-lock.json')
+    (stage/'fingerprint/licenses').mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(SOURCE_ROOT/'licenses/GPL-2.0.txt', stage/'fingerprint/licenses/pam-fprintd-GPL-2.0.txt')
+    if identity == 'device:x2-mini':
+        shutil.copyfile(SOURCE_ROOT/FTE_DIR/'module-lock.json', stage/'fingerprint/evidence/fte3600-module-lock.json')
+        (stage/'fingerprint/licenses').mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(SOURCE_ROOT/'licenses/GPL-2.0.txt', stage/'fingerprint/licenses/fte3600-GPL-2.0.txt')
     package['components'].append(component); package['shared_adaptations']['components'].append(component['id'])
     package['shared_adaptations'].setdefault('warnings',[]).append('Experimental fingerprint unlock requires hardware validation and takes effect after reboot.')
     rows=[]
@@ -289,5 +325,5 @@ def build(base, base_sha256, runtime, native_sha256, source_sha256, output, mode
 if __name__ == '__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('base','base-sha256','runtime','native-sha256','source-sha256','output'): p.add_argument('--'+name,required=True)
-    p.add_argument('--installer-root',required=True); p.add_argument('--installer-commit'); p.add_argument('--authority-root'); p.add_argument('--release',action='store_true'); p.add_argument('--version'); p.add_argument('--source-commit'); p.add_argument('--source-repository'); p.add_argument('--model-id')
-    a=p.parse_args(); print(json.dumps(build(a.base,a.base_sha256,a.runtime,a.native_sha256,a.source_sha256,a.output,model_id=a.model_id,release=a.release,version=a.version,source_commit=a.source_commit,source_repository=a.source_repository,installer_root=a.installer_root,installer_commit=a.installer_commit,authority_root=a.authority_root),indent=2))
+    p.add_argument('--pam-module'); p.add_argument('--fte-module'); p.add_argument('--installer-root',required=True); p.add_argument('--installer-commit'); p.add_argument('--authority-root'); p.add_argument('--release',action='store_true'); p.add_argument('--version'); p.add_argument('--source-commit'); p.add_argument('--source-repository'); p.add_argument('--model-id')
+    a=p.parse_args(); print(json.dumps(build(a.base,a.base_sha256,a.runtime,a.native_sha256,a.source_sha256,a.output,model_id=a.model_id,release=a.release,version=a.version,source_commit=a.source_commit,source_repository=a.source_repository,installer_root=a.installer_root,installer_commit=a.installer_commit,authority_root=a.authority_root,fte_module=a.fte_module,pam_module=a.pam_module),indent=2))

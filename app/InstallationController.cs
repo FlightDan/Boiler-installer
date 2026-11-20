@@ -8,12 +8,13 @@ using System.Text.RegularExpressions;
 
 namespace OxpInstaller;
 
-public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null, bool CleanupTemporaryFiles = false);
+public sealed record InstallationRequest(InstallationTargetKind Kind, string Source, bool Prepared, SelectedOptions? Options = null, PartitionSelection? PlannedPartition = null, bool Physical = false, bool UpgradeTo310 = false, RefindChoice? Refind = null, string? InitialDeckPassword = null, bool MakeDefaultBoot = false, string Mode = "custom", string? ExpectedSourceSha256 = null, OfficialSourceBinding? OfficialSource = null, bool CleanupTemporaryFiles = false, bool? UseVirtualizationAcceleration = null);
 public sealed record InstallationProgress(string Stage, string Message, double? Percent = null, string? Step = null, string? FailureType = null);
 public sealed record InstallationSession(int Schema, string Id, InstallationTargetKind Kind, string Source, bool Prepared,
     string Status, string Stage, string? Deployment, string? Error, DateTime UpdatedUtc, SelectedOptions? Options = null, bool Physical = false, RefindChoice? Refind = null, bool MakeDefaultBoot = false,
     string? DesktopRebootScript = null, string? DesktopRebootWarning = null, bool CleanupTemporaryFiles = false, bool TemporaryFilesCleaned = false, string? CleanupWarning = null);
-public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null, string? RecoveryDigest = null);
+public sealed record PartitionJob(int Schema, string Nonce, string Scope, InstallationTargetKind Kind, MediaSource Source, string? RecoveryState = null, PhysicalPlan? PhysicalPlan = null, HomeCopyProfile? HomeCopy = null, string? RecoveryDigest = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] bool? UseVirtualizationAcceleration = null);
 public sealed record PartitionJobResult(string Status, string? Error);
 
 internal sealed class InstallationProgressJournal
@@ -110,7 +111,7 @@ public static partial class InstallationController
         {
             var password = request.InitialDeckPassword;
             if (string.IsNullOrEmpty(password) || password.Length < 8 || Encoding.UTF8.GetByteCount(password) > 255 || password.Any(c => c is '\0' or '\r' or '\n'))
-                throw new IOException(InstallerI18n.Language == "en-US" ? "The deck password must be at least 8 characters and at most 255 UTF-8 bytes." : "deck 密码至少 8 个字符，最多 255 个 UTF-8 字节。");
+                throw new IOException(InstallerI18n.L("deck 密码至少 8 个字符，最多 255 个 UTF-8 字节。", "The deck password must be at least 8 characters and at most 255 UTF-8 bytes."));
         }
         else if (request.InitialDeckPassword != null) throw new IOException("A deck password was supplied while password setup is disabled.");
         if (request.Refind != null) RefindInstallation.Validate(request.Refind, request.PlannedPartition);
@@ -155,6 +156,8 @@ public static partial class InstallationController
     private static async Task<InstallationSession> RunCoreAsync(InstallationRequest request, Action<InstallationProgress> report, Action<string> log,
         CancellationToken token, Action<InstallationSession>? created)
     {
+        // Flows through preparation and boot checks for this run, including nested guest calls.
+        GuestResourcesPolicy.InstallationAcceleration.Value = request.UseVirtualizationAcceleration;
         ValidateRequest(request); token.ThrowIfCancellationRequested();
         request = request with { Options = request.Options ?? new(1, [], [], InstallerI18n.Language, "system", InstallMode: request.Mode) };
         var commonSsdSelected = request.Options.Repairs.Contains(SsdBootRepair.Option);
@@ -390,7 +393,9 @@ public static partial class InstallationController
             var nonce = Guid.NewGuid().ToString("N"); var deployment = Path.Combine(Work, "partition-deploy-" + nonce); Directory.CreateDirectory(deployment);
             state = state with { Deployment = deployment }; Save(journal, state);
             var jobPath = Path.Combine(deployment, "partition-job.json");
-            using var boundJob = HelperRequestBinding.Create(jobPath, HelperRequestBinding.Partition, new PartitionJob(request.Physical ? 2 : 1, nonce, request.Physical?"reviewed-physical-range":"new-virtual-disk-only", request.Kind, prepared.Identity, PhysicalPlan:physical, HomeCopy:homeCopy), token);
+            using var boundJob = HelperRequestBinding.Create(jobPath, HelperRequestBinding.Partition,
+                new PartitionJob(request.Physical ? 2 : 1, nonce, request.Physical ? "reviewed-physical-range" : "new-virtual-disk-only",
+                    request.Kind, prepared.Identity, PhysicalPlan: physical, HomeCopy: homeCopy, UseVirtualizationAcceleration: request.UseVirtualizationAcceleration), token);
             var result = await RunHelperAsync(jobPath, boundJob.Digest, nonce, text =>
             {
                 if (state.Stage == "permission") Phase("writing", request.Physical?"正在写入已确认的磁盘空间…":"正在写入虚拟测试盘…", "04.00");
@@ -502,6 +507,7 @@ public static partial class InstallationController
     }
     private static async Task<int> ExecuteVerifiedHelperAsync(string path, PartitionJob job, byte[]? recoverySnapshot)
     {
+        GuestResourcesPolicy.InstallationAcceleration.Value = job.UseVirtualizationAcceleration;
         using var signal = EventWaitHandle.OpenExisting(EventName(job.Nonce));
         using var cancellation = new CancellationTokenSource();
         if (signal.WaitOne(0)) cancellation.Cancel();

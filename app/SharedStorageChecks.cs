@@ -106,9 +106,9 @@ internal static class SharedStorageChecks
         Require(Find<Button>("StorageTab").Visibility == Visibility.Collapsed && !Find<Button>("StorageTab").IsEnabled,
             "mount-entry-hidden-and-disabled");
         Require(Find<StackPanel>("StorageOptionsHost").Children.Count == 0, "mount-selector-not-created");
-        foreach (var language in new[] { "ChineseLanguage", "EnglishLanguage" })
+        foreach (var language in new[] { "zh-CN", "en-US" })
         {
-            Find<RadioButton>(language).IsChecked = true;
+            Find<ComboBox>("InstallerLanguage").SelectedValue = language;
             Click("ContentTab"); Click("NextButton");
             Require(Find<StackPanel>("ReviewPage").IsVisible, "contents-next-goes-directly-to-review-" + language);
             Require(!Find<TextBlock>("ReviewLayout").Text.Contains("共享分区") && !Find<TextBlock>("ReviewLayout").Text.Contains("Shared partitions"),
@@ -126,7 +126,7 @@ internal static class SharedStorageChecks
             "debug-entry-removed-and-mounts-remain-hidden");
         checks.AddRange(WizardChecks.CheckFreeNavigation(window));
         Require(window.CompletedSession == null, "navigation-does-not-start-installation");
-        Find<RadioButton>("ChineseLanguage").IsChecked = true;
+        Find<ComboBox>("InstallerLanguage").SelectedValue = "zh-CN";
         Click("ContentTab");
         var directory = Path.Combine(Backend.Root, "logs", "shared-storage-ui"); Directory.CreateDirectory(directory);
         window.Width = 1060; window.Height = 790; window.UpdateLayout();

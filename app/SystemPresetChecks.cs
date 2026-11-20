@@ -28,10 +28,12 @@ internal static class SystemPresetChecks
             Require(refused, name);
         }
         foreach (var (culture, expected) in new[] { ("zh-CN", "zh_CN"), ("zh-SG", "zh_CN"), ("zh-Hans", "zh_CN"),
-            ("zh-TW", "zh_TW"), ("zh-HK", "zh_TW"), ("zh-Hant-HK", "zh_TW"), ("en-GB", "en_US"), ("en-US", "en_US"),
-            ("ja-JP", "ja_JP"), ("ko-KR", "ko_KR"), ("de-AT", "de_DE"), ("fr-CA", "fr_FR"), ("es-MX", "es_ES"),
-            ("ru-RU", "ru_RU"), ("it-IT", "system"), ("", "system") })
+            ("zh-TW", "zh_TW"), ("zh-HK", "zh_TW"), ("zh-Hant-HK", "zh_TW"), ("en-GB", "en_GB"), ("en-US", "en_US"),
+            ("ja-JP", "ja_JP"), ("ko-KR", "ko_KR"), ("de-AT", "de_AT"), ("fr-CA", "fr_CA"), ("es-MX", "es_MX"),
+            ("ru-RU", "ru_RU"), ("it-IT", "it_IT"), ("pt-BR", "pt_BR"), ("", "en_US"), ("invalid/locale", "en_US") })
             Require(InstallerOptions.KdeLanguageForWindows(culture) == expected, "windows-language-map-" + culture);
+        Require(InstallerI18n.DetectLanguage("pt-BR") == "en-US" && InstallerOptions.KdeLanguageForWindows("pt-BR") == "pt_BR",
+            "installer-fallback-does-not-replace-windows-locale-for-target");
         _ = OptionsChecks.CheckDesktopLanguageDefaults(checks);
         async Task Flush() { window!.UpdateLayout(); await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); }
         try
@@ -47,14 +49,18 @@ internal static class SystemPresetChecks
                 {
                     window.BoilerModeForChecks(mode);
                     typeof(MainWindow).GetMethod("ChooseGenericInstallation", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null);
+                    var panel = BoilerCustomBuildChecks.Options(window);
+                    ((Expander)panel.Parent).IsExpanded = false;
                     window.PreviewStep(2); await Flush();
-                    var panel = BoilerCustomBuildChecks.Options(window, expandSettings: true);
                     var prefix = language + "-" + mode;
-                    Require(panel.SystemPresetsPanel.IsVisible && panel.KdeChoice.IsVisible && panel.SshChoice.IsVisible && panel.PasswordChoice.IsVisible, prefix + "-presets-visible");
-                    Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage && !panel.Selection.EnableSsh && !panel.Selection.SetDeckPassword, prefix + "-defaults-follow-windows-language");
+                    Require(panel.SshChoice.IsVisible && panel.PasswordChoice.IsVisible, prefix + "-account-options-visible-with-settings-collapsed");
+                    var host = (StackPanel)window.FindName("ComponentOptionsHost");
+                    Require(host.Children[0] == panel.AccountAccessPanel, prefix + "-account-options-first");
+                    Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage && panel.Selection.AutomaticSystemLanguage
+                        && !panel.Selection.EnableSsh && !panel.Selection.SetDeckPassword, prefix + "-defaults-follow-windows-language");
                     Require(panel.Selection.Plugins.Contains("core:decky"), prefix + "-decky-selected-by-default");
                     Require(panel.Children.IndexOf(panel.SystemPresetsPanel) < panel.Children.IndexOf(panel.RepairsExpander), prefix + "-presets-before-repairs");
-                    var accessNote = (TextBlock)panel.SystemPresetsPanel.Children[^1];
+                    var accessNote = (TextBlock)panel.AccountAccessPanel.Children[^1];
                     Require(accessNote.Visibility == Visibility.Collapsed, prefix + "-ssh-explanation-hidden-by-default");
                     if (mode == "custom")
                     {
@@ -63,6 +69,8 @@ internal static class SystemPresetChecks
                         try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, path); captures.Add(path); }
                         catch (IOException error) { captureErrors.Add(error.Message); }
                     }
+                    _ = BoilerCustomBuildChecks.Options(window, expandSettings: true);
+                    Require(panel.SystemPresetsPanel.IsVisible && panel.KdeChoice.IsVisible, prefix + "-language-settings-visible");
                     InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN"); panel.Refresh();
                     Require(panel.Selection.KdeLanguage == InstallerOptions.DefaultKdeLanguage, prefix + "-installer-language-switch-does-not-change-windows-default");
                     InstallerI18n.SetLanguage(language); panel.Refresh();
@@ -82,7 +90,8 @@ internal static class SystemPresetChecks
                     Require(accessNote.Visibility == Visibility.Collapsed, prefix + "-ssh-explanation-hidden-after-opt-out");
                     panel.SshChoice.IsChecked = true;
                     panel.KdeChoice.SelectedIndex = 1;
-                    Require(window.CurrentOptions.SetDeckPassword && window.CurrentOptions.EnableSsh && window.CurrentOptions.KdeLanguage == "zh_CN", prefix + "-choices-reach-current-plan");
+                    Require(window.CurrentOptions.SetDeckPassword && window.CurrentOptions.EnableSsh
+                        && window.CurrentOptions.KdeLanguage == "zh_CN" && !window.CurrentOptions.AutomaticSystemLanguage, prefix + "-choices-reach-current-plan");
                     InstallerOptions.Validate(window.CurrentOptions);
                     Require(!JsonSerializer.Serialize(window.CurrentOptions).Contains(secret) && !panel.Describe().Contains(secret), prefix + "-no-password-in-serialized-plan-or-summary");
                     foreach (var size in new[] { new Size(1060, 720), new Size(853, 480), new Size(640, 360) })
@@ -130,7 +139,7 @@ internal static class SystemPresetChecks
                     Refuse(panel.ValidateDeckPassword, prefix + "-reenabling-password-requires-fresh-input");
                     panel.PasswordInput.Password = panel.PasswordConfirmation.Password = secret;
                     panel.SetWirelessContext(mode, hasPackage: true);
-                    Require(panel.SystemPresetsPanel.Visibility == Visibility.Visible && panel.Selection.EnableSsh, prefix + "-device-route-retains-system-presets");
+                    Require(panel.AccountAccessPanel.Visibility == Visibility.Visible && panel.Selection.EnableSsh, prefix + "-device-route-retains-account-options");
                     foreach (var selection in new[]
                     {
                         new SelectedOptions(1, [], [], language, "zh_CN", InstallMode: mode),
@@ -164,6 +173,7 @@ internal static class SystemPresetChecks
                     Require(panel.PasswordInput.Password.Length == 0 && panel.PasswordConfirmation.Password.Length == 0,
                         prefix + "-returning-home-clears-password-inputs");
                     window.BoilerModeForChecks("imported");
+                    Require(panel.AccountAccessPanel.Visibility == Visibility.Collapsed, prefix + "-imported-image-account-options-hidden");
                     Require(!window.CurrentOptions.SetDeckPassword && !window.CurrentOptions.EnableSsh && window.CurrentOptions.KdeLanguage == "system"
                         && panel.InitialDeckPassword == null && panel.PasswordInput.Password.Length == 0 && panel.PasswordConfirmation.Password.Length == 0,
                         prefix + "-new-image-route-clears-presets-and-secrets");

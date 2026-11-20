@@ -23,6 +23,23 @@ class Encoder:
 
 
 class BrandBuilderTests(unittest.TestCase):
+    def test_microcode_is_derived_only_from_explicit_locked_request(self):
+        snapshot = ROOT / 'adaptations'
+        toon = builder.decoder(snapshot)
+        lock = json.loads((snapshot / 'canonical-model-snapshot.json').read_text(encoding='utf-8'))
+        inventory = {row['path']: row for row in lock['files']}
+        guide = toon.loads((snapshot / 'devices/onexplayer/oxp3.toon').read_text(encoding='utf-8'), strict=True)
+        component, rows = builder.model_microcode(guide, snapshot, toon, inventory, '0.1.7')
+        self.assertEqual(component['id'], 'onexplayer:intel-microcode')
+        self.assertFalse(component['default'])
+        self.assertEqual(component['microcode_boot_policy'], {'kind': 'onexplayer-intel-microcode-v1'})
+        self.assertEqual(set(rows), {row['source'] for row in component['files']})
+        self.assertEqual(component['files'][0]['target'], 'usr/lib/firmware/intel-ucode/06-cc-02')
+        request = next(c for c in guide['components'] if c['id'] == 'intel-cpu-microcode')
+        request['default'] = True
+        with self.assertRaisesRegex(ValueError, 'TOON request'):
+            builder.model_microcode(guide, snapshot, toon, inventory, '0.1.7')
+
     def test_candidate_version_is_explicit_and_newer(self):
         old = '0.1.0-localtest.20261104.fingerprint.10'
         new = '0.1.0-localtest.20261104.toonbrand.1'
@@ -105,6 +122,23 @@ class BrandBuilderTests(unittest.TestCase):
             guide['components'] = [{'id': 'other', 'sources': ['devices/onexplayer/other.toon']}]
             with self.assertRaisesRegex(ValueError, 'outside canonical'):
                 builder.collect_sources(root, guide, guide_path, None, {})
+
+    def test_pending_core_component_keeps_its_declared_source(self):
+        guide_path = 'devices/onexplayer/oxp3.toon'
+        source = 'common/cpu/intel/microcode/source.toon'
+        component = {'id': 'intel-cpu-microcode', 'sources': [source],
+                     'status': 'external_boiler_core'}
+        guide = {'id': 'guide:oxp3', 'components': [component], 'resource_model': {}}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in (guide_path, source):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('source')
+            selected, unresolved, pending = builder.collect_sources(root, guide, guide_path, None, {})
+        self.assertEqual(selected, {guide_path, source})
+        self.assertEqual(unresolved, [])
+        self.assertEqual(pending, [{'component': 'intel-cpu-microcode', 'status': 'external_boiler_core'}])
 
     def test_guide_resolution_and_pool_proof_support_both_layouts(self):
         for current in (False, True):

@@ -29,6 +29,10 @@ its accompanying GPL version 3 license text are retained under
 `common/sensors/bosch/bmi260/gyro/`; the unmodified release notice is included
 without asserting additional grants.
 
+The Intel Panther Lake CPU microcode binary is distributed unmodified under
+its [Intel redistribution license](common/cpu/intel/microcode/licenses/Intel-microcode.txt). See
+the [source TOON](common/cpu/intel/microcode/source.toon) for the pinned Intel release.
+
 Python is required to run the builder and tests. The pinned MIT-licensed
 TOON decoder is included under `vendor/`; no Python interpreter is bundled. This registry
 does not bundle QEMU, Alpine Linux, .NET, rEFInd, Decky, or model payloads.

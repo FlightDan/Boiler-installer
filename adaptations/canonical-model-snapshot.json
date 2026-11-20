@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "CanonicalModelSnapshot",
   "repository": "FlightDan/Boiler-adaptations",
-  "commit": "caad498e8552762abbf77afdc130a0238e4ed571",
+  "commit": "e34b8ab0ded3cc0c1d320cd04d97cb02b3bd6f02",
   "files": [
     {
       "path": "adaptations/.gitattributes",
@@ -31,8 +31,8 @@
     },
     {
       "path": "adaptations/THIRD_PARTY_NOTICES.md",
-      "size": 2200,
-      "sha256": "9f21d3d2c706e31b8a4810c94dba6fa1370b044eb40b9108b9b1508bb386774c"
+      "size": 2462,
+      "sha256": "c962ccc47abb7aa3d1f50c1c4b449d5dd4ed243c4614c568703fff0e88f0e6a1"
     },
     {
       "path": "adaptations/adaptations.json",
@@ -73,6 +73,26 @@
       "path": "adaptations/brands/onexplayer/common/battery/deploy-battery.py",
       "size": 3963,
       "sha256": "7cec3544d12715b955205c7311f66504d4a66e77f327b35d0b2260bdcabdafdf"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/power/battery-plugin-index.js",
+      "size": 14583,
+      "sha256": "f54f9ef815135872f3d360f32366cd52ca4644857b2397062421a653c9488cbf"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/power/battery-plugin-main.py",
+      "size": 523,
+      "sha256": "82fa39c6007f84f3114e4a6d75b491c9fe10a0e25a8aa7f6a3bbbb5b837c39a2"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/power/check-battery-power-ui.mjs",
+      "size": 6630,
+      "sha256": "008c122732ff7bf3432bdc559fec3695195b542eaefc41a6c06ca8e325c5cd51"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/common/battery/power/test_power_backend.py",
+      "size": 2889,
+      "sha256": "1dc8abaec77419585a703533d2c4f5a736266c7933879d4ae418a7c1993a72fd"
     },
     {
       "path": "adaptations/brands/onexplayer/common/battery/sleep-router.conf",
@@ -155,6 +175,11 @@
       "sha256": "902ebd2f3a4caecdf9fc91be16360f1dd95df9dc9428b2aa6cf81be596e9317a"
     },
     {
+      "path": "adaptations/brands/onexplayer/common/plugin-i18n/battery/index.js",
+      "size": 25022,
+      "sha256": "926276d54477bf685b6453ad8e0f5c113af957f25a9fe390720c1997e3558eef"
+    },
+    {
       "path": "adaptations/brands/onexplayer/common/scripts/input-profile.conf",
       "size": 150,
       "sha256": "6b3ecd1d286426cc2af8e1f876de7984fb9763875b817148fda16fcd327947af"
@@ -198,11 +223,6 @@
       "path": "adaptations/brands/onexplayer/oxp3/bridge/docs/MAINTENANCE_PACKAGE.md",
       "size": 3976,
       "sha256": "dd7aae623f2196c93824179b012cc65cb66603c1dc02fde799fbcd58d02ef052"
-    },
-    {
-      "path": "adaptations/brands/onexplayer/oxp3/bridge/embedded-maintenance-tool.py",
-      "size": 2401,
-      "sha256": "cc8a654b451895efb33a4e036c690feae87e3b1ebd0ab9e3e1a9c9098a3dacf4"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/bridge/full_efi_sources.py",
@@ -325,6 +345,21 @@
       "sha256": "68d4eca256cfe27f13494089cb7957fca429e4739aaa0ad0953717c6e866b1a5"
     },
     {
+      "path": "adaptations/brands/onexplayer/oxp3/current/plugin-i18n/cpu/index.js",
+      "size": 24873,
+      "sha256": "2061e8a9dcfb74a4fe16fd9ad555e94aaf5cbf5028175adb78eb81652b6508b3"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/current/plugin-i18n/fan/index.js",
+      "size": 7475,
+      "sha256": "b1e611a11504f1146e00e7519c1ec8f2fc490230af82a7375c772347b580b71c"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/oxp3/current/plugin-i18n/light/index.js",
+      "size": 15467,
+      "sha256": "b33b21b07047f280d2b13c6c7d9952f56d04ae3027e4c6ed3fd5f7521828c23e"
+    },
+    {
       "path": "adaptations/brands/onexplayer/oxp3/current/upstream-20261029/20-oxp3-speaker-resume.conf",
       "size": 41,
       "sha256": "bb9d378a3b1b5fa783d668c982a6e94779a5a289170d4fa00531475302031601"
@@ -426,13 +461,13 @@
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/manifest.json",
-      "size": 13872,
-      "sha256": "c2355209595963c6c0b4b26c392f340175be66760b095b762b9dd07b22c3f85f"
+      "size": 15728,
+      "sha256": "998b1fd020f73f438e5e79978b28190715932bc80513f7813b1eb59ad0e9576e"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/model.md",
-      "size": 7259,
-      "sha256": "540a54810bab4e6c116b9f2fa232a6008db0e87e94316d2ceadfe610d22f15a9"
+      "size": 7466,
+      "sha256": "4e393a44595e0c0553ac2f4c8e2e469cc9784057f3b362d2a77cac64a70c29ed"
     },
     {
       "path": "adaptations/brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -725,6 +760,11 @@
       "sha256": "f7b30feaf31882bde8dc6465bc7322342306ee4762c94e796a6d89458a247686"
     },
     {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/battery-compat.service",
+      "size": 125,
+      "sha256": "45770addac8a494935187be3760b73fe1ad93ad1794cb9e31b762d7c360ba3dd"
+    },
+    {
       "path": "adaptations/brands/onexplayer/x2-mini/current/battery_control.py",
       "size": 837,
       "sha256": "c53c91e39cf96f869bc5aec56338313087626edf2bc4466d1f31520e153f8d0e"
@@ -735,14 +775,39 @@
       "sha256": "72f6699907d549caa7123a3dff5954f62a048a9ce0b522588392841e2620c5b6"
     },
     {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/fingerprint/fte3600/50-boiler-fte3600.conf",
+      "size": 68,
+      "sha256": "f60df742bc433749ce400834fcbba670b99a25ef37de5091de8cea9ce6af5532"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/fingerprint/fte3600/boiler-fte3600.service",
+      "size": 204,
+      "sha256": "aa8b7940fd0ebda217163d23c1e1d7606381c08ed2883cfa61781d5b7c1a7057"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/fingerprint/fte3600/load.sh",
+      "size": 2192,
+      "sha256": "f9a79c68f7feb5d1f0f7d884eb2ff4215ed11280eb251ddc9f9819412593f5a4"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/fingerprint/fte3600/module-lock.json",
+      "size": 562,
+      "sha256": "bdc912f2075fceb59c1aa7d19478e211078c22c85b4d2d9d93008be418cf9741"
+    },
+    {
+      "path": "adaptations/brands/onexplayer/x2-mini/current/power/battery_control.py",
+      "size": 804,
+      "sha256": "54fbb98cbb3e11853a2275c8aeceb15bb29ec2a601266d0dd68b7d0bcc83e69c"
+    },
+    {
       "path": "adaptations/brands/onexplayer/x2-mini/manifest.json",
-      "size": 16997,
-      "sha256": "f80e5479ddae0619340c5f30c7e0f8dddf2e0899ce142980d835c013b5e19aa7"
+      "size": 18980,
+      "sha256": "f9e485b76071b3e3d3661e3504a64fead05ce7355f48e71d46022d3d8c57859c"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/model.md",
-      "size": 9373,
-      "sha256": "79c65fc93e4f5083e22bcaedb9d2dbb8dd01e0a9edb4fb12b3aef244fb391baf"
+      "size": 9298,
+      "sha256": "7d4df1ea3e9c029d7841d18b8f303a0400e4e73f5e523a8e5bf24f5d6879952b"
     },
     {
       "path": "adaptations/brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
@@ -855,19 +920,34 @@
       "sha256": "76629e5eb7660584b0d18457816cfc215c188560cf44f8359bcf623535f65016"
     },
     {
+      "path": "adaptations/common/cpu/intel/microcode/inputs/06-cc-02",
+      "size": 165888,
+      "sha256": "2960a456b2c672614487f410e774012e386bddeaefb5a9899b307ef682cb1536"
+    },
+    {
+      "path": "adaptations/common/cpu/intel/microcode/licenses/Intel-microcode.txt",
+      "size": 1677,
+      "sha256": "03efb1491c7e899feb2665fa299363e64035e5444c1b8bc1f6ebed30de964e12"
+    },
+    {
+      "path": "adaptations/common/cpu/intel/microcode/source.toon",
+      "size": 1106,
+      "sha256": "a45af5cb0eb6dace9004c06fbca1c5cdd6c9dc29606879cacc27d78be6fb5f8e"
+    },
+    {
       "path": "adaptations/common/fingerprint/bridge/index.js",
-      "size": 14560,
-      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb"
+      "size": 22838,
+      "sha256": "d4f8fd00deebdf06ffd958be8d42272329409e861bb4fe711bbd2e886e8fb227"
     },
     {
       "path": "adaptations/common/fingerprint/bridge/main.py",
-      "size": 3730,
-      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1"
+      "size": 43703,
+      "sha256": "9fffcf215fac1d496d76b2d327180e0564d187354001d7fd68fd58380eae3b1b"
     },
     {
       "path": "adaptations/common/fingerprint/bridge/package.json",
-      "size": 84,
-      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d"
+      "size": 85,
+      "sha256": "1463c20a384a3d9e14e673966532b29591d9394c371a872b6a3f2178324e819f"
     },
     {
       "path": "adaptations/common/fingerprint/bridge/plugin.json",
@@ -883,6 +963,16 @@
       "path": "adaptations/common/fingerprint/kde/install-kde-pam.py",
       "size": 7020,
       "sha256": "78dd2617e135b57b93650c7c10834920729dbee7373db9438e35381df872eebb"
+    },
+    {
+      "path": "adaptations/common/fingerprint/kde/pam-module-lock.json",
+      "size": 901,
+      "sha256": "354ff0bd3c4a9b152de9df1070c4faea3b04d809f4700dfbe43cd879d803169b"
+    },
+    {
+      "path": "adaptations/common/fingerprint/kde/pam-module.toon",
+      "size": 271,
+      "sha256": "1b360bed5d2ef011f25c207f5724001c4195171fe861c6d0bd9c25a19c91719a"
     },
     {
       "path": "adaptations/common/fingerprint/providers/bf63112/source.toon",
@@ -906,8 +996,8 @@
     },
     {
       "path": "adaptations/common/fingerprint/public-bridge-lock.json",
-      "size": 2152,
-      "sha256": "bf19b68d45acc6d2733c4c60e30a021c32104c11a642eaa86434e5991bd46d7a"
+      "size": 2153,
+      "sha256": "8d40a650e73a66a374731a4abc6148b8fd55695c80a50c94d56e34aa53dd1d9c"
     },
     {
       "path": "adaptations/common/fingerprint/runtime-profile/COPYING",
@@ -916,13 +1006,13 @@
     },
     {
       "path": "adaptations/common/fingerprint/runtime-profile/boiler-fprintd.service",
-      "size": 550,
-      "sha256": "a49bf9d5718f6e2daceb89619aaa72212e61ea662667d7f8ce361e63c5abcde4"
+      "size": 726,
+      "sha256": "db47b061d0ee41594f8f6a87dd0294fa6e76ec880da48ed7a416f2bebc546935"
     },
     {
       "path": "adaptations/common/fingerprint/runtime-profile/net.reactivated.Fprint.service",
-      "size": 150,
-      "sha256": "7189936528b25d066fa7c504c8d3a510a68534cd499b9e764726908ec6ea9e54"
+      "size": 233,
+      "sha256": "d103d4e16c31d84e1283b401fe7b0547a4923faa9d680ebf661e2399af8b3a03"
     },
     {
       "path": "adaptations/common/fingerprint/runtime-profile/profile.json",
@@ -1168,6 +1258,91 @@
       "path": "adaptations/common/network/intel/be201/source.toon",
       "size": 2488,
       "sha256": "8b983054aae25c0b0455883b04f8d726953ad385425a6456d9fb59e3b0ebb5ae"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/decky-locale.d.mts",
+      "size": 420,
+      "sha256": "12cce42cd2e7e04f9104a9f0e4acdd90b667dbce7786768bda2ca4f6a27d7c1a"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/decky-locale.mjs",
+      "size": 1813,
+      "sha256": "eb5e3b66f4a63ec7683f6579d335d3a979b2674c23e027f77eea3158a72ced5a"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/fingerprint/index.js",
+      "size": 17873,
+      "sha256": "9cbb8166f268cc1f754a395bf883cd875375c824b058ed119a17a07c9e816df9"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/locale.test.mjs",
+      "size": 5424,
+      "sha256": "2a9e7cfcc9b4ceaf1d289a473765d4967cd76c590df239dc5f57077a1f5dad82"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/LICENSE",
+      "size": 36356,
+      "sha256": "9cf448c34a21ce7a4f637264c7bc89ed46403ad939d08aa1d35584a975ad354d"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/index.js",
+      "size": 305257,
+      "sha256": "19a9dbe08be7cfe47466d9fa26e3328fde6b980b31f88fac432d3ce647cafc77"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/i18n.ts",
+      "size": 2651,
+      "sha256": "4a7b6d269f4b43056ea51ca6aee2c6f2c4952943db4a56b87ee10d8dbc2b06a0"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/de.ts",
+      "size": 36412,
+      "sha256": "cac85a1601b4c78bc731367134c062f44995f3ddb475c9b8b15c0f8894b723d3"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/en.ts",
+      "size": 31971,
+      "sha256": "61bca6d31691b68ce3aacf6540766f603795dc82915dfafba071ede00762e72b"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/es.ts",
+      "size": 35804,
+      "sha256": "722495dc08e0e560dc31d7a999b0a917283f6b36a03b8362d1ec316aa4778659"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/fr.ts",
+      "size": 36829,
+      "sha256": "63a8689dcc64ee68af75f09f1ee26b00c64208b0057e3c4c29f51ece2e1c2a8d"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/ja.ts",
+      "size": 42045,
+      "sha256": "ff080eba49f8656c911797251739f8878ed3f27620e04ff50ad6f171478bd6a3"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/ko.ts",
+      "size": 37116,
+      "sha256": "bda3b898851b8511989b6fb8d9afb322f98c1c3a538bab2d341fdc3b7d589dd3"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/src/locales/zh-TW.ts",
+      "size": 31216,
+      "sha256": "20020c064f574df81a476da38262a1edd5fd70f7a4127a95d858b0f8e807f852"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/opti2xmx/source/test_frontend.mjs",
+      "size": 74521,
+      "sha256": "7795c02b828659de45438943a83faa71abd7eb461492779e2fb0dbccd5aca301"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/restart-windows/dist/index.js",
+      "size": 22399,
+      "sha256": "7f7d359685ec99f55cad3e5fa8d6f3b03e8ee87f6d365464f449a17bda9bed00"
+    },
+    {
+      "path": "adaptations/common/plugin-i18n/restart-windows/src/index.tsx",
+      "size": 19333,
+      "sha256": "a5f18180732649dd1334350b71068758c380e313c975978528ac4b3fe501a983"
     },
     {
       "path": "adaptations/common/resource-inputs/intel-xevma-724/REBUILD.md",
@@ -1445,6 +1620,51 @@
       "sha256": "370f22b1be7b537169238f809ba66ef9f83d19e551a073df20f6a3e68b7d62e9"
     },
     {
+      "path": "adaptations/common/sleep/install.json",
+      "size": 2611,
+      "sha256": "4eb38c298b17d8dadc31ef1570706d971cc484077695a51499536cba3227d50c"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/90-boiler-sleep.conf",
+      "size": 149,
+      "sha256": "bf136385cd5872e499cef4bead47ec24ec1c573d6fa937cc4d79122a962b6578"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/dist/index.js",
+      "size": 21835,
+      "sha256": "03f0c916ea5e6b9490d338e09e382a153f1e688a7b14cc55b0b03910f5cea80a"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/main.py",
+      "size": 918,
+      "sha256": "55a36191688444696e326e16a3167385e02ea2cd5659f5f46ea361ac3fd78207"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/package.json",
+      "size": 59,
+      "sha256": "72c1e9e1ba806ce747b0abb716fc360d2fc0eb386c57f2d616d0aee618762f2b"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/plugin.json",
+      "size": 85,
+      "sha256": "bc82f7346ee8a596d68a05457569aafd064c753f2f2e19d79e141c7faf4026ff"
+    },
+    {
+      "path": "adaptations/common/sleep/runtime/sleep_control.py",
+      "size": 25448,
+      "sha256": "62779f0e5210ffd44c88d92e301d266e45381750941d9103bf433af71a01a0c1"
+    },
+    {
+      "path": "adaptations/common/sleep/source-lock.json",
+      "size": 1535,
+      "sha256": "127795882e96258de05661610fed0d558b5b50326498739ede7c04c49fccb9f7"
+    },
+    {
       "path": "adaptations/common/ssd/acer/gm7/GM7_POLICY.md",
       "size": 1875,
       "sha256": "9231b634fa671912c6c844d9ea0ab85bc28b5bbb82137fcccb741d4b64c48a6d"
@@ -1466,13 +1686,13 @@
     },
     {
       "path": "adaptations/devices/onexplayer/oxp3.toon",
-      "size": 21033,
-      "sha256": "d85e5cbe2162913ab2756d597862c0fbdc5eb2d559f5294bd7e592263f0b26b1"
+      "size": 22383,
+      "sha256": "2181c59fd48185986230d073c36b443cb833f6393ee319fc4455e1f7eec3cad4"
     },
     {
       "path": "adaptations/devices/onexplayer/x2-mini.toon",
-      "size": 18030,
-      "sha256": "f4100a104e695682479eecf27034e3272fb8a9421203df7fb51bbdfd51885bfe"
+      "size": 19403,
+      "sha256": "c0b0aa51e92720246b4a0e24de27b6946ecc559bb3202ead18cc46f2784d1f12"
     },
     {
       "path": "adaptations/docs/ADAPTATIONS.md",
@@ -1526,8 +1746,8 @@
     },
     {
       "path": "adaptations/fingerprint-source-lock.json",
-      "size": 2606,
-      "sha256": "de8b96986ab963a8298ad0d6b99b779f07b08311aa1a63b69b268504e379cc75"
+      "size": 3219,
+      "sha256": "1daf316e4eb9937d27fb4f071c40362775532a0ccb6f6f6455525e0003cddf25"
     },
     {
       "path": "adaptations/licenses/GPL-2.0.txt",
@@ -1565,6 +1785,11 @@
       "sha256": "7b56b449ea011d8c0677bc72e8a41ed3c9c0216e3da2803eaa36fc83314946b8"
     },
     {
+      "path": "adaptations/records/migrations/decky-plugin-languages-20261118.md",
+      "size": 3188,
+      "sha256": "f6a1d69ccd8907a58b5c57012d0be85fa795cc4b686615e646d552346ee04060"
+    },
+    {
       "path": "adaptations/records/migrations/fingerprint-dual-libfprint-20261109.md",
       "size": 5354,
       "sha256": "df31fc7b2e71bc9629d63d38a707233d750c92be4906a41936aa17d76550c74a"
@@ -1573,6 +1798,11 @@
       "path": "adaptations/records/migrations/fingerprint-kde-unlock-20261110.md",
       "size": 5064,
       "sha256": "b674c9a8b37e7c5826922aeb44e120514bce36a61747f97bedea34e90bc76590"
+    },
+    {
+      "path": "adaptations/records/migrations/fingerprint-private-loader-20261114.md",
+      "size": 1148,
+      "sha256": "5866802dfe2affab78c9408b29b813f89dd365a25d30084497c7fb9b9d982562"
     },
     {
       "path": "adaptations/records/migrations/fingerprint-provider-separation-20261108.md",
@@ -1585,9 +1815,39 @@
       "sha256": "a33521470167ecc8ce5a428763635b75da44923f9c42162fc38b1b594f8a5937"
     },
     {
+      "path": "adaptations/records/migrations/intel-cpu-microcode-toon-20261118.md",
+      "size": 1045,
+      "sha256": "88258a615e8f8b497407435ec77ff917a8237daf2f8d7c41d34bccc01f6d7df4"
+    },
+    {
+      "path": "adaptations/records/migrations/s2s4-split-20261118.md",
+      "size": 1838,
+      "sha256": "d25ba0c03abc3a72118444a437b0fec924bb7c360389a87bde4e931422df5cf3"
+    },
+    {
+      "path": "adaptations/records/migrations/shared-kde-pam-module-20261114.md",
+      "size": 803,
+      "sha256": "5e096167bac460372e8f062457edeede20e9ff099746d590a15c11be61c5a0a0"
+    },
+    {
+      "path": "adaptations/records/migrations/x2-fte3600-overlay-20261114.md",
+      "size": 1041,
+      "sha256": "3608629e0b294a367bb2efcd53235582e3d98a16b91b079e583136fe7162dfb1"
+    },
+    {
       "path": "adaptations/records/migrations/x2-installer-catalog-entrypoints-20261104.json",
       "size": 1522,
       "sha256": "546a89d55d1d946d92508cb3f56b484535e50bdafb2a446012b68a83514df433"
+    },
+    {
+      "path": "adaptations/records/migrations/x2-power-compat-unit-20261118.md",
+      "size": 878,
+      "sha256": "fa404e1a4dae02537a340c8c052888b2388f4c7d955cab842fc13d4685b52679"
+    },
+    {
+      "path": "adaptations/records/migrations/x2-power-profile-20261118.md",
+      "size": 1530,
+      "sha256": "21bbb9d5a4eb3aab95ec180e28d49b0e6d4cce22de7b594e731012d706be99c8"
     },
     {
       "path": "adaptations/records/oxp3-shared-base/opti031-inputs.json",
@@ -1786,18 +2046,28 @@
     },
     {
       "path": "adaptations/scripts/build-fingerprint-overlay.py",
-      "size": 20675,
-      "sha256": "4018ce6ef3e321a7ada6e53e1c86f49099a1dde330be8dc660e3d9b9c8a916bc"
+      "size": 22748,
+      "sha256": "84e9d828a328b5ed77f573451ec41adbcd6b0b06bc6f5031e4df21951ea0507c"
     },
     {
       "path": "adaptations/scripts/build-index.py",
-      "size": 35133,
-      "sha256": "040d9c67a20af1af177f9d263c900dceb2a90500aaa0570312f1bb8dc20d2074"
+      "size": 35125,
+      "sha256": "af3de3eeee38e633ad05650935e3e4137589cc3f62fa6b8379767969e68ec0de"
     },
     {
       "path": "adaptations/scripts/build-keyboard-runtime.py",
       "size": 3643,
       "sha256": "7d901b7750801c17ab6e4efb64fba9fd3fb95d5f474721636cea924c97a42e59"
+    },
+    {
+      "path": "adaptations/scripts/build-localized-model.py",
+      "size": 12102,
+      "sha256": "7e4dcf836047084df4bb8d2aabcfaafaa709f6f866b529c57c7d2662bd5cd550"
+    },
+    {
+      "path": "adaptations/scripts/build-s4-split-model.py",
+      "size": 14324,
+      "sha256": "3e294dc4e96a88b2cdf5fc57e0933fe9a26a7aed3352a09a8c64700f0122b4d9"
     },
     {
       "path": "adaptations/scripts/build-shared-base.py",
@@ -1811,8 +2081,8 @@
     },
     {
       "path": "adaptations/scripts/build-x2-complete.py",
-      "size": 18843,
-      "sha256": "86ea163440412ce97763e18b179c71226e4bf226a17cead9777ba2028eb4307b"
+      "size": 20269,
+      "sha256": "88dd710dc90be4059d855bc85dc8cc285a57c5420727fba3d5957e1365671475"
     },
     {
       "path": "adaptations/scripts/common-device-sources.py",
@@ -1820,14 +2090,9 @@
       "sha256": "f87fa26e47fff98c5912c528c58a129e5fdfffaa02326b1f1e2daa623a5c8078"
     },
     {
-      "path": "adaptations/scripts/derive-legacy-maintenance.py",
-      "size": 5732,
-      "sha256": "26724decbeaab2f8cd84f52534b36965bec75183a7c087ff5a7ed4eeaa01134f"
-    },
-    {
       "path": "adaptations/scripts/fingerprint_provenance.py",
       "size": 2313,
-      "sha256": "607f96c809650fd4f4669e7f897ed02224a88b3b10cd0be565f4b169b1e3ef3f"
+      "sha256": "9ed224d50d260e68aec86621782f0201d01db9c908a98230eb34306e1208ad4b"
     },
     {
       "path": "adaptations/scripts/model-identity.py",
@@ -1845,9 +2110,9 @@
       "sha256": "9dbfb861d5de9da63908051cfd75f0941077755a83e6895c9c28def74b49c81c"
     },
     {
-      "path": "adaptations/scripts/rebase-x2-hdr.py",
-      "size": 8206,
-      "sha256": "dce11b3dabf8627a59fbd935df5fc258d46559ec1fef5ef192fde86dbc473a0f"
+      "path": "adaptations/scripts/refresh-decky-locales.py",
+      "size": 1772,
+      "sha256": "0468b2645ee6815044f8ff13942754837ac169d392789e158e667c97ce93553b"
     },
     {
       "path": "adaptations/scripts/refresh-model-source-inventory.py",
@@ -1858,6 +2123,16 @@
       "path": "adaptations/scripts/validate-fingerprint-native.py",
       "size": 6086,
       "sha256": "e62630c3b9008529224a4c235667bc99aa975d9e77b68f422564c855bb2267a5"
+    },
+    {
+      "path": "adaptations/scripts/x2_power_profile.py",
+      "size": 3777,
+      "sha256": "158afea4301c5fe0400d7cfa6392dc8c055987ddd55d25942b8636fa8866a890"
+    },
+    {
+      "path": "adaptations/source-files.txt",
+      "size": 53312,
+      "sha256": "20768213a3bcde363bb0f4073585ca51748a01b5e4e87f7409dd50a13d1dc86d"
     },
     {
       "path": "adaptations/source-lock.json",
@@ -1886,8 +2161,8 @@
     },
     {
       "path": "adaptations/tests/test_fingerprint_overlay.py",
-      "size": 12371,
-      "sha256": "79acdaabc5d867bc60bc5814511c05d1bac39db66b698c2d09050c05e9751fad"
+      "size": 11453,
+      "sha256": "e7639d144d9d6d5ab9db95806f7a7a26369c803f004e950db2ac973a83fbf8eb"
     },
     {
       "path": "adaptations/tests/test_fingerprint_providers.py",
@@ -1896,8 +2171,18 @@
     },
     {
       "path": "adaptations/tests/test_fingerprint_runtime_profile.py",
-      "size": 3257,
-      "sha256": "fe5b82c25f895d9aa0a45a6af46eb8c66f044af122eb89004b16b01ea7c14a1d"
+      "size": 3928,
+      "sha256": "e63df0030842d8061caa47f2e88d0993116f92b1c0496c2394da987398146276"
+    },
+    {
+      "path": "adaptations/tests/test_fte3600_overlay.py",
+      "size": 2129,
+      "sha256": "139a610ada762f90e6c8e4331c4a70630732dec2e2afdc1f8f36a3832f8ac86b"
+    },
+    {
+      "path": "adaptations/tests/test_fte_helper.py",
+      "size": 3104,
+      "sha256": "51fc65da42f05cc4fa1b1e7e4926f5acb2c268fadc76c8546617c2437beaa6cc"
     },
     {
       "path": "adaptations/tests/test_index_models.py",
@@ -1908,6 +2193,11 @@
       "path": "adaptations/tests/test_model_identity.py",
       "size": 13791,
       "sha256": "4e2c99140e44d636d9b75d1407e7fb617f13a27eb5790878401554c3c2d54153"
+    },
+    {
+      "path": "adaptations/tests/test_pam_input.py",
+      "size": 1309,
+      "sha256": "1d65766f0b06f7a0c107e2260bbbbd73720c862585ed26abe7f2bbbe97756bb8"
     },
     {
       "path": "adaptations/tests/test_registry.py",
@@ -1923,6 +2213,11 @@
       "path": "adaptations/tests/test_x2_hdr_overlay.py",
       "size": 4230,
       "sha256": "a3fe613a0ac3fb8ee3ef6a56e93a8dba23317ebf03a1fecef989000690fd3e5b"
+    },
+    {
+      "path": "adaptations/tests/test_x2_power_profile.py",
+      "size": 3390,
+      "sha256": "5a9678a8dc2132c69e5023107ffea4abe23d83afba236d31f3cc0484df7b36a5"
     },
     {
       "path": "adaptations/toon-parser-lock.json",
@@ -2006,8 +2301,8 @@
     },
     {
       "path": "adaptations/model-source-files.json",
-      "size": 72431,
-      "sha256": "d1bc31b889ec7d5d9c7dcd824a93d031f7586483f4c73a18690751bd2fe8a7db"
+      "size": 83022,
+      "sha256": "c98cb62f9ccce9e032a65e603cdaa6e572cf8ab44a02833beda19054ca785931"
     }
   ]
 }

@@ -37,7 +37,7 @@ class PresetChecks(unittest.TestCase):
         self.write('usr/bin/plasmashell', b'fixture executable', 0o755)
         self.write('bin/bash', b'fixture executable', 0o755)
         self.write('usr/share/locale/zh_CN/LC_MESSAGES/plasmashell.mo', translation_fixture())
-        for index, category in enumerate(presets.LOCALE_CATEGORIES): self.write('usr/lib/locale/zh_CN.utf8/' + category, locale_fixture(index if index < 6 else index + 1))
+        self.write_locale('zh_CN')
         (self.root / 'usr/lib/modules/stock').mkdir(parents=True)
         self.payload = Path(self.tmp.name) / 'payload'
         self.write_payload('integration/manifest.json', b'{"schema":1,"components":{}}')
@@ -50,11 +50,16 @@ class PresetChecks(unittest.TestCase):
     def write_payload(self, name, data):
         path = self.payload / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
 
+    def write_locale(self, language):
+        for index, category in enumerate(presets.LOCALE_CATEGORIES):
+            self.write('usr/lib/locale/' + language + '.utf8/' + category, locale_fixture(index if index < 6 else index + 1))
+
     def tearDown(self): self.tmp.cleanup()
 
     def test_all_presets_generate_one_manifest_without_secret_in_json(self):
-        component, files = presets.prepare(self.root, self.options, HASH)
+        component, files, language = presets.prepare(self.root, self.options, HASH)
         self.assertEqual(presets.IDENTITY, component['id'])
+        self.assertEqual('zh_CN', language)
         self.assertEqual({'etc/locale.conf', 'etc/xdg/plasma-localerc', 'etc/shadow', presets.SSH_TARGET}, set(files))
         self.assertNotIn(HASH, json.dumps(component))
         self.assertIn(HASH.encode(), files['etc/shadow'])
@@ -63,7 +68,7 @@ class PresetChecks(unittest.TestCase):
     def test_existing_user_locale_is_preserved_and_conflicts_refused(self):
         user = self.write('home/deck/.config/plasma-localerc', b'[Translations]\nLANGUAGE=zh_CN\n[Formats]\nLANG=zh_CN.UTF-8\nLC_TIME=de_DE.UTF-8\n')
         before = user.read_bytes()
-        component, files = presets.prepare(self.root, self.options, HASH)
+        _, files, _ = presets.prepare(self.root, self.options, HASH)
         self.assertNotIn('home/deck/.config/plasma-localerc', files)
         self.assertEqual(before, user.read_bytes())
         user.write_bytes(b'[Translations]\nLANGUAGE=en_US\n')
@@ -80,8 +85,41 @@ class PresetChecks(unittest.TestCase):
         (self.root / 'usr/lib/locale/zh_CN.utf8/LC_CTYPE').unlink()
         with self.assertRaisesRegex(ValueError, 'generated libc'): presets.prepare(self.root, self.options, HASH)
 
+    def test_automatic_windows_locale_and_english_fallback_are_shared_by_system_and_kde(self):
+        options = dict(self.options, kde_language='pt_BR', installer_language='en-US',
+                       automatic_system_language=True, set_deck_password=False, enable_ssh=False)
+        self.write_locale('en_US')
+        for setup, expected in (
+            (lambda: None, 'en_US'),
+            (lambda: self.write_locale('pt_BR'), 'en_US'),
+            (lambda: self.write('usr/share/locale/pt_BR/LC_MESSAGES/plasmashell.mo', translation_fixture()), 'pt_BR'),
+        ):
+            setup()
+            with self.subTest(expected=expected):
+                _, files, actual = presets.prepare(self.root, options)
+                self.assertEqual(expected, actual)
+                self.assertEqual(expected + '.UTF-8', files['etc/locale.conf'].decode().splitlines()[0].split('=')[1])
+                self.assertIn(('LANGUAGE=' + expected + '\n').encode(), files['etc/xdg/plasma-localerc'])
+                for path, data in files.items():
+                    self.write(path, data)
+                engine = mock.Mock()
+                engine.verify_readonly.return_value = {'ok': True}
+                self.assertEqual(expected, presets.verify(self.root, options, engine))
+
+    def test_automatic_fallback_does_not_accept_bad_artifacts_or_unsafe_options(self):
+        options = dict(self.options, automatic_system_language=True)
+        self.write_locale('en_US')
+        artifact = self.write('usr/share/locale/zh_CN/LC_MESSAGES/plasmashell.mo', b'\xde\x12\x04\x95')
+        with self.assertRaisesRegex(ValueError, 'Truncated'): presets.prepare(self.root, options, HASH)
+        artifact.unlink()
+        self.write('home/deck/.config/plasma-localerc', b'[Translations]\nLANGUAGE=zh_CN\n')
+        with self.assertRaisesRegex(ValueError, 'conflicts'): presets.prepare(self.root, options, HASH)
+        for changed in ({'automatic_system_language': 'true'}, {'kde_language': 'system'}, {'kde_language': '../en_US'}, {'install_mode': 'imported'}):
+            with self.subTest(changed=changed), self.assertRaises(ValueError):
+                validate_options(dict(options, **changed))
+
     def test_initial_password_updates_age_and_refuses_expired_account(self):
-        _, files = presets.prepare(self.root, self.options, HASH)
+        _, files, _ = presets.prepare(self.root, self.options, HASH)
         self.assertEqual(str(int(__import__('time').time() // 86400)), files['etc/shadow'].decode().splitlines()[1].split(':')[2])
         self.write('etc/shadow', b'deck:!:1:0:99999:7::1:\n', 0o600)
         with self.assertRaisesRegex(ValueError, 'expired'): presets.prepare(self.root, self.options, HASH)
@@ -150,7 +188,7 @@ class PresetChecks(unittest.TestCase):
     def test_password_only_and_ssh_only_are_not_empty(self):
         for options in (dict(self.options, kde_language='system', enable_ssh=False), dict(self.options, kde_language='system', set_deck_password=False)):
             self.assertTrue(presets.selected(options))
-            component, files = presets.prepare(self.root, options, HASH if options['set_deck_password'] else None)
+            component, files, _ = presets.prepare(self.root, options, HASH if options['set_deck_password'] else None)
             self.assertEqual(1, len(component['files']))
 
     def test_device_target_collision_is_rejected_before_any_component_writes(self):

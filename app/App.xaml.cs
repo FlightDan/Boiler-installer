@@ -83,6 +83,7 @@ public partial class App : Application
                 else if (e.Args.Length == 2 && e.Args[1] == "process-checks") { log.AppendLine(await ProcessChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "installer-restart-checks") { log.AppendLine(await InstallerRestartChecks.RunAsync()); }
                 else if (e.Args.Length == 2 && e.Args[1] == "desktop-reboot-checks") { log.AppendLine(SteamOSDesktopChecks.Run()); }
+                else if (e.Args.Length == 2 && e.Args[1] == "hypervisor-checks") { log.AppendLine(await HypervisorPlatformChecks.RunAsync()); }
                 else if (e.Args.Length is 2 or 3 && e.Args[1] == "installation-progress-checks") { log.AppendLine(InstallationProgressChecks.Run(e.Args.Length == 3 ? e.Args[2] : null)); }
                 else if (e.Args.Length is 2 or 3 && e.Args[1] == "install-session-checks") { log.AppendLine(InstallationSessionReplayChecks.Run(e.Args.Length == 3 ? e.Args[2] : null)); }
                 else if (e.Args.Length == 2 && e.Args[1] == "official-system-progress-checks") { log.AppendLine(await OfficialSystemProgressChecks.RunAsync()); }

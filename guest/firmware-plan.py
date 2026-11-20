@@ -7,6 +7,7 @@ import sys
 
 sys.path[:0] = ['/mnt/payload/components', '/mnt/payload']
 from integration import validate_options, merged_firmware_plan
+import microcode
 
 
 def run(*args):
@@ -26,7 +27,7 @@ def inspect():
     nodes = {part.get('name'): part['node'] for part in table['partitions']}
     if not {'rootfs-A', 'rootfs-B'}.issubset(nodes):
         raise ValueError('Firmware planning requires the final prepared A/B image')
-    if options.get('graphics_profile') and not {'var-A', 'var-B'}.issubset(nodes):
+    if (options.get('graphics_profile') or microcode.selected(options)) and not {'var-A', 'var-B'}.issubset(nodes):
         raise ValueError('Graphics planning requires both slot maintenance-state partitions')
     root = Path('/mnt/boiler-firmware-plan')
     root.mkdir(exist_ok=True)
@@ -38,7 +39,7 @@ def inspect():
         try:
             if run('btrfs', 'property', 'get', '-ts', str(root), 'ro') != 'ro=true':
                 raise ValueError('Prepared source root protection is disabled')
-            if options.get('graphics_profile'):
+            if options.get('graphics_profile') or microcode.selected(options):
                 # Maintenance journals live in the real offloaded slot var.
                 # noload keeps interrupted transactions observable without any
                 # journal replay or automatic recovery changing the plan input.

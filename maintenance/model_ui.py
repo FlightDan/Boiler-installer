@@ -17,6 +17,7 @@ import tempfile
 import threading
 
 from .feedback import FeedbackClient
+from .model_ui_locale import DEFAULT_LANGUAGE, LANGUAGE_NAMES, language, localized_label, translate
 
 
 KDIALOG = '/usr/bin/kdialog'
@@ -29,11 +30,6 @@ class BackendError(RuntimeError):
     pass
 
 
-def language(value=None):
-    value = value or os.environ.get('LC_ALL') or os.environ.get('LC_MESSAGES') or os.environ.get('LANG', '')
-    return 'zh-CN' if value.lower().startswith('zh') else 'en-US'
-
-
 class KDialog:
     """Small native-dialog adapter; injected runners keep interaction testable."""
 
@@ -41,14 +37,14 @@ class KDialog:
         self.lang, self.runner = lang, runner
 
     def text(self, zh, en):
-        return zh if self.lang == 'zh-CN' else en
+        return translate(self.lang, zh, en)
 
     def _run(self, *args):
         result = self.runner([KDIALOG, '--title', 'Boiler ' + self.text('维护工具', 'Maintenance'),
                               '--ok-label', self.text('确定', 'OK'), '--cancel-label', self.text('取消', 'Cancel'),
                               *args], capture_output=True, text=True, check=False)
         if result.returncode not in (0, 1):
-            raise OSError(result.stderr.strip() or 'KDialog could not display the interface')
+            raise OSError(result.stderr.strip() or self.text('KDialog 无法显示界面', 'KDialog could not display the interface'))
         return result
 
     @staticmethod
@@ -211,7 +207,7 @@ class Backend:
 
     def project(self, *args):
         command = [MAINTENANCE, '--root', '/', 'project', *args]
-        if args[0] in ('inventory', 'plan', 'execute'):
+        if args[0] in ('inventory', 'components', 'plan', 'execute'):
             command.insert(0, PKEXEC)
         return self._run(command)
 
@@ -236,23 +232,26 @@ class Backend:
 
 
 class ModelUI:
-    def __init__(self, dialog, backend, *, lang='en-US', offline=False, feedback=None):
+    def __init__(self, dialog, backend, *, lang=DEFAULT_LANGUAGE, offline=False, feedback=None):
         self.dialog, self.backend = dialog, backend
         self.lang, self.offline = lang, offline
         self.trusted = False
         self.feedback = feedback if feedback is not None else FeedbackClient()
 
     def tr(self, zh, en):
-        return zh if self.lang == 'zh-CN' else en
+        return translate(self.lang, zh, en)
 
     def compatibility_notice(self):
         return self.tr('所选机型包可能与目标设备不兼容；由您决定是否继续维护。',
                        'This device package may be incompatible with the target device. You can choose whether to continue maintenance.')
 
     def label(self, value):
-        if isinstance(value, dict):
-            return str(value.get('zh' if self.lang == 'zh-CN' else 'en', value.get('en', '')))
-        return str(value or '')
+        return localized_label(self.lang, value)
+
+    def choose_language(self):
+        selected = self.dialog.menu(self.tr('界面语言', 'Interface language'), list(LANGUAGE_NAMES.items()))
+        if selected in LANGUAGE_NAMES:
+            self.lang = self.dialog.lang = selected
 
     def guide(self, model):
         lines = [self.label(model['name']), model.get('guide_url', ''), '',
@@ -278,9 +277,13 @@ class ModelUI:
                 rows = [(key, self.label(model['name'])) for key, model in models.items()]
                 rows.append(('ssd', self.tr('可选 SSD 修复', 'Optional SSD repair')))
                 rows.append(('feedback', self.tr('手动反馈', 'Send feedback')))
+                rows.append(('language', self.tr('界面语言', 'Interface language')))
                 identity = self.dialog.menu(text, rows)
                 if identity is None:
                     return 0
+                if identity == 'language':
+                    self.choose_language()
+                    continue
                 if identity == 'feedback':
                     self.manual_feedback()
                     continue
@@ -587,7 +590,7 @@ class ModelUI:
             if interrupted:
                 selected_shared = [interrupted]
             elif len(installed) > 1:
-                names = {item['id']: self.label(item['name']) for item in options['capabilities']}
+                names = {item['id']: self.component_label(item, 'installed_version') for item in options['capabilities']}
                 chosen = self.dialog.menu(self.tr('选择要维护的已安装项目', 'Choose the installed item to maintain'),
                                           [(identity, names.get(identity, identity)) for identity in installed])
                 if chosen is None: return
@@ -628,9 +631,9 @@ class ModelUI:
                 output.flush()
                 os.fsync(output.fileno())
             receipt = self.backend.call('keyboard-execute' if dynamic else 'shared-execute' if shared else 'execute', str(path), '--reviewed-sha256', digest, '--trust-local-test')
-        self.receipt(receipt, action)
+        self.receipt(receipt, action, keyboard_version=plan.get('keyboard_plan', {}).get('version'))
 
-    def receipt(self, receipt, action):
+    def receipt(self, receipt, action, *, keyboard_version=None):
         result = receipt.get('result', {})
         result = result if isinstance(result, dict) else {}
         failed = action == 'verify' and (receipt.get('status') == 'verification-failed'
@@ -642,6 +645,14 @@ class ModelUI:
         log = receipt.get('log', result.get('log', result.get('log_path', '')))
         if log:
             text += '\n' + self.tr('日志：', 'Log: ') + str(log)
+        version = receipt.get('package', {}).get('version')
+        if version:
+            text += '\n' + self.tr('维护包版本 ', 'Maintenance package version ') + str(version)
+        if keyboard_version:
+            text += '\n' + self.tr('键盘维护实现版本 ', 'Keyboard maintainer version ') + str(keyboard_version)
+        versions = self.maintenance_version_lines(receipt.get('component_versions', []))
+        if versions:
+            text += '\n' + '\n'.join(versions)
         if failed:
             modified = result.get('modified', result.get('modified_paths', []))
             if modified:
@@ -662,11 +673,25 @@ class ModelUI:
         if failed:
             self.offer_failure('MODEL_VERIFICATION_FAILED')
 
+    def component_label(self, item, version_field):
+        name = self.label(item['name'])
+        version = item.get(version_field)
+        return name + ' · ' + str(version) if version else name
+
+    def maintenance_version_lines(self, versions, capabilities=None):
+        capabilities = capabilities or {}
+        return [self.tr('构件版本 ', 'Component version ') +
+                self.label(capabilities.get(row['id'], {}).get('name', row['id'])) + ' · ' + row['version']
+                for row in versions]
+
     def review(self, model, options, plan, action_label):
         lines = [self.tr('确认此次操作', 'Review this operation'), self.label(model['name']), action_label]
         version = plan.get('package', {}).get('version')
         if version:
-            lines.append(self.tr('测试包版本：', 'Test package version: ') + str(version))
+            lines.append(self.tr('维护包版本 ', 'Maintenance package version ') + str(version))
+        keyboard_version = plan.get('keyboard_plan', {}).get('version')
+        if keyboard_version:
+            lines.append(self.tr('键盘维护实现版本 ', 'Keyboard maintainer version ') + str(keyboard_version))
         scope = plan.get('scope')
         lines.append(self.tr('范围：当前活动系统槽；共享 /home 的插件和配置也可能影响另一系统槽。',
                              'Scope: active OS slot; plugins and configuration in shared /home may also affect the other slot.')
@@ -682,6 +707,8 @@ class ModelUI:
         if 'file_count' not in summary and 'files' in summary:
             summary = dict(summary, file_count=summary['files'])
         capabilities = {item['id']: item for item in options['capabilities']}
+        versions = plan.get('component_versions', [])
+        lines.extend(self.maintenance_version_lines(versions, capabilities))
         def names(values):
             if isinstance(values, dict):
                 values = list(values.get('repairs', [])) + list(values.get('plugins', []))
@@ -716,7 +743,7 @@ class ModelUI:
                 item['id'] for item in rows if item.get('default')}
             result = self.dialog.checklist(self.tr('选择修复项目', 'Choose repairs') if category == 'repairs'
                                            else self.tr('选择插件', 'Choose plugins'),
-                                           [(item['id'], self.label(item['name']), item['id'] in defaults) for item in rows])
+                                           [(item['id'], self.component_label(item, 'version'), item['id'] in defaults) for item in rows])
             if result is None:
                 return None
             allowed = {item['id'] for item in rows}
@@ -751,6 +778,13 @@ def gtk_modules():
 class GtkMaintenance:
     """Native, single-window frontend for the reviewed project operations."""
 
+    PAGE_TITLES = {
+        'overview': ('概览', 'Overview'),
+        'repairs': ('修复与插件', 'Repairs & Plugins'),
+        'check': ('系统检查', 'System Check'),
+        'recovery': ('恢复', 'Recovery'),
+        'settings': ('设置', 'Settings'),
+    }
     STYLE = b"""
         .boiler-maintenance .page-title { font-size: 24px; font-weight: bold; }
         .boiler-maintenance .summary-title { font-size: 22px; font-weight: bold; }
@@ -772,7 +806,7 @@ class GtkMaintenance:
         self.session = tempfile.TemporaryDirectory(prefix='boiler-maintenance-')
         self.result, self.busy, self.page = None, False, 'overview'
         self.check_error = None
-        self.window = gtk.Window(title='Boiler Maintenance')
+        self.window = gtk.Window()
         self.window.set_default_size(840, 520)
         self.window.get_style_context().add_class('boiler-maintenance')
         css = gtk.CssProvider()
@@ -788,16 +822,27 @@ class GtkMaintenance:
         shell.pack_start(self.navigation, False, False, 0)
         self.content = gtk.Box(orientation=gtk.Orientation.VERTICAL, spacing=10)
         shell.pack_start(self.content, True, True, 0)
+        header = gtk.Box(orientation=gtk.Orientation.HORIZONTAL, spacing=12)
+        self.content.pack_start(header, False, False, 0)
+        self.page_title = self.line(header, '', 'page-title')
+        self.language_picker = gtk.ComboBoxText()
+        self.language_picker.set_size_request(-1, 44)
+        for tag, name in LANGUAGE_NAMES.items():
+            self.language_picker.append(tag, name)
+        self.language_picker.set_active_id(self.lang)
+        self.language_picker.connect('changed', lambda picker: self.set_language(picker.get_active_id()))
+        header.pack_end(self.language_picker, False, False, 0)
+        self.page_content = gtk.Box(orientation=gtk.Orientation.VERTICAL)
+        self.content.pack_start(self.page_content, True, True, 0)
+        self.update_language_labels()
         self.nav()
         self.show_page('overview')
 
     def tr(self, zh, en):
-        return zh if self.lang == 'zh-CN' else en
+        return translate(self.lang, zh, en)
 
     def label(self, value):
-        if isinstance(value, dict):
-            return str(value.get('zh' if self.lang == 'zh-CN' else 'en', value.get('en', '')))
-        return str(value or '')
+        return localized_label(self.lang, value)
 
     def details(self, title, value):
         self.text(title + ': ' + self.label(value))
@@ -810,14 +855,10 @@ class GtkMaintenance:
         return False
 
     def nav(self):
-        for child in self.navigation.get_children():
-            self.navigation.remove(child)
         self.line(self.navigation, 'Boiler', 'summary-title')
         self.nav_buttons = {}
-        for key, zh, en in (('overview', '概览', 'Overview'), ('repairs', '修复与插件', 'Repairs & Plugins'),
-                            ('check', '系统检查', 'System Check'), ('recovery', '恢复', 'Recovery'),
-                            ('settings', '设置', 'Settings')):
-            button = self.gtk.Button(label=self.tr(zh, en))
+        for key, title in self.PAGE_TITLES.items():
+            button = self.gtk.Button(label=self.tr(*title))
             button.set_size_request(-1, 48)
             button.connect('clicked', lambda _button, value=key: self.show_page(value))
             self.navigation.pack_start(button, False, False, 0)
@@ -825,17 +866,17 @@ class GtkMaintenance:
         self.navigation.show_all()
 
     def clear(self, title, *, scrollable=True):
-        for child in self.content.get_children():
-            self.content.remove(child)
-        self.line(self.content, title, 'page-title')
+        for child in self.page_content.get_children():
+            self.page_content.remove(child)
+        self.page_title.set_text(title)
         self.body = self.gtk.Box(orientation=self.gtk.Orientation.VERTICAL, spacing=10)
         if scrollable:
             scroll = self.gtk.ScrolledWindow()
             scroll.set_policy(self.gtk.PolicyType.NEVER, self.gtk.PolicyType.AUTOMATIC)
             scroll.add(self.body)
-            self.content.pack_start(scroll, True, True, 0)
+            self.page_content.pack_start(scroll, True, True, 0)
         else:
-            self.content.pack_start(self.body, True, True, 0)
+            self.page_content.pack_start(self.body, True, True, 0)
 
     def line(self, box, value, style=None, *, selectable=False):
         label = self.gtk.Label(label=str(value))
@@ -845,6 +886,7 @@ class GtkMaintenance:
         if style:
             label.get_style_context().add_class(style)
         box.pack_start(label, False, False, 0)
+        return label
 
     def text(self, value):
         self.line(self.body, value, selectable=True)
@@ -867,8 +909,8 @@ class GtkMaintenance:
             if candidates:
                 count = len(candidates)
                 if any(item.get('installed_version') for item in candidates):
-                    return self.tr(f'发现更新 · {count} 个可审阅版本', f'Updates found · {count} available to review')
-                return self.tr(f'有 {count} 个可审阅版本', f'{count} available to review')
+                    return self.tr('发现更新 · {count} 个可审阅版本', 'Updates found · {count} available to review').format(count=count)
+                return self.tr('有 {count} 个可审阅版本', '{count} available to review').format(count=count)
             return self.tr('暂无更新', 'No updates')
         return self.tr(*{
             'offline': ('离线', 'Offline'),
@@ -877,8 +919,11 @@ class GtkMaintenance:
         }.get(status, ('状态未知', 'Unknown')))
 
     def stream_name(self, stream):
-        return self.tr('通用维护器', 'Boiler Maintenance') if stream['id'] == 'maintenance' else self.tr(
-            '机型适配', 'Device adaptations')
+        if stream['id'] == 'maintenance':
+            return self.tr('通用维护器', 'Boiler Maintenance')
+        if stream['id'] == 'component':
+            return self.tr('独立构件', 'Independent components')
+        return self.tr('机型适配', 'Device adaptations')
 
     def overview(self):
         self.clear(self.tr('概览', 'Overview'), scrollable=False)
@@ -931,6 +976,7 @@ class GtkMaintenance:
             return
         self.busy = True
         self.navigation.set_sensitive(False)
+        self.language_picker.set_sensitive(False)
         if overview_check:
             self.overview()
         else:
@@ -940,31 +986,34 @@ class GtkMaintenance:
             self.body.pack_start(spinner, False, False, 0)
             spinner.start()
         self.refresh()
+        def show_error(error, retry_action=None, *, check_state=False):
+            self._redisplay = lambda: show_error(error, retry_action, check_state=check_state)
+            self.clear(self.tr('操作未完成', 'Operation did not complete'))
+            self.text(error)
+            if retry_action:
+                self.button(self.tr('重试', 'Retry'), retry_action)
+            if check_state:
+                self.text(self.tr('请检查维护状态和恢复记录后再继续。',
+                                  'Check maintenance state and recovery records before continuing.'))
+            self.button(self.tr('返回', 'Back'), lambda: self.show_page(self.page))
+            self.refresh()
+
         def finish(result, error):
             self.busy = False
             self.navigation.set_sensitive(True)
+            self.language_picker.set_sensitive(True)
             if error:
                 if overview_check:
                     self.check_error = error
                     self.show_page('overview')
                     return False
-                self.clear(self.tr('操作未完成', 'Operation did not complete'))
-                self.text(error)
-                if retry:
-                    self.button(self.tr('重试', 'Retry'), lambda: self.operation(work, done))
-                else:
-                    self.text(self.tr('请检查维护状态和恢复记录后再继续。',
-                                      'Check maintenance state and recovery records before continuing.'))
-                self.button(self.tr('返回', 'Back'), lambda: self.show_page(self.page))
-                self.refresh()
+                retry_action = (lambda: self.operation(work, done)) if retry else None
+                show_error(error, retry_action, check_state=not retry)
             else:
                 try:
                     done(result)
                 except (ValueError, KeyError, TypeError) as exc:
-                    self.clear(self.tr('操作未完成', 'Operation did not complete'))
-                    self.text(str(exc))
-                    self.button(self.tr('返回', 'Back'), lambda: self.show_page(self.page))
-                    self.refresh()
+                    show_error(str(exc))
             return False
         def worker():
             try:
@@ -978,9 +1027,7 @@ class GtkMaintenance:
         if self.busy:
             return
         self.page = page
-        titles = {'overview': ('概览', 'Overview'), 'repairs': ('修复与插件', 'Repairs & Plugins'),
-                  'check': ('系统检查', 'System Check'), 'recovery': ('恢复', 'Recovery'),
-                  'settings': ('设置', 'Settings')}
+        self._redisplay = lambda: self.show_page(page)
         for key, button in self.nav_buttons.items():
             style = button.get_style_context()
             if key == page:
@@ -991,7 +1038,7 @@ class GtkMaintenance:
             self.overview()
             self.refresh()
             return
-        self.clear(self.tr(*titles[page]))
+        self.clear(self.tr(*self.PAGE_TITLES[page]))
         if page == 'repairs':
             if not self.result:
                 self.text(self.tr('检查更新以查看适用于本机的版本。', 'Check for updates to find releases for this device.'))
@@ -1010,10 +1057,8 @@ class GtkMaintenance:
             self.button(self.tr('查看维护状态与恢复选项', 'View maintenance state and recovery options'),
                         lambda: self.operation(lambda: self.backend.project('inventory'), self.recovery_options))
         else:
-            self.text(self.tr('界面语言', 'Interface language'))
-            self.button('简体中文', lambda: self.set_language('zh-CN'))
-            self.button('English', lambda: self.set_language('en-US'))
-            self.text(self.tr('离线模式：', 'Offline mode: ') + str(self.offline))
+            status = self.tr('开启', 'On') if self.offline else self.tr('关闭', 'Off')
+            self.text(self.tr('离线模式：', 'Offline mode: ') + status)
         self.refresh()
 
     def project_details(self):
@@ -1070,10 +1115,13 @@ class GtkMaintenance:
         for stream in self.result.get('streams', []):
             channel = self.stream_name(stream)
             self.line(self.body, channel + '  ·  ' + self.stream_status(stream))
+            if stream['id'] == 'component':
+                self.component_options(stream)
+                continue
             for item in stream.get('candidates', []):
                 version = item['version']
                 if stream['status'] == 'ready' and item.get('compatible') is True and item.get('update_available') is True:
-                    self.button(self.tr(f'审阅 {channel} {version}', f'Review {channel} {version}'),
+                    self.button(self.tr('审阅 {channel} {version}', 'Review {channel} {version}').format(channel=channel, version=version),
                                 lambda s=stream['id'], c=item: self.acquire(s, c))
                 else:
                     history.append((channel, item))
@@ -1087,34 +1135,80 @@ class GtkMaintenance:
                 if source.get('repository') or source.get('url'):
                     self.line(entries, source.get('repository') or source['url'], selectable=True)
 
+    def component_options(self, stream):
+        grouped = {}
+        for item in stream.get('candidates', []):
+            grouped.setdefault(item['id'], []).append(item)
+        for identity, rows in grouped.items():
+            current = rows[0]['installed_version']
+            pinned = rows[0].get('policy') == 'pinned'
+            self.line(self.body, identity + ' · ' + current + ' · ' +
+                      (self.tr('已固定', 'Pinned') if pinned else self.tr('跟随稳定版', 'Following stable')))
+            latest = rows[0]
+            if pinned and latest.get('resume_available'):
+                self.button(self.tr('恢复跟随 {version}', 'Resume following {version}').format(version=latest['version']),
+                            lambda c=latest: self.acquire('component', c, intent='follow'))
+            elif not pinned and latest.get('update_available'):
+                self.button(self.tr('审阅 {version}', 'Review {version}').format(version=latest['version']),
+                            lambda c=latest: self.acquire('component', c))
+            older = [item for item in rows if item.get('older_than_installed')]
+            if older:
+                entries = self.disclosure(self.tr('选择旧版本（将固定）', 'Choose an older version (pins it)'))
+                for item in older:
+                    button = self.gtk.Button(label=self.tr('审阅 {version}', 'Review {version}').format(version=item['version']))
+                    button.set_size_request(-1, 48)
+                    button.connect('clicked', lambda _button, c=item: self.acquire('component', c, intent='downgrade'))
+                    entries.pack_start(button, False, False, 0)
+
     def catalog_details(self, items):
-        entries = self.disclosure(self.tr(f'机型构件目录（{len(items)} 项）', f'Model component catalog ({len(items)} items)'))
+        entries = self.disclosure(self.tr('机型构件目录（{count} 项）', 'Model component catalog ({count} items)').format(count=len(items)))
         for item in items:
             self.line(entries, self.label(item.get('name') or item.get('id')), 'section-title')
             if item.get('notes'):
                 self.line(entries, self.label(item['notes']), selectable=True)
 
-    def set_language(self, lang):
-        self.lang = lang
-        self.nav()
-        self.show_page('settings')
+    def update_language_labels(self):
+        self.window.set_title(self.tr('Boiler 维护工具', 'Boiler Maintenance'))
+        label = self.tr('界面语言', 'Interface language')
+        self.language_picker.set_tooltip_text(label)
+        self.language_picker.get_accessible().set_name(label)
 
-    def check(self):
+    def set_language(self, lang):
+        if self.busy or lang == self.lang or lang not in LANGUAGE_NAMES:
+            return
+        self.lang = lang
+        self.language_picker.set_active_id(lang)
+        self.update_language_labels()
+        for key, button in self.nav_buttons.items():
+            button.set_label(self.tr(*self.PAGE_TITLES[key]))
+        self._redisplay()
+
+    def check(self, *, include_components=True):
         args = ['check', self.session.name] + (['--offline'] if self.offline else [])
         page = self.page
         self.check_error = None
         def done(result):
             self.result = result
             self.show_page(page)
-        self.operation(lambda: self.backend.project(*args), done, overview_check=page == 'overview')
+        def work():
+            result = self.backend.project(*args)
+            if include_components and result.get('match', {}).get('status') == 'matched':
+                try:
+                    result['streams'].append(self.backend.project('components', self.session.name))
+                except BackendError as error:
+                    result['streams'].append(dict(id='component', status='error', candidates=[], message=str(error)))
+            return result
+        self.operation(work, done, overview_check=page == 'overview')
 
     def inventory(self, result):
+        self._redisplay = lambda: self.inventory(result)
         self.clear(self.tr('系统检查结果', 'System check results'))
         self.inventory_text(result)
         self.button(self.tr('返回', 'Back'), lambda: self.show_page('check'))
         self.refresh()
 
     def recovery_options(self, result):
+        self._redisplay = lambda: self.recovery_options(result)
         self.clear(self.tr('维护与恢复', 'Maintenance and recovery'))
         self.inventory_text(result)
         if result.get('pending_transactions') or result.get('pending_platform_recovery'):
@@ -1144,6 +1238,7 @@ class GtkMaintenance:
             self.text(self.tr('存在等待恢复的事务。', 'There are transactions awaiting recovery.'))
 
     def confirm_recovery(self, *args):
+        self._redisplay = lambda: self.confirm_recovery(*args)
         self.clear(self.tr('确认操作', 'Confirm operation'))
         self.text(' '.join(args))
         self.button(self.tr('确认并执行', 'Confirm and execute'),
@@ -1151,24 +1246,22 @@ class GtkMaintenance:
         self.button(self.tr('取消', 'Cancel'), lambda: self.show_page('recovery'))
         self.refresh()
 
-    def acquire(self, stream, candidate):
+    def acquire(self, stream, candidate, *, intent=None):
         identity, version = candidate['id'], candidate['version']
         def work():
             package = self.backend.project('acquire', self.session.name, stream, identity, version)
             inventory = self.backend.project('inventory')
             return package, inventory
-        self.operation(work, lambda result: self.select_components(stream, identity, version, *result))
+        self.operation(work, lambda result: self.select_components(stream, identity, version, *result, intent=intent))
 
-    def select_components(self, stream, identity, version, result, inventory):
+    def select_components(self, stream, identity, version, result, inventory, *, selection=None, intent=None):
         self.clear(self.tr('选择组件', 'Select components'))
         self.text(self.tr('选择组件，然后审阅计划。', 'Select components, then review the plan.'))
         checks = []
         package = result.get('package', {})
         installed = inventory.get('components', {})
         for item in package.get('components', []):
-            name = item.get('name', item['id'])
-            if isinstance(name, dict):
-                name = name.get('zh' if self.lang == 'zh-CN' else 'en', item['id'])
+            name = self.label(item.get('name')) or item['id']
             current = installed.get(item['id'])
             reason = None
             if not current:
@@ -1182,10 +1275,13 @@ class GtkMaintenance:
                 label += '\n' + reason
             check = self.gtk.CheckButton(label=label)
             check.set_size_request(-1, 48)
-            check.set_active(reason is None)
+            check.set_active(reason is None and (selection is None or item['id'] in selection))
             check.set_sensitive(reason is None)
             self.body.pack_start(check, False, False, 0)
             checks.append((item['id'], check))
+        self._redisplay = lambda: self.select_components(
+            stream, identity, version, result, inventory,
+            selection={item_id for item_id, widget in checks if widget.get_active()}, intent=intent)
         def plan():
             args = ['plan', self.session.name, stream, identity, version]
             for item_id, widget in checks:
@@ -1195,6 +1291,8 @@ class GtkMaintenance:
                 self.text(self.tr('请至少选择一个可更新的组件。', 'Select at least one component to update.'))
                 self.refresh()
                 return
+            if intent:
+                args.extend(['--component-intent', intent])
             self.operation(lambda: self.backend.project(*args), lambda result: self.review(stream, result))
         self.button(self.tr('审阅计划', 'Review plan'), plan)
         self.button(self.tr('返回', 'Back'), lambda: self.show_page('repairs'))
@@ -1204,6 +1302,7 @@ class GtkMaintenance:
         digest = plan.get('review_sha256')
         if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
             raise ValueError('Maintenance returned an invalid review hash')
+        self._redisplay = lambda: self.review(stream, plan)
         self.clear(self.tr('审阅计划', 'Review plan'))
         package = plan.get('package', {})
         self.details(self.tr('软件包', 'Package'), package.get('id'))
@@ -1228,6 +1327,7 @@ class GtkMaintenance:
         self.refresh()
 
     def receipt(self, result):
+        self._redisplay = lambda: self.receipt(result)
         self.clear(self.tr('操作结果', 'Operation result'))
         for key, zh, en in (('status', '状态', 'Status'), ('receipt_path', '回执', 'Receipt'),
                             ('receipt', '回执', 'Receipt'), ('log', '日志', 'Log'),
@@ -1245,13 +1345,26 @@ class GtkMaintenance:
 
     def legacy(self):
         if not Path(KDIALOG).is_file():
-            self.clear(self.tr('机型维护', 'Model maintenance'))
-            self.text(self.tr('此现有维护流程需要安装 kdialog。', 'This existing maintenance workflow requires kdialog.'))
-            self.button(self.tr('返回', 'Back'), lambda: self.show_page('repairs'))
-            self.refresh()
+            self.show_kdialog_required()
             return
-        self.operation(lambda: ModelUI(KDialog(self.lang), self.backend, lang=self.lang, offline=self.offline).run(),
-                       lambda _result: self.show_page('repairs'), retry=False)
+        def work():
+            ui = ModelUI(KDialog(self.lang), self.backend, lang=self.lang, offline=self.offline)
+            ui.run()
+            return ui.lang
+        def done(lang):
+            if lang == self.lang:
+                self.show_page('repairs')
+            else:
+                self._redisplay = lambda: self.show_page('repairs')
+                self.set_language(lang)
+        self.operation(work, done, retry=False)
+
+    def show_kdialog_required(self):
+        self._redisplay = self.show_kdialog_required
+        self.clear(self.tr('机型维护', 'Model maintenance'))
+        self.text(self.tr('此现有维护流程需要安装 kdialog。', 'This existing maintenance workflow requires kdialog.'))
+        self.button(self.tr('返回', 'Back'), lambda: self.show_page('repairs'))
+        self.refresh()
 
     def run(self):
         self.refresh()
@@ -1260,27 +1373,27 @@ class GtkMaintenance:
         return 0
 
     def _initial_check(self):
-        self.check()
+        self.check(include_components=False)
         return False
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Boiler native KDE model maintenance')
-    parser.add_argument('--language', choices=('zh-CN', 'en-US'))
+    parser.add_argument('--language', choices=LANGUAGE_NAMES)
     parser.add_argument('--offline', action='store_true')
     parser.add_argument('--feedback', action='store_true', help='Open manual feedback without loading the model catalog')
     args = parser.parse_args(argv)
     lang = language(args.language)
     if hasattr(os, 'geteuid') and os.geteuid() == 0:
-        print('请以桌面用户运行 / Run this interface as the desktop user.', file=sys.stderr)
+        print(translate(lang, '请以桌面用户运行。', 'Run this interface as the desktop user.'), file=sys.stderr)
         return 1
     modules = gtk_modules()
     if modules and not args.feedback:
         return GtkMaintenance(*modules, Backend(), lang, offline=args.offline).run()
     if not Path(KDIALOG).is_file():
-        print('未找到 /usr/bin/kdialog。请在 KDE 桌面使用维护工具，或在终端运行：\n'
-              'Missing /usr/bin/kdialog. Use a KDE desktop, or run in a terminal:\n'
-              '/usr/local/bin/boiler-maintenance --root / models list --offline', file=sys.stderr)
+        print(translate(lang, '未找到 /usr/bin/kdialog。请在 KDE 桌面使用维护工具，或在终端运行：',
+                        'Missing /usr/bin/kdialog. Use a KDE desktop, or run in a terminal:'),
+              '/usr/local/bin/boiler-maintenance --root / models list --offline', sep='\n', file=sys.stderr)
         return 1
     ui = ModelUI(KDialog(lang), Backend(), lang=lang, offline=args.offline)
     if args.feedback:

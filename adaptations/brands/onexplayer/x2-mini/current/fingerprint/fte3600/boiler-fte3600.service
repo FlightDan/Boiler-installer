@@ -1,0 +1,8 @@
+[Unit]
+Description=Prepare X2 Mini FTE3600 fingerprint glue
+Before=boiler-fprintd.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /var/lib/oxp3-installer/fingerprint/fte3600/load.sh
+RemainAfterExit=yes

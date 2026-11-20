@@ -161,7 +161,7 @@ public partial class MainWindow
             }
         var count = model.TryGetProperty("components", out var allComponents) ? allComponents.GetArrayLength() : 0;
         modelCatalogDetails.Children.Add(new Expander { Name = "ModelGuideRecommendations", MinHeight = 48, Content = recommendations,
-            Header = PartitionInventory.L($"查看适配建议（{count} 项）", $"View adaptation recommendations ({count})") });
+            Header = InstallerI18n.Format($"查看适配建议（{count} 项）", $"View adaptation recommendations ({count})") });
         if (deviceStatus != null) deviceStatus.Text = notice;
         if (deviceNotesExpander != null) deviceNotesExpander.Visibility = Visibility.Collapsed;
         if (deviceSourceLink != null) deviceSourceLink.Visibility = Visibility.Collapsed;

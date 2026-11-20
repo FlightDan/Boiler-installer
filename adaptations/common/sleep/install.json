@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "ComponentManifest",
+  "id": "boiler:s2s4",
+  "version": "0.1.0",
+  "name": {
+    "en": "Boiler S2/S4 switcher",
+    "zh": "Boiler S2/S4 switcher"
+  },
+  "description": {
+    "en": "Separate SteamOS sleep plugin. S4 starts disabled and prepares swap only when enabled.",
+    "zh": "独立的 SteamOS 休眠插件。S4 默认关闭，开启时才预留交换文件。"
+  },
+  "optional": true,
+  "default": false,
+  "selection_policy": "explicit-opt-in",
+  "requires": [],
+  "conflicts": [],
+  "hooks": {},
+  "compatibility": {
+    "architectures": [
+      "x86_64"
+    ],
+    "os_ids": [
+      "steamos"
+    ],
+    "os_versions": [
+      "3.10"
+    ]
+  },
+  "files": [
+    {
+      "source": "common/sleep/runtime/main.py",
+      "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/main.py",
+      "size": 918,
+      "sha256": "55a36191688444696e326e16a3167385e02ea2cd5659f5f46ea361ac3fd78207",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/dist/index.js",
+      "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/dist/index.js",
+      "size": 21835,
+      "sha256": "03f0c916ea5e6b9490d338e09e382a153f1e688a7b14cc55b0b03910f5cea80a",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/package.json",
+      "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/package.json",
+      "size": 59,
+      "sha256": "72c1e9e1ba806ce747b0abb716fc360d2fc0eb386c57f2d616d0aee618762f2b",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/plugin.json",
+      "target": "var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/plugin.json",
+      "size": 85,
+      "sha256": "bc82f7346ee8a596d68a05457569aafd064c753f2f2e19d79e141c7faf4026ff",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/sleep_control.py",
+      "target": "var/lib/boiler-sleep/sleep_control.py",
+      "size": 25448,
+      "sha256": "62779f0e5210ffd44c88d92e301d266e45381750941d9103bf433af71a01a0c1",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/90-boiler-sleep.conf",
+      "target": "etc/systemd/system/systemd-suspend.service.d/90-boiler-sleep.conf",
+      "size": 149,
+      "sha256": "bf136385cd5872e499cef4bead47ec24ec1c573d6fa937cc4d79122a962b6578",
+      "mode": 420
+    },
+    {
+      "source": "common/sleep/runtime/LICENSE",
+      "target": "usr/share/licenses/boiler-s2s4/LICENSE",
+      "size": 34523,
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "mode": 420
+    }
+  ]
+}

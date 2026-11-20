@@ -34,13 +34,13 @@ public sealed record LayoutSegment(string Name, long Start, long Size, string Ac
 public static class PartitionInventory
 {
     public const long MiB = 1024L * 1024, GiB = 1024L * MiB, Minimum = 64 * GiB;
-    public static string L(string zh, string en) => InstallerI18n.Language == "en-US" ? en : zh;
+    public static string L(string zh, string en) => InstallerI18n.L(zh, en);
     public static string SizeText(long bytes) => bytes >= GiB ? $"{bytes / (decimal)GiB:0.##} GiB" : $"{bytes / (decimal)MiB:0.##} MiB";
     public static long ParseCapacity(string value, long maximum)
     {
         if (!decimal.TryParse(value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var gib)
             || gib < 64 || gib > maximum / (decimal)GiB)
-            throw new InvalidOperationException(L($"请输入 64 至 {maximum / (decimal)GiB:0.######} GiB 的容量。", $"Enter a capacity from 64 to {maximum / (decimal)GiB:0.######} GiB."));
+            throw new InvalidOperationException(InstallerI18n.Format($"请输入 64 至 {maximum / (decimal)GiB:0.######} GiB 的容量。", $"Enter a capacity from 64 to {maximum / (decimal)GiB:0.######} GiB."));
         return checked((long)decimal.Floor(gib * 1024) * MiB);
     }
     public static InventoryDisk[] Read(string json)
@@ -143,7 +143,7 @@ public static class PartitionInventory
         };
         var fallback = L("受保护 / 不支持删除", "Protected / deletion unavailable");
         if (blockReason.Length == 0) return fallback;
-        return fallback + " · " + (InstallerI18n.Language == "en-US" || translated.Length == 0 ? blockReason : translated);
+        return fallback + " · " + (translated.Length == 0 ? InstallerI18n.T(blockReason) : L(translated, blockReason));
     }
     public static LayoutSegment[] Before(InventoryDisk disk) => disk.Rows.Select(r => new LayoutSegment(r.Name, r.Start, r.Size,
         r.Type == "—" ? "free" : "keep")).ToArray();

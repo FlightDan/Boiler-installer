@@ -39,7 +39,7 @@ public sealed class ImageDownloadPanel : UserControl
         restart.Background = copyAddress.Background = terms.Background = Brushes.Transparent; terms.Foreground = new SolidColorBrush(Color.FromRgb(41, 104, 217));
         RefreshLanguage();
     }
-    private static string L(string zh, string en) => InstallerI18n.Language == "en-US" ? en : zh;
+    private static string L(string zh, string en) => InstallerI18n.L(zh, en);
     public ImageDownloadPanel()
     {
         var body = new StackPanel();
@@ -101,7 +101,7 @@ public sealed class ImageDownloadPanel : UserControl
         address.Text = custom ? "" : origins[index].Url;
         note.Text = custom ? L("填写 .img、.img.bz2 或 .img.zip 的 HTTPS 直链。更换来源会使用新的下载记录。",
             "Enter a direct HTTPS .img, .img.bz2 or .img.zip URL. Each source keeps separate download progress.")
-            : InstallerI18n.Language == "en-US" ? origins[index].EnglishNote : origins[index].Note;
+            : InstallerI18n.L(origins[index].Note, origins[index].EnglishNote);
         progress.Value = 0; progress.Visibility = Visibility.Collapsed; status.Text = "";
     }
     public void Pause() { operation?.Cancel(); action.IsEnabled = false; status.Text = L("正在保存下载进度…", "Saving download progress…"); }

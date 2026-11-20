@@ -1,11 +1,18 @@
+import base64
+from contextlib import redirect_stderr
 import hashlib
+from io import BytesIO, StringIO
 import json
 from pathlib import Path
 import runpy
 import shutil
+import socket
+import struct
 import sys
 import tempfile
 import unittest
+import zlib
+from urllib.error import URLError
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +21,17 @@ from payload_lock import record
 from wireless import plan_required, resolve
 
 NS = runpy.run_path(str(ROOT / 'scripts/download-firmware.py'))
+
+
+def blob_pack(data):
+    size = len(data)
+    first = 0x30 | (size & 15); size >>= 4
+    header = bytearray([first | (0x80 if size else 0)])
+    while size:
+        byte = size & 127; size >>= 7
+        header.append(byte | (0x80 if size else 0))
+    pack = b'PACK' + struct.pack('>II', 2, 1) + bytes(header) + zlib.compress(data)
+    return b'0008NAK\n' + pack + hashlib.sha1(pack).digest()
 
 
 class OnDemandFirmwareChecks(unittest.TestCase):
@@ -102,6 +120,11 @@ class OnDemandFirmwareChecks(unittest.TestCase):
         self.assertEqual([], self.calls)
         self.assertTrue((output / 'integration/manifest.json').is_file())
 
+    def test_empty_selection_does_not_open_network(self):
+        _, path = self.plan(options=dict(schema=1, wireless=[], repairs=[], plugins=[]))
+        with patch('urllib.request.build_opener', side_effect=AssertionError('Unexpected network access')):
+            NS['download'](self.catalog_path, path, self.base / 'output', self.core, self.base / 'cache', self.locks)
+
     def test_only_one_missing_file_and_its_license_are_downloaded(self):
         _, path = self.plan()
         output = self.download(path)
@@ -141,6 +164,75 @@ class OnDemandFirmwareChecks(unittest.TestCase):
         with self.assertRaises(KeyboardInterrupt): self.download(path, fetch=cancel)
         self.assertFalse((self.base / 'output').exists())
         self.assertEqual([], list(self.base.glob('.output-*')))
+
+    def test_three_dns_failures_report_the_missing_source_without_publishing_payload(self):
+        _, path = self.plan()
+        source = 'intel/iwlwifi/needed.ucode'
+        script = ROOT / 'scripts/download-firmware.py'
+        arguments = [str(script), '--catalog', str(self.catalog_path), '--plan', str(path),
+                     '--output', str(self.base / 'output'), '--core-payload', str(self.core),
+                     '--cache', str(self.base / 'cache'), '--locks', str(self.locks)]
+        stderr = StringIO()
+        with patch('urllib.request.build_opener') as opener, patch('sys.argv', arguments), redirect_stderr(stderr):
+            request = opener.return_value.open
+            request.side_effect = [URLError(socket.gaierror(11001, 'getaddrinfo failed')) for _ in range(3)]
+            with self.assertRaisesRegex(OSError, r'needed\.ucode.*tuna\.tsinghua\.edu\.cn.*gitlab\.com.*kernel\.googlesource\.com'):
+                runpy.run_path(str(script), run_name='__main__')
+        self.assertEqual('BOILER_FIRMWARE_SOURCES_UNAVAILABLE=1\n', stderr.getvalue())
+        self.assertEqual(NS['TUNA'], request.call_args_list[0].args[0].full_url)
+        self.assertEqual([NS['MIRROR'] + source, NS['BASE'] + source + '?format=TEXT'],
+                         [call.args[0] for call in request.call_args_list[1:]])
+        self.assertFalse((self.base / 'output').exists())
+        self.assertEqual([], list(self.base.glob('.output-*')))
+
+    def test_dns_failure_on_mirror_can_use_fixed_origin(self):
+        item = self.files[0]
+        with patch('urllib.request.build_opener') as opener:
+            request = opener.return_value.open
+            response = request.return_value.__enter__.return_value
+            response.read.return_value = base64.b64encode(b'needed')
+            request.side_effect = [URLError('TUNA unavailable'), URLError('GitLab unavailable'), request.return_value]
+            data = NS['fetch_bytes'](item)
+        self.assertEqual(b'needed', NS['verified'](data, item))
+
+    def test_tuna_blob_is_requested_and_verified(self):
+        item = self.files[0]
+        with patch('urllib.request.build_opener') as opener:
+            opener.return_value.open.return_value = BytesIO(blob_pack(b'needed'))
+            data = NS['fetch_bytes'](item)
+            request = opener.return_value.open.call_args.args[0]
+        self.assertEqual(b'needed', NS['verified'](data, item))
+        self.assertEqual(NS['TUNA'], request.full_url)
+        self.assertEqual(NS['_pkt'](('want ' + item['git_blob'] + ' no-progress\n').encode()) + b'0000' + NS['_pkt'](b'done\n'), request.data)
+
+    def test_unsupported_tuna_pack_falls_back_to_gitlab(self):
+        with patch('urllib.request.build_opener') as opener:
+            opener.return_value.open.side_effect = [BytesIO(b'unsupported'), BytesIO(b'needed')]
+            data = NS['fetch_bytes'](self.files[0])
+        self.assertEqual(b'needed', NS['verified'](data, self.files[0]))
+
+    def test_redirect_rejection_does_not_fall_back(self):
+        with patch('urllib.request.build_opener') as opener:
+            opener.return_value.open.side_effect = ValueError('Firmware origin redirects are forbidden')
+            with self.assertRaisesRegex(ValueError, 'redirects are forbidden'):
+                NS['fetch_bytes'](self.files[0])
+            self.assertEqual(1, opener.return_value.open.call_count)
+
+    def test_bad_tuna_pack_or_blob_never_publishes_or_falls_back(self):
+        _, path = self.plan()
+        valid = blob_pack(b'needed')
+        corrupt_checksum = valid[:-1] + bytes([valid[-1] ^ 1])
+        cases = [corrupt_checksum, valid + b'extra', blob_pack(b'too long'),
+                 blob_pack(b'wrong!'), b'0008NAK\nPACK' + b'\0' * 5,
+                 b'0008NAK\nPACK' + b'x' * 10000]
+        for response in cases:
+            with self.subTest(response=response[:20]), patch('urllib.request.build_opener') as opener:
+                opener.return_value.open.return_value = BytesIO(response)
+                with self.assertRaises(ValueError):
+                    NS['download'](self.catalog_path, path, self.base / 'output', self.core, self.base / 'cache', self.locks)
+                self.assertEqual(1, opener.return_value.open.call_count)
+                self.assertFalse((self.base / 'output').exists())
+                self.assertEqual([], list(self.base.glob('.output-*')))
 
     def test_plan_does_not_read_unrelated_bytes_and_resolve_checks_only_needed(self):
         with patch('wireless.checked', side_effect=AssertionError('Metadata planning cannot open blobs')):

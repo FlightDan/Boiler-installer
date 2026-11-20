@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "BoilerFingerprintPublicBridgeSource",
   "repository": "FlightDan/FingerprintUnlock-SteamOS",
-  "commit": "fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e",
+  "commit": "5f7f988f645c08f9a1837ddcaa1d66b776ca7df6",
   "licenses": [
     {
       "spdx": "AGPL-3.0",
@@ -19,23 +19,23 @@
     {
       "path": "bridge/index.js",
       "local_path": "common/fingerprint/bridge/index.js",
-      "size": 14560,
-      "sha256": "ad04959e4422b50b71d792d7d4d0afe3751d7899b9b1a49acd857c0566ea9fcb",
-      "git_blob_sha1": "56cb55ffec087391c215877d3b8bc11bccbd5f58"
+      "size": 22838,
+      "sha256": "d4f8fd00deebdf06ffd958be8d42272329409e861bb4fe711bbd2e886e8fb227",
+      "git_blob_sha1": "e5b6b4f8021379cfb9c6b73371a8d0e15e1c7864"
     },
     {
       "path": "bridge/main.py",
       "local_path": "common/fingerprint/bridge/main.py",
-      "size": 3730,
-      "sha256": "fed2f29f9cd1f7adea973bf624195a4ba3e093cf2fe1cf664e8cdf040dad1de1",
-      "git_blob_sha1": "864824ea2566492b4e6f7987cbe6879d1b98d19b"
+      "size": 43703,
+      "sha256": "9fffcf215fac1d496d76b2d327180e0564d187354001d7fd68fd58380eae3b1b",
+      "git_blob_sha1": "d1c4cb03a513b76e0123c7f62a4840a60fe556fa"
     },
     {
       "path": "bridge/package.json",
       "local_path": "common/fingerprint/bridge/package.json",
-      "size": 84,
-      "sha256": "2329a3005601b81ef5637b30a937ad3dd0aa549fb79c80605079ebaf610d866d",
-      "git_blob_sha1": "859a7f25bec30c9b8f6d3591f9430e70a59ab7b4"
+      "size": 85,
+      "sha256": "1463c20a384a3d9e14e673966532b29591d9394c371a872b6a3f2178324e819f",
+      "git_blob_sha1": "c2a34f9dd9ffa9199e3408edb1990923d4e25493"
     },
     {
       "path": "bridge/plugin.json",

@@ -6,11 +6,13 @@ from pathlib import Path
 import stat
 import subprocess
 import sys
+import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from maintenance.model_ui import Backend, BackendError, KDialog, ModelUI, main
+from maintenance.model_ui import Backend, BackendError, GtkMaintenance, KDialog, ModelUI, main
+from maintenance.model_ui_locale import LANGUAGE_NAMES, desktop_entry, language, localized_label
 
 
 MODEL = {'id': 'device:oxp3', 'name': {'zh': 'ONEXPLAYER 3', 'en': 'ONEXPLAYER 3'},
@@ -93,6 +95,14 @@ class ModelUITests(unittest.TestCase):
         backend = backend or FakeBackend()
         return ModelUI(dialog, backend, offline=True), backend
 
+    def test_review_displays_reviewed_component_and_package_versions(self):
+        ui, _ = self.ui(Dialog())
+        plan = dict(PLAN, component_versions=[dict(id='fixture:repair', version='1.0.7')],
+                    package=dict(version='4.0.0'))
+        review = ui.review(MODEL, OPTIONS, plan, 'Verify')
+        self.assertIn('Maintenance package version 4.0.0', review)
+        self.assertIn('Component version fixture:repair · 1.0.7', review)
+
     def test_shared_mixed_actions_bind_the_selected_installed_provider(self):
         class SharedBackend(FakeBackend):
             def call(self,*args):
@@ -116,7 +126,7 @@ class ModelUITests(unittest.TestCase):
         self.assertEqual(ui.run(), 0)
         self.assertEqual(backend.calls, [('list', '--offline')])
         self.assertEqual([row[0] for row in dialog.menu_rows[0][1]],
-                         ['device:oxp3','device:x2-mini','ssd','feedback'])
+                         ['device:oxp3','device:x2-mini','ssd','feedback','language'])
         self.assertIn('Pinned commit', dialog.menu_rows[0][0])
 
     def test_trust_cancel_never_inspects_private_target(self):
@@ -360,6 +370,119 @@ class ModelUITests(unittest.TestCase):
         self.assertIn('fully restore the current adaptation', text)
         self.assertIn('replacement_requires_restore', text)
         self.assertIn('current generation is owned', text)
+
+
+class LanguageTests(unittest.TestCase):
+    def test_session_locale_aliases_and_english_fallback(self):
+        values = {
+            'zh_CN.UTF-8': 'zh-CN', 'en_GB.UTF-8': 'en-US', 'ja_JP.utf8': 'ja-JP',
+            'ko-KR': 'ko-KR', 'de_AT.UTF-8': 'de-DE', 'fr_CA': 'fr-FR', 'es-419': 'es-ES',
+            'zh-Hant-HK': 'zh-TW', 'zh_HK.UTF-8': 'zh-TW', 'zh_Hans': 'zh-CN',
+            'pt_BR': 'en-US', 'C.UTF-8': 'en-US', 'ru_RU:ja_JP:en_US': 'ja-JP',
+        }
+        for setting, expected in values.items():
+            with self.subTest(setting=setting):
+                self.assertEqual(language(setting), expected)
+
+    def test_kde_display_language_takes_precedence_over_regional_formats(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            plasma = directory / 'plasma-localerc'
+            kdeglobals = directory / 'kdeglobals'
+            env = {'XDG_CONFIG_HOME': temporary, 'LANGUAGE': 'es_ES', 'LC_ALL': 'en_US.UTF-8'}
+            kdeglobals.write_text('[Locale]\nLanguage=de_DE\n', encoding='utf-8')
+            plasma.write_text('[Formats]\nLANG=de_DE.UTF-8\n[Translations]\nLANGUAGE=ko:en_US\n', encoding='utf-8')
+            self.assertEqual(language(env=env), 'ko-KR')
+            self.assertEqual(language('ja-JP', env=env), 'ja-JP')
+            plasma.write_text('[Translations]\nLANGUAGE=pl_PL\n', encoding='utf-8')
+            self.assertEqual(language(env=env), 'en-US')
+            plasma.write_text('[Formats]\nLANG=fr_FR.UTF-8\n', encoding='utf-8')
+            self.assertEqual(language(env=env), 'de-DE')
+            kdeglobals.write_text('malformed configuration\n', encoding='utf-8')
+            self.assertEqual(language(env=env), 'es-ES')
+            self.assertEqual(language(env={'LC_MESSAGES': 'ja_JP.UTF-8', 'LANG': 'de_DE'}, config_home=directory), 'ja-JP')
+            self.assertEqual(language(env={}, config_home=directory), 'en-US')
+
+    def test_label_accepts_extended_and_legacy_translations_with_english_fallback(self):
+        values = {'zh': '示例', 'en': 'Sample', 'fr_FR': 'Exemple', 'zh-Hant': '範例', 'ja': 'サンプル'}
+        self.assertEqual(localized_label('zh-CN', values), '示例')
+        self.assertEqual(localized_label('zh-TW', values), '範例')
+        self.assertEqual(localized_label('fr-FR', values), 'Exemple')
+        self.assertEqual(localized_label('ja-JP', values), 'サンプル')
+        self.assertEqual(localized_label('es-ES', values), 'Sample')
+        self.assertEqual(localized_label('zh-TW', {'zh': '示例', 'en': 'Sample'}), 'Sample')
+
+    def test_desktop_entry_has_names_and_comments_for_region_and_base_languages(self):
+        entry = desktop_entry().decode('utf-8')
+        for tag in LANGUAGE_NAMES:
+            locale = tag.replace('-', '_')
+            with self.subTest(locale=locale):
+                self.assertIn(f'Name[{locale}]=', entry)
+                self.assertIn(f'Comment[{locale}]=', entry)
+        self.assertIn('Name[ja]=Boiler 修復とプロジェクトの更新', entry)
+        self.assertIn('Name[zh_TW]=Boiler 修復與專案更新', entry)
+        self.assertIn('Exec=/usr/local/bin/boiler-maintenance-ui\n', entry)
+
+    def test_kdialog_switches_language_without_reloading_catalog(self):
+        calls = []
+        selections = iter(('language', 'ja-JP', None))
+        def runner(args, **kwargs):
+            calls.append(args)
+            choice = next(selections)
+            return subprocess.CompletedProcess(args, int(choice is None), choice or '', '')
+        backend = FakeBackend()
+        ui = ModelUI(KDialog('de-DE', runner), backend, lang='de-DE', offline=True)
+        self.assertEqual(ui.run(), 0)
+        self.assertEqual(backend.calls, [('list', '--offline')])
+        self.assertIn('Boiler Wartung', calls[0])
+        self.assertIn('Anzeigesprache', calls[0])
+        for tag, name in LANGUAGE_NAMES.items():
+            self.assertIn(tag, calls[1])
+            self.assertIn(name, calls[1])
+        self.assertIn('Boiler メンテナンス', calls[2])
+        self.assertIn('キャンセル', calls[2])
+        self.assertIn('表示言語', calls[2])
+
+    def test_gtk_language_picker_is_at_end_of_header(self):
+        gtk = Mock()
+        gtk.Box.side_effect = lambda **_kwargs: Mock()
+        with patch.object(GtkMaintenance, 'show_page'):
+            ui = GtkMaintenance(gtk, Mock(), Mock(), 'ko-KR')
+        self.addCleanup(ui.session.cleanup)
+        header = ui.content.pack_start.call_args_list[0].args[0]
+        header.pack_end.assert_called_once_with(ui.language_picker, False, False, 0)
+        self.assertEqual([call.args for call in ui.language_picker.append.call_args_list], list(LANGUAGE_NAMES.items()))
+        ui.language_picker.set_active_id.assert_called_once_with('ko-KR')
+
+    def test_gtk_language_switch_keeps_current_selection(self):
+        ui = GtkMaintenance.__new__(GtkMaintenance)
+        ui.lang, ui.busy, ui.page = 'en-US', False, 'repairs'
+        ui.gtk, ui.body, ui.window, ui.language_picker = Mock(), Mock(), Mock(), Mock()
+        ui.nav_buttons = {'repairs': Mock()}
+        ui.clear, ui.text, ui.button, ui.refresh = Mock(), Mock(), Mock(), Mock()
+        checks = []
+        class Check:
+            def __init__(self, label):
+                self.label = label
+                checks.append(self)
+            def set_size_request(self, *_args): pass
+            def set_active(self, active): self.active = active
+            def set_sensitive(self, sensitive): self.sensitive = sensitive
+            def get_active(self): return self.active
+        ui.gtk.CheckButton = Check
+        result = {'package': {'components': [{'id': 'test:item', 'name': {'en': 'Item', 'fr': 'Élément'}, 'version': '2'}]}}
+        inventory = {'components': {'test:item': {'version': '1', 'verified': True}}}
+        ui.select_components('device', 'device:test', '2', result, inventory)
+        self.assertTrue(checks[-1].active)
+        checks[-1].set_active(False)
+        ui.set_language('fr-FR')
+        self.assertEqual(ui.page, 'repairs')
+        self.assertFalse(checks[-1].active)
+        self.assertIn('Élément', checks[-1].label)
+        ui.language_picker.set_active_id.assert_called_once_with('fr-FR')
+        ui.language_picker.get_accessible().set_name.assert_called_once_with('Langue de l’interface')
+        ui.nav_buttons['repairs'].set_label.assert_called_once_with('Réparations et extensions')
+        ui.clear.assert_called_with('Sélectionner les composants')
 
 
 class InvocationTests(unittest.TestCase):

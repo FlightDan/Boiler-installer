@@ -87,6 +87,7 @@ public partial class MainWindow
     private string? deviceActionError;
     private readonly Dictionary<string, CheckBox> deviceComponentChoices = new();
     private readonly Dictionary<(SsdBootRepair.PreferenceKey? Target, string Model, string Component), bool> modelResourceChoices = new();
+    private HashSet<string> versionedDeviceComponents = new(StringComparer.Ordinal);
     private SsdBootRepair.PreferenceKey? modelResourceTarget;
     private StackPanel? deviceComponentsPanel;
     private CheckBox? deviceAdaptationsChoice;
@@ -130,13 +131,13 @@ public partial class MainWindow
         ConfigurationChanged();
     }
 
-    private static string LocalizedValue(JsonElement value) => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(InstallerI18n.Language == "en-US" ? "en" : "zh", out var text) ? text.ToString() : value.ToString();
+    private static string LocalizedValue(JsonElement value) => InstallerI18n.TryLocalizedValue(value, out var text) ? InstallerI18n.T(text.ToString()) : value.ToString();
     private static string DeviceText(JsonElement value)
     {
         if (value.ValueKind == JsonValueKind.Array) return string.Join("\n", value.EnumerateArray().Select(DeviceText));
         if (value.ValueKind == JsonValueKind.Object)
         {
-            if (value.TryGetProperty("zh", out _) || value.TryGetProperty("en", out _)) return LocalizedValue(value);
+            if (InstallerI18n.TryLocalizedValue(value, out var text)) return InstallerI18n.T(text.ToString());
             return string.Join(" · ", new[] { "severity", "status", "state", "issue", "note", "scope", "date", "architecture", "os_version", "build", "kernel", "evidence" }.Where(key => value.TryGetProperty(key, out _)).Select(key => DeviceText(value.GetProperty(key))));
         }
         return value.ToString();
@@ -282,7 +283,8 @@ public partial class MainWindow
         if (observed != digest) throw new IOException("Selected manifest differs from its approved anchor.");
         var package = await BoilerProtocol.RunAsync(["package", folder, "--manifest-sha256", digest], token);
         _ = DescribeDevice(package);
-        if (package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
+        if (package.TryGetProperty("component_release", out _)
+            || package.TryGetProperty("purpose", out var purpose) && purpose.GetString() == "maintenance")
             throw new IOException(PartitionInventory.L("这是维护专用包，请在通用维护器中使用，不能作为新装机型包。", "This package is for maintenance. Use the generic maintainer; it cannot be used as an installation device package."));
         var key = digest[..24];
         await BoilerProtocol.CachePackageAsync(folder, digest, token);
@@ -298,6 +300,9 @@ public partial class MainWindow
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
             ?? new DeviceLegacySelection(1, [], [], deviceLegacyUpdateHold?.IsChecked == true) : null;
         var package = selection.Package;
+        versionedDeviceComponents = package.TryGetProperty("component_resolution", out var resolved)
+            ? resolved.EnumerateObject().Select(component => component.Name).ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
         deviceUsesProjectMaintenance = package.TryGetProperty("legacy_recovery_contract", out _);
         var modelId = package.GetProperty("id").GetString()!;
         fingerprintModel = modelId;
@@ -323,7 +328,8 @@ public partial class MainWindow
             if (!available) componentText += "\n" + (component.TryGetProperty("reason", out var reason) ? LocalizedValue(reason)
                 : PartitionInventory.L("此组件暂不可安装。", "This component is currently unavailable."));
             var modelResource = component.TryGetProperty("resource_path", out _);
-            var initial = modelResource ? modelResourceChoices.GetValueOrDefault((modelResourceTarget, modelId, id), !IsExplicitDeviceOption(component))
+            var trackChoice = modelResource || versionedDeviceComponents.Contains(id);
+            var initial = trackChoice ? modelResourceChoices.GetValueOrDefault((modelResourceTarget, modelId, id), !IsExplicitDeviceOption(component))
                 : priorChoices.TryGetValue(id, out var priorChoice) ? priorChoice : !IsExplicitDeviceOption(component);
             if (id == FingerprintId)
             {
@@ -338,7 +344,7 @@ public partial class MainWindow
             void Changed(object sender, RoutedEventArgs args)
             {
                 if (updatingDeviceAdaptations) return;
-                if (modelResource) RecordModelResourceChoice(modelId, id, check.IsChecked == true);
+                if (trackChoice) RecordModelResourceChoice(modelId, id, check.IsChecked == true);
                 if (id == FingerprintId) RecordFingerprintPreference(check);
                 if (SsdBootRepair.IsProvider(component)) RecordSsdPreference(check);
                 if (check.IsChecked == true && (SsdBootRepair.IsProvider(component) || modelResource)
@@ -365,7 +371,7 @@ public partial class MainWindow
             try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
             foreach (var pair in deviceComponentChoices)
-                if (pair.Value.Tag is JsonElement row && row.TryGetProperty("resource_path", out _))
+                if (pair.Value.Tag is JsonElement row && (row.TryGetProperty("resource_path", out _) || versionedDeviceComponents.Contains(pair.Key)))
                     RecordModelResourceChoice(modelId, pair.Key, pair.Value.IsChecked == true);
             if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint) && fingerprint.IsEnabled && !IsExplicitDeviceOption(fingerprint)) RecordFingerprintPreference(fingerprint);
             EnsureStaticDeckyProvider();
@@ -435,11 +441,12 @@ public partial class MainWindow
         try
         {
             foreach (var pair in deviceComponentChoices)
-                if (pair.Value.Tag is JsonElement row && row.TryGetProperty("resource_path", out _))
+                if (pair.Value.Tag is JsonElement row && (row.TryGetProperty("resource_path", out _) || versionedDeviceComponents.Contains(pair.Key)))
                 {
                     pair.Value.IsChecked = pair.Value.IsEnabled && modelResourceChoices.GetValueOrDefault(
                         (target, fingerprintModel, pair.Key), !IsExplicitDeviceOption(row));
-                    if (pair.Value.IsChecked == true && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))
+                    if (pair.Value.IsChecked == true && row.TryGetProperty("resource_path", out _)
+                        && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))
                         core.IsChecked = true;
                 }
         }

@@ -26,7 +26,7 @@ internal static class GraphicsOptionsChecks
         }
         void Select(InstallerOptionsPanel panel, string? id) => panel.GraphicsChoice.SelectedItem = panel.GraphicsChoice.Items.Cast<ComboBoxItem>().Single(item => item.Tag as string == id);
         var panel = new InstallerOptionsPanel(); panel.SetMode("custom");
-        Require(panel.GraphicsChoice.Items.Count == 12 && panel.Selection.GraphicsProfile == null, "eleven-candidate-models-and-default-no-selection");
+        Require(panel.GraphicsChoice.Items.Count == 13 && panel.Selection.GraphicsProfile == null, "twelve-candidate-models-and-default-no-selection");
         var reads = 0;
         panel.GraphicsHardwareReader = () => { reads++; return new(["graphics:amd-780m"], ["AMD Radeon 780M"], 0); };
         panel.Refresh(); Require(reads == 0, "refresh-never-starts-hardware-discovery");
@@ -101,6 +101,27 @@ internal static class GraphicsOptionsChecks
                 typeof(MainWindow).GetMethod("ChooseGenericInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
                 window.PreviewStep(2);
                 var options = BoilerCustomBuildChecks.Options(window, expandSettings: true);
+                var tabs = (WrapPanel)typeof(MainWindow).GetField("customTabs", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+                var gpuTab = tabs.Children.OfType<Button>().Single(button => button.Content.ToString()!.StartsWith("GPU /", StringComparison.Ordinal));
+                var cpuTab = tabs.Children.OfType<Button>().Single(button => button.Content.ToString() == "CPU");
+                cpuTab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var rows = (StackPanel)typeof(MainWindow).GetField("customRows", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+                var cpuIds = rows.Children.OfType<Border>().Select(border => ((StackPanel)border.Child).Children.OfType<CheckBox>().Single().Tag as string).ToHashSet();
+                Require(InstallerOptions.CpuComponents.Concat(InstallerOptions.CpuFrequencyComponents).All(cpuIds.Contains), language + "-cpu-tab-shows-four-options");
+                var apply = typeof(MainWindow).GetMethod("ApplyCustomBuildIds", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                apply.Invoke(window, ["microcode:intel\ncpufreq:intel"]);
+                Require(options.Selection.Repairs.Contains("microcode:intel") && options.Selection.Repairs.Contains("cpufreq:intel") && options.Selection.Plugins.Contains("core:maintenance"), language + "-same-vendor-groups-accepted");
+                var before = options.Selection.Repairs.ToHashSet();
+                try { apply.Invoke(window, ["cpufreq:intel\ncpufreq:amd"]); throw new InvalidOperationException("Conflicting frequency IDs accepted"); }
+                catch (TargetInvocationException error) when (error.InnerException is InvalidOperationException) { }
+                Require(before.SetEquals(options.Selection.Repairs), language + "-frequency-conflict-is-atomic");
+                options.OptionBoxes["core:maintenance"].IsChecked = false;
+                try { InstallerOptions.Validate(options.Selection); throw new InvalidOperationException("Missing maintenance accepted"); }
+                catch (IOException) { }
+                Require(options.Selection.Repairs.Contains("cpufreq:intel"), language + "-maintenance-removal-retains-frequency-for-validation");
+                options.OptionBoxes["microcode:intel"].IsChecked = false;
+                options.OptionBoxes["cpufreq:intel"].IsChecked = false;
+                gpuTab.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Select(options, "graphics:amd-880m");
                 foreach (var size in new[] { new Size(1060, 720), new Size(640, 360) })
                 {
@@ -122,7 +143,7 @@ internal static class GraphicsOptionsChecks
                         window.Activate();
                         options.GraphicsChoice.IsDropDownOpen = true;
                         await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                        Require(options.GraphicsChoice.IsDropDownOpen && options.GraphicsChoice.Items.Count == 12, language + "-all-models-can-be-opened-and-selected");
+                        Require(options.GraphicsChoice.IsDropDownOpen && options.GraphicsChoice.Items.Count == 13, language + "-all-models-can-be-opened-and-selected");
                         var searchable = (ModelSearchComboBox)options.GraphicsChoice;
                         var search = searchable.SearchBox!;
                         Require(search.IsKeyboardFocused, language + "-search-focused-on-open-" + size.Width);
@@ -141,7 +162,16 @@ internal static class GraphicsOptionsChecks
                         search.Text = "no-such-gpu";
                         Require(searchable.Items.Cast<ComboBoxItem>().All(item => item.Visibility == Visibility.Collapsed)
                             && options.Selection.GraphicsProfile == "graphics:amd-880m", language + "-no-result-preserves-choice-" + size.Width);
-                        search.Text = "780m";
+                        foreach (var processor in new[] { "226v", "268v", "288v" })
+                        {
+                            search.Text = processor;
+                            var familyMatches = searchable.Items.Cast<ComboBoxItem>().Where(item => item.Visibility == Visibility.Visible).ToArray();
+                            Require(familyMatches.Length == 1 && familyMatches[0].Tag as string == "graphics:intel-258v"
+                                && ((TextBlock)familyMatches[0].Content).Text.Contains("Lunar Lake")
+                                && !((TextBlock)familyMatches[0].Content).Text.Contains("258V"),
+                                language + "-processor-search-finds-shared-family-" + processor);
+                        }
+                        search.Text = "Lunar Lake";
                         await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                         var popup = (Popup)searchable.Template.FindName("PART_Popup", searchable);
                         var popupCapture = Path.Combine(directory, language + "-graphics-search-" + size.Width + ".png");
@@ -171,12 +201,39 @@ internal static class GraphicsOptionsChecks
                             language + "-escape-preserves-model-" + size.Width);
                     }
                 }
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                object? CallBuild(string name, params object[] args) => typeof(MainWindow).GetMethod(name, flags)!.Invoke(window, args);
+                Require(((string)CallBuild("CustomBuildIds")!).Contains("graphics:amd-880m"), language + "-gpu-id-exported");
+                try { CallBuild("ApplyCustomBuildIds", "graphics:amd-780m\ngraphics:amd-880m"); throw new IOException("multiple GPU IDs accepted"); }
+                catch (TargetInvocationException error) when (error.InnerException is InvalidOperationException) { }
+                Require(options.Selection.GraphicsProfile == "graphics:amd-880m", language + "-multiple-gpu-ids-rejected-atomically");
+                CallBuild("ClearCustomBuildSelection");
+                Require(options.Selection.GraphicsProfile == null && !((string)CallBuild("CustomBuildIds")!).Contains("graphics:"), language + "-clear-removes-gpu");
+                CallBuild("ApplyCustomBuildIds", "graphics:amd-780m");
+                Require(options.Selection.GraphicsProfile == "graphics:amd-780m" && ((string)CallBuild("CustomBuildIds")!).Contains("graphics:amd-780m"), language + "-gpu-id-roundtrip");
+                CallBuild("ApplyCustomBuildIds", "graphics:amd-880m");
                 window.PreviewStep(3);
                 Require(window.CurrentOptions.GraphicsProfile == "graphics:amd-880m" && ((TextBlock)window.FindName("ReviewLayout")).Text.Contains("880M"), language + "-review-includes-graphics-preview");
+                Select(options, "graphics:intel-258v");
+                window.PreviewStep(3);
+                Require(window.CurrentOptions.GraphicsProfile == "graphics:intel-258v"
+                    && ((TextBlock)window.FindName("ReviewLayout")).Text.Contains("Lunar Lake"), language + "-family-normal-selection-reaches-review");
                 InstallerI18n.SetLanguage(language == "zh-CN" ? "en-US" : "zh-CN"); options.Refresh();
-                Require(options.Selection.GraphicsProfile == "graphics:amd-880m", language + "-language-switch-preserves-choice");
+                Require(options.Selection.GraphicsProfile == "graphics:intel-258v", language + "-language-switch-preserves-choice");
                 options.SetWirelessContext("custom", true);
                 Require(!options.GraphicsExpander.IsVisible && window.CurrentOptions.GraphicsProfile == null, language + "-device-route-clears-real-window-plan");
+                InstallerI18n.SetLanguage(language);
+                var failed = new InstallationSession(1, "firmware-network-fixture", InstallationTargetKind.ExternalDisk,
+                    "", false, "failed", "components", null, FirmwareDownloads.SourcesUnavailableMessage, DateTime.UtcNow, Physical: true);
+                typeof(MainWindow).GetMethod("ShowResult", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [failed]);
+                var failureMessage = (TextBlock)window.FindName("ResultMessage");
+                Require(failureMessage.Text == FirmwareDownloads.SourcesUnavailableMessage
+                    && failureMessage.FontWeight == FontWeights.SemiBold && failureMessage.Padding.Left >= 12,
+                    language + "-unavailable-sources-error-is-prominent");
+                window.Width = 1060; window.Height = 720; window.UpdateLayout();
+                var failureCapture = Path.Combine(directory, language + "-firmware-unavailable.png");
+                try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, failureCapture); captures.Add(failureCapture); }
+                catch (IOException error) { captureErrors.Add(error.Message); }
                 window.Close(); window = null;
             }
         }
@@ -197,6 +254,17 @@ internal static class GraphicsOptionsChecks
         require(BoilerGraphicsHardware.Match([Device("Intel Arc B390", "PCI\\VEN_8086&DEV_B080")]).Profiles.SequenceEqual(["graphics:intel-g3-extreme"]), "intel-g3-extreme-official-pci-id");
         require(BoilerGraphicsHardware.Match([Device("Intel Arc B370", "PCI\\VEN_8086&DEV_B081")]).Profiles.SequenceEqual(["graphics:intel-g3"]), "intel-g3-official-pci-id");
         require(BoilerGraphicsHardware.Match([Device("Intel Arc B370", "PCI\\VEN_8086&DEV_B080")]).Profiles.Length == 0, "contradicting-intel-name-and-pci-id-never-match");
+        require(BoilerGraphicsHardware.Match([Device("Intel(R) Arc(TM) 140V GPU", "PCI\\VEN_8086&DEV_64A0")],
+            "Intel(R) Core(TM) Ultra 7 258V").Profiles.SequenceEqual(["graphics:intel-258v"]), "258v-cpu-and-lunar-lake-gpu-select-profile");
+        require(BoilerGraphicsHardware.Match([Device("Intel Graphics", "PCI\\VEN_8086&DEV_64B0")],
+            "Intel Core Ultra 7 258V").Profiles.SequenceEqual(["graphics:intel-258v"]), "258v-basic-gpu-label-with-pci-identity");
+        require(BoilerGraphicsHardware.Match([Device("Intel Arc 140V", "PCI\\VEN_8086&DEV_64A0")]).Profiles.SequenceEqual(["graphics:intel-258v"])
+            && BoilerGraphicsHardware.Match([Device("Intel Arc 130V", "PCI\\VEN_8086&DEV_64A0")],
+                "Intel Core Ultra 5 226V").Profiles.SequenceEqual(["graphics:intel-258v"])
+            && BoilerGraphicsHardware.Match([Device("Intel Arc 140V", "PCI\\VEN_8086&DEV_64B0")],
+                "Intel Core Ultra 9 288V").Profiles.SequenceEqual(["graphics:intel-258v"]), "lunar-lake-family-shares-one-profile-without-cpu-restriction");
+        require(BoilerGraphicsHardware.Match([Device("Intel Arc 140V", "PCI\\VEN_8086&DEV_B080")],
+            "Intel Core Ultra 7 258V").Profiles.Length == 0, "258v-wrong-gpu-family-rejected");
         require(BoilerGraphicsHardware.Match([Device("AMD Radeon Graphics", "PCI\\VEN_1002&DEV_150E")], "AMD Ryzen Z2 Extreme w/ Radeon Graphics").Profiles.SequenceEqual(["graphics:amd-z2-extreme"]), "z2-extreme-requires-exact-cpu-and-amd-display-device");
         require(BoilerGraphicsHardware.Match([Device("AMD Radeon RX 7900 XTX", "PCI\\VEN_1002&DEV_744C")], "AMD Ryzen Z2 Extreme w/ Radeon Graphics").Profiles.Length == 0, "z-cpu-plus-discrete-egpu-cannot-stand-in-for-integrated-gpu");
         require(BoilerGraphicsHardware.Match([Device("AMD Radeon 780M Graphics", "PCI\\VEN_1002&DEV_15BF")], "AMD Ryzen Z1 Extreme").Profiles.SequenceEqual(["graphics:amd-z1-extreme"]), "compatible-z-and-named-gpu-produce-one-precise-suggestion");

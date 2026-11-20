@@ -25,7 +25,9 @@ def validate_integration(root, integration, *, local_test=False):
     spec=importlib.util.spec_from_file_location('boiler_preparation',root/'scripts/prepare-integration.py')
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     expected_graphics=module.graphics_firmware_metadata(root)
-    if set(components)!={'core:decky','core:maintenance'} | wireless | set(expected_graphics):
+    expected_microcode=module.microcode_firmware_metadata(root)
+    expected_cpufreq=module.cpufreq_metadata(root)
+    if set(components)!={'core:decky','core:maintenance'} | wireless | set(expected_graphics) | set(expected_microcode) | set(expected_cpufreq):
         raise ValueError('Unapproved integration component')
     expected_wireless=module.firmware_metadata(root)
     if integration.get('graphics_candidates') != module.graphics_metadata(root):
@@ -33,6 +35,12 @@ def validate_integration(root, integration, *, local_test=False):
     for identity,item in expected_graphics.items():
         if components[identity] != item:
             raise ValueError('Graphics candidate inventory differs from the current adjustable baseline: '+identity)
+    for identity,item in expected_microcode.items():
+        if components[identity] != item:
+            raise ValueError('CPU microcode inventory differs from its pinned source: '+identity)
+    for identity,item in expected_cpufreq.items():
+        if components[identity] != item:
+            raise ValueError('CPU frequency inventory differs from current source: '+identity)
     for identity in sorted(wireless):
         item=components[identity]
         if (item.get('delivery')!='on-demand' or item.get('payload_cached') is not False
@@ -65,12 +73,12 @@ def integration_package_files(root, integration, *, local_test=False):
     """Only core bytes belong in a distribution; reject stale firmware caches."""
     validate_integration(root,integration,local_test=local_test)
     selected={}
-    for identity in ('core:decky','core:maintenance'):
+    for identity in ('core:decky','core:maintenance','cpufreq:intel','cpufreq:amd'):
         component=integration['components'][identity]
         if not component.get('available'):continue
         for entry in component.get('files',[])+component.get('licenses',[])+component.get('notices',[]):
             name=entry['source']
-            if name.startswith(('wireless/','graphics/')):
+            if name.startswith(('wireless/','graphics/','microcode/')):
                 raise ValueError('Firmware bytes are not permitted in production payloads')
             if name in selected and selected[name]!=entry:raise ValueError('Conflicting integration inventory')
             selected[name]=entry

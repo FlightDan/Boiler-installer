@@ -9,7 +9,7 @@
 <!-- BEGIN GENERATED INSTALL LIST -->
 | 组件 ID | 适配项目 | 建议 | 验证与适用边界 |
 | --- | --- | --- | --- |
-| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Generic bridge and BF63112/FTE3600 provider source references; the target sensor is matched by its SPI ACPI HID, not by model name. FTE3600 on this model is enrolled, verified and unlocks the Plasma lock screen on tested hardware; BF63112 remains a source reference and is not installable here. Boot-time installation and maintenance payloads for the FTE3600 runtime are still not implemented in the installer. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. Do not guess reset GPIO wiring.；依赖：decky |
+| fingerprint-unlock | 指纹解锁（实验功能） | 可选 | Decky bridge 0.1.10 with fingerprint enrollment. The locked fprintd runtime uses model-specific FTE3600 rules. Actual enrollment and unlock through this combined package need device verification. Keep the Steam PIN fallback.；依赖：decky |
 | slot-switch | KDE 槽位切换 / 系统回退 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | partition-mount | KDE 图形分区持久挂载 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | refind | rEFInd · 双系统图形启动菜单 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
@@ -32,7 +32,9 @@
 | fan-driver | OXP3 风扇与充电接口驱动 | 条件适用 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | oxp3-fan | OXP3 风扇 · 自动与曲线 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：fan-driver、decky |
 | oxp3-cpu | OXP3 CPU · EPP 与分组限频 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |
-| charging | OXP3 Battery · 充电上限与模式 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：fan-driver、decky |
+| intel-cpu-microcode | Intel CPU 微码 · Panther Lake | 可选 | 适用于 Intel Arc G3 Extreme 配置；按 CPU 签名及平台标志匹配。机型包安装、维护恢复和实机加载验收待接入。 |
+| charging | X2 Mini Battery · 电池遥测 | 可选 | 电量遥测与机型适用的充电控制；S4 由独立插件管理；依赖：fan-driver、decky |
+| s2s4 | Boiler S2/S4 switcher | 可选 | 独立 Decky 插件，关闭时沿用系统待机，开启时预留并保留休眠交换文件；依赖：decky |
 | oxp3-light | OXP3 Light · 三分区灯光控制 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |
 | legacy-runtime | 音量键与电量显示修复 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。 |
 | windows-reboot | 重启进入 Windows · Decky 按钮与桌面快捷方式 | 可选 | 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示；依赖：decky |

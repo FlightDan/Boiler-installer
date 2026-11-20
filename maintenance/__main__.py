@@ -3,6 +3,7 @@ import argparse
 import json
 import sys
 from protocol import load_json
+from protocol.model_options import INSTALLER_LANGUAGES
 from . import Engine
 
 
@@ -30,15 +31,17 @@ def main(argv=None):
     command=project_commands.add_parser("check")
     command.add_argument("session"); command.add_argument("--offline",action="store_true")
     project_commands.add_parser("inventory")
+    command=project_commands.add_parser("components"); command.add_argument("session")
     for action in ("acquire","plan","execute"):
         command=project_commands.add_parser(action)
-        command.add_argument("session"); command.add_argument("stream",choices=("device","maintenance"))
+        command.add_argument("session"); command.add_argument("stream",choices=("device","maintenance","component"))
         if action == "execute":
             command.add_argument("plan"); command.add_argument("--reviewed-sha256",required=True)
         else:
             command.add_argument("identity"); command.add_argument("version")
         if action == "plan":
             command.add_argument("--component",action="append")
+            command.add_argument("--component-intent",choices=("downgrade","follow"))
     command=commands.add_parser("inspect-legacy"); command.add_argument("state"); command.add_argument("public_key")
     command=commands.add_parser("adopt"); command.add_argument("receipt")
     model=commands.add_parser('models',help='Pinned model guides and explicitly reviewed on-device adaptations')
@@ -49,7 +52,7 @@ def main(argv=None):
     command.add_argument('--action',choices=('apply','verify','restore'),default='apply')
     command.add_argument('--repair',action='append',default=[]); command.add_argument('--plugin',action='append',default=[])
     command.add_argument('--trust-local-test',action='store_true'); command.add_argument('--acknowledge-update-hold',action='store_true')
-    command.add_argument('--installer-language',choices=('zh-CN','en-US'),default='en-US')
+    command.add_argument('--installer-language',choices=INSTALLER_LANGUAGES,default='en-US')
     command.add_argument('--kde-language',default='system',help='system or an authenticated package-declared KDE locale')
     command=actions.add_parser('execute'); command.add_argument('plan'); command.add_argument('--reviewed-sha256',required=True)
     command.add_argument('--trust-local-test',action='store_true')

@@ -2,7 +2,13 @@
   "schema": 1,
   "languages": [
     "zh-CN",
-    "en-US"
+    "en-US",
+    "zh-TW",
+    "ja-JP",
+    "ko-KR",
+    "de-DE",
+    "fr-FR",
+    "es-ES"
   ],
   "kde_languages": [
     "system",
@@ -17,6 +23,38 @@
     "ru_RU"
   ],
   "repairs": [
+    {
+      "id": "microcode:amd",
+      "zh": "AMD CPU 微码",
+      "en": "AMD CPU microcode",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "microcode:intel",
+      "zh": "Intel CPU 微码",
+      "en": "Intel CPU microcode",
+      "default": false,
+      "dependencies": [],
+      "available": true
+    },
+    {
+      "id": "cpufreq:amd",
+      "zh": "AMD CPU 调频",
+      "en": "AMD CPU frequency",
+      "default": false,
+      "dependencies": ["core:maintenance"],
+      "available": true
+    },
+    {
+      "id": "cpufreq:intel",
+      "zh": "Intel CPU 调频",
+      "en": "Intel CPU frequency",
+      "default": false,
+      "dependencies": ["core:maintenance"],
+      "available": true
+    },
     {
       "id": "ssd:gm7-boot-repair",
       "zh": "Predator GM7 1TB SSD 启动修复（已确认目标）",

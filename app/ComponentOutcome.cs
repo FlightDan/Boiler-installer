@@ -83,6 +83,15 @@ internal static class ComponentOutcome
             }
         }
         if (results.Length != expected.Count * 2) throw new IOException("Unexpected component result slot.");
+        if (options.KdeLanguage != "system")
+        {
+            var languages = results.Where(row => row.GetProperty("id").GetString() == "core:system-presets")
+                .Select(row => row.TryGetProperty("language", out var language) ? language.GetString() : null)
+                .Distinct().ToArray();
+            if (languages.Length != 1 || (languages[0] != options.KdeLanguage &&
+                !(options.AutomaticSystemLanguage && languages[0] == "en_US")))
+                throw new IOException("系统语言结果与所选设置不一致。 / Applied system language differs from the selection.");
+        }
     }
 
     internal static void ValidateSsdLayout(JsonElement[] results, PreparedDisk layout, string ssdIdentity)

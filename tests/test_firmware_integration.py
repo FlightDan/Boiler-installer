@@ -63,15 +63,17 @@ class FirmwareIntegrationChecks(unittest.TestCase):
             stage(self.root, '/unused', options, 'A')
         self.assertFalse((self.root / 'var').exists())
 
-    def test_preparer_declares_six_components_and_rejects_duplicate_inputs(self):
+    def test_preparer_declares_generic_firmware_and_rejects_duplicate_inputs(self):
         prepare = runpy.run_path(str(ROOT / 'scripts/prepare-integration.py'))['prepare']
         source = self.prepared('intel', ['intel/ibt-test.sfi'])
         prepared = prepare(self.base / 'payload', wireless=[source], development_firmware_cache=True)
         components = prepared['components']
         from graphics_catalog import firmware_metadata
+        from microcode import firmware_metadata as microcode_metadata
+        from cpufreq import metadata as cpufreq_metadata
         expected = {'core:decky', 'core:maintenance'} | {
             transport + ':' + vendor for transport in ('wifi', 'bluetooth')
-            for vendor in ('intel', 'realtek', 'mediatek')} | set(firmware_metadata(ROOT))
+            for vendor in ('intel', 'realtek', 'mediatek')} | set(firmware_metadata(ROOT)) | set(microcode_metadata(ROOT)) | set(cpufreq_metadata(ROOT))
         self.assertEqual(expected, set(components))
         self.assertTrue(components['bluetooth:intel']['available'])
         self.assertFalse(components['wifi:intel']['payload_cached'])

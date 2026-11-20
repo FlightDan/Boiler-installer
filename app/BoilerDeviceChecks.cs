@@ -72,14 +72,14 @@ internal static class BoilerDeviceChecks
             || fteSensor.Results.Single(result => result.ComponentId == "fingerprint-bf63112").State != BoilerCustomComponentHardware.MatchState.NotFound)
             throw new IOException("A BF63112 observation must not report an FTE3600 sensor, or vice versa.");
         var options = Field<InstallerOptionsPanel>(window, "optionsPanel");
-        void RequireGeneralPanel(string context)
+        void RequireGeneralPanel(Visibility expected, string context)
         {
             var detector = Field<Border>(window, "currentHardwarePanel");
-            if (detector.Visibility != Visibility.Visible || !Field<StackPanel>(window, "customBuild").Children.Contains(detector))
-                throw new IOException("Current-PC detector was not available in Custom Components " + context + ".");
+            if (detector.Visibility != expected || !Field<StackPanel>(window, "customBuild").Children.Contains(detector))
+                throw new IOException("Unexpected Current-PC detector visibility " + context + ".");
         }
         typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
-        await Flush(window); RequireGeneralPanel("before selecting a model");
+        await Flush(window); RequireGeneralPanel(Visibility.Visible, "before selecting a model");
         var expectedTitle = PartitionInventory.L("识别当前电脑硬件", "Detect this computer's hardware");
         var expectedIntro = PartitionInventory.L("识别当前 Windows 电脑的部件，辅助选择对应构件。", "Identify components on this Windows computer to help choose matching components.");
         if (Field<TextBlock>(window, "currentHardwareTitle").Text != expectedTitle
@@ -99,7 +99,7 @@ internal static class BoilerDeviceChecks
         typeof(MainWindow).GetMethod("CommitDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [selection]);
         await Flush(window);
 
-        RequireGeneralPanel("with an unmatched SSD provider");
+        RequireGeneralPanel(Visibility.Collapsed, "with a selected model package");
         var choices = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
         choices["resource:intel-xevmafix-724"].IsChecked = false;
         choices["wifi:intel"].IsChecked = false;
@@ -115,7 +115,7 @@ internal static class BoilerDeviceChecks
                 throw new IOException("A hidden generic wireless option was advertised as available.");
         }
         finally { choices["wifi:intel"] = fixtureWirelessChoice; }
-        RequireGeneralPanel("after an SSD-provider selection change");
+        RequireGeneralPanel(Visibility.Collapsed, "after a model component selection change");
         var expectedSelections = choices.ToDictionary(pair => pair.Key, pair => pair.Value.IsChecked);
         void RequireUnchanged(string outcome)
         {
@@ -153,7 +153,7 @@ internal static class BoilerDeviceChecks
             throw new IOException("Current-PC SetupAPI error did not reach the advisory state.");
         RequireUnchanged("a reader error");
         typeof(MainWindow).GetMethod("ClearDeviceSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
-        await Flush(window); RequireGeneralPanel("after clearing a model");
+        await Flush(window); RequireGeneralPanel(Visibility.Visible, "after clearing a model");
         using var resourcePackage = JsonDocument.Parse("""
             {"id":"device:fixture","version":"0.1.0","components":[],"resources":[
                 {"id":"resource:intel-be201-firmware","path":"common/network/intel/be201/resource.toon"},

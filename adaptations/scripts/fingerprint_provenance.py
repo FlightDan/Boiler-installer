@@ -15,7 +15,7 @@ def validate(root, source_lock, member):
     lock = json.loads(raw)
     if (lock.get('schema_version') != 1 or lock.get('kind') != 'BoilerFingerprintPublicBridgeSource'
             or lock.get('repository') != 'FlightDan/FingerprintUnlock-SteamOS'
-            or lock.get('commit') != 'fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e'):
+            or lock.get('commit') != '5f7f988f645c08f9a1837ddcaa1d66b776ca7df6'):
         raise ValueError('Unexpected fingerprint public bridge identity')
     expected = {('bridge/'+n, 'common/fingerprint/bridge/'+n) for n in BRIDGE}
     license_expected = {('COPYING', 'common/fingerprint/public-COPYING'),

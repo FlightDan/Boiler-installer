@@ -87,15 +87,15 @@ public static class PartitionDeletion
         void Text(string value, bool title = false) => panel.Children.Add(new TextBlock { Text = value, TextWrapping = TextWrapping.Wrap,
             FontSize = title ? 21 : 15, FontWeight = title ? FontWeights.SemiBold : FontWeights.Normal, Margin = new Thickness(0,0,0,16) });
         Text(request.Example ? L("模拟删除 · 不影响真实磁盘", "Simulate deletion · no real disk changes") : L("所选分区中的所有文件都将丢失", "All files in the selected partitions will be lost"), true);
-        Text(disk.Title + "\n" + L($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total"));
-        foreach (var row in rows) Text(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + L($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
+        Text(disk.Title + "\n" + InstallerI18n.Format($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total"));
+        foreach (var row in rows) Text(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + InstallerI18n.Format($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
         Text(L("删除的是整个分区，包括系统、游戏和个人文件。确认后立即删除，不会等到开始安装；返回或退出不能撤销。", "Whole partitions are erased, including their system, games and personal files. Deletion happens immediately, before installation. Going back or exiting cannot undo it."));
         if (bulk) Text(L("以上所选 SteamOS 分区（包括其自有启动分区）将删除；未选分区、Windows / 宿主 / 恢复分区保持不变。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "Selected SteamOS partitions, including their own boot partitions, will be deleted. Unselected, Windows, host and recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
         var consent = new CheckBox { Name = "DeleteConsent", Content = new TextBlock { Text = L("我已备份需要的文件，确认清空以上全部所选分区。", "I have backed up my files and agree to erase every selected partition shown above."), TextWrapping = TextWrapping.Wrap } };
         panel.Children.Add(consent);
         var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0,16,0,0) };
         var cancel = new Button { Content = L("取消", "Cancel"), IsCancel = true, IsDefault = true };
-        var confirm = new Button { Name = "DeleteConfirm", Content = request.Example ? L("模拟删除", "Simulate deletion") : bulk ? L($"立即删除 {rows.Length} 个分区", $"Delete {rows.Length} partitions now") : L("立即删除此分区", "Delete partition now"), IsEnabled = false,
+        var confirm = new Button { Name = "DeleteConfirm", Content = request.Example ? L("模拟删除", "Simulate deletion") : bulk ? InstallerI18n.Format($"立即删除 {rows.Length} 个分区", $"Delete {rows.Length} partitions now") : L("立即删除此分区", "Delete partition now"), IsEnabled = false,
             Background = new SolidColorBrush(Color.FromRgb(163,47,35)), Foreground = Brushes.White };
         consent.Checked += (_, _) => confirm.IsEnabled = true; consent.Unchecked += (_, _) => confirm.IsEnabled = false;
         confirm.Click += (_, _) => { if (consent.IsChecked == true) window.DialogResult = true; };

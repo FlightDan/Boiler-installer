@@ -290,15 +290,25 @@ public partial class MainWindow
         deviceIndexStatus.Text = (deviceIndexOffline
             ? PartitionInventory.L("离线：已自动使用验签缓存，无法检查新的撤销记录。", "Offline: using verified cache; newer revocations cannot be checked.")
             : PartitionInventory.L("GitHub 机型目录已更新并验签。", "GitHub device directory updated and signature verified."))
-            + " " + (count == 0 ? PartitionInventory.L("目前没有可用机型包。", "No device packages are available yet.") : PartitionInventory.L($"共 {count} 个机型包。", $"{count} device package(s) available."));
+            + " " + (count == 0 ? PartitionInventory.L("目前没有可用机型包。", "No device packages are available yet.") : InstallerI18n.Format($"共 {count} 个机型包。", $"{count} device package(s) available."));
     }
 
     private bool IsAvailableDeviceEntry(JsonElement entry) => lastDeviceIndex is JsonElement index
-        && !index.GetProperty("revocations").EnumerateArray().Any(value => value.GetString() == entry.GetProperty("sha256").GetString())
+        && !entry.TryGetProperty("component_release", out _)
+        && !IsRevokedDeviceEntry(entry, index)
         && DevicePackageVersion.TryParse(entry.GetProperty("version").GetString(), out _)
         && (!entry.TryGetProperty("available", out var available) || available.ValueKind == JsonValueKind.True)
         && (!entry.TryGetProperty("minimum_engine_version", out var minimum)
             || minimum.ValueKind == JsonValueKind.String && DevicePackageVersion.EngineSupports(minimum.GetString()));
+
+    internal static bool IsRevokedDeviceEntry(JsonElement entry, JsonElement index)
+    {
+        if (!index.TryGetProperty("revocations", out var revocations)) return false;
+        var revoked = revocations.EnumerateArray().Select(value => value.GetString()).ToHashSet(StringComparer.Ordinal);
+        return (entry.TryGetProperty("sha256", out var digest) && revoked.Contains(digest.GetString()))
+            || (entry.TryGetProperty("component_resolution", out var resolution) && resolution.EnumerateObject()
+                .Any(component => revoked.Contains(component.Value.GetProperty("manifest_sha256").GetString())));
+    }
 
     internal static string DeviceLabel(JsonElement entry)
     {
@@ -312,6 +322,15 @@ public partial class MainWindow
             if (makers.Length == 1) brand = makers[0];
         }
         return string.IsNullOrWhiteSpace(brand) || model.StartsWith(brand, StringComparison.OrdinalIgnoreCase) ? model : brand + " " + model;
+    }
+
+    private static string DeviceVariantProfile(JsonElement entry)
+    {
+        if (!entry.TryGetProperty("compatibility", out var compatibility)) return "";
+        string Members(string name) => compatibility.TryGetProperty(name, out var members)
+            ? string.Join(", ", members.EnumerateArray().Select(value => value.GetString()).Order(StringComparer.Ordinal)) : "";
+        return string.Join(" · ", new[] { Members("os_ids"), Members("os_versions"), Members("kernels"), Members("architectures") }
+            .Where(value => value.Length > 0));
     }
 
     private static string DeviceSearchText(ComboBoxItem item)
@@ -358,11 +377,18 @@ public partial class MainWindow
             // Keep a reviewed source only while it is still available; otherwise
             // choose the newest signed package before falling back to the guide.
             var retained = model.FirstOrDefault(entry => !IsModelGuide(entry) && preferredKey != null && DeviceEntryKey(entry) == preferredKey);
-            if (retained.ValueKind != JsonValueKind.Undefined) { yield return retained; continue; }
             var candidates = model.Where(entry => !IsModelGuide(entry)).OrderByDescending(
                 entry => entry.GetProperty("version").GetString(), DevicePackageVersion.Comparer)
                 .ThenBy(entry => DeviceEntryKey(entry), StringComparer.Ordinal).ToArray();
-            yield return candidates.Length > 0 ? candidates[0] : model.First();
+            if (!candidates.Any(entry => entry.TryGetProperty("component_resolution", out _)))
+            {
+                yield return retained.ValueKind != JsonValueKind.Undefined ? retained : candidates.FirstOrDefault(model.First());
+                continue;
+            }
+            if (retained.ValueKind != JsonValueKind.Undefined) yield return retained;
+            foreach (var candidate in candidates.DistinctBy(DeviceVariantProfile))
+                if (retained.ValueKind == JsonValueKind.Undefined || DeviceEntryKey(candidate) != DeviceEntryKey(retained))
+                    yield return candidate;
         }
     }
 
@@ -381,7 +407,9 @@ public partial class MainWindow
             deviceList.Items.Clear();
             deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = PartitionInventory.L("请选择机型…", "Choose a device…"), TextWrapping = TextWrapping.Wrap } });
             foreach (var entry in DeviceModelEntries(keepSource ? old : null))
-                deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = DeviceLabel(entry) + (deviceSourceBundled ? "" : IsModelGuide(entry)
+                deviceList.Items.Add(new ComboBoxItem { Content = new TextBlock { Text = DeviceLabel(entry)
+                    + (entry.TryGetProperty("component_resolution", out _) ? " · " + DeviceVariantProfile(entry) : "")
+                    + (deviceSourceBundled ? "" : IsModelGuide(entry)
                     ? PartitionInventory.L(" · 仅适配指南", " · Guide only") : PartitionInventory.L(" · GitHub 机型包", " · GitHub package")), TextWrapping = TextWrapping.Wrap }, Tag = entry.Clone() });
             deviceList.SelectedItem = deviceList.Items.OfType<ComboBoxItem>().FirstOrDefault(item => item.Tag is JsonElement entry && DeviceEntryKey(entry) == old)
                 ?? deviceList.Items.OfType<ComboBoxItem>().FirstOrDefault(item => previous is JsonElement prior && item.Tag is JsonElement entry
@@ -453,8 +481,10 @@ public partial class MainWindow
         var id = item.GetProperty("id").GetString()!;
         var digest = item.GetProperty("sha256").GetString()!;
         var current = await BoilerProtocol.RunAsync(["cached-index", BoilerProtocol.RegistryCache], CancellationToken.None);
-        if (!current.GetProperty("packages").EnumerateArray().Any(p => p.GetProperty("id").GetString() == id && p.GetProperty("sha256").GetString() == digest)
-            || current.GetProperty("revocations").EnumerateArray().Any(p => p.GetString() == digest)) throw new IOException("Selected package is no longer approved.");
+        var approved = current.GetProperty("packages").EnumerateArray().FirstOrDefault(p =>
+            p.GetProperty("id").GetString() == id && p.GetProperty("sha256").GetString() == digest);
+        if (approved.ValueKind == JsonValueKind.Undefined || IsRevokedDeviceEntry(approved, current))
+            throw new IOException("Selected package is no longer approved.");
         reviewedDeviceMetadata = item.Clone();
         var folder = Path.Combine(BoilerProtocol.PackageRoot, digest[..24]);
         var validCache = false;

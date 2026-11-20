@@ -3,8 +3,9 @@ Description=Boiler OXP3 fingerprint service
 [Service]
 Type=dbus
 BusName=net.reactivated.Fprint
-UnsetEnvironment=LD_LIBRARY_PATH
-ExecStart=/var/lib/oxp3-installer/fingerprint/libexec/fprintd
+# Keep the bundled libraries private to fprintd, including indirect dependencies.
+UnsetEnvironment=LD_LIBRARY_PATH LD_PRELOAD
+ExecStart=/lib64/ld-linux-x86-64.so.2 --library-path /var/lib/oxp3-installer/fingerprint/lib /var/lib/oxp3-installer/fingerprint/libexec/fprintd
 DeviceAllow=char-spi rw
 DeviceAllow=char-gpiochip rw
 # The FTE3600 backend polls its ACPI glue UIO node for the interrupt that signals

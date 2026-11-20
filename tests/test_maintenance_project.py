@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from pathlib import Path
 import json
 import tempfile
@@ -10,6 +11,36 @@ from maintenance.engine import MaintenanceError
 
 
 class ProjectDiscoveryTests(unittest.TestCase):
+    def test_component_discovery_uses_installed_owner_and_device_cache(self):
+        entries = [dict(id='component:one', version=v, sha256=str(i)*64,
+                        declared_source={'repository': project.REPOSITORY},
+                        component_release={'resource_id': 'resource:one', 'channel': 'stable'},
+                        compatibility={'device_ids': ['x2-mini']})
+                   for i, v in enumerate(('3.0.0', '2.0.0', '1.0.0'), 1)]
+        index = {'id': project.REGISTRIES['device'], 'packages': entries, 'revocations': [entries[2]['sha256']]}
+        current = {'components': {'component:one': {'version': '2.0.0', 'component_release':
+                   {'resource_id': 'resource:one', 'policy': 'pinned'}}},
+                   'environment': {'device_id': 'x2-mini'}}
+        with mock.patch('maintenance.models._privileged'), \
+             mock.patch.object(project, 'hardware_match', return_value=({'status': 'matched', 'model_id': 'device:x2-mini'}, {})), \
+             mock.patch.object(project.updates, 'inventory', return_value=current), \
+             mock.patch.object(project.updates, 'discover') as discover, \
+             mock.patch.object(project, '_private_index', return_value=nullcontext((Path('/private'), index))) as cached:
+            result = project.component_check('/', '/session')
+        cached.assert_called_once_with('/session', 'component')
+        discover.assert_called_once_with('/', Path('/private'), device_id='x2-mini')
+        self.assertEqual([row['version'] for row in result['candidates']], ['3.0.0', '2.0.0'])
+        self.assertTrue(result['candidates'][0]['resume_available'])
+        self.assertEqual(result['candidates'][0]['policy'], 'pinned')
+
+    def test_component_requires_live_match_and_installed_owner(self):
+        with mock.patch.object(project, 'hardware_match', return_value=({'status': 'no-model'}, None)):
+            with self.assertRaisesRegex(MaintenanceError, 'matched live model'):
+                project._identity('component', 'component:one')
+        with mock.patch.object(project.updates, 'inventory', return_value={'components': {}}):
+            with self.assertRaisesRegex(MaintenanceError, 'installed owner'):
+                project._component_entry('/', '/session/device', {}, {}, 'component:one', 'x2-mini')
+
     @staticmethod
     def _opti_model():
         return {'components': [{'id': 'opti2xmx'}]}

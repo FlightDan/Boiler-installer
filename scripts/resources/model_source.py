@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from protocol.resource_pool import decoder, local, json_document
 from protocol.hdr_contract import IDENTITY as HDR, PROFILES, LEGACY_PROFILES
+from protocol.component_versions import validate_model_requests
 
 PATTERN = re.compile(r'adaptations/brands/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)/\2\.toon')
 DEVICE_PATTERN = re.compile(r'adaptations/devices/([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)\.toon')
@@ -193,14 +194,14 @@ def apply(pool, project, catalog):
                 or not isinstance(matching['pairs'],list) or len(matching['pairs'])>32 or any(not isinstance(x,dict)
                 or set(x)!={'manufacturer','model'} or any(not isinstance(x[k],str) or not x[k].strip() for k in ('manufacturer','model')) for x in matching['pairs'])):
             raise ValueError('Invalid advisory model names: '+source)
-        rows=spec['resources']
-        if not isinstance(rows,list) or not rows or any(not isinstance(x,dict) or 'id' not in x or set(x)-{'id','default'}
-                or ('default' in x and type(x['default']) is not bool) or not isinstance(x['id'],str) for x in rows):
-            raise ValueError('Invalid model resource references: '+source)
-        ids=[x['id'] for x in rows]; requested.update(ids)
-        if len(ids)!=len(set(ids)):raise ValueError('Duplicate model resource references: '+source)
+        requests=validate_model_requests(spec['resources'])
+        ids=list(requests)
+        requested.update(ids)
         if not set(ids)<=set(resources):raise ValueError('Model references an unavailable resource: '+source)
         for item in ids:
+            pinned=requests[item].get('version')
+            if pinned and resources[item]['version']!=pinned:
+                raise ValueError('Offline resource pool does not contain the pinned model version: '+item)
             if set(resources[item]['dependencies'])-set(ids):raise ValueError('Model resource has missing dependencies: '+item)
         model=copy.deepcopy(originals.get(identity,dict(schema_version=1,kind='BoilerResourceModel',id=identity,
             name=spec['name'],hardware_matching=matching,resources=[],parameters={},pending=[],complete=False,official_release=False)))

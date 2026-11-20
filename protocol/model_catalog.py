@@ -219,11 +219,11 @@ def guide_model(value, path, source, metadata=None):
         raise ProtocolError('Invalid or duplicate guide component identity')
     components = []
     for item in items:
-        fingerprint_default = (item.get('default') is True and item['id'] == 'fingerprint-unlock'
+        packaged_default = (item.get('default') is True and item['id'] in ('fingerprint-unlock', 's2s4')
             and (value['id'], path) in {
                 ('guide:oxp3', 'brands/onexplayer/oxp3/manifest.json'),
                 ('guide:x2-mini', 'brands/onexplayer/x2-mini/manifest.json')})
-        if (not (item.get('default') is False or fingerprint_default) or item.get('recommendation') not in
+        if (not (item.get('default') is False or packaged_default) or item.get('recommendation') not in
                 {'required', 'recommended', 'optional', 'conditional', 'pending', 'excluded'}
                 or not isinstance(item.get('dependencies'), list) or any(not isinstance(dep,str) or dep not in ids for dep in item['dependencies'])
                 or not isinstance(item.get('name'), str) or not isinstance(item.get('notes'), str)):

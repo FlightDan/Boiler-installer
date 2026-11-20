@@ -76,14 +76,14 @@ class GeneratorChecks(unittest.TestCase):
         self.refresh()
         self.spec['revision'] = 'a' * 40
         self.spec['upstream_url'] = BASE_PREFIX + self.spec['revision'] + '/'
-        self.spec['version'] = '0.1.0-baseline.2'
+        self.spec['version'] = '0.1.0-baseline.4'
         self.write_inputs()
         # load_spec has no fixed revision or approval requirement.
         self.assertEqual('a' * 40, load_spec(self.root)[0]['revision'])
         with self.assertRaisesRegex(ValueError, 'stale'): firmware_metadata(self.root)
         refreshed = self.refresh()
         self.assertEqual('a' * 40, refreshed['revision'])
-        self.assertEqual('0.1.0-baseline.2', firmware_metadata(self.root)[self.identity]['version'])
+        self.assertEqual('0.1.0-baseline.4', firmware_metadata(self.root)[self.identity]['version'])
 
     def test_wrong_downloaded_git_blob_is_rejected(self):
         original = self.fetch

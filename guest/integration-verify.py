@@ -15,6 +15,9 @@ from integration import verify_device_components, validate_options, authenticate
 import system_presets
 import graphics
 import graphics_boot
+import microcode
+import microcode_boot
+import cpufreq
 
 # Phase timing is plain log output; nothing below reads these values.
 _boiler_clock = time.monotonic()
@@ -88,11 +91,29 @@ for slot in ('A', 'B'):
         if result['options'] != {key: value for key,value in options.items() if key != '_target_disk'}:
             raise RuntimeError('Verification selection differs from installed request')
         graphics_profile = graphics.selected(options)
+        microcode_profile = microcode.selected(options)
+        cpufreq_profile = cpufreq.selected(options)
+        if cpufreq_profile:
+            expected = cpufreq.metadata(Path('/mnt/payload'))[cpufreq_profile]['component']
+            installed = result['components'].get(cpufreq_profile, {})
+            component = next((item for item in result['install_plan']['components'] if item['id'] == cpufreq_profile), None)
+            if component != expected or installed.get('activation') != 'first_boot_required' or installed.get('runtime') != 'not_validated':
+                raise RuntimeError('CPU frequency scaling startup component differs from selection')
         if graphics_profile:
             if graphics_profile not in result['components']:
                 raise RuntimeError('Selected graphics profile is missing from installed results')
             graphics.verify_inventory(root, result['components'][graphics_profile])
-            graphics_boot.verify(root, result['components'][graphics_profile]['early_boot_proof'])
+            if not microcode_profile:
+                graphics_boot.verify(root, result['components'][graphics_profile]['early_boot_proof'])
+        if microcode_profile:
+            if microcode_profile not in result['components']:
+                raise RuntimeError('Selected CPU microcode is missing from installed results')
+            boot = result['install_plan'].get('firmware_boot', {})
+            if boot.get('component') != 'core:firmware-boot' or boot.get('cpu') != microcode_profile or boot.get('graphics') != graphics_profile:
+                raise RuntimeError('CPU microcode early boot transaction differs from selection')
+            microcode_boot.verify(root, boot['proof'])
+            if not Engine(root, root / 'var/lib/boiler/maintenance', read_only=True).verify_readonly('core:firmware-boot')['ok']:
+                raise RuntimeError('CPU/graphics shared boot files differ')
         review_kwargs = {}
         if model_needed:
             authenticated = authenticate_model_efi(root, '/mnt/payload', options)
@@ -104,7 +125,9 @@ for slot in ('A', 'B'):
                 json.dump(context, stream); stream.flush(); os.fsync(stream.fileno())
             review_kwargs['model_review_path'] = review_path
         device_ids = verify_device_components(root, '/mnt/payload', options, slot, result['components'], **review_kwargs)
-        system_presets.verify(root, options, Engine(root, root / 'var/lib/boiler/maintenance', read_only=True))
+        language = system_presets.verify(root, options, Engine(root, root / 'var/lib/boiler/maintenance', read_only=True))
+        if options.get('automatic_system_language') and result['components'].get(system_presets.IDENTITY, {}).get('language') != language:
+            raise RuntimeError('Installed system language differs from image verification')
         for identity, component in result['components'].items():
             if component['status'] != 'files_installed': raise RuntimeError('Component was not installed: ' + identity)
             if identity == ssd_identity:

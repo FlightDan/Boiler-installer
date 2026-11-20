@@ -8,14 +8,16 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 
-from protocol import compatible, validate_package
-from protocol.manifest import load_json, confined
+from protocol import ProtocolError, compatible, validate_package
+from protocol.manifest import MAX_MANIFEST, load_json, confined, validate_manifest, verify_file
 from protocol.model_catalog import ROOT, MODELS, bundled_model_package
-from .engine import Engine, MaintenanceError, _read
+from .engine import Engine, MaintenanceError, _atomic, _read, _sync_dir
 from .adoption_blobs import observe, _directory, _target_user, _file
-from .updates import target_environment, _digest, _guest_path
+from .updates import target_environment, _digest, _guest_path, _regular_stream
 from . import models
+from . import onexplayer_microcode as microcode
 
 
 GAMESCOPE_COMPONENT = 'x2-mini:gamescope-env'
@@ -24,6 +26,13 @@ GAMESCOPE_SHA256 = '9616729dac8be729b56bd201b8cfbbb1fcd0eb2fb7163944638306856e85
 GAMESCOPE_KERNEL = '7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9'
 SLOT_SWITCH_COMPONENT = 'x2-mini:slot-switch'
 FINGERPRINT_COMPONENT = 'oxp3:fingerprint-unlock'
+SLEEP_COMPONENT = 'boiler:s2s4'
+SLEEP_ROUTER = 'etc/systemd/system/systemd-suspend.service.d/90-boiler-sleep.conf'
+OLD_SLEEP_ROUTER = 'etc/systemd/system/systemd-suspend.service.d/90-oxp3-battery.conf'
+SLEEP_PLUGIN = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-S2S4-Switcher/'
+SLEEP_FILES = {SLEEP_ROUTER, 'var/lib/boiler-sleep/sleep_control.py',
+    'usr/share/licenses/boiler-s2s4/LICENSE',
+    *(SLEEP_PLUGIN+name for name in ('main.py', 'plugin.json', 'package.json', 'dist/index.js'))}
 FINGERPRINT_NATIVE = 'var/lib/oxp3-installer/fingerprint/'
 FINGERPRINT_PLUGIN = 'var/lib/oxp3-installer/decky/runtime/plugins/Boiler-Fingerprint-Unlock/'
 FINGERPRINT_RULES = {'device:oxp3': 'etc/udev/rules.d/69-boiler-oxp3-fingerprint.rules',
@@ -129,6 +138,26 @@ def check_static_component(engine, component):
     check_gamescope_component(engine, component)
     check_slot_switch_component(engine, component)
     check_fingerprint_component(engine, component)
+    if component['id'] == SLEEP_COMPONENT:
+        rows = component.get('files', [])
+        if (component.get('hooks') or len(rows) != len(SLEEP_FILES)
+                or {row.get('target') for row in rows} != SLEEP_FILES):
+            raise MaintenanceError('Unexpected Boiler S2/S4 switcher targets')
+        if observe(engine, engine._target(OLD_SLEEP_ROUTER))['exists']:
+            raise MaintenanceError('Restore the old Battery sleep integration before installing the switcher')
+        owners = engine._state().get('owners', {})
+        for target in SLEEP_FILES:
+            if (observe(engine, engine._target(target))['exists']
+                    and owners.get(target, {}).get('component') != SLEEP_COMPONENT):
+                raise MaintenanceError('Existing sleep file requires explicit review: '+target)
+
+
+def guard_sleep_restore(engine, component_id):
+    if component_id == SLEEP_COMPONENT:
+        directory = engine.home_root/'.boiler-s2s4'
+        if (os.path.lexists(directory/'swap-state.json')
+                or os.path.lexists(directory/'hibernation.swapfile')):
+            raise MaintenanceError('Turn off S4 and release the swap file before restoring Boiler S2/S4 switcher')
 
 
 def check_fingerprint_model(component, identity):
@@ -245,6 +274,109 @@ def _retained_or_bundled(identity, engine, runtime_root):
     return bundled_model_package(identity,trust_local_test=True,root=runtime_root)
 
 
+def _microcode_pointer(engine, identity):
+    return engine.state_dir/'models'/('microcode-' + identity.removeprefix('device:') + '.json')
+
+
+def _microcode_manifest(directory, anchor):
+    with _regular_stream(confined(directory, 'manifest.json')) as stream:
+        raw = stream.read(MAX_MANIFEST + 1)
+    if len(raw) > MAX_MANIFEST or hashlib.sha256(raw).hexdigest() != anchor:
+        raise MaintenanceError('Retained microcode manifest differs from its anchor')
+    return raw, validate_manifest(json.loads(raw), 'DevicePackage')
+
+
+def _retain_microcode(engine, item):
+    """Retain only the authenticated manifest and the fixed provider inputs."""
+    anchor = item['manifest_sha256']
+    source = Path(item['directory'])
+    parent = engine.state_dir/'models/microcode-packages'
+    with _directory(parent, create=True):
+        pass
+    target = confined(parent, anchor)
+    if not os.path.lexists(target):
+        raw, _ = _microcode_manifest(source, anchor)
+        with tempfile.TemporaryDirectory(prefix='.microcode-', dir=parent) as directory:
+            snapshot = Path(directory)
+            _atomic(snapshot/'manifest.json', raw, 0o600)
+            for row in item['component']['files']:
+                name = row['source']
+                with _regular_stream(confined(source, name)) as stream:
+                    data = stream.read(row['size'] + 1)
+                member = confined(snapshot, name)
+                member.parent.mkdir(parents=True, exist_ok=True)
+                _atomic(member, data, 0o600)
+                verify_file(member, row)
+            snapshot.rename(target)
+            _sync_dir(parent)
+    _microcode_manifest(target, anchor)
+    for row in item['component']['files']:
+        verify_file(confined(target, row['source']), row)
+    return target
+
+
+def _check_live_microcode_model(engine, package):
+    if engine.root != Path('/'):
+        return
+    dmi = Path('/sys/class/dmi/id')
+    try:
+        actual = dict(manufacturer=(dmi/'sys_vendor').read_text().strip(), model=(dmi/'product_name').read_text().strip())
+    except OSError as error:
+        raise MaintenanceError('Cannot establish the running microcode target model') from error
+    matching = package.get('hardware_matching', {})
+    if not isinstance(matching, dict):
+        raise MaintenanceError('Invalid authenticated microcode model identity')
+    if matching.get('mode') == 'manual' and matching.get('automatic_selection') is False:
+        declared = matching.get('dmi', {})
+        if not isinstance(declared, dict):
+            raise MaintenanceError('Invalid authenticated microcode model identity')
+        pairs = [dict(manufacturer=declared.get('sys_vendor'), model=declared.get('product_name'))]
+    elif matching.get('mode') == 'advisory-exact-dmi-v1':
+        pairs = matching.get('pairs', [])
+    else:
+        pairs = []
+    if not isinstance(pairs, list) or actual not in pairs:
+        raise MaintenanceError('Running model does not match the authenticated microcode package')
+
+
+def _microcode_item(identity, engine, base, runtime_root):
+    """Select the independently retained provider without migrating the model."""
+    if identity not in ('device:oxp3', 'device:x2-mini'):
+        return None
+    pointer = _microcode_pointer(engine, identity)
+    retained = os.path.lexists(pointer)
+    if retained:
+        saved = models._private_json(pointer)
+        anchor = saved.get('manifest_sha256', '')
+        if saved.get('model_id') != identity or not re.fullmatch(r'[0-9a-f]{64}', anchor):
+            raise MaintenanceError('Invalid retained microcode package anchor')
+        directory = confined(engine.state_dir, 'models/microcode-packages/' + anchor)
+        _, value = _microcode_manifest(directory, anchor)
+        candidate = dict(directory=str(directory), manifest_sha256=anchor, package=value)
+    elif any(part['id'] == microcode.IDENTITY for part in base['package']['components']):
+        candidate = base
+    else:
+        try:
+            candidate = bundled_model_package(identity, trust_local_test=True, root=runtime_root)
+        except (ProtocolError, OSError):
+            return None
+    value = candidate['package']
+    metadata = value.get('shared_adaptations')
+    declared = metadata.get('components') if isinstance(metadata, dict) else None
+    component = next((part for part in value['components'] if part['id'] == microcode.IDENTITY), None)
+    if value['id'] != identity or not isinstance(declared, list) or microcode.IDENTITY not in declared or component is None:
+        if retained:
+            raise MaintenanceError('Retained package does not declare the microcode provider')
+        return None
+    try:
+        microcode.check_component(component)
+    except MaintenanceError:
+        if retained:
+            raise
+        return None
+    return dict(candidate, component=component)
+
+
 def package(identity, engine, runtime_root, trust):
     if not trust:
         raise MaintenanceError('Explicit session trust is required for local test repairs')
@@ -337,7 +469,11 @@ def package(identity, engine, runtime_root, trust):
             check(known[cid])
     for cid in ids:
         check_fingerprint_model(known[cid], identity)
-    item['components'] = [known[cid] for cid in ids if cid != 'x2-mini:keyboard']
+    provider = _microcode_item(identity, engine, item, runtime_root)
+    item['components'] = [known[cid] for cid in ids if cid not in ('x2-mini:keyboard', microcode.IDENTITY)]
+    if provider is not None:
+        item['microcode_item'] = provider
+        item['components'].append(provider['component'])
     return item
 
 
@@ -375,29 +511,36 @@ def options(root, identity, *, trust_local_test=False, runtime_root=ROOT, state_
     for component in item['components']:
         available = compatible(component, environment)
         reason = ''
+        installed_version = state['components'].get(component['id'], {}).get('version')
+        if available and component['id'] == microcode.IDENTITY and installed_version:
+            available = False
+            reason = 'Verify or restore the installed early microcode transaction first.'
         if component.get('ssd_boot_policy'):
             try:
                 owner=_ssd_provider(item,component['id'])
+                saved=ssd_status.get('provider_owner')
+                if ssd_status.get('installed') and saved == owner:
+                    installed_version = component.get('version')
                 if not ssd_status.get('available'):
                     raise MaintenanceError(str(ssd_status.get('reason') or 'SSD repair is unavailable on this target'))
-                saved=ssd_status.get('provider_owner')
                 if (ssd_status.get('installed') or ssd_status.get('pending')) and saved != owner:
                     raise MaintenanceError('Existing SSD ownership does not belong to this authenticated provider')
             except (MaintenanceError,ValueError,OSError) as error:
                 available=False; reason=str(error)
-        if available and component['id'] == FINGERPRINT_COMPONENT:
+        if available and component['id'] in {FINGERPRINT_COMPONENT, SLEEP_COMPONENT}:
             provider = engine._target('var/lib/oxp3-installer/decky/runtime/services/PluginLoader')
             if ('oxp3:legacy-adaptation' not in state.get('components', {})
                     or not observe(engine, provider).get('exists')):
                 available = False
-                reason = 'Fingerprint unlock requires the installed model Decky provider'
-        if available and component['id'] in X2_STATIC_ADDITIONS | {FINGERPRINT_COMPONENT}:
+                reason = 'This plugin requires the installed model Decky provider'
+        if available and component['id'] in X2_STATIC_ADDITIONS | {FINGERPRINT_COMPONENT, SLEEP_COMPONENT}:
             try:
                 check_static_component(engine, component)
             except (MaintenanceError, ValueError, OSError) as error:
                 available = False
                 reason = str(error)
         capabilities.append(dict(id=component['id'], name=component.get('name',component['id']), category='repairs',
+            version=component.get('version'), installed_version=installed_version,
             available=available, default=False if component.get('ssd_boot_policy') else component.get('default', False), dependencies=component.get('requires', []),
             reason='' if available else reason or 'Actual system is incompatible with this component.',
             notes=component.get('description', '')))
@@ -473,6 +616,11 @@ def plan(root, identity, repairs, plugins=(), *, action='apply', trust_local_tes
     if action == 'apply' and set(selected) - available:
         raise MaintenanceError('Shared repair is unavailable on this target')
     provider_selected=[cid for cid in selected if known[cid].get('ssd_boot_policy')]
+    versions = []
+    for cid in selected:
+        source = known[cid] if action == 'apply' or cid in provider_selected else state['components'].get(cid, {})
+        if 'version' in source:
+            versions.append(dict(id=cid, version=source['version']))
     if provider_selected:
         if len(selected) != 1 or len(provider_selected) != 1 or plugins:
             raise MaintenanceError('Maintain the SSD provider separately from other components')
@@ -487,14 +635,29 @@ def plan(root, identity, repairs, plugins=(), *, action='apply', trust_local_tes
             shared_adaptations=True,package=current['package'],scope=models.SCOPE,
             selection=dict(repairs=selected,plugins=[]),environment=current['environment'],target=current['target'],
             root=dict(path=str(Path(root).resolve()),device=info.st_dev,inode=info.st_ino),
-            state_sha256=_digest(state),target_files={},pending=current['pending'],ssd_plan=inner,
+            state_sha256=_digest(state),target_files={},pending=current['pending'],ssd_plan=inner,component_versions=versions,
             summary=dict(file_count=2,added=selected if action=='apply' else [],removed=selected if action=='restore' else []),
             warnings=current['warnings']+['SSD configuration and device behavior require separate verification.'])
         body['review_sha256']=_digest(body)
         return body
     paths = {}
+    microcode_review = None
     for cid in selected:
         component = known[cid]
+        if cid == microcode.IDENTITY:
+            provider = item['microcode_item']
+            microcode_review = dict(manifest_sha256=provider['manifest_sha256'])
+            if action == 'apply':
+                _check_live_microcode_model(engine, provider['package'])
+                prepared = microcode.review(engine, component, provider['directory'], live=engine.root == Path('/'))
+                microcode_review['prepared'] = prepared
+                paths.update(prepared['targets'])
+                continue
+            transaction = state['components'][cid]['transaction']
+            microcode_review['transaction'] = transaction
+            component = _read(engine._journal(transaction))['component']
+        if action == 'restore':
+            guard_sleep_restore(engine, cid)
         for entry in component['files']:
             owner = state['owners'].get(entry['target'])
             if action == 'apply' and owner and owner['component'] != cid:
@@ -506,10 +669,12 @@ def plan(root, identity, repairs, plugins=(), *, action='apply', trust_local_tes
         selection=dict(repairs=selected, plugins=[]), environment=current['environment'], target=current['target'],
         root=dict(path=str(Path(root).resolve()), device=info.st_dev, inode=info.st_ino),
         state_sha256=_digest(state), target_files=paths,
-        pending=current['pending'],
+        pending=current['pending'], component_versions=versions,
         summary=dict(file_count=len(paths), added=selected if action == 'apply' else [],
                      removed=selected if action == 'restore' else []),
         warnings=current['warnings'] + ['Each component is a separate recoverable file transaction. Changes activate after restart; no sleep is initiated.'])
+    if microcode_review is not None:
+        body['microcode'] = microcode_review
     body['review_sha256'] = _digest(body)
     return body
 
@@ -523,7 +688,7 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
         raise MaintenanceError('Reviewed shared repair plan does not match')
     fresh = plan(root, reviewed['model_id'], reviewed['selection']['repairs'], action=reviewed['action'],
         trust_local_test=trust_local_test, runtime_root=runtime_root, state_dir=state_dir)
-    if fresh != reviewed:
+    if not models._matches_versioned_review(fresh, reviewed):
         raise MaintenanceError('Target or installed state changed; review shared repairs again')
     engine = Engine(root, state_dir)
     item = package(reviewed['model_id'], engine, runtime_root, trust_local_test)
@@ -548,6 +713,7 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
         inner=reviewed['ssd_plan']
         operation=SSD(root,provider_owner=owner).execute(inner,reviewed_sha256=inner['review_sha256'])
         return dict(status='verified' if operation.get('ok') is True else 'verification-failed',
+                    component_versions=fresh.get('component_versions', []),
                     result=dict(verified=operation.get('ok') is True,components=[dict(id=selected[0],operation=operation)]),
                     restart_required=operation.get('restart_required'))
     components = {part['id']: part for part in item['components']}
@@ -567,13 +733,26 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
         for name, expected in reviewed['target_files'].items():
             if observe(engine, engine._target(name)) != expected:
                 raise MaintenanceError('Shared repair target changed after review: ' + name)
-        payload = models._retain(engine, item)
         from .engine import _json_write
-        _json_write(engine.state_dir/'models'/('shared-' + reviewed['model_id'].removeprefix('device:') + '.json'),
-                    dict(manifest_sha256=item['manifest_sha256']))
+        if selected != [microcode.IDENTITY]:
+            payload = models._retain(engine, item)
+            _json_write(engine.state_dir/'models'/('shared-' + reviewed['model_id'].removeprefix('device:') + '.json'),
+                        dict(manifest_sha256=item['manifest_sha256']))
         if reviewed['action'] == 'apply':
             import uuid
             for cid in selected:
+                if cid == microcode.IDENTITY:
+                    provider = item['microcode_item']
+                    binding = reviewed['microcode']
+                    if provider['manifest_sha256'] != binding['manifest_sha256']:
+                        raise MaintenanceError('Reviewed early microcode package changed')
+                    _check_live_microcode_model(engine, provider['package'])
+                    retained = _retain_microcode(engine, provider)
+                    _json_write(_microcode_pointer(engine, reviewed['model_id']),
+                                dict(model_id=reviewed['model_id'], manifest_sha256=provider['manifest_sha256']))
+                    results.append(microcode.apply_locked(engine, components[cid], retained, binding['prepared'],
+                                                          live=engine.root == Path('/')))
+                    continue
                 if cid == FINGERPRINT_COMPONENT:
                     state = engine._state()
                     provider = engine._target('var/lib/oxp3-installer/decky/runtime/services/PluginLoader')
@@ -589,7 +768,9 @@ def execute(root, reviewed, *, reviewed_sha256, trust_local_test=False, runtime_
                 results.append(engine._restore_locked(transaction, engine._state(), path, _read(path)))
         else:
             reader = Engine(root, state_dir, read_only=True)
-            results = [reader.verify_readonly(cid) for cid in selected]
+            results = [microcode.verify(root, reader) if cid == microcode.IDENTITY else reader.verify_readonly(cid)
+                       for cid in selected]
     verified = all(result.get('ok', True) for result in results)
     return dict(status='verified' if verified else 'verification-failed',
+        component_versions=fresh.get('component_versions', []),
         result=dict(verified=verified, components=results), restart_required=reviewed['action'] != 'verify')

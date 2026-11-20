@@ -19,6 +19,7 @@ public partial class MainWindow
     private Grid? homeIntro;
     private TextBlock? homeDescription;
     private Button? homeAddFiles;
+    private ComboBox? homeLanguage;
 
     private static SolidColorBrush BoilerBrush(string color) =>
         (SolidColorBrush)new BrushConverter().ConvertFromString(color)!;
@@ -84,30 +85,16 @@ public partial class MainWindow
         header.Children.Add(brand);
 
         var controls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var languages = new WrapPanel { Name = "HomeLanguages", VerticalAlignment = VerticalAlignment.Center };
-        foreach (var language in new[] { ("zh-CN", "中文"), ("en-US", "English") })
-        {
-            var button = new Button
-            {
-                Content = language.Item2, Tag = language.Item1, MinWidth = language.Item1 == "en-US" ? 88 : 72,
-                Margin = new(0, 0, 8, 0), Padding = new(12, 8, 12, 8), MinHeight = 48,
-                BorderBrush = InstallerI18n.Language == language.Item1 ? BoilerBrush("#2968D9") : Brushes.Transparent
-            };
-            AutomationProperties.SetName(button, language.Item2);
-            button.Click += (_, _) =>
-            {
-                if (language.Item1 == "en-US") EnglishLanguage.IsChecked = true;
-                else ChineseLanguage.IsChecked = true;
-                ShowBoilerHome();
-            };
-            languages.Children.Add(button);
-        }
-        controls.Children.Add(languages);
         var feedback = new Button { Name = "HomeFeedback", Content = PartitionInventory.L("反馈…", "Feedback…"), MinHeight = 48, Margin = new(0, 0, 8, 0), Padding = new(12, 8, 12, 8) };
         feedback.Click += OpenFeedback; controls.Children.Add(feedback);
-        var exit = new Button { Content = PartitionInventory.L("退出", "Exit"), MinWidth = 64, Margin = new(0), Padding = new(12, 8, 12, 8) };
+        var exit = new Button { Name = "HomeExit", Content = PartitionInventory.L("退出", "Exit"), MinWidth = 64, Margin = new(0), Padding = new(12, 8, 12, 8) };
         exit.Click += ExitWindow;
         controls.Children.Add(exit);
+        homeLanguage = new ComboBox { Name = "HomeLanguage" };
+        ConfigureLanguagePicker(homeLanguage);
+        controls.Children.Add(new Control { Name = "HomeLanguageHint", Template = (ControlTemplate)FindResource("LanguageIcon"), Focusable = false,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new(12, 0, 6, 0), ToolTip = homeLanguage.ToolTip });
+        controls.Children.Add(homeLanguage);
         Grid.SetColumn(controls, 1); header.Children.Add(controls);
         homeHeader = new Border
         {

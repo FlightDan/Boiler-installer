@@ -112,16 +112,5 @@
     </ControlTemplate.Triggers>
    </ControlTemplate></Setter.Value></Setter>
   </Style>
-  <Style x:Key="LanguageOption" TargetType="RadioButton">
-   <Setter Property="MinHeight" Value="48"/><Setter Property="Foreground" Value="#BCD0E9"/><Setter Property="FontSize" Value="13"/>
-   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
-    <Border x:Name="Surface" Background="#253F5F" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Margin="1"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
-    <ControlTemplate.Triggers>
-     <Trigger Property="IsChecked" Value="True"><Setter TargetName="Surface" Property="Background" Value="#E8F0FC"/><Setter Property="Foreground" Value="#122944"/><Setter Property="FontWeight" Value="Bold"/></Trigger>
-     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#6CA7FF"/></Trigger>
-     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/></Trigger>
-    </ControlTemplate.Triggers>
-   </ControlTemplate></Setter.Value></Setter>
-  </Style>
  </Application.Resources>
 </Application>

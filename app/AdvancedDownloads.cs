@@ -8,7 +8,7 @@ public partial class AdvancedWindow
 {
     private CancellationTokenSource? sourceProbe;
     private int sourceSelectionRevision;
-    private static string DownloadLabel(string zh, string en) => InstallerI18n.Language == "en-US" ? en : zh;
+    private static string DownloadLabel(string zh, string en) => InstallerI18n.L(zh, en);
 
     private void InitializeDownloadSources()
     {
@@ -59,7 +59,7 @@ public partial class AdvancedWindow
                 var result = await DownloadSourceProbe.CheckAsync(customUrl, cancellation.Token);
                 if (revision == sourceSelectionRevision && CustomDownloadUrl.Text.Trim() == customUrl)
                     DownloadSourceStatus.Text = result.Available
-                        ? DownloadLabel($"自定义源可用 · {result.Milliseconds} ms", $"Custom mirror available · {result.Milliseconds} ms")
+                        ? InstallerI18n.Format($"自定义源可用 · {result.Milliseconds} ms", $"Custom mirror available · {result.Milliseconds} ms")
                         : DownloadLabel("自定义源不可用：", "Custom mirror unavailable: ") + result.Error;
                 return;
             }
@@ -69,7 +69,7 @@ public partial class AdvancedWindow
                 var origin = (DownloadOrigin)item.Tag;
                 var result = await DownloadSourceProbe.CheckAsync(origin.Url, cancellation.Token);
                 item.Content = origin + (result.Available
-                    ? DownloadLabel($" · 可用 {result.Milliseconds} ms", $" · Available {result.Milliseconds} ms")
+                    ? InstallerI18n.Format($" · 可用 {result.Milliseconds} ms", $" · Available {result.Milliseconds} ms")
                     : DownloadLabel(" · 不可用", " · Unavailable"));
                 item.ToolTip = result.Error ?? origin.Url;
                 return (Item: item, Result: result);

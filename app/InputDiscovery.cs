@@ -127,8 +127,8 @@ internal static class InputDiscovery
                     var supported = update.IsSupportedByCurrentInstaller;
                     result = Result(InputKind.UpgradeBundle,
                         supported
-                            ? L($"升级包版本：SteamOS {update.Version}。实际系统镜像将在安装准备中重建。", $"Upgrade package version: SteamOS {update.Version}. The system image is rebuilt during installation preparation.")
-                            : L($"检测到 SteamOS {update.Version} 更新包；当前安装流程不支持此版本。", $"SteamOS {update.Version} update bundle detected; this installer does not support this version."),
+                            ? InstallerI18n.Format($"升级包版本：SteamOS {update.Version}。实际系统镜像将在安装准备中重建。", $"Upgrade package version: SteamOS {update.Version}. The system image is rebuilt during installation preparation.")
+                            : InstallerI18n.Format($"检测到 SteamOS {update.Version} 更新包；当前安装流程不支持此版本。", $"SteamOS {update.Version} update bundle detected; this installer does not support this version."),
                         error: supported ? null : UnsupportedRaucVersionError(update.Version), raucManifest: update);
                 }
                 else if (header.AsSpan().StartsWith("#!"u8))
@@ -257,7 +257,7 @@ internal static class InputDiscovery
     {
         if (!metadata.TryGetProperty("name", out var name)) return metadata.GetProperty("id").GetString();
         if (name.ValueKind == JsonValueKind.String) return name.GetString();
-        return name.ValueKind == JsonValueKind.Object && name.TryGetProperty(InstallerI18n.Language == "en-US" ? "en" : "zh", out var localized)
+        return InstallerI18n.TryLocalizedValue(name, out var localized)
             && localized.ValueKind == JsonValueKind.String ? localized.GetString() : metadata.GetProperty("id").GetString();
     }
     private static string DeviceDetail(JsonElement metadata) => metadata.TryGetProperty("purpose", out var purpose) && purpose.ValueKind == JsonValueKind.String && purpose.GetString() == "maintenance"

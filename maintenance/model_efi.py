@@ -396,7 +396,7 @@ def reject_conflicting_component(engine,component):
                     raise MaintenanceError('Model EFI records differ from the fresh pair')
 
 
-def _ssd_restore_barrier(root, bound, source):
+def _ssd_restore_barrier(root, bound, source, installer_context=None):
     """Block current or uncertain SSD ownership; permit only the verified other slot."""
     directory=Path(root)/boot.STATE
     parent=Path(root)/'home/.boiler'
@@ -439,7 +439,9 @@ def _ssd_restore_barrier(root, bound, source):
                         or any(not isinstance(v,str) or v != ' '.join(v.split()).casefold() for v in physical.values())):
                     raise MaintenanceError('Invalid SSD ownership target')
                 original,applied=boot._record(value,target)
-                if (target['home_uuid'] != actual['home_uuid'] or physical != actual['physical']
+                physical_target=dict(actual, physical=physical)
+                if (target['home_uuid'] != actual['home_uuid']
+                        or not boot._historical_target_matches(physical_target,bound,root,installer_context)
                         or pair['slots'][slot]['target'] != {k:target[k] for k in ('root_partuuid','slot','esp_partuuid','esp_type','home_uuid')}):
                     raise MaintenanceError('SSD ownership does not match actual protected pair')
                 seen.add(slot)
@@ -464,7 +466,8 @@ def _ssd_restore_barrier(root, bound, source):
                     raise MaintenanceError('SSD lineage differs from protected model pair')
                 same=(slot == bound['slot'] or target['root_partuuid'] == actual['root_partuuid'] or target['esp_partuuid'] == actual['esp_partuuid'])
                 if same:
-                    if target != actual: raise MaintenanceError('SSD ownership partially overlaps current target')
+                    if not boot._historical_target_matches(target,bound,root,installer_context):
+                        raise MaintenanceError('SSD ownership partially overlaps current target')
                     if value['status'] == 'installed': raise MaintenanceError('Restore the current slot SSD repair first')
                 elif value['status'] == 'installed':
                     if sibling['status'] != 'installed' or proof != _make_proof(root,target,sibling):
@@ -543,7 +546,7 @@ def _ssd_projection(root,context,bound,model_record,current):
     record=store._state_read('esp-'+bound['esp_partuuid']+'.json')
     if not isinstance(record,dict) or record.get('version') not in (3,4) or record.get('status') != 'installed' or 'handoff' not in record:
         return False
-    original,applied=boot._record(record,bound)
+    original,applied=boot._record(record,bound,root=root,installer_context=context)
     if (original['efi'] != model_record['applied'] or applied['efi'] != boot._encode(current)
             or boot._snapshot(root,bound) != applied):
         raise MaintenanceError('SSD projection bytes differ from their protected model and SSD journals')
@@ -565,7 +568,7 @@ def validate_model_handoff(root, host_context, preflight, *, expected_proof=None
         raise MaintenanceError('Invalid reviewed model-to-SSD preflight')
     root=Path(os.path.abspath(root))
     bound=boot.binding(root,installer_context=host_context)
-    if bound['disposition'] != 'match' or preflight.get('target') != boot._durable(bound):
+    if bound['disposition'] != 'match' or not boot._historical_target_matches(preflight.get('target'),bound,root,host_context):
         raise MaintenanceError('Model-to-SSD preflight belongs to another target')
     source=preflight.get('source')
     store=Store(root,root/STATE)
@@ -624,7 +627,7 @@ class ModelEFI:
                 if os.name != 'nt' and os.fstat(descriptor).st_mode & 0o077:
                     raise MaintenanceError('Model EFI state directory must be private')
         if action in ('restore','recover'):
-            _ssd_restore_barrier(self.root,bound,self.source)
+            _ssd_restore_barrier(self.root,bound,self.source,self.context)
         current = boot._target(self.root,bound)
         record = self.store._state_read(self._name(bound))
         pending = self.store._state_read('model-pending.json')
@@ -920,7 +923,7 @@ class ModelEFI:
                 raise MaintenanceError('Combined model EFI recovery record differs; preserve it')
         if current not in (before,after):
             raise MaintenanceError('Combined model EFI recovery bytes differ; preserve them')
-        _ssd_restore_barrier(self.root,bound,self.source)
+        _ssd_restore_barrier(self.root,bound,self.source,self.context)
         _companion_journal(self.root,bound['slot'],pending['companions_original'],phase='rolled_back')
         # Both interrupted apply and interrupted restore end with first originals.
         if boot.binding(self.root,installer_context=self.context) != bound:

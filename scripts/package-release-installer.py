@@ -98,7 +98,7 @@ def _is_model_payload(name: str) -> bool:
             or name.startswith('cache/integration/maintenance-runtime/cache/model-bundles/'))
 
 
-def verify_slim_archive(archive_path: Path, *, source_commit: str | None = None) -> dict:
+def verify_slim_archive(archive_path: Path, *, source_commit: str | None = None, local_test: bool = False) -> dict:
     """Verify a real ZIP inventory and its slim-only distribution policy."""
     archive_path = Path(archive_path).absolute()
     if redirected(archive_path) or not archive_path.is_file():
@@ -121,10 +121,12 @@ def verify_slim_archive(archive_path: Path, *, source_commit: str | None = None)
         if 'build-info.json' not in items:
             raise ValueError('Installer ZIP is missing build-info.json')
         info = json.loads(bundle.read(items['build-info.json']))
+        channel = 'local-test' if local_test else 'preview'
         if (info.get('schema') != 1 or info.get('product') != 'Boiler Installer'
-                or info.get('package_channel') != 'preview' or info.get('source_published') is not True
+                or info.get('package_channel') != channel or info.get('source_published') is not (not local_test)
                 or info.get('configuration') != 'Release'):
-            raise ValueError('Installer ZIP is not a normal Release preview package')
+            raise ValueError('Installer ZIP is not a Release local-test package' if local_test
+                             else 'Installer ZIP is not a normal Release preview package')
         commit = info.get('source_commit')
         if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
             raise ValueError('Installer ZIP has no exact public source commit')
@@ -206,7 +208,7 @@ def verify_slim_archive(archive_path: Path, *, source_commit: str | None = None)
         signature_verified=False, publication_authorized=False, upload_performed=False)
 
 
-def package_slim(root: Path, output: Path, source_commit: str, configuration: str = 'Release') -> dict:
+def package_slim(root: Path, output: Path, source_commit: str, configuration: str = 'Release', *, local_test: bool = False) -> dict:
     root = Path(root).resolve()
     output = Path(output).resolve()
     if configuration != 'Release':
@@ -221,8 +223,10 @@ def package_slim(root: Path, output: Path, source_commit: str, configuration: st
     if output.name != artifact_name(_version(release.get('version'))):
         raise ValueError('Output filename must be the versioned -win-x64-slim.zip name')
     assert_public_checkout(root, source_commit)
-    packaged = packager.package(root, output, source_commit, configuration, local_test=False)
-    verified = verify_slim_archive(output, source_commit=source_commit)
+    if local_test and (root / 'cache/model-bundles/manifest.json').exists():
+        raise ValueError('Use a separate slim build root without local model bundles')
+    packaged = packager.package(root, output, source_commit, configuration, local_test=local_test)
+    verified = verify_slim_archive(output, source_commit=source_commit, local_test=local_test)
     return dict(status='packaged-and-verified-slim-candidate', package=packaged,
         verification=verified, signature_verified=False, publication_authorized=False, upload_performed=False)
 
@@ -235,14 +239,16 @@ def main() -> None:
     build.add_argument('--output', type=Path, required=True)
     build.add_argument('--source-commit', required=True)
     build.add_argument('--configuration', choices=('Release',), default='Release')
+    build.add_argument('--local-test', action='store_true', help='Build an unpublished slim candidate')
     verify = commands.add_parser('verify', help='Verify an existing slim ZIP before a separately approved release step')
     verify.add_argument('--archive', type=Path, required=True)
     verify.add_argument('--source-commit', required=True)
+    verify.add_argument('--local-test', action='store_true', help='Verify an unpublished slim candidate')
     args = parser.parse_args()
     if args.command == 'package':
-        result = package_slim(args.root, args.output, args.source_commit, args.configuration)
+        result = package_slim(args.root, args.output, args.source_commit, args.configuration, local_test=args.local_test)
     else:
-        result = verify_slim_archive(args.archive, source_commit=args.source_commit)
+        result = verify_slim_archive(args.archive, source_commit=args.source_commit, local_test=args.local_test)
     print(json.dumps(result, indent=2))
 
 

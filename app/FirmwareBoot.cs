@@ -52,6 +52,44 @@ public static class FirmwareBoot
         RequireSecureBootDisabled();
         var order=Read("BootOrder");if(order==null||order.Value.Data.Length%2!=0)throw new IOException("Cannot read firmware boot order.");
     }
+
+    internal static Task WithWindowsBootNextAsync(Func<Task> selectWindows, Func<Task> restart)
+    {
+        if (!GetFirmwareType(out var type) || type != 2)
+            throw new IOException(InstallerI18n.L("无法定位 Windows UEFI 启动项。请手动重启到 Windows。",
+                "Could not select the Windows UEFI boot entry. Restart into Windows manually."));
+        Enable();
+        return WithWindowsBootNextAsync(() => Read("BootNext")?.Data, () => Write("BootNext", [], 7), selectWindows, restart);
+    }
+
+    internal static async Task WithWindowsBootNextAsync(Func<byte[]?> read, Action clear, Func<Task> selectWindows, Func<Task> restart)
+    {
+        if (read() != null)
+            throw new IOException(InstallerI18n.L("固件已有一次性启动项。请手动重启并选择 Windows。",
+                "Firmware already has a one-time boot entry. Restart manually and select Windows."));
+        try { await selectWindows(); }
+        catch (Exception error)
+        {
+            if (read() != null)
+                throw new IOException(error.Message + "\n" + InstallerI18n.L("设置失败后检测到一次性启动项，请核对后再重启。",
+                    "A one-time boot entry appeared after the command failed. Check it before restarting."), error);
+            throw;
+        }
+        var selected = read();
+        if (selected is not { Length: 2 }) throw new IOException("Windows Boot Manager was not set as the next firmware boot entry.");
+        try { await restart(); }
+        catch (Exception error)
+        {
+            try
+            {
+                if (read() is not { } current || !current.SequenceEqual(selected)) throw new IOException("The one-time firmware boot entry changed.");
+                clear();
+                if (read() != null) throw new IOException("Could not clear the one-time Windows boot entry.");
+            }
+            catch (Exception rollback) { throw new IOException(error.Message + "\n" + rollback.Message, new AggregateException(error, rollback)); }
+            throw;
+        }
+    }
     public static byte[] LoadOption(PreparedPartition esp)
     {
         if(esp.Type!=Guid.Parse("c12a7328-f81f-11d2-ba4b-00a0c93ec93b")||esp.Id==Guid.Empty||esp.Offset%512!=0||esp.Size%512!=0||esp.Number<1)throw new IOException("Invalid EFI partition.");

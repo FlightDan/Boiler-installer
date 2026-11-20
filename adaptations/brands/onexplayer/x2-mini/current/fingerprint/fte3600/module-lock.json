@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "BoilerFte3600ModuleInput",
+  "repository": "SamSeven777/libfprint-fte3600",
+  "commit": "6efa37679265f97973f6af15a18b375e3c5020a5",
+  "source": "kernel/fte3600",
+  "license": "GPL-2.0-only",
+  "license_file": "licenses/GPL-2.0.txt",
+  "kernel": "7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9",
+  "build_recipe": "make KDIR=/lib/modules/7.2.4-valve1-1-neptune-72-g5ab4af5e2eb9/build W=1",
+  "size": 647200,
+  "sha256": "7e608fe13335f8b6781f84af090a7cd829e29531f0b64d032447bf8006efbe22",
+  "availability": "explicit-external-input"
+}

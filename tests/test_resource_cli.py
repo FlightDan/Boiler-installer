@@ -109,15 +109,23 @@ class ResourceCliTests(unittest.TestCase):
         self.assertEqual(code, 2); self.assertIn('Explicit unsigned', response['error'])
         code, response = self.command('verify'); self.assertEqual(code, 0, response)
         self.assertFalse(response['result']['recovery_performed']); self.assertEqual(before, self.snapshot())
+        for row in response['result']['verification']:
+            self.assertEqual((row['installed_version'], row['expected_version']), ('1.0.0', '1.0.0'))
 
     def test_actual_cli_review_and_confirmation_then_exact_scope_restore(self):
         plan_path = self.work/'review.json'; before = self.snapshot()
         code, response = self.command('plan-restore', '--group', self.receipt['id'], '--scope', 'A', '--plan-output', str(plan_path))
         self.assertEqual(code, 0, response); self.assertFalse(response['result']['execution_authorized']); self.assertEqual(before, self.snapshot())
+        change, = response['result']['plan']['changes']
+        self.assertEqual(change['installed_version'], '1.0.0')
+        self.assertIsNone(change['restored_version'])
         args = ['--group', self.receipt['id'], '--scope', 'A', '--plan', str(plan_path), '--reviewed-sha256', response['result']['reviewed_sha256']]
         code, result = self.command('restore', *args); self.assertEqual(code, 2); self.assertIn('Explicit confirmation', result['error'])
         self.assertEqual(before, self.snapshot())
         code, result = self.command('restore', *args, '--confirm-fixture-restore'); self.assertEqual(code, 0, result)
+        restored, = result['result']['restored']
+        self.assertEqual(restored['installed_version'], '1.0.0')
+        self.assertIsNone(restored['restored_version'])
         self.assertFalse((self.base/'A/etc/sample').exists()); self.assertTrue((self.base/'B/etc/sample').exists())
         self.assertTrue((self.home/'deck/sample').exists()); self.assertFalse((self.base/'A/etc/other').exists())
 
@@ -131,6 +139,21 @@ class ResourceCliTests(unittest.TestCase):
         with self.assertRaisesRegex(MaintenanceError, 'changed after review'): self.execute(changed)
         with self.assertRaisesRegex(MaintenanceError, 'Explicit confirmation'): self.execute(review, confirm_fixture_restore=False)
         self.assertEqual(before, self.snapshot())
+
+    def test_retained_group_without_versions_and_older_review_remain_usable(self):
+        path = Path(self.receipt['receipt_path'])
+        receipt = json.loads(path.read_bytes())
+        for row in receipt['transactions']:
+            del row['version']
+        _json_write(path, receipt)
+        review = self.plan()
+        for change in review['plan']['changes']:
+            del change['installed_version']
+            del change['restored_version']
+        review['reviewed_sha256'] = api.plan_digest(api._json(review['plan']))
+        result = self.execute(review)
+        restored, = result['restored']
+        self.assertEqual((restored['installed_version'], restored['restored_version']), ('1.0.0', None))
 
     def test_journal_edit_after_review_is_rejected_before_restore(self):
         review = self.plan()

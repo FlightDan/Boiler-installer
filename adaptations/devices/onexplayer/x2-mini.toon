@@ -9,15 +9,15 @@ source_revision:
   kind: github
   repository: FlightDan/OneXPlayer3-SteamOS
   commit: 72f864e0498c10366493c74608c5ffed62cc99ca
-components[34]:
+components[36]:
   - id: fingerprint-unlock
     name: 指纹解锁（实验功能）
     recommendation: optional
     default: true
     dependencies[1]: decky
-    sources[8]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,common/fingerprint/providers/fte3600/source.toon,brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md
-    status: external_runtime_required
-    notes: "Generic bridge and BF63112/FTE3600 provider source references; the target sensor is matched by its SPI ACPI HID, not by model name. FTE3600 on this model is enrolled, verified and unlocks the Plasma lock screen on tested hardware; BF63112 remains a source reference and is not installable here. Boot-time installation and maintenance payloads for the FTE3600 runtime are still not implemented in the installer. Preserve user disable and Steam PIN fallback. Source: FlightDan/FingerprintUnlock-SteamOS@fde8fa62bbad0318a9a8be88cc77bb4c3b4f919e; public lock: common/fingerprint/public-bridge-lock.json. Do not guess reset GPIO wiring."
+    sources[22]: common/fingerprint/bridge/main.py,common/fingerprint/runtime-profile/profile.json,common/fingerprint/runtime-profile/boiler-fprintd.service,common/fingerprint/runtime-profile/net.reactivated.Fprint.service,common/fingerprint/providers/identity.py,common/fingerprint/providers/bf63112/source.toon,common/fingerprint/providers/fte3600/source.toon,brands/onexplayer/x2-mini/current/fingerprint/69-boiler-x2-fingerprint.rules,common/fingerprint/kde/install-kde-pam.py,common/fingerprint/kde/README.md,common/fingerprint/kde/pam-module.toon,common/fingerprint/kde/pam-module-lock.json,brands/onexplayer/x2-mini/current/fingerprint/fte3600/boiler-fte3600.service,brands/onexplayer/x2-mini/current/fingerprint/fte3600/50-boiler-fte3600.conf,brands/onexplayer/x2-mini/current/fingerprint/fte3600/load.sh,brands/onexplayer/x2-mini/current/fingerprint/fte3600/module-lock.json,common/fingerprint/bridge/index.js,common/fingerprint/bridge/package.json,common/fingerprint/bridge/plugin.json,common/fingerprint/public-bridge-lock.json,common/fingerprint/public-COPYING,common/fingerprint/upstream/LICENSE
+    status: external_locked_runtime
+    notes: "Decky bridge 0.1.10 with fingerprint enrollment. The locked fprintd runtime uses model-specific FTE3600 rules. Actual enrollment and unlock through this combined package need device verification. Keep the Steam PIN fallback."
   - id: slot-switch
     name: KDE 槽位切换 / 系统回退
     recommendation: optional
@@ -194,14 +194,30 @@ components[34]:
     sources[2]: brands/onexplayer/oxp3/scripts/controls/cpu/cpu_control.py,brands/onexplayer/oxp3/scripts/controls/cpu/power_control.py
     status: shared_oxp3_implementation
     notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+  - id: intel-cpu-microcode
+    name: Intel CPU 微码 · Panther Lake
+    recommendation: optional
+    default: false
+    dependencies: []
+    sources[3]: common/cpu/intel/microcode/source.toon,common/cpu/intel/microcode/inputs/06-cc-02,common/cpu/intel/microcode/licenses/Intel-microcode.txt
+    status: external_boiler_core
+    notes: 适用于 Intel Arc G3 Extreme 配置；按 CPU 签名及平台标志匹配。机型包安装、维护恢复和实机加载验收待接入。
   - id: charging
-    name: OXP3 Battery · 充电上限与模式
+    name: X2 Mini Battery · 电池遥测
     recommendation: optional
     default: false
     dependencies[2]: fan-driver,decky
-    sources[1]: brands/onexplayer/x2-mini/scripts/integration.py
+    sources[4]: brands/onexplayer/common/battery/power/battery-plugin-main.py,brands/onexplayer/common/battery/power/battery-plugin-index.js,brands/onexplayer/x2-mini/current/power/battery_control.py,brands/onexplayer/x2-mini/current/battery-compat.service
     status: shared_oxp3_implementation
-    notes: 完整复用 OXP3 公共适配；系统与实际接口依赖独立检查，机型不匹配只提示。
+    notes: 电量遥测与机型适用的充电控制；S4 由独立插件管理。
+  - id: s2s4
+    name: Boiler S2/S4 switcher
+    recommendation: optional
+    default: true
+    dependencies[1]: decky
+    sources[9]: common/sleep/source-lock.json,common/sleep/install.json,common/sleep/runtime/main.py,common/sleep/runtime/dist/index.js,common/sleep/runtime/package.json,common/sleep/runtime/plugin.json,common/sleep/runtime/sleep_control.py,common/sleep/runtime/90-boiler-sleep.conf,common/sleep/runtime/LICENSE
+    status: shared_asset
+    notes: 独立 Decky 插件，关闭时沿用系统待机，开启时预留并保留休眠交换文件。
   - id: oxp3-light
     name: OXP3 Light · 三分区灯光控制
     recommendation: optional
@@ -291,7 +307,7 @@ build:
     brand,adaptations/current-source-lock.json,d987dc428d39eaf250e1f94b267d7b213533bbfaa301e05cb54a85ff0869b827
     model,adaptations/upstream-source-lock.json,099e3f4510db935acbc8fef45bb36296541a78d934050dd66051164b1569fcdc
     common,adaptations/xevma-kmod-source-lock.json,74a3c7833d2b8127506b07fa0fbc56564913cb38595b241dbe9741a474267d17
-    common,adaptations/fingerprint-source-lock.json,de8b96986ab963a8298ad0d6b99b779f07b08311aa1a63b69b268504e379cc75
+    common,adaptations/fingerprint-source-lock.json,1daf316e4eb9937d27fb4f071c40362775532a0ccb6f6f6455525e0003cddf25
   inputs[3]{name,kind,path,lock,sha256,note}:
     base,package,adaptations/inputs/oxp3-full,adaptations/inputs/oxp3-full/manifest.json,cb39c94bbe7eb351221c380ebdb7a875a097b52c17e90bfb0f1edc22b12ab684,"Explicit full OXP3 .8 package, reproducible using the fixed OXP3 pipeline."
     bridge_overlay,locked-directory,adaptations/inputs/x2-bridge-overlay,adaptations/inputs/x2-bridge-overlay/overlay-lock.json,a88f7d51fbe3b54d3aa1aab9ddfd8b5acc094c589dd9cfe1ee1415b2903c553d,Explicit reviewed X2 identity and recovery bridge overlay.
@@ -317,7 +333,7 @@ resource_model:
   kind: BoilerModelResourceSource
   id: "device:x2-mini"
   parameters:
-  resources[14]{id}:
+  resources[11]{id}:
     "resource:onexplayer-microphone"
     "resource:oxp3-speaker-route"
     "resource:intel-xevmafix-724"
@@ -326,9 +342,6 @@ resource_model:
     "resource:common-windows-reboot"
     "resource:onexplayer-light"
     "resource:common-serial-console-policy"
-    "resource:onexplayer-battery-common"
-    "resource:onexplayer-battery-charge-backend"
-    "resource:common-charge-compatibility-guard"
     "resource:intel-be201-firmware"
     "resource:intel-g3e-public-cpu-controls"
     "resource:gamma22-hdr-game"

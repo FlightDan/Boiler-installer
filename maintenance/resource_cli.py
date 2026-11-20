@@ -17,7 +17,7 @@ from pathlib import Path
 import re
 
 from .engine import MaintenanceError
-from .resource_runtime import ResourcePool, ResourceSession, resolve
+from .resource_runtime import ResourcePool, ResourceSession, resolve, restore_versions
 from .adoption_blobs import _file, _directory
 from protocol.local import _safe_path
 from protocol.manifest import load_json
@@ -177,6 +177,7 @@ def _restore_plan(pool, binding, model_id, selected, group_id, scope):
         journal = json_document(journal_raw)
         changes.append(dict(component=row['component'], transaction=row['transaction'],
                             journal_sha256=hashlib.sha256(journal_raw).hexdigest(),
+                            **restore_versions(journal),
                             files=[dict(target=op['target'], action='restore' if op['before']['exists'] else 'remove',
                                         current=copy.deepcopy(op['after']), restored=copy.deepcopy(op['before']))
                                    for op in journal['operations']]))
@@ -214,6 +215,14 @@ def execute_restore(pool_root, catalog_sha256, model_id, selected, *, fixture, r
     reviewed = json_document(raw)
     with fixture_binding(fixture, root) as binding:
         actual = _restore_plan(pool, binding, model_id, selected, group_id, scope)
+        if actual != reviewed:
+            # Older reviews bind the same generations through their journal
+            # and state digests, without separately showing their versions.
+            legacy = dict(actual, changes=[{key: item for key, item in row.items()
+                                            if key not in ('installed_version', 'restored_version')}
+                                           for row in actual['changes']])
+            if reviewed == legacy:
+                actual = legacy
         if reviewed != actual:
             raise ResourceMaintenanceError('Resource selection, target, pool or transaction generation changed after review')
         # All review happened through readonly Engines under the same fixture

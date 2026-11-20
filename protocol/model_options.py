@@ -4,6 +4,9 @@ from __future__ import annotations
 from .manifest import ProtocolError
 
 
+INSTALLER_LANGUAGES = ('en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'de-DE', 'fr-FR', 'es-ES')
+
+
 def validated_selection(package, repairs, plugins, *, installer_language='en-US',
                         kde_language='system', acknowledge_update_hold=False):
     if package.get('id') not in ('device:oxp3', 'device:x2-mini') or package.get('selection_contract') != {
@@ -13,7 +16,7 @@ def validated_selection(package, repairs, plugins, *, installer_language='en-US'
         raise ProtocolError('Explicit SteamOS image-update hold acknowledgement is required')
     kde_languages = set(package.get('legacy_kde_languages', ['system']))
     kde_languages |= {value.replace('_', '-') for value in kde_languages}
-    if installer_language not in ('zh-CN', 'en-US') or kde_language not in kde_languages:
+    if installer_language not in INSTALLER_LANGUAGES or kde_language not in kde_languages:
         raise ProtocolError('Unsupported model language')
     known = {}
     capabilities = package.get('legacy_capabilities')
@@ -53,7 +56,9 @@ def validated_selection(package, repairs, plugins, *, installer_language='en-US'
     for identity in known:
         if identity in selected:
             visit(identity)
+    # The immutable legacy hook only accepts the two original UI language tags.
+    legacy_language = 'zh-CN' if installer_language == 'zh-CN' else 'en-US'
     return dict(schema_version=1, repairs=[x for x in ordered if known[x]['category'] == 'repairs'],
                 plugins=[x for x in ordered if known[x]['category'] == 'plugins'],
-                installer_language=installer_language, kde_language=kde_language,
+                installer_language=legacy_language, kde_language=kde_language,
                 acknowledge_legacy_update_hold=True)

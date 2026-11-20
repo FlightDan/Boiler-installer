@@ -20,6 +20,7 @@ public partial class MainWindow
     private ComboBox? customModel;
     private WrapPanel? customTabs, customChips;
     private Expander? customSettings;
+    private StackPanel? customGraphicsHost;
     private string customCategory = "hardware", customChip = "all";
     private bool customBuildSwitchingDevice, customBuildRefreshing, customBuildRefreshQueued, customOnlySelected, customShowAllSelected;
     private int customPage;
@@ -32,6 +33,10 @@ public partial class MainWindow
         customSettings = new Expander { Content = optionsPanel, Margin = new(0, 16, 0, 0), HorizontalContentAlignment = HorizontalAlignment.Stretch };
         ComponentOptionsHost.Children.Insert(0, customBuild);
         ComponentOptionsHost.Children.Add(customSettings);
+        optionsPanel.Children.Remove(optionsPanel.FirmwareNetworkNotice);
+        ComponentOptionsHost.Children.Insert(0, optionsPanel.FirmwareNetworkNotice);
+        optionsPanel.Children.Remove(optionsPanel.AccountAccessPanel);
+        ComponentOptionsHost.Children.Insert(0, optionsPanel.AccountAccessPanel);
         customIdentity = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 8), Foreground = BoilerBrush("#61728A") };
         customBuild.Children.Add(customIdentity);
         if (currentHardwarePanel != null)
@@ -44,6 +49,10 @@ public partial class MainWindow
         customModel.SelectionChanged += async (_, _) => await SwitchCustomBuildModelAsync();
         customBuild.Children.Add(customModel);
         customTabs = new WrapPanel { Margin = new(0, 0, 0, 8) }; customBuild.Children.Add(customTabs);
+        optionsPanel.Children.Remove(optionsPanel.GraphicsExpander);
+        customGraphicsHost = new StackPanel { Name = "CustomGraphicsHost" };
+        customGraphicsHost.Children.Add(optionsPanel.GraphicsExpander);
+        customBuild.Children.Add(customGraphicsHost);
         customSearch = new TextBox { Name = "CustomBuildSearch", MinHeight = 40, Padding = new(8), Margin = new(0, 0, 0, 8) };
         System.Windows.Automation.AutomationProperties.SetName(customSearch, PartitionInventory.L("搜索项目名称或 ID", "Search item names or IDs"));
         customSearchHint = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = BoilerBrush("#61728A"), Margin = new(0, 0, 0, 4) }; customBuild.Children.Add(customSearchHint);
@@ -85,7 +94,7 @@ public partial class MainWindow
             if (item.Id == SsdBootRepair.Option && (!SsdTargetMatches() || HasSsdProvider())) continue;
             if (!optionsPanel.OptionBoxes.TryGetValue(item.Id, out var box)) continue;
             var category = BuildCategory(item.Id, catalog.Plugins.Contains(item));
-            rows.Add(new(PublicBuildId(item.Id), InstallerI18n.Language == "en-US" ? item.En : item.Zh, category, box, item));
+            rows.Add(new(PublicBuildId(item.Id), InstallerI18n.L(item.Zh, item.En), category, box, item));
         }
         foreach (var pair in deviceComponentChoices.Where(p => p.Key != deviceLegacyBridge))
         {
@@ -120,6 +129,7 @@ public partial class MainWindow
     private static string BuildCategory(string id, bool plugin)
     {
         var name = id.ToLowerInvariant();
+        if (name.StartsWith("microcode:") || name.StartsWith("cpufreq:")) return "cpu";
         if (new[] { "slot-switch", "refind", "windows-reboot", "ssd:gm7-boot" }.Any(name.Contains)) return "boot";
         if (new[] { "partition-mount", "gamescope-env", "keyboard", "flathub", "split-lock", "maintenance" }.Any(name.Contains)) return "system";
         if (plugin || new[] { "decky", "opti", "waydroid", "lsfg" }.Any(name.Contains)) return "plugins";
@@ -170,7 +180,7 @@ public partial class MainWindow
                 PartitionInventory.L("当前机型包：", "Current device package: ") + (displayedDeviceMetadata is JsonElement metadata ? DeviceLabel(metadata) : selectedDevicePackage);
             customSearchHint!.Text = PartitionInventory.L("搜索全部项目的名称或 ID", "Search all item names or IDs");
             customPasteExpander!.Header = PartitionInventory.L("粘贴项目 ID 列表", "Paste item ID list");
-            customSettings!.Header = PartitionInventory.L("系统、账户与硬件检测设置", "System, account and hardware detection settings");
+            customSettings!.Header = PartitionInventory.L("其他设置", "Other settings");
             var applyButton = ((StackPanel)customPasteExpander!.Content).Children.OfType<Button>().Single();
             applyButton.Content = PartitionInventory.L("加入清单", "Add to selection"); applyButton.IsEnabled = !CustomBuildBusy;
             customModel!.Items.Clear();
@@ -181,11 +191,12 @@ public partial class MainWindow
             customModel.SelectedIndex = 0;
             customModel.IsEnabled = installMode == "custom" && !CustomBuildBusy && !customBuildSwitchingDevice;
             customTabs!.Children.Clear();
-            foreach (var (id, zh, en) in new[] { ("hardware", "硬件适配", "Hardware"), ("system", "系统工具", "System tools"), ("plugins", "插件应用", "Plugins & apps"), ("boot", "启动恢复", "Boot & recovery"), ("info", "方案信息", "Plan information") })
+            foreach (var (id, zh, en) in new[] { ("hardware", "硬件适配", "Hardware"), ("cpu", "CPU", "CPU"), ("gpu", "GPU / 核显", "GPU / Graphics"), ("system", "系统工具", "System tools"), ("plugins", "插件应用", "Plugins & apps"), ("boot", "启动恢复", "Boot & recovery"), ("info", "方案信息", "Plan information") })
             {
                 var button = new Button { Content = PartitionInventory.L(zh, en), Margin = new(0, 0, 6, 6), MinHeight = 40, Padding = new(10, 4, 10, 4), FontWeight = customCategory == id ? FontWeights.SemiBold : FontWeights.Normal, Background = customCategory == id ? BoilerBrush("#2968D9") : Brushes.White, Foreground = customCategory == id ? Brushes.White : BoilerBrush("#192B43") };
                 button.Click += (_, _) => { customCategory = id; customChip = "all"; customPage = 0; RefreshCustomBuild(); }; customTabs.Children.Add(button);
             }
+            customGraphicsHost!.Visibility = customCategory == "gpu" ? Visibility.Visible : Visibility.Collapsed;
             if (deviceComponentsPanel != null) deviceComponentsPanel.Visibility = Visibility.Collapsed;
             RenderCustomBuildRows();
                 if (focusedId != null) customRows!.Children.OfType<Border>().Select(b => b.Child).OfType<StackPanel>().SelectMany(p => p.Children.OfType<CheckBox>()).FirstOrDefault(c => (string?)c.Tag == focusedId)?.Focus();
@@ -206,7 +217,7 @@ public partial class MainWindow
         }
         if (row.Generic is OptionItem generic)
         {
-            if (!generic.Available) parts.Add(InstallerI18n.Language == "en-US" ? generic.UnavailableEn ?? "Unavailable" : generic.UnavailableZh ?? "不可用");
+            if (!generic.Available) parts.Add(InstallerI18n.L(generic.UnavailableZh ?? "不可用", generic.UnavailableEn ?? "Unavailable"));
             if (generic.Dependencies.Length > 0) parts.Add(PartitionInventory.L("依赖：", "Dependencies: ") + string.Join(", ", generic.Dependencies.Select(PublicBuildId)));
         }
         return parts.Count == 0 ? row.Id : string.Join("\n", parts);
@@ -217,6 +228,8 @@ public partial class MainWindow
         var rows = CustomBuildRows();
         customRows.Children.Clear(); customChips.Children.Clear(); customSelected.Children.Clear();
         var query = customSearch!.Text.Trim();
+        if (customCategory == "cpu" && query.Length == 0)
+            customRows.Children.Add(new TextBlock { Text = PartitionInventory.L("微码和调频默认不选择。启动时启用内核调频驱动；实际支持由内核和 BIOS 决定。请核对安装目标的 CPU 厂商。Intel 微码来自 Intel 官方仓库。", "Microcode and CPU frequency are unselected by default. The kernel frequency driver is activated at boot when supported by the kernel and BIOS. Check the CPU vendor of the installation target. Intel microcode comes from Intel’s official repository."), TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 8) });
         if (customCategory == "info" && query.Length == 0)
         {
             customRows.Children.Add(new TextBlock { Text = CustomBuildPlan(), TextWrapping = TextWrapping.Wrap });
@@ -251,7 +264,7 @@ public partial class MainWindow
                 && (query.Length == 0 || r.Id.Contains(query, StringComparison.OrdinalIgnoreCase) || r.Name.Contains(query, StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(r => r.Source.IsEnabled).ThenBy(r => r.Generic != null).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
             var pages = Math.Max(1, (results.Length + 7) / 8); customPage = Math.Clamp(customPage, 0, pages - 1);
-            customRows.Children.Add(new TextBlock { Text = PartitionInventory.L($"{results.Length} 项 · 第 {customPage + 1} / {pages} 页", $"{results.Length} items · Page {customPage + 1} / {pages}"), Margin = new(0, 4, 0, 8), Foreground = BoilerBrush("#61728A") });
+            customRows.Children.Add(new TextBlock { Text = InstallerI18n.Format($"{results.Length} 项 · 第 {customPage + 1} / {pages} 页", $"{results.Length} items · Page {customPage + 1} / {pages}"), Margin = new(0, 4, 0, 8), Foreground = BoilerBrush("#61728A") });
             foreach (var row in results.Skip(customPage * 8).Take(8))
             {
                 var source = row.Source;
@@ -278,7 +291,16 @@ public partial class MainWindow
             }
         }
         var selected = rows.Where(IsEffectiveBuildSelection).ToArray();
-        customSelected.Children.Add(new TextBlock { Text = PartitionInventory.L($"已选择 {selected.Length} 项", $"Selected: {selected.Length}"), FontWeight = FontWeights.SemiBold, Margin = new(0, 4, 0, 4) });
+        if (optionsPanel.Selection.GraphicsProfile is string selectedGraphics)
+        {
+            var line = new DockPanel();
+            var remove = new Button { Content = PartitionInventory.L("移除", "Remove"), IsEnabled = !CustomBuildBusy, MinHeight = 36 };
+            remove.Click += (_, _) => { optionsPanel.GraphicsChoice.SelectedIndex = 0; QueueCustomBuildRefresh(); };
+            DockPanel.SetDock(remove, Dock.Right); line.Children.Add(remove);
+            line.Children.Add(new TextBlock { Text = selectedGraphics, TextWrapping = TextWrapping.Wrap });
+            customSelected.Children.Add(line);
+        }
+        customSelected.Children.Add(new TextBlock { Text = InstallerI18n.Format($"已选择 {selected.Length + (optionsPanel.Selection.GraphicsProfile != null ? 1 : 0)} 项", $"Selected: {selected.Length + (optionsPanel.Selection.GraphicsProfile != null ? 1 : 0)}"), FontWeight = FontWeights.SemiBold, Margin = new(0, 4, 0, 4) });
         customSelected.Children.Add(new TextBlock { Text = PartitionInventory.L("方案名称", "Plan name"), Margin = new(0, 4, 0, 0) });
         customSelected.Children.Add(customPlanName!);
         var actions = new WrapPanel();
@@ -287,7 +309,7 @@ public partial class MainWindow
             var button = new Button { Content = PartitionInventory.L(zh, en), IsEnabled = enabled, MinHeight = 36, Margin = new(0, 0, 6, 6) };
             button.Click += (_, _) => { try { action(); } catch (Exception error) { customStatus!.Text = error.Message; } }; actions.Children.Add(button);
         }
-        AddAction("复制项目 ID", "Copy item IDs", () => { Clipboard.SetText(CustomBuildIds()); customStatus!.Text = PartitionInventory.L($"已复制 {selected.Length} 个组件 ID。", $"Copied {selected.Length} item IDs."); });
+        AddAction("复制项目 ID", "Copy item IDs", () => { Clipboard.SetText(CustomBuildIds()); var count = selected.Length + (optionsPanel.Selection.GraphicsProfile != null ? 1 : 0); customStatus!.Text = InstallerI18n.Format($"已复制 {count} 个组件 ID。", $"Copied {count} item IDs."); });
         AddAction("复制方案信息", "Copy plan information", () => { Clipboard.SetText(CustomBuildPlan()); customStatus!.Text = PartitionInventory.L("方案信息已复制。", "Plan information copied."); });
         AddAction("清空清单", "Clear selection", ClearCustomBuildSelection, !CustomBuildBusy);
         customSelected.Children.Add(actions);
@@ -303,7 +325,7 @@ public partial class MainWindow
         }
         if (selected.Length > 6)
         {
-            var more = new Button { Content = customShowAllSelected ? PartitionInventory.L("收起", "Show less") : PartitionInventory.L($"展开其余 {selected.Length - 6} 项", $"Show remaining {selected.Length - 6}"), MinHeight = 36, HorizontalAlignment = HorizontalAlignment.Left };
+            var more = new Button { Content = customShowAllSelected ? PartitionInventory.L("收起", "Show less") : InstallerI18n.Format($"展开其余 {selected.Length - 6} 项", $"Show remaining {selected.Length - 6}"), MinHeight = 36, HorizontalAlignment = HorizontalAlignment.Left };
             more.Click += (_, _) => { customShowAllSelected = !customShowAllSelected; RenderCustomBuildRows(); }; customSelected.Children.Add(more);
         }
     }
@@ -311,6 +333,7 @@ public partial class MainWindow
     {
         if (CustomBuildBusy) return;
         foreach (var row in CustomBuildRows().Where(r => r.Source.IsEnabled)) SetBuildRow(row, false, new());
+        optionsPanel.GraphicsChoice.SelectedIndex = 0;
         QueueCustomBuildRefresh();
     }
 
@@ -327,13 +350,20 @@ public partial class MainWindow
             foreach (var dependent in rows.Where(r => r.Generic?.Dependencies.Contains(row.Generic.Id) == true)) SetBuildRow(dependent, false, seen);
     }
     private bool IsEffectiveBuildSelection(BuildRow row) => row.Source.IsChecked == true && !(row.Id == "core:decky" && deviceLegacyChoices.TryGetValue("oxp3:decky", out var legacyDecky) && legacyDecky.IsChecked == true);
-    private string CustomBuildIds() => string.Join("\n", CustomBuildRows().Where(IsEffectiveBuildSelection).Select(r => r.Id).OrderBy(id => id, StringComparer.Ordinal));
+    private string CustomBuildIds() => string.Join("\n", CustomBuildRows().Where(IsEffectiveBuildSelection).Select(r => r.Id).Concat(optionsPanel.Selection.GraphicsProfile is string graphics ? new[] { graphics } : Array.Empty<string>()).OrderBy(id => id, StringComparer.Ordinal));
     private string CustomBuildPlan() => "name: " + (customPlanName?.Text.Replace("\r", " ").Replace("\n", " ") ?? "") + "\nmodel: " + (displayedDeviceMetadata is JsonElement metadata && metadata.TryGetProperty("id", out var id) ? id.GetString() : "generic") + "\npackage-sha256: " + (selectedDeviceDigest ?? "none") + "\n" + CustomBuildIds();
     private void ApplyCustomBuildIds(string input)
     {
         if (CustomBuildBusy) throw new InvalidOperationException(PartitionInventory.L("当前任务进行中，请稍后再修改。", "A task is in progress; change selections afterwards."));
         var ids = input.Split(new[] { '\r', '\n', ',', ';', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.Ordinal).ToArray();
         if (ids.Length == 0) throw new InvalidOperationException(PartitionInventory.L("请先输入项目 ID。", "Enter item IDs first."));
+        var gpuIds = ids.Where(id => id.StartsWith("graphics:", StringComparison.Ordinal)).ToArray();
+        if (gpuIds.Length > 1 || ids.Count(InstallerOptions.CpuComponents.Contains) > 1 || ids.Count(InstallerOptions.CpuFrequencyComponents.Contains) > 1)
+            throw new InvalidOperationException(PartitionInventory.L("只能选择一个 CPU 厂商和一个 GPU 型号；未更改任何选择。", "Choose at most one CPU vendor and one GPU profile; no selections were changed."));
+        var gpuChoice = gpuIds.Length == 0 ? null : optionsPanel.GraphicsChoice.Items.OfType<ComboBoxItem>().FirstOrDefault(item => (string?)item.Tag == gpuIds[0]);
+        if (gpuIds.Length > 0 && (gpuChoice == null || !optionsPanel.GenericHardwareAllowed))
+            throw new InvalidOperationException(PartitionInventory.L("GPU 型号不可用；未更改任何选择。", "GPU profile unavailable; no selections were changed."));
+        ids = ids.Except(gpuIds).ToArray();
         var rows = CustomBuildRows();
         var byId = rows.GroupBy(r => r.Id, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
         if (ids.Any(id => !byId.TryGetValue(id, out var choices) || choices.Length != 1 || !choices[0].Source.IsEnabled))
@@ -350,6 +380,7 @@ public partial class MainWindow
         if (ids.Any(id => !CanSelect(byId[id][0], new())))
             throw new InvalidOperationException(PartitionInventory.L("项目依赖不可用；未更改任何选择。", "A required dependency is unavailable; no selections were changed."));
         foreach (var id in ids) SetBuildRow(byId[id][0], true, new());
+        if (gpuChoice != null) optionsPanel.GraphicsChoice.SelectedItem = gpuChoice;
         QueueCustomBuildRefresh();
     }
     private async Task SwitchCustomBuildModelAsync()

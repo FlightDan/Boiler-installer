@@ -19,6 +19,7 @@ public partial class MainWindow
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
         if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
+        reviewAccelerationChoice = null; accelerationHelpOpen = false; accelerationError = null;
         ResetSsdPreference(); fingerprintPreferences.Clear(); candidateFingerprintPreferences.Clear(); pendingFingerprintPreferences.Clear(); fingerprintTargetReviewed = false; fingerprintModel = null;
         deviceActionError = null;
         ResetInputAssociationSession();
@@ -27,7 +28,7 @@ public partial class MainWindow
         ClearLegacyDeviceOptions();
         deviceAdaptationsChoice = null;
         if (deviceComponentsPanel != null) { ComponentOptionsHost.Children.Remove(deviceComponentsPanel); deviceComponentsPanel = null; }
-        session = null; reviewSeen = false; acknowledgedSelection = null; PhysicalConsent.IsChecked = false;
+        session = null; reviewSeen = false; acknowledgedSelection = null; SyncCurrentHardwareTarget(); PhysicalConsent.IsChecked = false;
         Array.Clear(departedSteps); contentSeen = checkedAllSteps = false;
         ResetOfficialSourceInspection();
         sourceSection = 0; UsePrepared.IsChecked = false; ImagePath.Clear();
@@ -148,14 +149,20 @@ public partial class InstallerOptionsPanel
         // Set group visibility explicitly so adding a section cannot hide presets.
         foreach (var section in GenericSections) section.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
         SystemPresetsPanel.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
+        AccountAccessPanel.Visibility = SystemPresetsPanel.Visibility;
         OptionsNotesPanel.Visibility = mode is "custom" or "vanilla" ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var item in catalog.Repairs.Concat(catalog.Plugins))
-            if (boxes.TryGetValue(item.Id, out var box)) box.IsChecked = item.Available && item.Default
-                && (mode is "custom" or "vanilla");
+        updatingRepairs = true;
+        try
+        {
+            foreach (var item in catalog.Repairs.Concat(catalog.Plugins))
+                if (boxes.TryGetValue(item.Id, out var box)) box.IsChecked = item.Available && item.Default
+                    && (mode is "custom" or "vanilla");
+        }
+        finally { updatingRepairs = false; }
         applyingLanguageDefault = true;
-        try { kde.SelectedItem = kde.Items.Cast<ComboBoxItem>().Single(x => (string)x.Tag == (mode is "custom" or "vanilla" ? InstallerOptions.DefaultKdeLanguage : "system")); }
+        try { kde.SelectedItem = mode is "custom" or "vanilla" ? autoLanguageChoice : kde.Items[0]; }
         finally { applyingLanguageDefault = false; }
-        kdeChanged = mode is "local" or "imported"; setDeckPassword.IsChecked = false; enableSsh.IsChecked = false;
+        setDeckPassword.IsChecked = false; enableSsh.IsChecked = false;
         ClearSensitiveInputs();
         ResetGraphicsChoice();
         SetWirelessContext(mode, hasPackage: false);

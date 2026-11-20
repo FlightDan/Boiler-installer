@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "kind": "GraphicsCandidateCatalogue",
-  "reviewed_date": "2026-10-25",
+  "reviewed_date": "2026-11-18",
   "delivery": {
     "mode": "on-demand",
     "installer_bundled_binaries": false,
@@ -55,6 +55,13 @@
         "graphics:intel-g3-extreme",
         "graphics:intel-g3"
       ]
+    },
+    {
+      "token": "Intel Core Ultra 200V / Lunar Lake",
+      "status": "documented-candidates",
+      "candidate_profiles": [
+        "graphics:intel-258v"
+      ]
     }
   ],
   "profiles": [
@@ -98,7 +105,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -137,7 +144,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -172,7 +179,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -207,7 +214,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -242,7 +249,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -277,7 +284,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -312,7 +319,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -347,7 +354,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -382,7 +389,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -420,7 +427,7 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     },
@@ -458,7 +465,61 @@
         }
       ],
       "candidate_baseline": {
-        "version": "0.1.0-baseline.1",
+        "version": "0.1.0-baseline.3",
+        "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
+      }
+    },
+    {
+      "id": "graphics:intel-258v",
+      "name": {
+        "zh": "Intel Lunar Lake · Arc 130V / 140V",
+        "en": "Intel Lunar Lake · Arc 130V / 140V"
+      },
+      "processors": [
+        "Intel Core Ultra 5 226V",
+        "Intel Core Ultra 5 228V",
+        "Intel Core Ultra 5 236V",
+        "Intel Core Ultra 5 238V",
+        "Intel Core Ultra 7 256V",
+        "Intel Core Ultra 7 258V",
+        "Intel Core Ultra 7 266V",
+        "Intel Core Ultra 7 268V",
+        "Intel Core Ultra 9 288V"
+      ],
+      "graphics_name": "Intel Arc 130V / 140V",
+      "architecture": "Xe2 / Lunar Lake",
+      "compute_units": [
+        7,
+        8
+      ],
+      "pci_ids": [
+        "8086:6420",
+        "8086:64a0",
+        "8086:64b0"
+      ],
+      "drivers": [
+        "xe"
+      ],
+      "install_available": true,
+      "status": "experimental-baseline",
+      "gates": {
+        "candidate_baseline": "recorded",
+        "target_kernel": "checked-in-VM",
+        "early_boot": "verify-in-VM",
+        "runtime": "not_validated"
+      },
+      "hardware_evidence": [
+        {
+          "url": "https://www.intel.com/content/www/us/en/products/sku/240957/intel-core-ultra-7-processor-258v-12m-cache-up-to-4-80-ghz/specifications.html",
+          "scope": "hardware-identity-only"
+        },
+        {
+          "url": "https://www.intel.com/content/www/us/en/products/sku/240960/intel-core-ultra-5-processor-226v-8m-cache-up-to-4-50-ghz/specifications.html",
+          "scope": "hardware-identity-only"
+        }
+      ],
+      "candidate_baseline": {
+        "version": "0.1.0-baseline.3",
         "revision": "2ab4ce216003ee2c2396c69e19455e4379b0e1f0"
       }
     }

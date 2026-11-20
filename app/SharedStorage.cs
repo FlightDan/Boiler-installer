@@ -64,7 +64,7 @@ internal static class SharedStorage
                 if (number < 0 || number > 99999 || partition < 1 || partition > 99999 || start < 0 || size <= 0 || start > diskSize - size) continue;
                 var mount = new StorageMount(id, filesystem, $"share-d{number}-p{partition}");
                 var letter = Str(part, "letter").Trim('\0'); var label = Str(part, "label");
-                var title = PartitionInventory.L($"磁盘 {number} · 分区 {partition}", $"Disk {number} · Partition {partition}")
+                var title = InstallerI18n.Format($"磁盘 {number} · 分区 {partition}", $"Disk {number} · Partition {partition}")
                     + (letter.Length == 1 ? $" · {letter}:" : "") + (label.Length > 0 ? " · " + label : "")
                     + $" · {Str(part, "filesystem")} · {PartitionInventory.SizeText(size)}";
                 result.Add(new(mount, title, diskGuid, Str(disk, "serial"), diskSize, start, size));

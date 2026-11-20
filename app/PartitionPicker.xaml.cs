@@ -280,7 +280,7 @@ public partial class PartitionPicker : UserControl
         if (resetDetails) SteamOsDetails.IsExpanded = false;
         SteamOsStatus.Text = rows.Length == 0
             ? L("未识别到可核验的 SteamOS 分区组。支持标准八分区及其三个启动分区残留；其他布局请在下方逐项核对。读取识别信息需要管理员权限。", "No verifiable SteamOS group identified. Standard eight-partition groups and their residual boot trios are supported; review other layouts below. Administrator access is needed to read identification data.")
-            : L($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。包括经核验的 SteamOS 自有启动分区；Windows、宿主及无法核验的分区保留，原因列在下方。删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Includes verified SteamOS-owned boot partitions. Windows, host and unverifiable partitions are kept; reasons are listed below. Deletion requires a separate confirmation.");
+            : InstallerI18n.Format($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。包括经核验的 SteamOS 自有启动分区；Windows、宿主及无法核验的分区保留，原因列在下方。删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Includes verified SteamOS-owned boot partitions. Windows, host and unverifiable partitions are kept; reasons are listed below. Deletion requires a separate confirmation.");
         SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => !steamOsSelected.Contains(r.Start));
         ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
         UpdateSteamOsDeleteButton(candidates);
@@ -300,7 +300,7 @@ public partial class PartitionPicker : UserControl
     private void UpdateSteamOsSelection()
     {
         var candidates = (Disks.SelectedItem as InventoryDisk)?.Rows.Where(r => r.SteamOsRole != null).ToArray() ?? [];
-        SteamOsStatus.Text = L($"已选 {steamOsSelected.Count} 个 SteamOS 分区 · 共 {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}。受保护分区保留；确认后立即删除。", $"{steamOsSelected.Count} SteamOS partitions selected · {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))} total. Protected partitions are kept. Deletion is immediate after confirmation.");
+        SteamOsStatus.Text = InstallerI18n.Format($"已选 {steamOsSelected.Count} 个 SteamOS 分区 · 共 {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}。受保护分区保留；确认后立即删除。", $"{steamOsSelected.Count} SteamOS partitions selected · {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))} total. Protected partitions are kept. Deletion is immediate after confirmation.");
         SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => r.CanDelete && !steamOsSelected.Contains(r.Start));
         ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
         UpdateSteamOsDeleteButton(candidates);
@@ -343,7 +343,7 @@ public partial class PartitionPicker : UserControl
             else if (FormatRemainingButton.IsEnabled) FormatRemainingButton.ToolTip = L("核对范围并确认后立即创建 NTFS；已有分区保持不变。", "Review and confirm to create NTFS immediately; existing partitions are kept.");
             var after = PartitionInventory.After(plan); var home = after.Single(s => s.Name == "home" && s.Action == "new");
             CapacityHint.Foreground = new SolidColorBrush(Color.FromRgb(97,114,138));
-            CapacityHint.Text = L($"已选择安装容量：{PartitionInventory.SizeText(plan.Capacity)} · 剩余未分配：{PartitionInventory.SizeText(gap.Size - plan.Capacity)}\n系统及启动约 24.375 GiB；数据分区 {PartitionInventory.SizeText(home.Size)}（格式化前）。\n可选容量：128 或 256 GiB。", $"Selected installation capacity: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder: {PartitionInventory.SizeText(gap.Size - plan.Capacity)}\nSystem and boot: about 24.375 GiB; data: {PartitionInventory.SizeText(home.Size)} (before formatting).\nCapacity choices: 128 or 256 GiB.");
+            CapacityHint.Text = InstallerI18n.Format($"已选择安装容量：{PartitionInventory.SizeText(plan.Capacity)} · 剩余未分配：{PartitionInventory.SizeText(gap.Size - plan.Capacity)}\n系统及启动约 24.375 GiB；数据分区 {PartitionInventory.SizeText(home.Size)}（格式化前）。\n可选容量：128 或 256 GiB。", $"Selected installation capacity: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder: {PartitionInventory.SizeText(gap.Size - plan.Capacity)}\nSystem and boot: about 24.375 GiB; data: {PartitionInventory.SizeText(home.Size)} (before formatting).\nCapacity choices: 128 or 256 GiB.");
             ShowChanges(ChangesHost, plan);
         }
         catch (InvalidOperationException error) { CapacityHint.Text = error.Message; CapacityHint.Foreground = Brushes.Sienna; }
@@ -405,7 +405,7 @@ public partial class PartitionPicker : UserControl
         var before = PartitionInventory.Before(disk); var after = PartitionInventory.After(plan);
         var remainder = disk.Rows.Single(r => r.Space?.Start == plan.Start).Size - plan.Capacity;
         Text(plan.AlignRight ? L("安装区靠右 · SteamOS 位于所选空间末端", "Right placement · SteamOS at the end of the selected region") : L("安装区靠左 · SteamOS 位于所选空间起点", "Left placement · SteamOS at the start of the selected region"));
-        Text(L($"SteamOS：{PartitionInventory.SizeText(plan.Capacity)} · 此段剩余未分配：{PartitionInventory.SizeText(remainder)}", $"SteamOS: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder in this region: {PartitionInventory.SizeText(remainder)}"));
+        Text(InstallerI18n.Format($"SteamOS：{PartitionInventory.SizeText(plan.Capacity)} · 此段剩余未分配：{PartitionInventory.SizeText(remainder)}", $"SteamOS: {PartitionInventory.SizeText(plan.Capacity)} · Unallocated remainder in this region: {PartitionInventory.SizeText(remainder)}"));
         Bar(L("安装前", "Before"), before); Bar(L("安装后（规划）", "After (planned)"), after);
         Text(L("蓝：保留分区　绿：新增 SteamOS　灰：未分配", "Blue: kept   Green: new SteamOS   Gray: unallocated"));
         Text(L("保留所有已有分区；新增 8 个 SteamOS 分区。", "Keep all existing partitions; add 8 SteamOS partitions."));

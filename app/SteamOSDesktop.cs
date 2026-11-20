@@ -37,7 +37,7 @@ internal static class SteamOSDesktop
     internal static string Write(string desktop, string content, string language = "zh-CN")
     {
         if (string.IsNullOrWhiteSpace(desktop) || !Directory.Exists(desktop)) throw new IOException("Windows desktop folder is unavailable.");
-        var name = language == "en-US" ? "Restart to SteamOS" : "重启到 SteamOS";
+        var name = InstallerI18n.L("重启到 SteamOS", "Restart to SteamOS", language);
         return WriteUnused(desktop, name, content);
     }
 

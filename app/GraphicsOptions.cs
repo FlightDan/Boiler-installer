@@ -15,7 +15,7 @@ internal sealed class ModelSearchComboBox : ComboBox
     internal TextBox? SearchBox { get; private set; }
     private TextBlock? searchHint, noResults;
     internal bool DeviceModels { get; init; }
-    internal Func<ComboBoxItem, string>? SearchText { get; init; }
+    internal Func<ComboBoxItem, string>? SearchText { get; set; }
 
     internal ModelSearchComboBox()
     {
@@ -116,11 +116,10 @@ internal sealed class ModelSearchComboBox : ComboBox
 
 internal static class GraphicsCatalogue
 {
-    internal sealed record Profile(string Id, string Zh, string En)
+    internal sealed record Profile(string Id, string Zh, string En, string SearchTerms = "")
     {
-        internal string Label => InstallerI18n.Language == "en-US"
-            ? En.Replace(" graphics firmware candidate", "", StringComparison.Ordinal)
-            : Zh.Replace(" 显卡固件候选", "", StringComparison.Ordinal);
+        internal string Label => InstallerI18n.L(Zh.Replace(" 显卡固件候选", "", StringComparison.Ordinal),
+            En.Replace(" graphics firmware candidate", "", StringComparison.Ordinal));
     }
     internal static Profile[] Read()
     {
@@ -135,7 +134,8 @@ internal static class GraphicsCatalogue
             if (!item.GetProperty("install_available").GetBoolean() || item.GetProperty("status").GetString() != "experimental-baseline")
                 throw new IOException("Graphics candidate baseline is not prepared.");
             var name = item.GetProperty("name");
-            return new Profile(item.GetProperty("id").GetString()!, name.GetProperty("zh").GetString()!, name.GetProperty("en").GetString()!);
+            return new Profile(item.GetProperty("id").GetString()!, name.GetProperty("zh").GetString()!, name.GetProperty("en").GetString()!,
+                string.Join(" ", item.GetProperty("processors").EnumerateArray().Select(value => value.GetString())));
         }).ToArray();
         if (profiles.Length is < 1 or > 64 || profiles.Select(item => item.Id).Distinct().Count() != profiles.Length
             || profiles.Any(item => !System.Text.RegularExpressions.Regex.IsMatch(item.Id, "^graphics:(amd|intel)-[a-z0-9-]{1,80}$")
@@ -164,6 +164,8 @@ public sealed partial class InstallerOptionsPanel
 
     private void InitializeGraphicsOptions()
     {
+        graphicsChoice.SearchText = item => (item.Content as TextBlock)?.Text + " " + item.Tag + " "
+            + graphicsProfiles.FirstOrDefault(profile => profile.Id == item.Tag as string)?.SearchTerms;
         var body = new StackPanel();
         var note = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray, Margin = new(0, 8, 0, 10) };
         labels.Add((note, "识别当前 Windows 电脑的核显，或手动选择安装目标型号。按候选基线补充固件，基础驱动由 SteamOS 提供。",
@@ -181,6 +183,8 @@ public sealed partial class InstallerOptionsPanel
         {
             if (graphicsUpdating) return;
             graphicsSelectionVersion++;
+            if (CurrentHardwarePreferences is { } preferences)
+            { preferences.Graphics = (graphicsChoice.SelectedItem as ComboBoxItem)?.Tag as string; preferences.GraphicsOverride = true; }
             graphicsDetection = null; graphicsFailed = graphicsSuperseded = graphicsCancelled = false;
             RefreshGraphicsOptions(); Changed?.Invoke(this, EventArgs.Empty);
         };
@@ -203,7 +207,7 @@ public sealed partial class InstallerOptionsPanel
 
     private void RefreshGraphicsOptions()
     {
-        GraphicsExpander.Header = new TextBlock { Text = PartitionInventory.L("核显固件 · 实验性补全", "Integrated graphics firmware · experimental"), FontSize = 17, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
+        GraphicsExpander.Header = new TextBlock { Text = PartitionInventory.L("核显型号", "Integrated graphics model"), FontSize = 17, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
         var selected = graphicsChoice.SelectedIndex;
         graphicsUpdating = true;
         try
@@ -227,6 +231,7 @@ public sealed partial class InstallerOptionsPanel
             : graphicsDetection is not BoilerGraphicsHardware.Detection found ? GraphicsSelection != null
                 ? PartitionInventory.L("已手动选择核显型号，请核对安装目标；候选补全仍需实机验证。", "A graphics model is selected manually. Check the target; candidate support still needs device testing.")
                 : PartitionInventory.L("尚未识别，核显固件默认不选。", "Not detected yet; no graphics firmware is selected.")
+            : found.Profiles.Length == 1 && CurrentHardwarePreferences?.GraphicsOverride == true ? PartitionInventory.L("已保留手动选择。", "Your manual choice was kept.")
             : found.Profiles.Length == 1 ? PartitionInventory.L("本机识别：", "Detected on this computer: ") + string.Join("、", found.Devices)
                 + PartitionInventory.L("。已选择匹配项，请核对安装目标；硬件效果需实机验证。", ". A matching choice was selected. Check the target; hardware behavior needs device testing.")
             : found.Profiles.Length > 1 ? PartitionInventory.L("发现多个核显候选，请核对目标并手动选择；现有选择已保留。", "Multiple graphics candidates were found. Check the target and select manually; your choice was kept.")
@@ -246,13 +251,13 @@ public sealed partial class InstallerOptionsPanel
             if (request != graphicsRequest || context != graphicsContext || !graphicsAllowed) return;
             if (version != graphicsSelectionVersion) { graphicsDetection = null; graphicsSuperseded = true; return; }
             graphicsDetection = found;
-            if (found.Profiles.Length == 1)
+            if (found.Profiles.Length == 1 && CurrentHardwarePreferences?.GraphicsOverride != true)
             {
                 var item = graphicsChoice.Items.Cast<ComboBoxItem>().SingleOrDefault(item => item.Tag as string == found.Profiles[0]);
                 if (item != null)
                 {
                     graphicsUpdating = true;
-                    try { graphicsChoice.SelectedItem = item; }
+                    try { graphicsChoice.SelectedItem = item; if (CurrentHardwarePreferences is { } preferences) preferences.Graphics = item.Tag as string; }
                     finally { graphicsUpdating = false; }
                 }
             }
@@ -298,6 +303,6 @@ public sealed partial class InstallerOptionsPanel
 
     private string DescribeGraphics() => GraphicsSelection is string id
         ? "\n" + PartitionInventory.L("核显固件（候选基线）：", "Graphics firmware (candidate baseline): ")
-            + graphicsProfiles.Where(item => item.Id == id).Select(item => InstallerI18n.Language == "en-US" ? item.En : item.Zh).Single()
+            + graphicsProfiles.Where(item => item.Id == id).Select(item => InstallerI18n.L(item.Zh, item.En)).Single()
         : "";
 }

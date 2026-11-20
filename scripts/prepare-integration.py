@@ -15,7 +15,10 @@ from payload_lock import checked, record
 from wireless import validate_bundle
 from graphics_catalog import metadata as graphics_metadata
 from graphics_catalog import firmware_metadata as graphics_firmware_metadata
+from microcode import firmware_metadata as microcode_firmware_metadata
+from cpufreq import metadata as cpufreq_metadata, prepare as prepare_cpufreq
 from maintenance import runtime_files
+from maintenance.model_ui_locale import desktop_entry
 
 
 def firmware_metadata(root=ROOT):
@@ -67,7 +70,12 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
     components = {'core:decky': {'available': False, 'reason': 'Explicit locked Decky input required'}}
     components.update(firmware_metadata(ROOT))
     components.update(graphics_firmware_metadata(ROOT))
+    components.update(microcode_firmware_metadata(ROOT))
     staged = {}
+    components.update(cpufreq_metadata(ROOT))
+    for identity in sorted(cpufreq_metadata(ROOT)):
+        _, assets = prepare_cpufreq(ROOT, identity)
+        staged.update(assets)
     if decky:
         base = Path(decky)
         item = json.loads((base / 'manifest.json').read_text())
@@ -115,12 +123,9 @@ def prepare(output, decky=None, wireless=(), development_firmware_cache=False, l
     ui_launcher = (b'#!/bin/sh\nset -eu\ncd /usr/local/lib/boiler\n'
                    b'exec /usr/bin/python3 -I -B -c \'import sys; sys.path.insert(0, "/usr/local/lib/boiler"); '
                    b'from maintenance.model_ui import main; raise SystemExit(main())\' "$@"\n')
-    desktop = ('[Desktop Entry]\nType=Application\nName=Boiler Repairs and Project Updates\nName[zh_CN]=Boiler 修复与项目更新\n'
-               'Comment=Review, install and restore device adaptations\n'
-               'Exec=/usr/local/bin/boiler-maintenance-ui\nIcon=preferences-system\nTerminal=false\nCategories=System;Settings;\n').encode('utf-8')
     for name, data, target, mode in (
         ('boiler-maintenance-ui', ui_launcher, 'usr/local/bin/boiler-maintenance-ui', 0o755),
-        ('Boiler-Maintenance.desktop', desktop, 'usr/share/applications/Boiler-Maintenance.desktop', 0o644)):
+        ('Boiler-Maintenance.desktop', desktop_entry(), 'usr/share/applications/Boiler-Maintenance.desktop', 0o644)):
         source = 'maintenance-runtime/' + name
         staged[source] = data; runtime.append(record(source, data, target=target, mode=mode))
     if local_test_models:
