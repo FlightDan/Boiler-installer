@@ -393,6 +393,7 @@
     "adaptations/records/migrations/intel-cpu-microcode-toon-20261118.md",
     "adaptations/records/migrations/onexplayer-plugin-fixes-20261120.md",
     "adaptations/records/migrations/s2s4-split-20261118.md",
+    "adaptations/records/migrations/s4-autosave-20261120.md",
     "adaptations/records/migrations/s4-steamos-swap-20261120.md",
     "adaptations/records/migrations/shared-kde-pam-module-20261114.md",
     "adaptations/records/migrations/x2-fte3600-overlay-20261114.md",

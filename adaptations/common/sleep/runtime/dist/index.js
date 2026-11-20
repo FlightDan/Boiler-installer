@@ -80,17 +80,14 @@ const catalog = {
   "24 hours": ["24 時間", "24시간", "24 Stunden", "24 heures", "24 horas", "24 小時"],
   "Enable S4 sleep": ["S4 休止を有効にする", "S4 최대 절전 사용", "S4-Ruhezustand aktivieren", "Activer l’hibernation S4", "Activar hibernación S4", "開啟 S4 休眠"],
   "Enter S4": ["S4 に移行", "S4 진입", "S4 aktivieren", "Passer en S4", "Entrar en S4", "進入 S4"],
-  "Dedicated swap: {size} MiB; leave at least 500 MiB free. Physical resume is unverified.": ["専用スワップ: {size} MiB。空き容量を 500 MiB 以上残してください。実機での復帰は未検証です。", "전용 스왑: {size} MiB; 최소 500 MiB의 여유 공간을 남기세요. 실제 기기 복원은 검증되지 않았습니다.", "Dedizierter Swap: {size} MiB; mindestens 500 MiB frei lassen. Fortsetzung auf Hardware nicht geprüft.", "Échange dédié : {size} MiB ; laisser au moins 500 MiB libres. Reprise sur matériel non vérifiée.", "Intercambio dedicado: {size} MiB; deja al menos 500 MiB libres. La reanudación en hardware no se ha verificado.", "專用交換區：{size} MiB；至少保留 500 MiB 空間。尚未驗證實機恢復。"],
-  "Swap size is unavailable. Physical resume is unverified.": ["スワップサイズを取得できません。実機での復帰は未検証です。", "스왑 크기를 확인할 수 없습니다. 실제 기기 복원은 검증되지 않았습니다.", "Swap-Größe nicht verfügbar. Fortsetzung auf Hardware nicht geprüft.", "Taille de l’échange indisponible. Reprise sur matériel non vérifiée.", "Tamaño de intercambio no disponible. La reanudación en hardware no se ha verificado.", "無法讀取交換區大小。尚未驗證實機恢復。"],
+  "Enabling S4 sleep requires {size} MB to create a swap file.": ["S4 休止を有効にすると、スワップファイルの作成に {size} MB の空き容量が必要です。", "S4 최대 절전을 켜려면 스왑 파일을 만들 공간이 {size} MB 필요합니다.", "S4 benötigt {size} MB freien Speicherplatz für eine Auslagerungsdatei.", "L’activation de l’hibernation S4 nécessite {size} MB pour créer un fichier d’échange.", "Activar la hibernación S4 requiere {size} MB para crear un archivo de intercambio.", "開啟 S4 休眠後需要 {size} MB 空間建立交換檔"],
+  "Free up space to create the S4 swap file, then try again.": ["空き容量を増やしてから、S4 のスワップファイル作成を再試行してください。", "S4 스왑 파일을 만들 공간을 확보한 후 다시 시도하세요.", "Gib Speicherplatz für die S4-Auslagerungsdatei frei und versuche es erneut.", "Libérez de l’espace pour le fichier d’échange S4, puis réessayez.", "Libera espacio para el archivo de intercambio de S4 y vuelve a intentarlo.", "請先騰出空間建立 S4 交換檔，再重試。"],
   "Reading status…": ["状態を読み込み中…", "상태를 읽는 중…", "Status wird gelesen…", "Lecture de l’état…", "Leyendo estado…", "正在讀取狀態…"],
   "System integration is not active; see setup instructions.": ["システム連携が有効ではありません。設定手順を確認してください。", "시스템 연동이 활성화되지 않았습니다. 설정 지침을 확인하세요.", "Systemintegration ist nicht aktiv; siehe Einrichtungsanleitung.", "L’intégration système est inactive ; consultez les instructions de configuration.", "La integración del sistema no está activa; consulta las instrucciones de configuración.", "系統整合未啟用；請參閱設定說明。"],
   "Swap cleanup requires attention.": ["スワップのクリーンアップを確認してください。", "스왑 정리를 확인해야 합니다.", "Swap-Bereinigung erfordert Aufmerksamkeit.", "Le nettoyage de l’échange nécessite une intervention.", "La limpieza del intercambio requiere atención.", "交換區清理需要處理。"],
-  "S4 is off; system sleep is used.": ["S4 はオフです。システムのスリープを使用します。", "S4가 꺼져 있으며 시스템 절전을 사용합니다.", "S4 ist aus; die Systemeinstellung wird verwendet.", "S4 est désactivé ; la veille système est utilisée.", "S4 está desactivado; se usa la suspensión del sistema.", "S4 已關閉；使用系統睡眠。"],
   "Selected mode unavailable: ": ["選択したモードを利用できません: ", "선택한 모드를 사용할 수 없음: ", "Gewählter Modus nicht verfügbar: ", "Mode sélectionné indisponible : ", "Modo seleccionado no disponible: ", "所選模式無法使用："],
   "Saved mode is unavailable; system suspend will be used.": ["保存したモードを利用できません。システムのスリープを使用します。", "저장된 모드를 사용할 수 없어 시스템 절전을 사용합니다.", "Gespeicherter Modus nicht verfügbar; System-Energiesparen wird verwendet.", "Mode enregistré indisponible ; la veille système sera utilisée.", "El modo guardado no está disponible; se usará la suspensión del sistema.", "已儲存模式無法使用；將使用系統待機。"],
-  "Eligible; physical S4 resume has not been verified.": ["条件を満たしています。実機の S4 復帰は未検証です。", "조건을 충족합니다. 실제 기기의 S4 복원은 검증되지 않았습니다.", "Voraussetzungen erfüllt; S4-Fortsetzung auf Hardware nicht geprüft.", "Conditions remplies ; reprise S4 sur matériel non vérifiée.", "Requisitos cumplidos; la reanudación S4 en hardware no se ha verificado.", "條件檢測通過；尚未驗證實機 S4 恢復。"],
-  "Retry cleanup": ["クリーンアップを再試行", "정리 다시 시도", "Bereinigung erneut versuchen", "Réessayer le nettoyage", "Reintentar limpieza", "重試清理"],
-  "Save": ["保存", "저장", "Speichern", "Enregistrer", "Guardar", "儲存"]
+  "Retry cleanup": ["クリーンアップを再試行", "정리 다시 시도", "Bereinigung erneut versuchen", "Réessayer le nettoyage", "Reintentar limpieza", "重試清理"]
 };
 const translated = Object.fromEntries(Object.entries(catalog).map(([key, values]) => [key, Object.fromEntries(['ja', 'ko', 'de', 'fr', 'es', 'zh-TW'].map((language, i) => [language, values[i]]))]));
 const tr = pluginTranslation(translated);
@@ -125,13 +122,18 @@ function position(data) {
   const i = delays.indexOf(data.delay_minutes);
   return i < 0 ? 3 : i + 1;
 }
+function legacyDelay(data) {
+  return data.mode === "auto" && !delays.includes(data.delay_minutes) ? data.delay_minutes : null;
+}
 function Content() {
   const [status, setStatus] = R.useState(null);
   const [enabled, setEnabledState] = R.useState(false);
   const [step, setStep] = R.useState(3);
   const [legacy, setLegacy] = R.useState(null);
   const [busy, setBusy] = R.useState(false);
+  const [savingDelay, setSavingDelay] = R.useState(false);
   const [error, setError] = R.useState("");
+  const delayQueue = R.useRef(null);
   R.useEffect(() => {
     let live = true;
     getStatus().then(data => {
@@ -139,75 +141,109 @@ function Content() {
       setStatus(data);
       setEnabledState(data.enabled === true);
       setStep(position(data));
-      if (data.mode === "auto" && !delays.includes(data.delay_minutes)) setLegacy(data.delay_minutes);
+      setLegacy(legacyDelay(data));
     }).catch(e => { if (live) setError(String(e)); });
     return () => { live = false; };
   }, []);
   const mode = step === 0 && legacy == null ? "hibernate" : "auto";
   const supported = !!status && status.available_modes.includes(mode);
   const changeEnabled = async value => {
+    if (delayQueue.current) return;
     setBusy(true); setError("");
     try {
       const data = await setEnabled(value);
       setStatus(data); setEnabledState(data.enabled === true);
       setStep(position(data));
-      setLegacy(data.mode === "auto" && !delays.includes(data.delay_minutes) ? data.delay_minutes : null);
+      setLegacy(legacyDelay(data));
     } catch (e) {
-      setError(String(e));
+      const message = String(e).includes("Insufficient free space for swap")
+        ? tr("Free up space to create the S4 swap file, then try again.", "请先腾出空间创建 S4 交换文件，再重试。")
+        : String(e);
+      setError(message);
       try {
         const data = await getStatus(); setStatus(data); setEnabledState(data.enabled === true);
+        setStep(position(data)); setLegacy(legacyDelay(data));
       } catch (readError) {
-        setStatus(null); setError(String(e) + "; " + String(readError));
+        setStatus(null); setError(message + "; " + String(readError));
       }
     } finally { setBusy(false); }
   };
-  const save = async () => {
-    setBusy(true); setError("");
+  const changeDelay = async value => {
+    if (!enabled || !status?.router_installed || busy) return;
+    const next = Math.max(0, Math.min(delays.length, Math.round(value)));
+    setStep(next); setLegacy(null); setError("");
+    if (delayQueue.current) {
+      delayQueue.current.pending = next;
+      return;
+    }
+    const queue = {pending: next};
+    delayQueue.current = queue;
+    setSavingDelay(true);
+    let confirmed = status;
+    let policyKnown = true;
     try {
-      const value = mode === "auto" ? (legacy ?? delays[step - 1]) : status.delay_minutes;
-      const data = await savePolicy(mode, value);
-      setStatus(data);
-    } catch (e) { setError(String(e)); }
-    finally { setBusy(false); }
+      while (queue.pending != null) {
+        const target = queue.pending;
+        queue.pending = null;
+        const nextMode = target === 0 ? "hibernate" : "auto";
+        const minutes = target === 0 ? confirmed.delay_minutes : delays[target - 1];
+        if (!confirmed.available_modes.includes(nextMode)) break;
+        if (policyKnown && confirmed.mode === nextMode && confirmed.delay_minutes === minutes) continue;
+        try {
+          confirmed = await savePolicy(nextMode, minutes);
+          policyKnown = true;
+          setStatus(confirmed);
+        } catch (e) {
+          policyKnown = false;
+          try {
+            confirmed = await getStatus();
+            policyKnown = true;
+            setStatus(confirmed);
+          } catch (readError) {
+            // A failed response can follow a committed write. Retry any queued selection.
+          }
+          if (queue.pending == null) {
+            setStep(position(confirmed));
+            setLegacy(legacyDelay(confirmed));
+            setError(String(e));
+          }
+        }
+      }
+    } finally {
+      delayQueue.current = null;
+      setSavingDelay(false);
+    }
   };
   const label = n => n === 0 ? tr("Immediately", "立即") :
     n === step && legacy != null ? tr("{minutes} min", "{minutes} 分钟", {minutes: legacy}) :
     ["", tr("20 min", "20 分钟"), tr("1 hour", "1 小时"), tr("2 hours", "2 小时"), tr("12 hours", "12 小时"), tr("24 hours", "24 小时")][n];
   const missing = status?.reasons?.[mode];
   const details = missing ? (Array.isArray(missing) ? missing : [missing]).map(reasonText).join("; ") : "";
+  const notice = !status ? tr("Reading status…", "正在读取状态…") :
+    !status.router_installed ? tr("System integration is not active; see setup instructions.", "系统集成未启用；请参阅设置说明。") :
+    !enabled && status.swap_state && status.swap_state !== "absent" ? tr("Swap cleanup requires attention.", "交换区清理需要处理。") :
+    enabled && !supported ? tr("Selected mode unavailable: ", "所选模式不可用：") + details :
+    enabled && !savingDelay && !status.ready ? tr("Saved mode is unavailable; system suspend will be used.", "已保存模式不可用；将使用系统待机。") : "";
   return h(U.PanelSection, {title: "Boiler S2/S4 switcher"},
     h(U.PanelSectionRow, {key: "switch"}, h(U.ToggleField, {
       label: tr("Enable S4 sleep", "开启 S4 睡眠"), checked: enabled,
-      disabled: !status || !status.router_installed || busy,
+      disabled: !status || !status.router_installed || busy || savingDelay,
       onChange: changeEnabled,
     })),
     h(U.PanelSectionRow, {key: "delay"}, h(U.SliderField, {
       label: tr("Enter S4", "进入 S4"), value: step, min: 0, max: 5, step: 1, notchCount: 6,
       showValue: true, renderValue: label,
       disabled: !enabled || !status?.router_installed || busy,
-      onChange: value => { setLegacy(null); setStep(Math.max(0, Math.min(5, Math.round(value)))); },
+      onChange: changeDelay,
     })),
-    h(U.PanelSectionRow, {key: "explanation"}, h("div", null,
-      status?.required_swap_bytes != null
-        ? tr("Dedicated swap: {size} MiB; leave at least 500 MiB free. Physical resume is unverified.",
-             "专用交换区：{size} MiB；至少保留 500 MiB 空间。尚未验证实机恢复。", {size: Math.ceil(status.required_swap_bytes / 1048576)})
-        : tr("Swap size is unavailable. Physical resume is unverified.", "无法读取交换区大小。尚未验证实机恢复。"))),
-    h(U.PanelSectionRow, {key: "status"}, h("div", null,
-      !status ? tr("Reading status…", "正在读取状态…") :
-      !status.router_installed ? tr("System integration is not active; see setup instructions.", "系统集成未启用；请参阅设置说明。") :
-      !enabled && status.swap_state !== "absent" ? tr("Swap cleanup requires attention.", "交换区清理需要处理。") :
-      !enabled ? tr("S4 is off; system sleep is used.", "S4 已关闭；使用系统睡眠。") :
-      !supported ? tr("Selected mode unavailable: ", "所选模式不可用：") + details :
-      !status.ready ? tr("Saved mode is unavailable; system suspend will be used.", "已保存模式不可用；将使用系统待机。") :
-      tr("Eligible; physical S4 resume has not been verified.", "条件检测通过；尚未验证实机 S4 恢复。"))),
+    status?.required_swap_bytes != null ? h(U.PanelSectionRow, {key: "explanation"}, h("div", null,
+      tr("Enabling S4 sleep requires {size} MB to create a swap file.",
+         "开启 S4 睡眠后需要 {size} MB 空间创建交换文件", {size: Math.ceil(status.required_swap_bytes / 1048576)}))) : null,
+    notice ? h(U.PanelSectionRow, {key: "status"}, h("div", null, notice)) : null,
     status && !enabled && status.swap_state && status.swap_state !== "absent"
       ? h(U.PanelSectionRow, {key: "cleanup"}, h(U.ButtonItem, {
           disabled: busy, onClick: () => changeEnabled(false),
         }, tr("Retry cleanup", "重试清理"))) : null,
-    h(U.PanelSectionRow, {key: "save"}, h(U.ButtonItem, {
-      disabled: busy || !status?.router_installed || !enabled || !supported,
-      onClick: save,
-    }, tr("Save", "保存"))),
     error ? h(U.PanelSectionRow, {key: "error"}, h("div", null, error)) : null);
 }
 export default () => ({ titleView: h("div", null, "Boiler S2/S4 switcher"), content: h(Content, null) });

@@ -217,7 +217,7 @@ components[31]:
     dependencies[1]: decky
     sources[9]: common/sleep/source-lock.json,common/sleep/install.json,common/sleep/runtime/main.py,common/sleep/runtime/dist/index.js,common/sleep/runtime/package.json,common/sleep/runtime/plugin.json,common/sleep/runtime/sleep_control.py,common/sleep/runtime/90-boiler-sleep.conf,common/sleep/runtime/LICENSE
     status: shared_asset
-    notes: 独立 Decky 插件 0.1.2。用户可在 Decky 开启 S4，插件在休眠事务中自动协调已核验的 SteamOS 交换文件。
+    notes: 独立 Decky 插件 0.1.3。界面显示创建交换文件所需空间，调节 S4 延时后自动保存。插件在休眠事务中自动协调已核验的 SteamOS 交换文件。
   - id: oxp3-light
     name: OXP3 Light · 三分区灯光控制
     recommendation: optional

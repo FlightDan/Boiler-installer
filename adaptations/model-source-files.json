@@ -460,13 +460,13 @@
     },
     {
       "path": "brands/onexplayer/oxp3/manifest.json",
-      "size": 16217,
-      "sha256": "0f79a63fb4594dea93e266b75d0470aeffa06c12c907d464811a534d72b7bc3b"
+      "size": 16265,
+      "sha256": "045e599d69553cdfa51a8dfabc861c81533a35905eaecb3480abeb07464f3237"
     },
     {
       "path": "brands/onexplayer/oxp3/model.md",
-      "size": 7519,
-      "sha256": "347b27c63ee80fe5130d3a04f4f863da47172a7469fee328db9c9a1a00d41f72"
+      "size": 7567,
+      "sha256": "9f215fda6a386b2f9f1ed7563cdcff3fe9b809f905833e362837e4a5ecbd692b"
     },
     {
       "path": "brands/onexplayer/oxp3/scripts/autoflatpaks-compat/README.txt",
@@ -800,13 +800,13 @@
     },
     {
       "path": "brands/onexplayer/x2-mini/manifest.json",
-      "size": 19469,
-      "sha256": "37fff16b8d6a10058d9ae49cf965ec5d48076d4efad20c261391ed6c50793848"
+      "size": 19517,
+      "sha256": "c351ecd4e0d9713f7bdbf05dfd8d82b71e8eee00f55f45bbc380808065315ee9"
     },
     {
       "path": "brands/onexplayer/x2-mini/model.md",
-      "size": 9351,
-      "sha256": "6a45ad4d041e7d91a46804cddc72fe1f1cbfada118bc307656d755605a4c49fb"
+      "size": 9399,
+      "sha256": "ec1cdaca2503a833136c75d5f1f35984fe68b637f2cc6183fc5e701f66049a70"
     },
     {
       "path": "brands/onexplayer/x2-mini/scripts/build-x2-hdr-overlay.py",
@@ -1651,7 +1651,7 @@
     {
       "path": "common/sleep/install.json",
       "size": 2596,
-      "sha256": "0a51c38e9f2a26fb16f210c9a09a465bb769b52f15157d040b6dcf4bc34f4c66"
+      "sha256": "0e99f787b66c14ccaa786435f36a048b84864b6851bf7b09201c98720a764753"
     },
     {
       "path": "common/sleep/runtime/90-boiler-sleep.conf",
@@ -1665,8 +1665,8 @@
     },
     {
       "path": "common/sleep/runtime/dist/index.js",
-      "size": 21855,
-      "sha256": "3d46940762f210241c1aff1f53c7ac9f69b82681a0452e2b2f73e53da2577158"
+      "size": 21888,
+      "sha256": "5a1fa96856cef0df8774f2396cf23b8d0b1a6da37c5727e5a87a4e4309625b3c"
     },
     {
       "path": "common/sleep/runtime/main.py",
@@ -1676,7 +1676,7 @@
     {
       "path": "common/sleep/runtime/package.json",
       "size": 59,
-      "sha256": "11eb742e5221a451e137400bf1418959f09336fead723155e852da6dd65212e1"
+      "sha256": "e163c21465cf5b1391fc2fa754e481ca3d85b62130312f69b2688a456293ea13"
     },
     {
       "path": "common/sleep/runtime/plugin.json",
@@ -1691,7 +1691,7 @@
     {
       "path": "common/sleep/source-lock.json",
       "size": 1589,
-      "sha256": "eb15b991f1ec68167c361deaf11371c5453dd97976d2f42b1a2904f1d07b05cf"
+      "sha256": "6b8bacdc4a5a34e07d1b4e7171af192ee11c60add37029981c6b0b00b70daf94"
     },
     {
       "path": "common/ssd/acer/gm7/GM7_POLICY.md",
@@ -1715,13 +1715,13 @@
     },
     {
       "path": "devices/onexplayer/oxp3.toon",
-      "size": 22806,
-      "sha256": "cfcebdf6c02f316efb4aa6c00ddcf3c5e20d64b0f4f3dae791b75934495a9e88"
+      "size": 22854,
+      "sha256": "760dcddbb367d17a6b4e87a14ab9254da6d22a5a67f942bcf6017f5976cda974"
     },
     {
       "path": "devices/onexplayer/x2-mini.toon",
-      "size": 19826,
-      "sha256": "65f02197b1b06afb548b00c8a2c9887ef43a9c0e43cf4dd139a2e5afda4cfa0e"
+      "size": 19874,
+      "sha256": "6a95ac0c92c7aa3eee50dde2e996bb785110eaaa5d931d5cb24943e98d5c5650"
     },
     {
       "path": "docs/ADAPTATIONS.md",
@@ -1857,6 +1857,11 @@
       "path": "records/migrations/s2s4-split-20261118.md",
       "size": 1838,
       "sha256": "d25ba0c03abc3a72118444a437b0fec924bb7c360389a87bde4e931422df5cf3"
+    },
+    {
+      "path": "records/migrations/s4-autosave-20261120.md",
+      "size": 514,
+      "sha256": "3fdbc30608a4df9b7d62e206f8add4a1c635a2146ed560151dd60cf49e7e7810"
     },
     {
       "path": "records/migrations/s4-steamos-swap-20261120.md",

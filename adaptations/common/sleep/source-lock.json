@@ -4,12 +4,12 @@
   "source": {
     "name": "Boiler S2-S4 switcher",
     "repository": "FlightDan/SteamOS-S2-S4-switcher",
-    "commit": "10c328de008fe8c476c3e72ae1859e2f773d6e48"
+    "commit": "74c0e322753880b2ad73e4491ba2d5fb99bb01c1"
   },
   "archive": {
-    "path": "Boiler-S2S4-Switcher-0.1.2.zip",
-    "size": 32618,
-    "sha256": "d0468a1c32c2e98125e54e425b0558c4fad8c17b8f929f329424f05fd233eb79"
+    "path": "Boiler-S2S4-Switcher-0.1.3.zip",
+    "size": 32678,
+    "sha256": "54796856474267387a7cb22a5e4ab0236e0befb50d551583cb0c20124a711355"
   },
   "files": [
     {
@@ -19,13 +19,13 @@
     },
     {
       "path": "common/sleep/runtime/dist/index.js",
-      "size": 21855,
-      "sha256": "3d46940762f210241c1aff1f53c7ac9f69b82681a0452e2b2f73e53da2577158"
+      "size": 21888,
+      "sha256": "5a1fa96856cef0df8774f2396cf23b8d0b1a6da37c5727e5a87a4e4309625b3c"
     },
     {
       "path": "common/sleep/runtime/package.json",
       "size": 59,
-      "sha256": "11eb742e5221a451e137400bf1418959f09336fead723155e852da6dd65212e1"
+      "sha256": "e163c21465cf5b1391fc2fa754e481ca3d85b62130312f69b2688a456293ea13"
     },
     {
       "path": "common/sleep/runtime/plugin.json",
