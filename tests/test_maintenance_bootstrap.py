@@ -100,7 +100,7 @@ class MaintenanceBootstrapTests(unittest.TestCase):
                    "release.json": json.dumps(release, sort_keys=True).encode("utf-8")}
         component = {
             "schema_version": 1, "kind": "ComponentManifest", "id": bootstrap.COMPONENT_ID,
-            "version": version, "compatibility": release["compatibility"],
+            "version": version, "compatibility": release["compatibility"], "retain_owned_paths": True,
             "files": [{"source": "payload/maintenance.txt", "target": "usr/local/lib/boiler/maintenance.txt",
                        "size": len(payload["payload/maintenance.txt"]),
                        "sha256": hashlib.sha256(payload["payload/maintenance.txt"]).hexdigest(), "mode": 0o644}],

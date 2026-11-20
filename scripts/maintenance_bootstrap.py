@@ -242,6 +242,10 @@ def _install_with_key(root: Path, index_url: str, signature_url: str,
         expected_state = hashlib.sha256(json.dumps(
             empty_state, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")).hexdigest()
+        # The signed update can retain files from a previous owner. The first
+        # installation has an explicitly empty ownership state.
+        if component.get("retain_owned_paths") is True:
+            component = dict(component, retain_owned_paths=False)
         result = engine.apply(component, package_dir, environment=environment,
                               expected_state_sha256=expected_state)
         return {
