@@ -93,18 +93,20 @@ class MaintenanceBootstrapTests(unittest.TestCase):
         (root / "usr/lib/modules").mkdir(parents=True)
         return root
 
-    def artifact(self, *, hooks=False, hook_marker=None, release=None):
+    def artifact(self, *, hooks=False, hook_marker=None, release=None, retain_owned_paths=False):
         release = release or self.release
         version = release["version"]
         payload = {"payload/maintenance.txt": b"verified Boiler maintenance runtime\n",
                    "release.json": json.dumps(release, sort_keys=True).encode("utf-8")}
         component = {
             "schema_version": 1, "kind": "ComponentManifest", "id": bootstrap.COMPONENT_ID,
-            "version": version, "compatibility": release["compatibility"], "retain_owned_paths": True,
+            "version": version, "compatibility": release["compatibility"],
             "files": [{"source": "payload/maintenance.txt", "target": "usr/local/lib/boiler/maintenance.txt",
                        "size": len(payload["payload/maintenance.txt"]),
                        "sha256": hashlib.sha256(payload["payload/maintenance.txt"]).hexdigest(), "mode": 0o644}],
         }
+        if retain_owned_paths:
+            component["retain_owned_paths"] = True
         if hooks:
             marker = str(hook_marker) if hook_marker else "/tmp/boiler-bootstrap-hook-ran"
             payload["scripts/apply.sh"] = ("#!/bin/sh\ntouch " + marker + "\n").encode()
@@ -170,7 +172,7 @@ class MaintenanceBootstrapTests(unittest.TestCase):
                                      release_path=self.release_path, public_key=self.signer.public_key)
 
     def test_signed_package_installs_via_engine_and_can_be_restored(self):
-        archive, _manifest, entry = self.artifact()
+        archive, _manifest, entry = self.artifact(retain_owned_paths=True)
         result = self.install(packages=[entry], archive_path=archive)
         self.assertEqual(result["status"], "installed")
         installed = self.target / "usr/local/lib/boiler/maintenance.txt"
