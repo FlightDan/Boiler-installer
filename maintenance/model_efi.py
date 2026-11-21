@@ -249,7 +249,7 @@ def _check_pair(pair,source):
         raise MaintenanceError('Fresh two-slot targets are not distinct or do not share home')
 
 
-def _check_journal_inventory(root, slot, seen):
+def _check_journal_inventory(root, slot, seen, *, activation_components=None):
     """Reject any unlisted installer journal in this slot or shared scope."""
     root=Path(root)
     for group in (slot,'shared'):
@@ -273,6 +273,28 @@ def _check_journal_inventory(root, slot, seen):
                             with boot._file(base/entry.name,private=True) as (stream,info):
                                 if info.st_size != 5 or stream.read(6) != b'null\n':
                                     raise MaintenanceError('Unexpected legacy target disk record; preserve it for review')
+                        elif group == slot and activation_components is not None and entry.name in ('.activation.lock','activation.json'):
+                            with boot._file(base/entry.name,private=True) as (stream,info):
+                                if os.name != 'nt' and stat.S_IMODE(info.st_mode) != 0o600:
+                                    raise MaintenanceError('Untrusted activation file mode')
+                                if entry.name == '.activation.lock':
+                                    if info.st_size != 0:
+                                        raise MaintenanceError('Unexpected activation lock content')
+                                else:
+                                    if info.st_size > 2*1024*1024:
+                                        raise MaintenanceError('Activation result exceeds size limit')
+                                    value=boot._decode_json(stream.read(2*1024*1024+1))
+                                    if not isinstance(value,dict) or len(value)>20000 or not set(value)<=activation_components:
+                                        raise MaintenanceError('Invalid activation components')
+                                    for row in value.values():
+                                        if not isinstance(row,dict):
+                                            raise MaintenanceError('Invalid activation row')
+                                        if row.get('status') in ('ready','active'):
+                                            valid=set(row)=={'status','session_restart_required'} and type(row['session_restart_required']) is bool
+                                        else:
+                                            valid=row.get('status') in ('refused','failed') and set(row)=={'status','reason'} and isinstance(row['reason'],str)
+                                        if not valid:
+                                            raise MaintenanceError('Invalid activation row')
                         elif entry.name not in ('result.json','request.json'):
                             raise MaintenanceError('Unknown legacy integration state; preserve it for review')
                         continue
@@ -285,7 +307,7 @@ def _check_journal_inventory(root, slot, seen):
                         raise MaintenanceError('Unlisted legacy component journal; preserve it for review')
 
 
-def _verify_adapter_proof(root,source,slot='A', *, model_record_path=None):
+def _verify_adapter_proof(root,source,slot='A', *, model_record_path=None, activation_components=None):
     """Verify the completed first-slot bridge record and protected evidence."""
     if slot not in ('A','B'):
         raise MaintenanceError('Invalid adapter proof slot')
@@ -330,7 +352,7 @@ def _verify_adapter_proof(root,source,slot='A', *, model_record_path=None):
         required.add(model_record_path)
     if not required <= seen:
         raise MaintenanceError('Adapter proof lacks model result, model record or split-lock journal')
-    _check_journal_inventory(root,slot,seen)
+    _check_journal_inventory(root,slot,seen,activation_components=activation_components)
 
 
 def reject_conflicting_component(engine,component):
@@ -531,7 +553,7 @@ def _make_proof(root,bound,record):
     return dict(body,proof_sha256=boot.digest(body))
 
 
-def _ssd_projection(root,context,bound,model_record,current):
+def _ssd_projection(root,context,bound,model_record,current, *, activation_components=None):
     """Accept S only if the separately owned SSD record proves exact M→S."""
     if bound['disposition'] != 'match':
         return False
@@ -551,13 +573,13 @@ def _ssd_projection(root,context,bound,model_record,current):
             or boot._snapshot(root,bound) != applied):
         raise MaintenanceError('SSD projection bytes differ from their protected model and SSD journals')
     handoff=record['handoff']
-    observed,proof,model_bytes=validate_model_handoff(root,context,handoff['preflight'],expected_proof=handoff['model_proof'])
+    observed,proof,model_bytes=validate_model_handoff(root,context,handoff['preflight'],expected_proof=handoff['model_proof'],activation_components=activation_components)
     if observed != bound or model_bytes != boot._decode(model_record['applied']) or proof['record_sha256'] != boot.digest(model_record):
         raise MaintenanceError('SSD projection does not prove the current model lineage')
     return True
 
 
-def validate_model_handoff(root, host_context, preflight, *, expected_proof=None):
+def validate_model_handoff(root, host_context, preflight, *, expected_proof=None, activation_components=None):
     """Read protected fixed model proof while the caller holds the boot lock.
 
     This function never creates or acquires a lock. The outer bridge previously
@@ -598,7 +620,7 @@ def validate_model_handoff(root, host_context, preflight, *, expected_proof=None
     if journal_sha != record['journal_sha256']:
         raise MaintenanceError('Model companion journal changed after its proof')
     proof=_make_proof(root,bound,record)
-    _verify_adapter_proof(root,source,bound['slot'],model_record_path=proof['record_path'])
+    _verify_adapter_proof(root,source,bound['slot'],model_record_path=proof['record_path'],activation_components=activation_components)
     if expected_proof is not None and expected_proof != proof:
         raise MaintenanceError('Protected model proof changed since SSD ownership began')
     return bound,proof,applied
@@ -606,12 +628,13 @@ def validate_model_handoff(root, host_context, preflight, *, expected_proof=None
 
 class ModelEFI:
     """Fixed model EFI and companion intent; bridge owns POSIX journal writes."""
-    def __init__(self, root, host_context, identity, selection, *, sibling_root=None):
+    def __init__(self, root, host_context, identity, selection, *, sibling_root=None, activation_components=None):
         self.selection = dict(selection)
         self.sibling_root = Path(os.path.abspath(sibling_root)) if sibling_root is not None else None
         self.root = Path(os.path.abspath(root))
         self.context = host_context
         self.source = _model_source(identity,selection)
+        self.activation_components = activation_components
         self.store = Store(self.root, self.root/STATE)
 
     @staticmethod
@@ -643,7 +666,7 @@ class ModelEFI:
             if pending is None:
                 if current != (applied if record['status']=='installed' else original):
                     if not (action == 'verify' and record['status']=='installed'
-                            and _ssd_projection(self.root,self.context,bound,record,current)):
+                            and _ssd_projection(self.root,self.context,bound,record,current,activation_components=self.activation_components)):
                         raise MaintenanceError('Owned model EFI bytes changed; preserve them for review')
                 if record['status']=='installed' and _companion_journal(self.root,bound['slot'],record['companions_original'],phase='installed') != record['journal_sha256']:
                     raise MaintenanceError('Split-lock companion journal differs from the completed model proof')

@@ -74,7 +74,8 @@ public static class WizardChecks
         Click("BackButton");
         Require(((SolidColorBrush)Find<TextBlock>("NavSource").Foreground).Color != Color.FromRgb(255, 139, 139), "configured-source-clears-red-status");
         Click("BackButton"); Require(Find<TextBox>("ImagePath").Text == prepared, "back-retains-reviewed-source");
-        Click("TargetTab"); Find<RadioButton>("ExternalTarget").IsChecked = true; Click("NextButton"); Click("NextButton"); Click("NextButton"); Click("NextButton");
+        Click("TargetTab"); picker.LoadSnapshot(PartitionPickerChecks.ExampleWithExternalDisk(), true); picker.Disks.SelectedIndex = 1;
+        Click("NextButton"); Click("NextButton"); Click("NextButton"); Click("NextButton");
         Require(Find<TextBlock>("ReviewTarget").Text.Contains("外部完整系统") && Find<TextBlock>("ReviewLayout").Text.Contains("清空"), "external-review-describes-full-system-and-erase-semantics");
         Click("SourceTab"); Find<CheckBox>("UsePrepared").IsChecked = false;
         Require(Find<TextBox>("ImagePath").Text.Length == 0, "source-kind-change-invalidates-old-path");

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 import struct
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -64,6 +65,49 @@ class PresetChecks(unittest.TestCase):
         self.assertNotIn(HASH, json.dumps(component))
         self.assertIn(HASH.encode(), files['etc/shadow'])
         self.assertFalse((self.root / 'home').exists())
+
+    def steam_fixture(self):
+        self.write('usr/lib/systemd/user/steam-launcher.service', b'[Service]\nExecStart=/usr/lib/steamos/steam-launcher\n')
+        self.write(presets.STEAM_SESSION_LAUNCHER, b'#!/bin/sh\nexec steam "$@"\n', 0o755)
+        self.write('usr/bin/steam', b'#!/bin/sh\n$HOME/.steam/registry.vdf\n$HOME/.local/share/steam_registry_oobe.vdf\n', 0o755)
+
+    def test_steam_seed_capability_and_effective_language(self):
+        self.assertEqual({}, presets.steam_seed(self.root, 'zh_CN'))
+        self.steam_fixture()
+        launcher = self.root / presets.STEAM_SESSION_LAUNCHER
+        launcher.unlink()
+        self.assertEqual({}, presets.steam_seed(self.root, 'zh_CN'))
+        self.steam_fixture()
+        _, files, language = presets.prepare(self.root, self.options, HASH)
+        self.assertEqual('zh_CN', language)
+        self.assertIn(b'"language" "schinese"', files[presets.STEAM_SCRIPT])
+        self.assertEqual(2, files[presets.STEAM_SCRIPT].count(b'"language" "schinese"'))
+        self.assertEqual({}, presets.steam_seed(self.root, 'ar_SA'))
+        for locale, token in [('pt_BR', 'brazilian'), ('en_GB', 'english'), ('de_AT', 'german'),
+                              ('fr_CA', 'french'), ('es_MX', 'latam'), ('zh_HK', 'tchinese')]:
+            with self.subTest(locale=locale):
+                self.assertIn(f'"language" "{token}"'.encode(), presets.steam_seed(self.root, locale)[presets.STEAM_SCRIPT])
+        for path, data in files.items(): self.write(path, data, 0o600 if path == 'etc/shadow' else 0o644)
+        presets.verify_steam_seed(self.root, language, 'prepared')
+        with self.assertRaises(ValueError): presets.verify_steam_seed(self.root, language, 'unsupported')
+        self.write(presets.STEAM_SCRIPT, b'changed')
+        with self.assertRaises(ValueError): presets.verify_steam_seed(self.root, language, 'prepared')
+
+    @unittest.skipUnless(sys.platform == 'linux', 'Shell runtime test requires Linux')
+    def test_steam_seed_fresh_existing_and_dangling_links(self):
+        self.steam_fixture()
+        script = presets.steam_seed(self.root, 'zh_CN')[presets.STEAM_SCRIPT].decode()
+        home = Path(self.tmp.name) / 'deck'; home.mkdir()
+        script = script.replace('[ "$(id -un)" = deck ] && [ "$HOME" = /home/deck ]', 'true')
+        def run(): subprocess.run(['/bin/sh'], input=script, text=True, env=dict(os.environ, HOME=str(home)), check=True)
+        backup = home / '.local/share/steam_registry_oobe.vdf'
+        registry = home / '.steam/registry.vdf'
+        run(); self.assertIn('"language" "schinese"', backup.read_text())
+        backup.write_text('existing OOBE'); run(); self.assertEqual('existing OOBE', backup.read_text())
+        backup.unlink(); registry.parent.mkdir(); registry.write_text('existing registry')
+        run(); self.assertFalse(backup.exists()); self.assertEqual('existing registry', registry.read_text())
+        registry.unlink(); registry.symlink_to('missing'); run(); self.assertFalse(backup.exists())
+        registry.unlink(); backup.symlink_to('missing'); run(); self.assertTrue(backup.is_symlink())
 
     def test_existing_user_locale_is_preserved_and_conflicts_refused(self):
         user = self.write('home/deck/.config/plasma-localerc', b'[Translations]\nLANGUAGE=zh_CN\n[Formats]\nLANG=zh_CN.UTF-8\nLC_TIME=de_DE.UTF-8\n')
@@ -210,6 +254,7 @@ class PresetChecks(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == 'linux' and hasattr(os, 'geteuid') and os.geteuid() == 0, 'Native Linux root ownership required')
     def test_native_transaction_presets_only_verify_restore_and_private_secrets(self):
+        self.steam_fixture()
         user = self.write('home/deck/.config/plasma-localerc', b'[Translations]\nLANGUAGE=zh_CN\n')
         for path in (self.root / 'home/deck', user.parent, user): os.chown(path, 1000, 1000)
         result = stage(self.root, self.payload, self.options, 'A', HASH)
@@ -229,6 +274,8 @@ class PresetChecks(unittest.TestCase):
         self.assertEqual(b'[Translations]\nLANGUAGE=zh_CN\n', user.read_bytes())
         self.assertFalse((self.root / presets.SSH_TARGET).exists())
         self.assertFalse((self.root / 'etc/locale.conf').exists())
+        self.assertFalse((self.root / presets.STEAM_SCRIPT).exists())
+        self.assertFalse((self.root / presets.STEAM_DROPIN).exists())
 
 
 if __name__ == '__main__': unittest.main()

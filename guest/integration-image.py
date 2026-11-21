@@ -13,10 +13,20 @@ from integration import stage, validate_options, authenticate_model_efi, complet
 from system_presets import selected as presets_selected
 from offload_mounts import mount_opt, mount_etc
 from integration_emit import emit_slot
+import steam_dns
 # Phase timing is plain log output; nothing below reads these values.
 _boiler_clock = time.monotonic()
 def _mark(name):
     print('BOILER_TIMING=integration:%s:%.3f' % (name, time.monotonic() - _boiler_clock), flush=True)
+
+def mount_prepared_etc(root, mounts, slot):
+    if not mount_etc(root, mounts):
+        raise RuntimeError('SteamOS persistent /etc is required for the first-boot DNS configuration')
+    steam_dns.prepare(root)
+    proof = steam_dns.verify(root)
+    print('OXP_STEAM_DNS_PREPARED=' + slot, flush=True)
+    return proof
+
 if Path('/sys/class/dmi/id/sys_vendor').read_text().strip()!='QEMU': raise RuntimeError('Managed VM required')
 if Path('/sys/class/block/vdc/ro').read_text().strip()!='0': raise RuntimeError('Prepared image must be writable')
 table=json.loads(subprocess.check_output(['sfdisk','--json','/dev/vdc']))['partitiontable']
@@ -34,12 +44,19 @@ if not any(options.get(key) for key in ('repairs','plugins','wireless','device_c
     probe=Path('/mnt/boiler-plan-source'); probe.mkdir(exist_ok=True)
     for slot in ('A','B'):
         _mark('probe-' + slot)
+        mounts = [probe]
         subprocess.run(['mount','-t','btrfs','-o','ro,rescue=nologreplay',parts['rootfs-'+slot],str(probe)],check=True)
         try:
+            if subprocess.check_output(['btrfs','property','get','-ts',str(probe),'ro'],text=True).strip() != 'ro=true':
+                raise RuntimeError('Prepared root protection missing during first-boot DNS setup')
             result=stage(probe,'/mnt/payload',options,slot)
+            subprocess.run(['mount','-t','ext4',parts['var-'+slot],str(probe/'var')],check=True)
+            mounts.append(probe/'var')
+            result['install_plan']['steam_dns'] = mount_prepared_etc(probe, mounts, slot)
             print('BOILER_INSTALL_PLAN_JSON='+json.dumps(result['install_plan']),flush=True)
-        finally: subprocess.run(['umount',str(probe)],check=True)
-    print('OXP_INTEGRATION_PRESERVED=no-components-selected',flush=True)
+        finally:
+            for path in reversed(mounts): subprocess.run(['umount',str(path)],check=True)
+    print('OXP_INTEGRATION_BASELINE=no-components-selected',flush=True)
     raise SystemExit(0)
 Path('/run/boiler-guest-context').write_text('managed-qemu-integration\n')
 target_disk=options.pop('_target_disk',None)
@@ -132,7 +149,7 @@ _mark('password')
 if model_plans:
     from maintenance.model_efi import model_efi_authorize_pair
     from maintenance.ssd_boot import installer_model_ssd_plan
-    mounts=[]; protected=[]; results={}
+    mounts=[]; protected=[]; results={}; dns_baselines={}
     def combined_mount(node,path,*flags):
         path.mkdir(parents=True,exist_ok=True)
         subprocess.run(['mount',*flags,node,str(path)],check=True); mounts.append(path)
@@ -143,7 +160,8 @@ if model_plans:
                 raise RuntimeError('Prepared root is not protected')
             subprocess.run(['btrfs','property','set','-ts',str(root),'ro','false'],check=True); protected.append(root)
             combined_mount(parts['var-'+slot],root/'var'); combined_mount(parts['home'],root/'home')
-            mount_etc(root,mounts); mount_opt(root,mounts)
+            dns_baselines[slot] = mount_prepared_etc(root, mounts, slot)
+            mount_opt(root,mounts)
             combined_mount(parts['efi-'+slot],root/'efi','-t','vfat')
         model_efi_authorize_pair(roots[0],roots[1],model_context,model_source,model_selection,
             [model_plans['A'],model_plans['B']],
@@ -160,7 +178,7 @@ if model_plans:
             _mark('stage-' + slot + '-start')
             results[slot]=stage(root,'/mnt/payload',options,slot,password_hash,target_disk=target_disk,
                 ssd_context=ssd_context,ssd_plan=ssd_previews.get(slot),ssd_identity=ssd_identity,
-                defer_ssd=ssd_identity is not None,model_review_path=review_path)
+                defer_ssd=ssd_identity is not None,model_review_path=review_path,dns_baseline=dns_baselines[slot])
             _mark('stage-' + slot)
             # Report this slot before the next one starts. The plan is only
             # complete now when no SSD repair is deferred.
@@ -199,14 +217,15 @@ for slot in ('A','B'):
         if was!='ro=true': raise RuntimeError('Prepared root is not protected')
         subprocess.run(['btrfs','property','set','-ts',str(root),'ro','false'],check=True)
         mount(parts['var-'+slot],root/'var'); mount(parts['home'],root/'home')
-        mount_etc(root,mounts)
+        dns_baseline = mount_prepared_etc(root, mounts, slot)
         mount_opt(root,mounts)
         # Device package hooks receive the actual slot EFI mount explicitly.
         if options.get('device_package') or ssd_plans: mount(parts['efi-'+slot],root/'efi','-t','vfat')
         Path('/run/boiler-install-slot').write_text(slot+'\n')
         _mark('mount-' + slot)
         result=stage(root,'/mnt/payload',options,slot,password_hash,target_disk=target_disk,
-                     ssd_context=ssd_context,ssd_plan=ssd_plans.get(slot),ssd_identity=ssd_identity)
+                     ssd_context=ssd_context,ssd_plan=ssd_plans.get(slot),ssd_identity=ssd_identity,
+                     dns_baseline=dns_baseline)
         _mark('stage-' + slot)
         print('OXP_INTEGRATION_RESULT='+json.dumps(result),flush=True)
         print('BOILER_INSTALL_PLAN_JSON='+json.dumps(result['install_plan']),flush=True)

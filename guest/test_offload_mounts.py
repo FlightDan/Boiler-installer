@@ -6,20 +6,23 @@ import tempfile
 import unittest
 sys.path.insert(0,'/mnt/payload/components')
 from offload_mounts import mount_opt, mount_etc
+import steam_dns
 
 
 class OffloadChecks(unittest.TestCase):
-    def test_etc_password_ssh_and_update_masks_survive_lower_root_replacement(self):
+    def test_etc_password_ssh_update_masks_and_dns_survive_lower_root_replacement(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
             unit=root/'usr/lib/systemd/system/etc.mount';unit.parent.mkdir(parents=True)
             unit.write_text('[Mount]\nWhere=/etc\nWhat=overlay\nType=overlay\nOptions=lowerdir=/etc,upperdir=/var/lib/overlays/etc/upper,workdir=/var/lib/overlays/etc/work,index=off\n')
             (root/'etc/systemd/system').mkdir(parents=True)
             (root/'etc/shadow').write_text('deck:locked\n')
+            (root/'etc/resolv.conf').write_text('# Resolver configuration file.\n')
             (root/'etc/removed-setting').write_text('stock setting\n')
             mounts=[]
             try:
                 self.assertTrue(mount_etc(root,mounts))
+                steam_dns.prepare(root)
                 (root/'etc/shadow').write_text('deck:installed-password-hash\n')
                 (root/'etc/systemd/system/atomupd.service').write_bytes(b'')
                 (root/'etc/removed-setting').unlink()
@@ -30,11 +33,15 @@ class OffloadChecks(unittest.TestCase):
             upper=root/'var/lib/overlays/etc/upper'
             self.assertEqual((upper/'shadow').read_text(),'deck:installed-password-hash\n')
             self.assertEqual((root/'etc/shadow').read_text(),'deck:locked\n')
+            self.assertEqual((upper/'resolv.conf').readlink().as_posix(), steam_dns.STUB)
+            self.assertFalse((root/'etc/resolv.conf').is_symlink())
             # An official update replaces the lower root, keeping only /var.
             (root/'etc/shadow').write_text('deck:updated-stock-default\n')
+            (root/'etc/resolv.conf').write_text('# Replaced stock resolver configuration.\n')
             mounts=[]
             try:
                 self.assertTrue(mount_etc(root,mounts,readonly=True))
+                steam_dns.verify(root)
                 self.assertEqual((root/'etc/shadow').read_text(),'deck:installed-password-hash\n')
                 self.assertEqual((root/'etc/systemd/system/atomupd.service').read_bytes(),b'')
                 self.assertFalse((root/'etc/removed-setting').exists(), 'Read-only merged view must respect whiteouts')

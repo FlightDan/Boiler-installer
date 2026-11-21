@@ -1,5 +1,12 @@
 {
   "schema": 1,
+  "steam_dns": {
+    "source": "guest/steam_dns.py",
+    "delivery": "offline-steamos-image-preparation",
+    "slots": ["A", "B"],
+    "resolver_link": "/run/systemd/resolve/stub-resolv.conf",
+    "upstream": "automatic"
+  },
   "system_presets": {
     "id": "core:system-presets",
     "source": "components/system_presets.py",

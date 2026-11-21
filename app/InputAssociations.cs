@@ -71,7 +71,7 @@ public partial class MainWindow
     private bool inputAssociationApplied;
     internal Func<CancellationToken, Task>? InputPreparationGateForChecks { get; set; }
 
-    private bool CanReceiveInputs => operation == null && !inputAssociationBusy && !sourceInspectionBusy && !deviceActionBusy
+    private bool CanReceiveInputs => operation == null && !AccelerationPromptOpen && !inputAssociationBusy && !sourceInspectionBusy && !deviceActionBusy
         && !downloadPanel.IsBusy && !officialDownloadPanel.IsBusy && !PartitionSelector.IsBusy;
 
     private void CreateInputAssociationPanel()

@@ -100,7 +100,7 @@ public partial class MainWindow
         updatingDeviceAdaptations = true;
         try
         {
-            var bulk = deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box)).ToArray();
+            var bulk = deviceComponentChoices.Values.Where(box => ModelOptionAvailable(box) && !IsExplicitDeviceOption(box)).ToArray();
             var selected = bulk.Count(box => box.IsChecked == true);
             deviceAdaptationsChoice.IsChecked = selected == 0 ? false : selected == bulk.Length ? true : null;
         }
@@ -238,7 +238,7 @@ public partial class MainWindow
         if (CandidateFingerprintTarget() is not FingerprintTarget target || !deviceComponentChoices.TryGetValue(FingerprintId, out var box)
             || box.Tag is not JsonElement component) return;
         updatingDeviceAdaptations = true;
-        try { box.IsChecked = box.IsEnabled && FingerprintChoice(target, component); }
+        try { box.IsChecked = ModelOptionAvailable(box) && FingerprintChoice(target, component); }
         finally { updatingDeviceAdaptations = false; }
         EnsureStaticDeckyProvider(); RefreshDeviceAdaptationsChoice();
     }
@@ -266,7 +266,7 @@ public partial class MainWindow
         var selected = target != null && fingerprintPreferences.TryGetValue(target, out var preference)
             ? preference : !IsExplicitDeviceOption(component);
         updatingDeviceAdaptations = true;
-        try { box.IsChecked = box.IsEnabled && selected; }
+        try { box.IsChecked = ModelOptionAvailable(box) && selected; }
         finally { updatingDeviceAdaptations = false; }
         EnsureStaticDeckyProvider(); RefreshDeviceAdaptationsChoice();
     }
@@ -296,6 +296,7 @@ public partial class MainWindow
     private void CommitDeviceSelection(PreparedDeviceSelection selection)
     {
         var samePackage = selectedDeviceDigest == selection.Digest;
+        var restoreSwitcher = samePackage && restoreSleepSwitcherWithDecky;
         var priorChoices = samePackage ? deviceComponentChoices.ToDictionary(pair => pair.Key, pair => pair.Value.IsChecked == true) : new Dictionary<string, bool>();
         var priorLegacy = samePackage && deviceLegacyBridge != null ? CurrentDeviceLegacyOptions
             ?? new DeviceLegacySelection(1, [], [], deviceLegacyUpdateHold?.IsChecked == true) : null;
@@ -316,6 +317,7 @@ public partial class MainWindow
         deviceComponentChoices.Clear();
         if (!samePackage) { currentHardwareDetection = null; currentHardwareDetectionError = null; RefreshCurrentHardwareUi(); }
         ClearLegacyDeviceOptions();
+        restoreSleepSwitcherWithDecky = restoreSwitcher;
         deviceAdaptationsChoice = null;
         deviceComponentsPanel = new StackPanel { Margin = new Thickness(0, 20, 0, 0) };
         deviceComponentsPanel.Children.Add(new TextBlock { Text = PartitionInventory.L("机型专属组件", "Device-specific components"), FontSize = 19, FontWeight = FontWeights.SemiBold });
@@ -357,23 +359,23 @@ public partial class MainWindow
             if (modelResource && check.IsChecked == true && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))
                 core.IsChecked = true;
         }
-        optionsPanel.SetSsdProvider(deviceComponentChoices.Values.SingleOrDefault(box => box.IsEnabled && box.Tag is JsonElement item && SsdBootRepair.IsProvider(item)));
+        optionsPanel.SetSsdProvider(deviceComponentChoices.Values.SingleOrDefault(box => ModelOptionAvailable(box) && box.Tag is JsonElement item && SsdBootRepair.IsProvider(item)));
         SyncSsdSelection();
         RefreshCurrentHardwareUi();
         deviceAdaptationsChoice = new CheckBox { Name = "InstallDeviceAdaptations", MinHeight = 48,
             Content = new TextBlock { Text = PartitionInventory.L("机型适配修复", "Device compatibility fixes"), TextWrapping = TextWrapping.Wrap },
-            IsEnabled = deviceComponentChoices.Values.Any(box => box.IsEnabled && !IsExplicitDeviceOption(box)) };
+            IsEnabled = deviceComponentChoices.Values.Any(box => ModelOptionAvailable(box) && !IsExplicitDeviceOption(box)) };
         RefreshDeviceAdaptationsChoice();
         void SetAllDeviceAdaptations(object sender, RoutedEventArgs args)
         {
             if (updatingDeviceAdaptations) return;
             updatingDeviceAdaptations = true;
-            try { foreach (var box in deviceComponentChoices.Values.Where(box => box.IsEnabled && !IsExplicitDeviceOption(box))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
+            try { foreach (var box in deviceComponentChoices.Values.Where(box => ModelOptionAvailable(box) && !IsExplicitDeviceOption(box))) box.IsChecked = deviceAdaptationsChoice.IsChecked == true; }
             finally { updatingDeviceAdaptations = false; }
             foreach (var pair in deviceComponentChoices)
                 if (pair.Value.Tag is JsonElement row && (row.TryGetProperty("resource_path", out _) || versionedDeviceComponents.Contains(pair.Key)))
                     RecordModelResourceChoice(modelId, pair.Key, pair.Value.IsChecked == true);
-            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint) && fingerprint.IsEnabled && !IsExplicitDeviceOption(fingerprint)) RecordFingerprintPreference(fingerprint);
+            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint) && ModelOptionAvailable(fingerprint) && !IsExplicitDeviceOption(fingerprint)) RecordFingerprintPreference(fingerprint);
             EnsureStaticDeckyProvider();
             ConfigurationChanged();
         }
@@ -443,7 +445,7 @@ public partial class MainWindow
             foreach (var pair in deviceComponentChoices)
                 if (pair.Value.Tag is JsonElement row && (row.TryGetProperty("resource_path", out _) || versionedDeviceComponents.Contains(pair.Key)))
                 {
-                    pair.Value.IsChecked = pair.Value.IsEnabled && modelResourceChoices.GetValueOrDefault(
+                    pair.Value.IsChecked = ModelOptionAvailable(pair.Value) && modelResourceChoices.GetValueOrDefault(
                         (target, fingerprintModel, pair.Key), !IsExplicitDeviceOption(row));
                     if (pair.Value.IsChecked == true && row.TryGetProperty("resource_path", out _)
                         && optionsPanel.OptionBoxes.TryGetValue("core:maintenance", out var core))

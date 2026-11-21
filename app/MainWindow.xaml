@@ -33,13 +33,6 @@
    <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="6,10"/><Setter Property="Margin" Value="0,0,0,4"/><Setter Property="MinHeight" Value="48"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Cursor" Value="Hand"/>
    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="StepBorder" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="StepBorder" Property="Background" Value="#253F5F"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="StepBorder" Property="Background" Value="#253F5F"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
   </Style>
-  <Style x:Key="Target" TargetType="RadioButton">
-   <Setter Property="Padding" Value="16"/><Setter Property="Margin" Value="0,0,0,12"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
-    <Border x:Name="Tile" CornerRadius="10" BorderThickness="2" BorderBrush="#DEE5EF" Background="White" Padding="{TemplateBinding Padding}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="26"/></Grid.ColumnDefinitions><ContentPresenter/><Border x:Name="Dot" Grid.Column="1" Width="20" Height="20" CornerRadius="10" BorderThickness="2" BorderBrush="#B5C2D3" VerticalAlignment="Top"/></Grid></Border>
-    <ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="#2968D9"/><Setter TargetName="Tile" Property="Background" Value="#EFF5FF"/><Setter TargetName="Dot" Property="Background" Value="#2968D9"/><Setter TargetName="Dot" Property="BorderBrush" Value="#2968D9"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="#112A4C"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tile" Property="Background" Value="#F0F5FB"/></Trigger></ControlTemplate.Triggers>
-   </ControlTemplate></Setter.Value></Setter>
-  </Style>
  </Window.Resources>
  <Grid x:Name="WindowRoot" Background="#F4F6FA">
  <Grid x:Name="WizardShell">
@@ -73,7 +66,7 @@
     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
     <StackPanel>
      <Button x:Name="AdaptationBackButton" Content="← 返回上级菜单" Click="Back" Visibility="Collapsed" HorizontalAlignment="Left" MinWidth="180" MinHeight="48" FontSize="15" FontWeight="SemiBold" Padding="16,10" Margin="0,0,0,16" Background="White" Foreground="#173557" BorderBrush="#A8BBD5" BorderThickness="1"/>
-     <TextBlock x:Name="PageTitle" Text="SteamOS，装在你选择的位置" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"/>
+     <TextBlock x:Name="PageTitle" Text="在你选择的位置安装 SteamOS" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"/>
      <TextBlock x:Name="PageSubtitle" Text="保留 Windows 双系统，或把完整系统装进外部设备。" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
     </StackPanel>
     <Button x:Name="StopButton" Grid.Column="1" Content="停止演练" Click="Stop" Visibility="Collapsed" Background="#B42318" Foreground="White" Margin="12,0,0,0" VerticalAlignment="Top"/>
@@ -87,16 +80,7 @@
     <StackPanel>
      <Grid>
      <StackPanel x:Name="TargetPage">
-      <Border x:Name="BootPrerequisitesCard" Style="{StaticResource Card}" Background="#FFF4DF"><StackPanel><TextBlock x:Name="BootPrerequisitesNote" TextWrapping="Wrap" Foreground="#80511A"/><Button x:Name="BootPrerequisitesShow" Click="ShowBootPrerequisites" HorizontalAlignment="Left" Margin="0,10,0,0"/></StackPanel></Border>
-      <Grid x:Name="TargetChoices"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-      <RadioButton x:Name="InternalTarget" GroupName="Target" IsChecked="True" Style="{StaticResource Target}" Checked="ChoiceChanged" AutomationProperties.Name="内置硬盘，保留 Windows">
-       <StackPanel Margin="0,0,8,0"><TextBlock Text="内置硬盘 · 双系统" Style="{StaticResource Title}" TextWrapping="Wrap"/><TextBlock Text="保留 Windows，选择空闲区域或删除不用的数据分区来安装。" Style="{StaticResource Muted}"/></StackPanel>
-      </RadioButton>
-      <RadioButton x:Name="ExternalTarget" GroupName="Target" Style="{StaticResource Target}" Checked="ChoiceChanged" AutomationProperties.Name="外部 SD 卡或 SSD，完整 SteamOS">
-       <StackPanel Margin="0,0,8,0"><TextBlock Text="外部 SD 卡 / SSD" Style="{StaticResource Title}" TextWrapping="Wrap"/><TextBlock Text="系统装在外部设备，保留已有分区。" Style="{StaticResource Muted}"/></StackPanel>
-      </RadioButton>
-      </Grid>
-      <Border x:Name="PartitionCard" Style="{StaticResource Card}"><local:PartitionPicker x:Name="PartitionSelector"/></Border>
+      <Border Style="{StaticResource Card}"><local:PartitionPicker x:Name="PartitionSelector"/></Border>
       <TextBlock x:Name="PlanningScope" Text="所选磁盘与容量用于安装规划；本次执行仍使用独立的 80 GiB 虚拟测试盘。" Style="{StaticResource Muted}" FontSize="12" Margin="0,2,0,12"/>
       <Border x:Name="RecentPanel" Style="{StaticResource Card}" Visibility="Collapsed"><StackPanel><TextBlock Text="上次任务" FontWeight="SemiBold"/><TextBlock x:Name="RecentText" Style="{StaticResource Muted}" Margin="0,6,0,10"/><WrapPanel><Button x:Name="ResumeRecentButton" Content="继续上次演练" Click="ResumeRecent" Visibility="Collapsed" Margin="0,0,10,0"/><Button Content="查看任务记录" Click="OpenRecent" HorizontalAlignment="Left"/></WrapPanel></StackPanel></Border>
      </StackPanel>
@@ -210,6 +194,29 @@
      <ScrollViewer Grid.Row="1" PanningMode="VerticalOnly" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel><TextBlock x:Name="BootPrerequisitesStatus" Margin="0,0,0,12" TextWrapping="Wrap" FontWeight="SemiBold"/><TextBlock x:Name="BootPrerequisitesMessage" TextWrapping="Wrap" LineHeight="24"/></StackPanel></ScrollViewer>
      <CheckBox x:Name="BootPrerequisitesConsent" Grid.Row="2" Margin="0,16,0,0" Checked="BootPrerequisitesConsentChanged" Unchecked="BootPrerequisitesConsentChanged"/>
     <UniformGrid Grid.Row="3" Columns="2" Margin="0,16,0,0"><Button x:Name="BootPrerequisitesExit" Click="ExitBootPrerequisites"/><Button x:Name="BootPrerequisitesContinue" Click="ConfirmBootPrerequisites" IsEnabled="False" Margin="0" Background="#2968D9" Foreground="White"/></UniformGrid>
+   </Grid>
+  </Border>
+ </Grid>
+ <Grid x:Name="AccelerationOverlay" Visibility="Collapsed" Panel.ZIndex="21" Background="#990B1626"
+       KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.LabeledBy="{Binding ElementName=AccelerationPromptTitle}">
+  <Border Background="White" CornerRadius="16" Margin="24" Padding="24" MaxWidth="560" VerticalAlignment="Center">
+   <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <TextBlock x:Name="AccelerationPromptTitle" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,12"/>
+    <ScrollViewer Grid.Row="1" PanningMode="VerticalOnly" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+     <StackPanel>
+      <TextBlock x:Name="AccelerationPromptBenefit" Foreground="#315F9E" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8"/>
+      <TextBlock x:Name="AccelerationPromptMessage" Style="{StaticResource Muted}"/>
+      <TextBlock x:Name="AccelerationPromptStatus" Style="{StaticResource Muted}" Margin="0,8,0,0" Visibility="Collapsed"
+                 AutomationProperties.LiveSetting="Polite"/>
+     </StackPanel>
+    </ScrollViewer>
+    <UniformGrid Grid.Row="2" Columns="2" Margin="0,16,0,0">
+     <Button x:Name="AccelerationDismiss" Click="DismissAccelerationPrompt"><TextBlock x:Name="AccelerationDismissLabel" TextWrapping="Wrap" TextAlignment="Center"/></Button>
+     <Button x:Name="AccelerationConfirm" Click="ConfirmAccelerationPrompt" Margin="0" Background="#2968D9" Foreground="White">
+      <TextBlock x:Name="AccelerationConfirmLabel" TextWrapping="Wrap" TextAlignment="Center"/>
+     </Button>
+    </UniformGrid>
    </Grid>
   </Border>
  </Grid>

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO;
-using System.Security.Principal;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.Win32;
 
 namespace OxpInstaller;
@@ -9,8 +9,8 @@ namespace OxpInstaller;
 internal enum HypervisorAction { Offer, AwaitRestart, Active, Ineffective }
 
 // Optional host acceleration for installation VMs. Windows Hypervisor Platform lets QEMU use
-// WHPX instead of TCG software emulation. The tool enables only this one optional feature
-// only after the user selects Enable on the review page.
+// WHPX instead of TCG software emulation. The tool enables this optional feature
+// after the user confirms the acceleration prompt.
 internal static class HypervisorPlatform
 {
     internal const string FeatureName = "HypervisorPlatform";
@@ -122,8 +122,10 @@ public partial class MainWindow
 {
     private bool? reviewAccelerationChoice;
     private bool accelerationHelpOpen, accelerationActionBusy;
-    private string? accelerationError;
     private HypervisorAction accelerationAction;
+    private HypervisorAction accelerationPromptAction;
+    private UIElement? accelerationReturnFocus;
+    private bool AccelerationPromptOpen => AccelerationOverlay.Visibility == Visibility.Visible;
     internal Func<HypervisorAction> AccelerationStatusForChecks { get; set; } = HypervisorPlatform.CurrentAction;
 
     private void RefreshReviewAcceleration()
@@ -131,18 +133,16 @@ public partial class MainWindow
         accelerationAction = AccelerationStatusForChecks();
         ReviewAcceleration.IsChecked = accelerationAction == HypervisorAction.Active && (reviewAccelerationChoice ?? true);
         ReviewAccelerationLabel.Text = PartitionInventory.L("使用虚拟化加速", "Use virtualization acceleration");
-        ReviewAccelerationStatus.Text = accelerationError ?? (accelerationActionBusy
-            ? PartitionInventory.L("正在执行，请稍候…", "Working, please wait…")
-            : accelerationAction switch
-            {
-                HypervisorAction.Active => ReviewAcceleration.IsChecked == true
-                    ? PartitionInventory.L("安装准备将优先使用 Windows 虚拟化加速。", "Installation preparation will prefer Windows virtualization acceleration.")
-                    : PartitionInventory.L("本次安装使用软件模拟。", "This installation will use software emulation."),
-                HypervisorAction.AwaitRestart => PartitionInventory.L("已启用 Windows 虚拟机监控程序平台。请保存工作，再重启到 Windows 使其生效。", "Windows Hypervisor Platform is enabled. Save your work, then restart into Windows to apply it."),
-                HypervisorAction.Ineffective => PartitionInventory.L("重启后加速仍不可用。请检查 BIOS 中的虚拟化设置，也可继续使用软件模拟。", "Acceleration is still unavailable after restart. Check virtualization in BIOS, or continue with software emulation."),
-                _ when accelerationHelpOpen => PartitionInventory.L("请启用 Windows 虚拟机监控程序平台，然后重启到 Windows。也可继续使用软件模拟。", "Enable Windows Hypervisor Platform, then restart into Windows. You can also continue with software emulation."),
-                _ => PartitionInventory.L("当前不可用。选择此项可查看启用方式。", "Unavailable. Select this option to see how to enable it.")
-            });
+        ReviewAccelerationStatus.Text = accelerationAction switch
+        {
+            HypervisorAction.Active => ReviewAcceleration.IsChecked == true
+                ? PartitionInventory.L("安装准备将优先使用 Windows 虚拟化加速。", "Installation preparation will prefer Windows virtualization acceleration.")
+                : PartitionInventory.L("本次安装使用软件模拟。", "This installation will use software emulation."),
+            HypervisorAction.AwaitRestart => PartitionInventory.L("已启用 Windows 虚拟机监控程序平台。请保存工作，再重启到 Windows 使其生效。", "Windows Hypervisor Platform is enabled. Save your work, then restart into Windows to apply it."),
+            HypervisorAction.Ineffective => PartitionInventory.L("重启后加速仍不可用。请检查 BIOS 中的虚拟化设置，也可继续使用软件模拟。", "Acceleration is still unavailable after restart. Check virtualization in BIOS, or continue with software emulation."),
+            _ when accelerationHelpOpen => PartitionInventory.L("请启用 Windows 虚拟机监控程序平台，然后重启到 Windows。也可继续使用软件模拟。", "Enable Windows Hypervisor Platform, then restart into Windows. You can also continue with software emulation."),
+            _ => PartitionInventory.L("当前不可用。选择此项可查看启用方式。", "Unavailable. Select this option to see how to enable it.")
+        };
         ReviewAccelerationAction.Visibility = (accelerationHelpOpen && accelerationAction is HypervisorAction.Offer or HypervisorAction.Ineffective)
             || accelerationAction == HypervisorAction.AwaitRestart ? Visibility.Visible : Visibility.Collapsed;
         ReviewAccelerationActionLabel.Text = accelerationAction == HypervisorAction.AwaitRestart
@@ -157,26 +157,103 @@ public partial class MainWindow
         RefreshReviewAcceleration();
     }
 
-    private async void ReviewAccelerationActionClicked(object sender, RoutedEventArgs e)
+    internal void OfferAccelerationOnStartup(object? sender, EventArgs e)
     {
-        if (step != 3 || DownloadsBusy || operation != null || ReviewAccelerationAction.Visibility != Visibility.Visible) return;
-        accelerationError = null;
-        accelerationActionBusy = true;
+        ContentRendered -= OfferAccelerationOnStartup;
+        var action = AccelerationStatusForChecks();
+        if (action is HypervisorAction.Offer or HypervisorAction.AwaitRestart) ShowAccelerationPrompt(action);
+    }
+
+    private void ReviewAccelerationActionClicked(object sender, RoutedEventArgs e)
+    {
+        if (step != 3 || AccelerationPromptOpen || DownloadsBusy || operation != null || ReviewAccelerationAction.Visibility != Visibility.Visible) return;
+        RefreshReviewAcceleration();
+        if (accelerationAction != HypervisorAction.Active) ShowAccelerationPrompt(accelerationAction);
+    }
+
+    private void ShowAccelerationPrompt(HypervisorAction action)
+    {
+        accelerationPromptAction = action;
+        accelerationReturnFocus = Keyboard.FocusedElement as UIElement;
+        UpdateAccelerationPromptText();
+        AccelerationPromptStatus.Visibility = Visibility.Collapsed;
         WizardShell.IsEnabled = false;
+        if (homeScreen != null) homeScreen.IsEnabled = false;
+        AccelerationOverlay.Visibility = Visibility.Visible;
+        AccelerationDismiss.Focus();
+    }
+
+    private void UpdateAccelerationPromptText()
+    {
+        var pending = accelerationPromptAction == HypervisorAction.AwaitRestart;
+        AccelerationPromptTitle.Text = pending
+            ? PartitionInventory.L("重启以应用虚拟化加速？", "Restart to apply virtualization acceleration?")
+            : PartitionInventory.L("启用 Windows 虚拟化加速？", "Enable Windows virtualization acceleration?");
+        AccelerationPromptBenefit.Text = PartitionInventory.L("安装准备预计可节省约 20 分钟", "Estimated time saved during installation preparation: about 20 minutes");
+        AccelerationPromptMessage.Text = pending
+            ? PartitionInventory.L("虚拟化功能已启用，重启 Windows 后生效。请先保存正在进行的工作。", "Virtualization is enabled and takes effect after Windows restarts. Save your work first.")
+            : PartitionInventory.L("安装器将启用 Windows 虚拟机监控程序平台并重启 Windows。请先保存正在进行的工作。", "The installer will enable Windows Hypervisor Platform and restart Windows. Save your work first.");
+        AccelerationDismissLabel.Text = pending
+            ? PartitionInventory.L("稍后重启", "Restart later")
+            : PartitionInventory.L("暂不启用", "Not now");
+        AccelerationConfirmLabel.Text = pending
+            ? PartitionInventory.L("立即重启", "Restart now")
+            : PartitionInventory.L("启用并重启", "Enable and restart");
+    }
+
+    private void DismissAccelerationPrompt(object sender, RoutedEventArgs e)
+    {
+        if (!accelerationActionBusy) CloseAccelerationPrompt();
+    }
+
+    private void CloseAccelerationPrompt()
+    {
+        AccelerationOverlay.Visibility = Visibility.Collapsed;
+        WizardShell.IsEnabled = true;
+        if (homeScreen != null) homeScreen.IsEnabled = true;
+        if (step == 3) RefreshReviewAcceleration();
+        UpdateNavigationState();
+        if (accelerationReturnFocus?.Focus() != true)
+            (homeScreen != null ? (UIElement?)homeAddFiles : ReviewAcceleration)?.Focus();
+        accelerationReturnFocus = null;
+    }
+
+    private async void ConfirmAccelerationPrompt(object sender, RoutedEventArgs e) =>
+        await ConfirmAccelerationPromptAsync(HypervisorPlatform.EnableAsync, HypervisorPlatform.RestartAsync);
+
+    internal async Task ConfirmAccelerationPromptAsync(Func<Task> enable, Func<Task> restart)
+    {
+        if (!AccelerationPromptOpen || accelerationActionBusy) return;
+        accelerationActionBusy = true;
+        AccelerationDismiss.IsEnabled = AccelerationConfirm.IsEnabled = false;
+        AccelerationPromptStatus.Visibility = Visibility.Visible;
+        AccelerationPromptStatus.Foreground = AccelerationPromptMessage.Foreground;
+        var restartRequested = false;
         try
         {
-            RefreshReviewAcceleration();
-            if (accelerationAction == HypervisorAction.AwaitRestart) await HypervisorPlatform.RestartAsync();
-            else if (accelerationAction is HypervisorAction.Offer or HypervisorAction.Ineffective) await HypervisorPlatform.EnableAsync();
+            if (accelerationPromptAction != HypervisorAction.AwaitRestart)
+            {
+                AccelerationPromptStatus.Text = PartitionInventory.L("正在启用虚拟化加速…", "Enabling virtualization acceleration…");
+                await enable();
+                accelerationPromptAction = HypervisorAction.AwaitRestart;
+                UpdateAccelerationPromptText();
+            }
+            AccelerationPromptStatus.Text = PartitionInventory.L("正在重启 Windows…", "Restarting Windows…");
+            await restart();
+            restartRequested = true;
         }
-        catch (Exception error) { accelerationError = error.Message; }
+        catch (Exception error)
+        {
+            AccelerationPromptStatus.Foreground = BoilerBrush("#A34727");
+            AccelerationPromptStatus.Text = error.Message;
+            AccelerationPromptStatus.BringIntoView();
+        }
         finally
         {
             accelerationActionBusy = false;
-            WizardShell.IsEnabled = true;
-            RefreshReviewAcceleration();
-            UpdateNavigationState();
-            (ReviewAccelerationAction.Visibility == Visibility.Visible ? (FrameworkElement)ReviewAccelerationAction : ReviewAcceleration).Focus();
+            AccelerationDismiss.IsEnabled = AccelerationConfirm.IsEnabled = true;
+            if (restartRequested) CloseAccelerationPrompt();
+            else AccelerationDismiss.Focus();
         }
     }
 }

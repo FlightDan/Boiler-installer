@@ -341,6 +341,7 @@ public partial class MainWindow
     {
         if (CustomBuildBusy || !seen.Add(row.Id)) return;
         var rows = CustomBuildRows();
+        if (!selected && row.Id == SleepSwitcherId) restoreSleepSwitcherWithDecky = false;
         row.Source.IsChecked = selected && row.Source.IsEnabled;
         if (row.Generic == null) return;
         if (selected)

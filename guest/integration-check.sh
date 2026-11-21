@@ -12,5 +12,5 @@ trap 'umount /mnt/integration-fixtures' EXIT
 export TMPDIR=/mnt/integration-fixtures
 export PYTHONPATH=/mnt/payload/components:/mnt/payload
 cd /mnt/payload/tasks
-python3 -B -m unittest -v test_boiler_integration
+python3 -B -m unittest -v test_steam_dns test_offload_mounts test_boiler_integration
 printf '\nOXP_TASK_RESULT=passed\n'

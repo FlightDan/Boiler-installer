@@ -395,8 +395,8 @@ public sealed partial class InstallerOptionsPanel : StackPanel
         }
         var presetNote = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray };
         labels.Add((presetNote,
-            "系统设置在安装时生效。Steam 语言请在 Steam 内设置。",
-            "System settings take effect during installation. Set the Steam language in Steam."));
+            "受支持的镜像会在 Steam 首次启动时使用所选语言。之后可在 Steam 中修改。",
+            "Supported images use the selected language for Steam's first launch. You can change it in Steam."));
         OptionsNotesPanel.Children.Add(presetNote);
         var languageLabel = Heading("系统与桌面语言", "System and desktop language", SystemPresetsPanel);
         System.Windows.Automation.AutomationProperties.SetLabeledBy(kde, languageLabel);

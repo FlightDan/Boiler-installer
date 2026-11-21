@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace OxpInstaller;
@@ -77,33 +78,80 @@ public static class PartitionDeletion
     {
         var (disk, rows) = ValidateTargets(request);
         var bulk = request.SteamOsStarts != null;
-        var window = new Window { Title = bulk ? L("删除 SteamOS 分区", "Delete SteamOS partitions") : L("删除选定分区", "Delete selected partition"), Width = 580, SizeToContent = SizeToContent.Height,
-            MaxHeight = SystemParameters.WorkArea.Height, WindowStartupLocation = WindowStartupLocation.CenterScreen,
-            ResizeMode = ResizeMode.NoResize, FontSize = 15, Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(25,43,67)) };
+        var window = ReviewWindow(bulk ? L("删除 SteamOS 分区", "Delete SteamOS partitions") : L("删除选定分区", "Delete selected partition"), bulk);
         // The elevated helper has no WPF owner in the installer process.
         // Keep its confirmation above the installer even if activation is denied.
         window.Topmost = !request.Example;
-        var panel = new StackPanel { Margin = new Thickness(24) };
-        void Text(string value, bool title = false) => panel.Children.Add(new TextBlock { Text = value, TextWrapping = TextWrapping.Wrap,
-            FontSize = title ? 21 : 15, FontWeight = title ? FontWeights.SemiBold : FontWeights.Normal, Margin = new Thickness(0,0,0,16) });
-        Text(request.Example ? L("模拟删除 · 不影响真实磁盘", "Simulate deletion · no real disk changes") : L("所选分区中的所有文件都将丢失", "All files in the selected partitions will be lost"), true);
-        Text(disk.Title + "\n" + InstallerI18n.Format($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total"));
-        foreach (var row in rows) Text(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + InstallerI18n.Format($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
-        Text(L("删除的是整个分区，包括系统、游戏和个人文件。确认后立即删除，不会等到开始安装；返回或退出不能撤销。", "Whole partitions are erased, including their system, games and personal files. Deletion happens immediately, before installation. Going back or exiting cannot undo it."));
-        if (bulk) Text(L("以上所选 SteamOS 分区（包括其自有启动分区）将删除；未选分区、Windows / 宿主 / 恢复分区保持不变。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "Selected SteamOS partitions, including their own boot partitions, will be deleted. Unselected, Windows, host and recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
+        var header = new StackPanel();
+        var heading = WrappedText(request.Example ? L("模拟删除 · 不影响真实磁盘", "Simulate deletion · no real disk changes") : L("所选分区中的所有文件都将丢失", "All files in the selected partitions will be lost"));
+        heading.FontSize = 21; heading.FontWeight = FontWeights.SemiBold;
+        header.Children.Add(heading);
+        header.Children.Add(WrappedText(disk.Title + "\n" + InstallerI18n.Format($"已选 {rows.Length} 个分区 · 共 {PartitionInventory.SizeText(rows.Sum(r => r.Size))}", $"{rows.Length} selected partitions · {PartitionInventory.SizeText(rows.Sum(r => r.Size))} total")));
+        var columns = new UniformGrid { Columns = bulk && window.Width >= 600 ? 2 : 1 };
+        foreach (var row in rows)
+        {
+            var item = WrappedText(row.Name + " · " + row.Type + " · " + row.CapacityText + "\n" + InstallerI18n.Format($"字节范围：{row.Start}–{checked(row.Start + row.Size)}（不含末尾）", $"Bytes: {row.Start}–{checked(row.Start + row.Size)} (exclusive end)"));
+            item.Margin = new Thickness(0, 0, 16, 12);
+            columns.Children.Add(item);
+        }
+        var details = new StackPanel();
+        details.Children.Add(columns);
+        if (bulk)
+        {
+            var batchNotice = WrappedText(L("删除范围包括所选的 SteamOS 自有启动分区。未选分区、Windows / 宿主 / 恢复分区保持不变。分区将逐个删除；中途失败可能已删除部分分区，程序会停止并刷新布局。", "The selection can include SteamOS-owned boot partitions. Unselected, Windows, host and recovery partitions are kept. Partitions are deleted one at a time; a failure can leave a partial deletion. The process stops and refreshes the layout."));
+            batchNotice.Margin = new Thickness(0, 0, 12, 12);
+            details.Children.Add(batchNotice);
+        }
+        var footer = new StackPanel();
+        var warning = WrappedText(L("确认后立即删除整个分区，包括系统、游戏和个人文件。此操作无法撤销。", "Confirmation immediately erases the entire partitions, including the system, games and personal files. This cannot be undone."));
+        warning.Margin = new Thickness(0, 0, 0, 8);
+        footer.Children.Add(warning);
         var consent = new CheckBox { Name = "DeleteConsent", Content = new TextBlock { Text = L("我已备份需要的文件，确认清空以上全部所选分区。", "I have backed up my files and agree to erase every selected partition shown above."), TextWrapping = TextWrapping.Wrap } };
-        panel.Children.Add(consent);
-        var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0,16,0,0) };
+        footer.Children.Add(consent);
+        var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
         var cancel = new Button { Content = L("取消", "Cancel"), IsCancel = true, IsDefault = true };
         var confirm = new Button { Name = "DeleteConfirm", Content = request.Example ? L("模拟删除", "Simulate deletion") : bulk ? InstallerI18n.Format($"立即删除 {rows.Length} 个分区", $"Delete {rows.Length} partitions now") : L("立即删除此分区", "Delete partition now"), IsEnabled = false,
             Background = new SolidColorBrush(Color.FromRgb(163,47,35)), Foreground = Brushes.White };
         consent.Checked += (_, _) => confirm.IsEnabled = true; consent.Unchecked += (_, _) => confirm.IsEnabled = false;
         confirm.Click += (_, _) => { if (consent.IsChecked == true) window.DialogResult = true; };
-        actions.Children.Add(cancel); actions.Children.Add(confirm); panel.Children.Add(actions);
-        window.Content = new ScrollViewer { Content = panel, Background = Brushes.White, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        actions.Children.Add(cancel); actions.Children.Add(confirm); footer.Children.Add(actions);
+        SetReviewContent(window, header, details, footer);
         window.Loaded += (_, _) => cancel.Focus();
         return window;
     }
+
+    internal static Window ReviewWindow(string title, bool wide)
+    {
+        var area = SystemParameters.WorkArea;
+        return new Window
+        {
+            Title = title, Width = Math.Min(wide ? 900 : 580, area.Width - 24), MaxHeight = area.Height - 16,
+            SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize, FontSize = 15,
+            Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(25, 43, 67))
+        };
+    }
+
+    internal static void SetReviewContent(Window window, FrameworkElement header, FrameworkElement details, FrameworkElement footer)
+    {
+        var layout = new Grid { Background = Brushes.White };
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layout.RowDefinitions.Add(new RowDefinition());
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        header.Margin = new Thickness(16, 16, 16, 0);
+        footer.Margin = new Thickness(16, 0, 16, 16);
+        var scroll = new ScrollViewer
+        {
+            Content = details, Margin = new Thickness(16, 8, 16, 8),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            PanningMode = PanningMode.VerticalOnly
+        };
+        Grid.SetRow(scroll, 1); Grid.SetRow(footer, 2);
+        layout.Children.Add(header); layout.Children.Add(scroll); layout.Children.Add(footer);
+        window.Content = layout;
+    }
+
+    internal static TextBlock WrappedText(string value) => new() { Text = value, TextWrapping = TextWrapping.Wrap };
 
     // The elevated process owns final confirmation; no command-line switch bypasses it.
     public static async Task<int> ExecuteHelperAsync(string path, string expectedDigest)

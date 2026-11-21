@@ -295,6 +295,15 @@ def _review_model_companions(root, bound, originals):
     return dict(journal_sha256=boot.digest(journal),snapshot_sha256=boot.digest(observed))
 
 
+def _retained_activation_components(identity, selection):
+    if identity != 'device:x2-mini': return None
+    allowed={name.removeprefix('oxp3:') for name in selection['repairs']+selection['plugins']}
+    allowed.update(('shared-storage','system-update-hold','serial-console-policy','deck-access',
+                    'decky-order','decky-order-light','kde-language','maintenance-tool',
+                    'desktop-session','release-note','runtime'))
+    return allowed
+
+
 def _retained_model_efi(root, item, action):
     """Review only an authenticated, already-owned fixed OXP3 EFI generation."""
     identity=item['package'].get('id')
@@ -359,10 +368,12 @@ def _retained_model_efi(root, item, action):
         return dict(status='restored',source=source,selection=selection,target=model._model_target(bound))
     if adapter.get('phase') != 'applied' and intent is None:
         raise MaintenanceError('Model adapter generation is incomplete')
-    obj=model.ModelEFI(root,None,source,selection)
+    activation_components=_retained_activation_components(identity,selection)
+    obj=model.ModelEFI(root,None,source,selection,activation_components=activation_components)
     operation='recover' if intent is not None else action
     review=obj.plan(operation)
-    if intent is None: model._verify_adapter_proof(root,source,bound['slot'],model_record_path=model.STATE+'/model-esp-'+bound['esp_partuuid']+'.json')
+    if intent is None:
+        model._verify_adapter_proof(root,source,bound['slot'],model_record_path=model.STATE+'/model-esp-'+bound['esp_partuuid']+'.json',activation_components=activation_components)
     originals=(intent if intent is not None else record)['companions_original']
     companions=_review_model_companions(root,bound,originals)
     result=dict(status='installed',source=source,selection=selection,target=model._model_target(bound),review=review,
@@ -462,7 +473,8 @@ def _execute_retained_model_efi(root, package, review, ordinary_action=None):
     if review['status'] == 'restored':
         ordinary=ordinary_action() if ordinary_action else None
         return dict(ok=True,verified=True,status='not-installed',changed=False,ordinary=ordinary)
-    obj=model.ModelEFI(root,None,review['source'],review['selection'])
+    activation_components=_retained_activation_components(review['source']['package_id'],review['selection'])
+    obj=model.ModelEFI(root,None,review['source'],review['selection'],activation_components=activation_components)
     ssd=Store(Path(root).absolute(),Path(root).absolute()/boot.STATE)
     def ssd_lock(): return ssd.lock() if os.path.lexists(ssd.state) else contextlib.nullcontext()
     with obj.store.lock():

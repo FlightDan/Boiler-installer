@@ -132,7 +132,7 @@ class RetainedModelActionTests(unittest.TestCase):
             try: yield
             finally: events.append(name+'-exit')
         bound={'slot':'A'}; plan={'action':'verify','review_sha256':'a'*64}
-        review={'status':'installed','source':{},'selection':{},'review':plan,'companions':{}}
+        review={'status':'installed','source':{'package_id':'device:oxp3'},'selection':{},'review':plan,'companions':{}}
         obj=mock.Mock();obj.store.lock.side_effect=lambda:held('boot')
         obj.store._state_read.return_value={'companions_original':{}};obj._name.return_value='record';obj.plan.return_value=plan
         store=mock.Mock();store.state=Path('fixture/ssd');store.lock.side_effect=lambda:held('ssd')
@@ -162,7 +162,7 @@ class RetainedModelActionTests(unittest.TestCase):
             finally: events.append('unlock')
         bound={'slot':'A'}; pending={'companions_original':{'first':'snapshot'}}
         inner={'action':'recover','review_sha256':'a'*64}
-        review={'status':'installed','source':{'package_id':'device:x2-mini'},'selection':{},'review':inner,'companions':{'snapshot':'unchanged'}}
+        review={'status':'installed','source':{'package_id':'device:x2-mini'},'selection':{'repairs':['oxp3:split-lock'],'plugins':[]},'review':inner,'companions':{'snapshot':'unchanged'}}
         obj=mock.Mock();obj.store.lock.side_effect=lock;obj.store._state_read.return_value=pending
         obj._name.return_value='record';obj.plan.return_value=inner
         obj._intent.return_value=(b'old',b'new',None,b'old',b'new')

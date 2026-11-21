@@ -23,6 +23,8 @@ public static partial class PhysicalInstallation
         if (!DeviceIoControl(handle, code, input, (uint)(input?.Length ?? 0), null, 0, out _, IntPtr.Zero))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Physical installation metadata operation");
     }
+    internal static bool IsExternalBus(string? bus) => bus is "USB" or "SD" or "MMC";
+
     public static PhysicalPlan Plan(PartitionSelection selection, InstallationTargetKind kind, PreparedDisk image)
     {
         if (selection.Example) throw new IOException("示例磁盘不能用于实际安装。 / Example disks cannot be installed.");
@@ -30,7 +32,7 @@ public static partial class PhysicalInstallation
         using var snapshot = JsonDocument.Parse(selection.Snapshot);
         var disk = snapshot.RootElement.EnumerateArray().Single(d => d.GetProperty("number").GetInt32() == space.Disk);
         var bus = disk.GetProperty("bus").GetString();
-        if (kind == InstallationTargetKind.ExternalDisk && (bus is not ("USB" or "SD" or "MMC")
+        if (kind == InstallationTargetKind.ExternalDisk && (!IsExternalBus(bus)
             || disk.GetProperty("isBoot").GetBoolean() || disk.GetProperty("isSystem").GetBoolean()))
             throw new IOException("外部安装必须选择非系统 USB/SD/MMC 设备。 / Select a non-system USB/SD/MMC disk.");
         if (kind == InstallationTargetKind.InternalShared && bus is not ("NVMe" or "SATA"))

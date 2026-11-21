@@ -34,8 +34,6 @@ public partial class MainWindow
         BootPrerequisitesConsent.Content = new TextBlock { TextWrapping = TextWrapping.Wrap, Text = PartitionInventory.L("我已关闭安全启动；如启用加密，已保存恢复密钥并暂停保护", "Secure Boot is off; if encryption is enabled, I have saved the recovery key and suspended protection") };
         BootPrerequisitesExit.Content = PartitionInventory.L("退出，先做准备", "Exit to prepare");
         BootPrerequisitesContinue.Content = PartitionInventory.L("进入安装位置", "Choose installation location");
-        BootPrerequisitesNote.Text = PartitionInventory.L("安装前关闭 BIOS / UEFI 安全启动；BitLocker / 设备加密可能无法自动解锁，请先保存恢复密钥并暂停保护。", "Disable Secure Boot before installation. BitLocker / Device Encryption may require a recovery key; save it and suspend protection first.");
-        BootPrerequisitesShow.Content = PartitionInventory.L("查看安装前准备提示", "Review boot prerequisites");
         RefreshSecureBootStatus();
     }
     private void RefreshSecureBootStatus()
@@ -58,7 +56,7 @@ public partial class MainWindow
         RefreshSecureBootStatus();
         return secureBootIssue == null;
     }
-    private void ShowBootPrerequisites(object? sender, RoutedEventArgs? e)
+    internal void ShowBootPrerequisites()
     {
         bootPrerequisitesAcknowledged = false;
         PartitionSelector.BootPrerequisitesReady = false;

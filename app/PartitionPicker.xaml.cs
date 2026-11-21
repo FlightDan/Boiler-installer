@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace OxpInstaller;
@@ -14,6 +15,8 @@ public partial class PartitionPicker : UserControl
     private bool automaticReadAttempted;
     // Synthetic WPF checks must not race a live inventory read.
     internal bool AutomaticReadEnabled { get; set; } = true;
+    internal Func<CancellationToken, Task<string>> ReadDiskSnapshotAsync { get; set; } =
+        token => Backend.PowerShellAsync("read-disks.ps1", [], _ => { }, token);
     internal bool BootPrerequisitesReady { get; set; } = true;
     private SpaceChoice? gap;
     private readonly HashSet<long> steamOsSelected = [];
@@ -30,6 +33,8 @@ public partial class PartitionPicker : UserControl
         if (!BootPrerequisitesReady || !AutomaticReadEnabled || !IsLoaded || !IsVisible || automaticReadAttempted || busy || snapshot != null) return;
         await ReadDisksAsync();
     }
+    internal InstallationTargetKind TargetKind => PhysicalInstallation.IsExternalBus((Disks.SelectedItem as InventoryDisk)?.Bus)
+        ? InstallationTargetKind.ExternalDisk : InstallationTargetKind.InternalShared;
     internal decimal DefaultCapacityGiB { get; set; } = 128;
     internal bool AllowPhysicalDeletion { get; set; } = true;
     internal bool IsBusy => busy;
@@ -71,17 +76,12 @@ public partial class PartitionPicker : UserControl
     }
     public void RefreshLanguage()
     {
-        Heading.Text = L("选择磁盘与安装空间", "Choose disk and installation space");
-        RefreshButton.Content = L("读取 / 刷新本机磁盘", "Read / refresh this PC's disks");
-        DiskReadStatus.Text = L("正在读取…", "Reading…");
+        RefreshButton.Content = L("刷新", "Refresh");
+        AutomationProperties.SetName(RefreshButton, L("刷新磁盘列表", "Refresh disk list"));
         ExampleButton.Content = L("使用示例布局", "Use example layout");
         SteamOsExampleButton.Content = L("SteamOS 重装示例", "SteamOS reinstall example");
         DeletePartitionButton.Content = L("删除选定分区…", "Delete selected partition…");
-        SteamOsHeading.Text = L("重新安装 SteamOS", "Reinstall SteamOS");
-        SelectSteamOsButton.Content = L("选择 SteamOS 分区全部删除", "Select all SteamOS partitions for deletion");
-        ClearSteamOsButton.Content = L("取消全选", "Clear selection");
-        DeleteSteamOsButton.Content = L("删除所选 SteamOS 分区…", "Delete selected SteamOS partitions…");
-        SteamOsDetails.Header = L("查看并选择 SteamOS 分区", "Review and select SteamOS partitions");
+        ReinstallSteamOsLabel.Text = L("重新安装 SteamOS", "Reinstall SteamOS");
         FormatRemainingButton.Content = L("将剩余空间格式化为 NTFS…", "Format remaining space as NTFS…");
         FormatRemainingHint.Text = L("保留所选 SteamOS 容量（128 或 256 GiB），将同一段空间的余量建为共享文件分区。确认后立即格式化；分区起点 1 MiB 对齐（满足 4K 对齐），4096 字节簇。", "Reserve the selected SteamOS capacity (128 or 256 GiB) and create a shared-file partition in the rest of this region. Formats immediately after confirmation; partition start aligned to 1 MiB (4K aligned), 4096-byte clusters.");
         NameColumn.Header = L("分区 / 空间", "Partition / region"); SizeColumn.Header = L("容量", "Size");
@@ -105,52 +105,57 @@ public partial class PartitionPicker : UserControl
             Partitions.SelectedItem = Partitions.Items.Cast<PartitionRow>().FirstOrDefault(r => r.Start == start);
             CapacityInput.Text = input;
             steamOsSelected.UnionWith(selected.Where(s => (Disks.SelectedItem as InventoryDisk)?.Rows.Any(r => r.Start == s && r.CanDelete && r.SteamOsRole != null) == true));
-            ShowSteamOsPartitions(false);
+            RefreshSteamOsStatus();
         }
-        else if (!busy) InventoryStatus.Text = debugMode
-            ? L("读取本机磁盘，或使用明确标记的示例布局体验分区规划。", "Read this PC's disks, or explore partition planning with a labeled example.")
-            : L("请读取本机磁盘，选择安装位置。", "Read this PC's disks to choose an installation location.");
     }
-    internal void LoadSnapshot(string json, bool isExample)
+    internal void LoadSnapshot(string json, bool isExample, InventoryDisk? target = null)
     {
         Clear();
         var disks = PartitionInventory.Read(json);
         snapshot = json; example = isExample; Disks.ItemsSource = disks;
-        InventoryStatus.Text = (isExample ? L("示例布局 · 非实际设备", "Example layout · not a real device") : L("本机磁盘快照 · 只读规划", "This PC's disk snapshot · read-only planning"))
-            + "\n" + L("选择未分配空间安装；可删除不再需要的数据分区或未识别文件系统分区来释放空间。未识别不代表空盘，删除会清空整个分区。", "Choose unallocated space to install. Delete unwanted data or unrecognized filesystem partitions to free space. Unrecognized does not mean empty; deletion erases the entire partition.");
-        if (disks.Length > 0) Disks.SelectedIndex = 0;
-        else SelectionHint.Text = debugMode ? L("未发现磁盘。可重试读取，或使用示例布局。", "No disks found. Retry or use the example layout.") : L("未发现磁盘，请检查设备连接后重新读取。", "No disks found. Check the device connection and retry.");
+        if (target != null)
+        {
+            Disks.SelectedItem = disks.SingleOrDefault(d => IsSameDisk(d, target));
+            if (Disks.SelectedItem == null)
+                InventoryStatus.Text = L("原先选择的磁盘已断开或发生变化，请从列表重新选择。", "The selected disk was disconnected or changed. Select a disk again.");
+        }
+        else if (disks.Length > 0) Disks.SelectedIndex = 0;
+        else InventoryStatus.Text = debugMode ? L("未发现磁盘。可重试读取，或使用示例布局。", "No disks found. Retry or use the example layout.") : L("未发现磁盘，请检查设备连接后重新读取。", "No disks found. Check the device connection and retry.");
     }
     private void Clear()
     {
         snapshot = null; gap = null; example = false; Disks.ItemsSource = null; Partitions.ItemsSource = null;
+        InventoryStatus.Text = "";
         CapacityInput.Clear(); CapacityPanel.IsEnabled = false; ChangesHost.Children.Clear(); CapacityHint.Text = "";
         DeletePartitionButton.IsEnabled = false;
         FormatRemainingButton.IsEnabled = false;
-        steamOsSelected.Clear(); ShowSteamOsPartitions();
+        steamOsSelected.Clear(); RefreshSteamOsStatus();
         Changed?.Invoke();
     }
     private async void ReadDisks(object sender, RoutedEventArgs e) => await ReadDisksAsync();
-    private async Task ReadDisksAsync()
+    private static bool IsSameDisk(InventoryDisk disk, InventoryDisk target) =>
+        disk.Number == target.Number && disk.GptId != Guid.Empty && disk.GptId == target.GptId;
+
+    private async Task ReadDisksAsync(InventoryDisk? target = null)
     {
         if (busy) return;
         automaticReadAttempted = true;
         busy = true; RefreshButton.IsEnabled = ExampleButton.IsEnabled = SteamOsExampleButton.IsEnabled = false;
-        DiskReadStatus.Visibility = Visibility.Visible;
         Clear();
-        InventoryStatus.Text = L("正在读取磁盘布局…", "Reading disk layout…");
+        InventoryStatus.Text = target == null ? L("正在读取磁盘布局…", "Reading disk layout…")
+            : L("正在识别所选磁盘上的 SteamOS 分区…", "Identifying SteamOS partitions on the selected disk…");
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var json = await Backend.PowerShellAsync("read-disks.ps1", [], _ => { }, timeout.Token);
-            LoadSnapshot(json, false);
+            var json = await ReadDiskSnapshotAsync(timeout.Token);
+            LoadSnapshot(json, false, target);
         }
         catch (Exception error)
         {
             Clear(); InventoryStatus.Text = L("读取失败：", "Read failed: ") + error.Message;
             SelectionHint.Text = debugMode ? L("请重试读取；也可使用示例布局进行规划演示。", "Retry, or use the example layout to explore planning.") : L("请检查设备连接和管理员权限，然后重新读取。", "Check the device connection and administrator permission, then retry.");
         }
-        finally { busy = false; DiskReadStatus.Visibility = Visibility.Collapsed; RefreshButton.IsEnabled = ExampleButton.IsEnabled = SteamOsExampleButton.IsEnabled = true; ShowSteamOsPartitions(false); Changed?.Invoke(); }
+        finally { busy = false; RefreshButton.IsEnabled = ExampleButton.IsEnabled = SteamOsExampleButton.IsEnabled = true; RefreshSteamOsStatus(); Changed?.Invoke(); }
     }
     private void UseExample(object sender, RoutedEventArgs e) { if (debugMode && !busy) LoadSnapshot(PartitionInventory.ExampleJson, true); }
     private void UseSteamOsExample(object sender, RoutedEventArgs e) { if (debugMode && !busy) LoadSnapshot(SteamOsPartitions.ExampleJson(), true); }
@@ -158,7 +163,7 @@ public partial class PartitionPicker : UserControl
     {
         gap = null; CapacityInput.Clear(); ChangesHost.Children.Clear(); CapacityPanel.IsEnabled = false;
         Partitions.ItemsSource = (Disks.SelectedItem as InventoryDisk)?.Rows.Select(r => r.Space != null && r.Space.Size < 128 * PartitionInventory.GiB ? r with { Space = null, Status = L("不足 128 GiB", "Less than 128 GiB") } : r).ToArray();
-        steamOsSelected.Clear(); ShowSteamOsPartitions();
+        steamOsSelected.Clear(); RefreshSteamOsStatus();
         SelectionHint.Text = (Disks.SelectedItem as InventoryDisk)?.Rows.Any(r => r.Space != null && r.Space.Size >= 128 * PartitionInventory.GiB) == true
             ? L("请选择标记为“可安装 SteamOS”的未分配空间。", "Select unallocated space marked as available for SteamOS.")
             : L("需要至少 128 GiB 连续未分配空间。可删除不再需要的数据分区来释放空间；系统、启动和恢复分区受保护。", "At least 128 GiB of contiguous unallocated space is required. Delete an unwanted data partition to free space; system, boot and recovery partitions are protected.");
@@ -190,16 +195,24 @@ public partial class PartitionPicker : UserControl
         var request = new PartitionDeleteRequest(snapshot, example, row.Disk, row.Start, InstallerI18n.Language);
         await DeletePartitionsAsync(request);
     }
-    private async void DeleteSteamOs(object sender, RoutedEventArgs e)
+    private bool CanReinstall(InventoryDisk? disk) => !busy && snapshot != null && (example || AllowPhysicalDeletion)
+        && disk != null && disk.Style == "GPT" && disk.GptId != Guid.Empty;
+
+    private async void ReinstallSteamOs(object sender, RoutedEventArgs e)
     {
-        if (busy || snapshot == null || (!example && !AllowPhysicalDeletion)) return;
-        if (steamOsSelected.Count == 0)
+        if (Disks.SelectedItem is not InventoryDisk disk || !CanReinstall(disk)) return;
+        try
         {
-            SelectAllSteamOs(sender, e);
-            SteamOsDetails.IsExpanded = true;
-            return;
+            if (!example)
+            {
+                await ReadDisksAsync(disk);
+                if (Disks.SelectedItem is not InventoryDisk fresh || !IsSameDisk(fresh, disk)) return;
+                disk = fresh;
+            }
+            if (!disk.Rows.Any(r => r.SteamOsRole != null)) return;
+            if (!ReviewSteamOsSelection(disk)) return;
+            await DeletePartitionsAsync(SteamOsDeleteRequest());
         }
-        try { await DeletePartitionsAsync(SteamOsDeleteRequest()); }
         catch (InvalidOperationException error) { InventoryStatus.Text = error.Message; }
     }
     internal PartitionDeleteRequest SteamOsDeleteRequest()
@@ -221,7 +234,7 @@ public partial class PartitionPicker : UserControl
             return;
         }
         busy = true; gap = null; Changed?.Invoke();
-        ShowSteamOsPartitions(false);
+        RefreshSteamOsStatus();
         if (owner != null) owner.IsEnabled = false;
         DeletePartitionButton.IsEnabled = false;
         InventoryStatus.Text = L("请在管理员确认窗口核对删除目标。完成后将重新读取磁盘…", "Review the target in the administrator confirmation window. Disks will be refreshed afterward…");
@@ -244,9 +257,9 @@ public partial class PartitionPicker : UserControl
         catch (Exception error)
         {
             Clear(); InventoryStatus.Text = (deleted ? L("删除已完成，但刷新失败。", "Deletion completed, but refresh failed.") : L("未能确认磁盘当前状态。", "Could not confirm the current disk state."))
-                + L("请点击“读取 / 刷新本机磁盘”后再继续。\n", "Read / refresh disks before continuing.\n") + (failure == null ? "" : failure + "\n") + error.Message;
+                + L("请刷新磁盘列表后再继续。\n", "Refresh the disk list before continuing.\n") + (failure == null ? "" : failure + "\n") + error.Message;
         }
-        finally { busy = false; if (owner != null) owner.IsEnabled = true; ShowSteamOsPartitions(false); Changed?.Invoke(); }
+        finally { busy = false; if (owner != null) owner.IsEnabled = true; RefreshSteamOsStatus(); Changed?.Invoke(); }
     }
     internal void SelectReleasedSpace(string json, bool isExample, PartitionDeleteRequest request)
     {
@@ -259,58 +272,82 @@ public partial class PartitionPicker : UserControl
             + (released != null ? L("已选中释放后的未分配空间，可继续设置安装容量。", "The released unallocated space is selected. Choose an installation capacity.")
                 : L("释放后的连续空间仍不足 128 GiB，或磁盘不符合安装要求。请查看列表。", "Released contiguous space is still below 128 GiB, or this disk is ineligible. Review the list."));
     }
-    private void SelectAllSteamOs(object sender, RoutedEventArgs e)
+    private void RefreshSteamOsStatus()
     {
-        if (busy) return;
-        steamOsSelected.UnionWith((Disks.SelectedItem as InventoryDisk)?.Rows.Where(r => r.SteamOsRole != null && r.CanDelete).Select(r => r.Start) ?? []);
-        ShowSteamOsPartitions(false);
-    }
-    private void ClearSteamOsSelection(object sender, RoutedEventArgs e)
-    {
-        if (busy) return;
-        steamOsSelected.Clear(); ShowSteamOsPartitions(false);
-    }
-    private void ShowSteamOsPartitions(bool resetDetails = true)
-    {
-        if (SteamOsPartitionsHost == null) return;
-        var rows = (Disks.SelectedItem as InventoryDisk)?.Rows.Where(r => r.SteamOsRole != null).ToArray() ?? [];
-        var candidates = rows.Where(r => r.CanDelete).ToArray();
-        SteamOsPartitionsHost.Children.Clear();
-        SteamOsDetails.Visibility = rows.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (resetDetails) SteamOsDetails.IsExpanded = false;
-        SteamOsStatus.Text = rows.Length == 0
+        if (SteamOsStatus == null) return;
+        var disk = Disks.SelectedItem as InventoryDisk;
+        var rows = disk?.Rows.Where(r => r.SteamOsRole != null).ToArray() ?? [];
+        var deletable = rows.Count(r => r.CanDelete);
+        SteamOsStatus.Text = disk == null ? "" : rows.Length == 0
             ? L("未识别到可核验的 SteamOS 分区组。支持标准八分区及其三个启动分区残留；其他布局请在下方逐项核对。读取识别信息需要管理员权限。", "No verifiable SteamOS group identified. Standard eight-partition groups and their residual boot trios are supported; review other layouts below. Administrator access is needed to read identification data.")
-            : InstallerI18n.Format($"识别到 {rows.Length} 个 SteamOS 分区 · 可删除 {candidates.Length} 个 · 已选 {steamOsSelected.Count} 个（{PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}）。包括经核验的 SteamOS 自有启动分区；Windows、宿主及无法核验的分区保留，原因列在下方。删除前会单独确认。", $"{rows.Length} SteamOS partitions identified · {candidates.Length} deletable · {steamOsSelected.Count} selected ({PartitionInventory.SizeText(rows.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}). Includes verified SteamOS-owned boot partitions. Windows, host and unverifiable partitions are kept; reasons are listed below. Deletion requires a separate confirmation.");
-        SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => !steamOsSelected.Contains(r.Start));
-        ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
-        UpdateSteamOsDeleteButton(candidates);
+            : InstallerI18n.Format($"识别到 {rows.Length} 个 SteamOS 分区，其中 {deletable} 个可删除。删除前会单独确认。", $"{rows.Length} SteamOS partitions identified, {deletable} eligible for deletion. Deletion requires a separate confirmation.");
+        ReinstallSteamOsButton.IsEnabled = CanReinstall(disk);
+    }
+
+    private bool ReviewSteamOsSelection(InventoryDisk disk)
+    {
+        var dialog = PartitionDeletion.ReviewWindow(L("选择要删除的 SteamOS 分区", "Select SteamOS partitions to delete"), wide: true);
+        dialog.Owner = Window.GetWindow(this);
+        dialog.WindowStartupLocation = dialog.Owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
+        dialog.ShowInTaskbar = false;
+        var rows = disk.Rows.Where(r => r.SteamOsRole != null).ToArray();
+        var selected = rows.Where(r => r.CanDelete && (steamOsSelected.Count == 0 || steamOsSelected.Contains(r.Start))).Select(r => r.Start).ToHashSet();
+        var header = new StackPanel();
+        header.Children.Add(PartitionDeletion.WrappedText(disk.Title));
+        var status = PartitionDeletion.WrappedText("");
+        AutomationProperties.SetLiveSetting(status, AutomationLiveSetting.Polite);
+        header.Children.Add(status);
+        var columns = new UniformGrid { Columns = dialog.Width >= 600 ? 2 : 1 };
+        var actions = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right };
+        var selectAll = new Button { Name = "SteamOsSelectAll", Content = L("全选可删除分区", "Select all eligible partitions") };
+        var clear = new Button { Name = "SteamOsClear", Content = L("取消全选", "Clear selection") };
+        var cancel = new Button { Content = L("取消", "Cancel"), IsCancel = true };
+        var review = new Button
+        {
+            Name = "SteamOsReview", Content = L("核对删除范围…", "Review deletion…"),
+            Background = new SolidColorBrush(Color.FromRgb(41, 104, 217)), Foreground = Brushes.White, Margin = new Thickness(0)
+        };
+        actions.Children.Add(selectAll); actions.Children.Add(clear); actions.Children.Add(cancel); actions.Children.Add(review);
+        var deletable = rows.Count(r => r.CanDelete);
+        void UpdateSelection()
+        {
+            var size = PartitionInventory.SizeText(rows.Where(r => selected.Contains(r.Start)).Sum(r => r.Size));
+            status.Text = InstallerI18n.Format($"已选 {selected.Count} 个可删除分区 · 共 {size}", $"{selected.Count} eligible partitions selected · {size} total");
+            selectAll.IsEnabled = selected.Count < deletable;
+            clear.IsEnabled = review.IsEnabled = selected.Count > 0;
+        }
         foreach (var row in rows)
         {
-            var choice = new CheckBox { Tag = row.Start, IsChecked = steamOsSelected.Contains(row.Start), IsEnabled = !busy && row.CanDelete,
-                MinHeight = 44, VerticalContentAlignment = VerticalAlignment.Center,
-                Content = new TextBlock { Text = row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留：", " · Kept: ") + row.Status), TextWrapping = TextWrapping.Wrap },
-                ToolTip = row.Status };
-            AutomationProperties.SetName(choice, row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留：", " · Kept: ") + row.Status));
-            choice.Checked += (_, _) => { if (!busy) { steamOsSelected.Add(row.Start); UpdateSteamOsSelection(); } };
-            choice.Unchecked += (_, _) => { if (!busy) { steamOsSelected.Remove(row.Start); UpdateSteamOsSelection(); } };
-            SteamOsPartitionsHost.Children.Add(choice);
+            var label = row.Name + " · " + row.CapacityText + (row.CanDelete ? "" : L(" · 保留：", " · Kept: ") + row.Status);
+            var choice = new CheckBox
+            {
+                Tag = row.Start, IsChecked = selected.Contains(row.Start), IsEnabled = row.CanDelete,
+                MinHeight = 44, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 4),
+                Content = PartitionDeletion.WrappedText(label), ToolTip = row.Status
+            };
+            AutomationProperties.SetName(choice, label);
+            if (row.CanDelete)
+            {
+                choice.Checked += (_, _) => { selected.Add(row.Start); UpdateSelection(); };
+                choice.Unchecked += (_, _) => { selected.Remove(row.Start); UpdateSelection(); };
+            }
+            columns.Children.Add(choice);
         }
-    }
-    // Keep the focused checkbox alive when changing its selection.
-    private void UpdateSteamOsSelection()
-    {
-        var candidates = (Disks.SelectedItem as InventoryDisk)?.Rows.Where(r => r.SteamOsRole != null).ToArray() ?? [];
-        SteamOsStatus.Text = InstallerI18n.Format($"已选 {steamOsSelected.Count} 个 SteamOS 分区 · 共 {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))}。受保护分区保留；确认后立即删除。", $"{steamOsSelected.Count} SteamOS partitions selected · {PartitionInventory.SizeText(candidates.Where(r => steamOsSelected.Contains(r.Start)).Sum(r => r.Size))} total. Protected partitions are kept. Deletion is immediate after confirmation.");
-        SelectSteamOsButton.IsEnabled = !busy && candidates.Any(r => r.CanDelete && !steamOsSelected.Contains(r.Start));
-        ClearSteamOsButton.IsEnabled = !busy && steamOsSelected.Count > 0;
-        UpdateSteamOsDeleteButton(candidates);
-    }
-    private void UpdateSteamOsDeleteButton(PartitionRow[] candidates)
-    {
-        DeleteSteamOsButton.Content = steamOsSelected.Count == 0
-            ? L("选择 SteamOS 分区以删除…", "Select SteamOS partitions to delete…")
-            : L("删除所选 SteamOS 分区…", "Delete selected SteamOS partitions…");
-        DeleteSteamOsButton.IsEnabled = !busy && candidates.Any(r => r.CanDelete) && (example || AllowPhysicalDeletion);
+        void SetAll(bool value)
+        {
+            foreach (var choice in columns.Children.OfType<CheckBox>().Where(c => c.IsEnabled)) choice.IsChecked = value;
+            (value ? clear : selectAll).Focus();
+        }
+        selectAll.Click += (_, _) => SetAll(true);
+        clear.Click += (_, _) => SetAll(false);
+        review.Click += (_, _) => { if (selected.Count > 0) dialog.DialogResult = true; };
+        UpdateSelection();
+        PartitionDeletion.SetReviewContent(dialog, header, columns, actions);
+        dialog.Loaded += (_, _) => cancel.Focus();
+        if (dialog.ShowDialog() != true) return false;
+        steamOsSelected.Clear();
+        steamOsSelected.UnionWith(selected);
+        return true;
     }
     private void UseAll(object sender, RoutedEventArgs e)
     { if (gap != null) CapacityInput.Text = (gap.Size / (decimal)PartitionInventory.GiB).ToString(CultureInfo.InvariantCulture); }

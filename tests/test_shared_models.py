@@ -194,6 +194,25 @@ class SharedLifecycle(unittest.TestCase):
         with self.assertRaisesRegex(MaintenanceError, 'Incomplete fingerprint keyboard runtime'):
             shared.check_fingerprint_component(engine, dict(component, files=historical + keyboard[:1]))
 
+    def test_fte3600_runtime_requires_the_entire_x2_file_group(self):
+        targets = shared.FINGERPRINT_FIXED | {
+            shared.FINGERPRINT_NATIVE + 'libexec/fprintd',
+            *(shared.FINGERPRINT_NATIVE + 'bin/fprintd-' + name for name in ('verify', 'enroll', 'list', 'delete')),
+        }
+        files = [dict(target=target) for target in sorted(targets)]
+        x2_rule = dict(target=shared.FINGERPRINT_RULES['device:x2-mini'])
+        oxp3_rule = dict(target=shared.FINGERPRINT_RULES['device:oxp3'])
+        glue = [dict(target=target, mode=mode) for target, mode in shared.FINGERPRINT_FTE3600.items()]
+        component = dict(id=shared.FINGERPRINT_COMPONENT, optional=True, default=True)
+        engine = Engine(self.root)
+        for model_files in (files + [x2_rule], files + [x2_rule] + glue):
+            shared.check_fingerprint_component(engine, dict(component, files=model_files))
+        wrong_mode = [dict(row, mode=0o644) for row in glue]
+        for rule, runtime in ((x2_rule, glue[:-1]), (x2_rule, wrong_mode), (oxp3_rule, glue)):
+            with self.subTest(rule=rule, runtime=runtime):
+                with self.assertRaisesRegex(MaintenanceError, 'Invalid X2 Mini FTE3600 runtime'):
+                    shared.check_fingerprint_component(engine, dict(component, files=files + [rule] + runtime))
+
     def test_pending_before_first_commit_exposes_restore(self):
         with patch('maintenance.live_root.pending', return_value={'id': 'interrupted-root-window'}):
             view = shared.options(self.root, 'device:x2-mini', **self.kw)

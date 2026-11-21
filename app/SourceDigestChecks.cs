@@ -56,7 +56,9 @@ internal static class SourceDigestChecks
             window = new MainWindow(true);
             ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
             window.BoilerModeForChecks("imported");
-            ((RadioButton)window.FindName("ExternalTarget")).IsChecked = true;
+            var partitionPicker = (PartitionPicker)window.FindName("PartitionSelector");
+            partitionPicker.LoadSnapshot(PartitionPickerChecks.ExampleWithExternalDisk(), true);
+            partitionPicker.Disks.SelectedIndex = 1;
             var emptyZip = Path.Combine(directory, "empty.img.zip"); File.WriteAllBytes(emptyZip, []);
             void ClickNext() => ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             ((TextBox)window.FindName("ImagePath")).Text = emptyZip;

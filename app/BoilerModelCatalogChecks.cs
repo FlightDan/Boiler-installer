@@ -90,6 +90,8 @@ internal static class BoilerModelCatalogChecks
                 {
                     InstallerI18n.SetLanguage(language);
                     var prefix = id + "/" + language;
+                    if (id == "device:x2-mini")
+                        await CheckInputInspectionCandidateSelection(prefix, package, digest, Require);
                     var window = new MainWindow(rehearsal: true) {
                         DeviceIndexLoaderForChecks = _ => Task.FromResult(BoilerDeviceChecks.IndexResponse()),
                         ModelCatalogLoaderForChecks = _ => Task.FromResult(Catalog()), DeviceHardwareReaderForChecks = () => null };
@@ -223,6 +225,33 @@ internal static class BoilerModelCatalogChecks
                             AssertPlan("switcher-selected");
                             boxes["oxp3:decky"].IsChecked = false;
                             Require(switcher.IsChecked != true, prefix + "-removing-model-decky-clears-switcher");
+                            Require(!(window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4"),
+                                prefix + "-switcher-omitted-while-decky-is-off");
+                            components["oxp3:fingerprint-unlock"].IsChecked = true;
+                            Require(boxes["oxp3:decky"].IsChecked == true && switcher.IsChecked == true
+                                && (window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4"),
+                                prefix + "-fingerprint-reenables-decky-and-restores-switcher-in-request");
+                            core.IsChecked = false;
+                            Commit();
+                            boxes = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+                            var refreshed = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+                            switcher = refreshed["boiler:s2s4"];
+                            Require(core.IsChecked != true && switcher.IsChecked != true, prefix + "-refresh-keeps-decky-disabled");
+                            core.IsChecked = true;
+                            Require(switcher.IsChecked == true && (window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4"),
+                                prefix + "-reenabled-decky-restores-switcher-after-refresh");
+                            switcher.IsChecked = false;
+                            core.IsChecked = false;
+                            core.IsChecked = true;
+                            Require(switcher.IsChecked != true && !(window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4"),
+                                prefix + "-explicit-switcher-opt-out-survives-decky-toggle");
+                            switcher.IsChecked = true;
+                            core.IsChecked = false;
+                            Call(window, "ClearCustomBuildSelection");
+                            core.IsChecked = true;
+                            Require(switcher.IsChecked != true && !(window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4"),
+                                prefix + "-clear-selection-discards-switcher-suppressed-by-decky");
+                            components = refreshed.Where(pair => !ssdProviders.Contains(pair.Key)).ToDictionary();
                         }
                         Clear(); SelectAll();
                         var beforeLanguage = JsonSerializer.Serialize(window.CurrentOptions.DeviceLegacyOptions);
@@ -250,6 +279,104 @@ internal static class BoilerModelCatalogChecks
             scope = "Actual locked bundle manifests and WPF selection events only. No payload execution, physical disk queries, installation or hardware acceptance." }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(directory, "result.json"), report);
         return report;
+    }
+
+    private static async Task CheckInputInspectionCandidateSelection(string prefix, JsonElement package, string digest,
+        Action<bool, string> require)
+    {
+        var window = new MainWindow(rehearsal: true) { ShowActivated = false, WindowState = WindowState.Normal,
+            Width = 1060, Height = 720, DeviceHardwareReaderForChecks = () => null };
+        try
+        {
+            var picker = (PartitionPicker)window.FindName("PartitionSelector");
+            picker.AutomaticReadEnabled = false;
+            window.Show(); window.BoilerModeForChecks("custom"); await Flush(window);
+            typeof(MainWindow).GetField("physicalInstallation", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, true);
+            var snapshot = System.Text.Json.Nodes.JsonNode.Parse(PartitionInventory.ExampleJson)!.AsArray();
+            var disk = snapshot[0]!;
+            disk["guid"] = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+            disk["model"] = "Predator SSD GM7 1TB";
+            disk["bus"] = "NVMe";
+            disk["serial"] = "synthetic-x2-gm7-fixture";
+            picker.LoadSnapshot(snapshot.ToJsonString(), false);
+            picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().First(row => row.Space != null);
+            picker.CapacityInput.Text = "128";
+            var selection = picker.Selection;
+            require(!selection.Example && SsdBootRepair.FromSelection(selection).Disposition == "match",
+                prefix + "-synthetic-gm7-target-matches-by-ssd-identity");
+
+            var preparedType = typeof(MainWindow).GetNestedType("PreparedDeviceSelection", BindingFlags.NonPublic)!;
+            void Commit() => Call(window, "CommitDeviceSelection",
+                Activator.CreateInstance(preparedType, digest[..24], digest, "developer-session", package, null)!);
+            Commit();
+            var components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            var legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+            var switcher = components["boiler:s2s4"];
+            var switcherManifest = package.GetProperty("components").EnumerateArray()
+                .Single(item => item.GetProperty("id").GetString() == "boiler:s2s4");
+            var switcherDefault = switcherManifest.GetProperty("default").GetBoolean();
+            var fingerprint = components["oxp3:fingerprint-unlock"];
+            var ssdProviders = package.GetProperty("components").EnumerateArray()
+                .Where(item => item.TryGetProperty("ssd_boot_policy", out _))
+                .Select(item => item.GetProperty("id").GetString()!).ToArray();
+            require(ssdProviders.Length == 1, prefix + "-actual-x2-package-has-one-gm7-provider");
+            var gm7Provider = components[ssdProviders.Single()];
+            require(switcher.IsChecked == switcherDefault && switcherDefault
+                && fingerprint.IsChecked == true && legacy["oxp3:decky"].IsChecked == true
+                && gm7Provider.IsChecked != true,
+                prefix + "-actual-package-loads-s2-default-fingerprint-decky-and-unmatched-gm7-state");
+
+            var busyField = typeof(MainWindow).GetField("inputInspectionBusy", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            void ExerciseBusyCandidateSync(string name)
+            {
+                busyField.SetValue(window, true);
+                try
+                {
+                    Call(window, "UpdateNavigationState");
+                    require(!((Button)window.FindName("NextButton")).IsEnabled, prefix + "/" + name + "-busy-blocks-navigation");
+                    Call(window, "SyncFingerprintCandidateSelection");
+                }
+                finally
+                {
+                    busyField.SetValue(window, false);
+                    Call(window, "UpdateNavigationState");
+                }
+            }
+            void ConfirmSyntheticTarget()
+            {
+                Call(window, "OpenSafetyConfirmation");
+                Call(window, "ConfirmSafety", window, new RoutedEventArgs());
+            }
+
+            ExerciseBusyCandidateSync("s2-default");
+            require(switcher.IsChecked == switcherDefault && fingerprint.IsChecked == true
+                && legacy["oxp3:decky"].IsChecked == true,
+                prefix + "-input-inspection-candidate-sync-preserves-s2-default-and-fingerprint-decky");
+            ConfirmSyntheticTarget();
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+            switcher = components["boiler:s2s4"]; fingerprint = components["oxp3:fingerprint-unlock"];
+            gm7Provider = components[ssdProviders.Single()];
+            require(switcher.IsChecked == switcherDefault && fingerprint.IsChecked == true
+                && legacy["oxp3:decky"].IsChecked == true && gm7Provider.IsChecked == true
+                && (window.CurrentOptions.DeviceComponents ?? []).Contains(ssdProviders.Single()),
+                prefix + "-confirmed-matched-gm7-keeps-s2-default-and-fingerprint-decky");
+
+            switcher.IsChecked = false;
+            ExerciseBusyCandidateSync("s2-opt-out");
+            require(switcher.IsChecked != true && fingerprint.IsChecked == true && legacy["oxp3:decky"].IsChecked == true,
+                prefix + "-input-inspection-candidate-sync-preserves-explicit-s2-opt-out");
+            ConfirmSyntheticTarget();
+            components = Field<Dictionary<string, CheckBox>>(window, "deviceComponentChoices");
+            legacy = Field<Dictionary<string, CheckBox>>(window, "deviceLegacyChoices");
+            switcher = components["boiler:s2s4"];
+            gm7Provider = components[ssdProviders.Single()];
+            require(switcher.IsChecked != true && !(window.CurrentOptions.DeviceComponents ?? []).Contains("boiler:s2s4")
+                && components["oxp3:fingerprint-unlock"].IsChecked == true && legacy["oxp3:decky"].IsChecked == true
+                && gm7Provider.IsChecked == true && (window.CurrentOptions.DeviceComponents ?? []).Contains(ssdProviders.Single()),
+                prefix + "-confirmed-input-inspection-preserves-s2-opt-out-and-matched-gm7");
+        }
+        finally { window.Close(); }
     }
 
     private static JsonElement Catalog(bool bundled = true) => JsonSerializer.SerializeToElement(new

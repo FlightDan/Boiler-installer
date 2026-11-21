@@ -19,7 +19,7 @@ public partial class MainWindow
         if (mode is not ("custom" or "local" or "vanilla" or "imported")) throw new ArgumentOutOfRangeException(nameof(mode));
         if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy || PartitionSelector.IsBusy) return;
         installMode = mode; selectedDevicePackage = selectedDeviceDigest = selectedDeviceTrust = null;
-        reviewAccelerationChoice = null; accelerationHelpOpen = false; accelerationError = null;
+        reviewAccelerationChoice = null; accelerationHelpOpen = false;
         ResetSsdPreference(); fingerprintPreferences.Clear(); candidateFingerprintPreferences.Clear(); pendingFingerprintPreferences.Clear(); fingerprintTargetReviewed = false; fingerprintModel = null;
         deviceActionError = null;
         ResetInputAssociationSession();
@@ -53,7 +53,7 @@ public partial class MainWindow
         // must not leave the hidden constructor/stale page marked as departed.
         Array.Clear(departedSteps);
         UpdateNavigationState();
-        if (physicalInstallation && !bootPrerequisitesAcknowledged) ShowBootPrerequisites(null, null);
+        if (physicalInstallation && !bootPrerequisitesAcknowledged) ShowBootPrerequisites();
     }
 
     private void ChoosePreparedImageMode(object sender, RoutedEventArgs e) => ChooseBoilerMode("imported");

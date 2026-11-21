@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,6 +12,19 @@ namespace OxpInstaller;
 
 public static class PartitionPickerChecks
 {
+    internal static string ExampleWithExternalDisk()
+    {
+        var disks = JsonNode.Parse(PartitionInventory.ExampleJson)!.AsArray();
+        disks.Add(new JsonObject
+        {
+            ["number"] = 1, ["model"] = "Example SD card", ["size"] = 256 * PartitionInventory.GiB,
+            ["bus"] = "SD", ["style"] = "GPT", ["sectorSize"] = 512, ["guid"] = "88888888-8888-8888-8888-888888888888",
+            ["isBoot"] = false, ["isSystem"] = false, ["isOffline"] = false, ["isReadOnly"] = false,
+            ["partitions"] = new JsonArray()
+        });
+        return disks.ToJsonString();
+    }
+
     public static Task<string> RunAsync(string? liveSnapshot = null) => Application.Current.Dispatcher.CheckAccess()
         ? RunOnUiAsync(liveSnapshot) : Application.Current.Dispatcher.InvokeAsync(() => RunOnUiAsync(liveSnapshot)).Task.Unwrap();
 
@@ -138,7 +152,6 @@ public static class PartitionPickerChecks
         T Find<T>(string name) => (T)window.FindName(name);
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var picker = Find<PartitionPicker>("PartitionSelector");
-        Find<RadioButton>("InternalTarget").IsChecked = true;
 
         // Exercise the source-first route with a valid internal target, then
         // satisfy it through real inspection, never through injected cache flags.
@@ -262,14 +275,18 @@ public static class PartitionPickerChecks
         Click("BackButton"); Require(Find<StackPanel>("TargetPage").Visibility == Visibility.Visible
             && picker.CapacityInput.Text == "128", "back-retains-selection");
         Find<ComboBox>("InstallerLanguage").SelectedValue = "en-US";
-        Require(picker.Selection.Capacity == 128 * PartitionInventory.GiB && picker.Heading.Text == "Choose disk and installation space", "language-switch-preserves-selection");
+        Require(picker.Selection.Capacity == 128 * PartitionInventory.GiB && AutomationProperties.GetName(picker.Disks) == "Target disk", "language-switch-preserves-selection");
         Require(!picker.FormatRemainingButton.Content.ToString()!.Contains("Untested") && !picker.FormatRemainingHint.Text.Contains("Untested on hardware"), "ntfs-english-tested-entry");
         Find<ComboBox>("InstallerLanguage").SelectedValue = "zh-CN";
         window.PreviewStep(3);
         Require(Find<StackPanel>("ReviewPartitionHost").Children.Count > 5, "review-renders-selected-plan");
-        Find<RadioButton>("ExternalTarget").IsChecked = true; window.PreviewStep(3);
+        picker.LoadSnapshot(ExampleWithExternalDisk(), true);
+        Require(picker.TargetKind == InstallationTargetKind.InternalShared, "disk-list-defaults-to-internal-example");
+        picker.Disks.SelectedIndex = 1; window.PreviewStep(3);
+        Require(picker.TargetKind == InstallationTargetKind.ExternalDisk, "selecting-sd-card-uses-external-installation");
         Require(Find<Border>("ReviewPartitionCard").Visibility == Visibility.Collapsed, "external-does-not-reuse-shared-plan");
-        Find<RadioButton>("InternalTarget").IsChecked = true;
+        picker.Disks.SelectedIndex = 0;
+        Require(picker.TargetKind == InstallationTargetKind.InternalShared, "switching-back-to-nvme-restores-internal-installation");
         var second = JsonNode.Parse(json)!; var other = second[0]!.DeepClone(); other["number"] = 1; other["guid"] = "66666666-6666-6666-6666-666666666666"; second.AsArray().Add(other);
         picker.LoadSnapshot(second.ToJsonString(), true);
         picker.Partitions.SelectedItem = picker.Partitions.Items.Cast<PartitionRow>().Single(r => r.Space != null);
@@ -311,7 +328,7 @@ public static class PartitionPickerChecks
             var dialog = PartitionDeletion.Confirmation(deletion with { Language = language, Example = false });
             ownedWindows.Add(dialog);
             dialog.ShowActivated = false; dialog.MaxHeight = 540; dialog.Show(); dialog.UpdateLayout();
-            var panel = (StackPanel)((ScrollViewer)dialog.Content).Content;
+            var panel = ((Grid)dialog.Content).Children.OfType<StackPanel>().Last();
             var consent = panel.Children.OfType<CheckBox>().Single();
             var buttons = panel.Children.OfType<WrapPanel>().Single().Children.OfType<Button>().ToArray();
             Require(buttons[0].IsCancel && buttons[0].IsDefault && !buttons[1].IsDefault && !buttons[1].IsEnabled, "deletion-default-is-cancel-" + language);

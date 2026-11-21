@@ -26,6 +26,7 @@ public sealed record PartitionRow(int Disk, long Start, long Size, string Name, 
 }
 public sealed record InventoryDisk(int Number, string Model, long Size, string Bus, string Style, PartitionRow[] Rows)
 {
+    internal Guid GptId { get; init; }
     public string Title => $"{PartitionInventory.L("磁盘", "Disk")} {Number} · {Model} · {PartitionInventory.SizeText(Size)} · {Bus} / {Style}";
     public override string ToString() => Title;
 }
@@ -57,6 +58,7 @@ public static class PartitionInventory
             string Str(JsonElement e, string key) => e.TryGetProperty(key, out var v) ? v.GetString() ?? "" : "";
             bool Flag(string key) => disk.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.True;
             var model = Str(disk, "model"); var bus = Str(disk, "bus"); var style = Str(disk, "style");
+            _ = Guid.TryParse(Str(disk, "guid"), out var gptId);
             var reason = Str(disk, "partitionReadError").Length > 0 ? L("分区读取不完整，请刷新磁盘", "Incomplete partition inventory; refresh disks")
                 : Flag("isOffline") ? L("磁盘脱机", "Disk offline") : Flag("isReadOnly") ? L("磁盘只读", "Read-only disk")
                 : style != "GPT" ? L("需要 GPT 分区表", "GPT required")
@@ -71,7 +73,7 @@ public static class PartitionInventory
             var rows = new List<PartitionRow>(); long cursor = MiB;
             if (Str(disk, "partitionReadError").Length > 0) {
                 rows.Add(new(number, 0, size, L("分区布局不可用", "Partition layout unavailable"), "?", null, reason));
-                result.Add(new(number, model, size, bus, style, rows.ToArray()));
+                result.Add(new(number, model, size, bus, style, rows.ToArray()) { GptId = gptId });
                 continue;
             }
             var steamOs = reason.Length == 0 ? SteamOsPartitions.DeletionCandidates(disk) : [];
@@ -96,7 +98,7 @@ public static class PartitionInventory
                 cursor = checked(start + bytes);
             }
             AddGap(cursor, size / MiB * MiB - MiB);
-            result.Add(new(number, model, size, bus, style, rows.ToArray()));
+            result.Add(new(number, model, size, bus, style, rows.ToArray()) { GptId = gptId });
             void AddGap(long start, long end)
             {
                 start = checked((start + MiB - 1) / MiB * MiB); end = end / MiB * MiB;

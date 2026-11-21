@@ -39,6 +39,12 @@ FINGERPRINT_KEYBOARD = {
     FINGERPRINT_NATIVE + 'libexec/polkit-kde-authentication-agent-1': 0o755,
     'usr/share/licenses/boiler-fingerprint-keyboard/GPL-2.0-or-later.txt': 0o644,
 }
+FINGERPRINT_FTE3600 = {
+    'etc/systemd/system/boiler-fte3600.service': 0o644,
+    'etc/systemd/system/boiler-fprintd.service.d/50-boiler-fte3600.conf': 0o644,
+    FINGERPRINT_NATIVE + 'fte3600/load.sh': 0o755,
+    FINGERPRINT_NATIVE + 'fte3600/fte3600.ko': 0o644,
+}
 FINGERPRINT_RULES = {'device:oxp3': 'etc/udev/rules.d/69-boiler-oxp3-fingerprint.rules',
     'device:x2-mini': 'etc/udev/rules.d/69-boiler-x2-fingerprint.rules'}
 FINGERPRINT_FIXED = frozenset((
@@ -194,11 +200,15 @@ def check_fingerprint_component(engine, component):
     keyboard = {row['target']: row.get('mode', 0o644) for row in rows if row['target'] in FINGERPRINT_KEYBOARD}
     if keyboard and keyboard != FINGERPRINT_KEYBOARD:
         raise MaintenanceError('Incomplete fingerprint keyboard runtime')
+    fte3600 = {row['target']: row.get('mode', 0o644) for row in rows if row['target'] in FINGERPRINT_FTE3600}
+    if fte3600 and (fte3600 != FINGERPRINT_FTE3600 or FINGERPRINT_RULES['device:x2-mini'] not in targets):
+        raise MaintenanceError('Invalid X2 Mini FTE3600 runtime')
     for target in targets:
         relative = target.removeprefix(FINGERPRINT_NATIVE)
         native = target.startswith(FINGERPRINT_NATIVE) and (relative in {'libexec/fprintd', *(f'bin/fprintd-{x}' for x in ('verify','enroll','list','delete'))}
             or relative.startswith('lib/') and '/' not in relative[4:])
-        if target not in FINGERPRINT_FIXED and target not in FINGERPRINT_RULES.values() and not native and target not in keyboard:
+        if (target not in FINGERPRINT_FIXED and target not in FINGERPRINT_RULES.values()
+                and not native and target not in keyboard and target not in fte3600):
             raise MaintenanceError('Unexpected fingerprint target')
     state = engine._state()
     for target in set(targets) | set(FINGERPRINT_CONFLICTS):

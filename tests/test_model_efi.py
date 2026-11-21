@@ -262,6 +262,34 @@ class ModelEfiTests(unittest.TestCase):
             disk.write_bytes(b'null\n'); (slot/'extra.json').write_bytes(b'{}')
             with self.assertRaises(MaintenanceError): m._check_journal_inventory(root,'A',seen)
 
+    def test_retained_x2_activation_inventory_is_strictly_scoped(self):
+        with tempfile.TemporaryDirectory(prefix='boiler-activation-fixture-',dir=os.environ.get('BOILER_SSD_TEST_TMP')) as temporary:
+            root=Path(temporary); slot=root/'home/.oxp3-installer/integration/A'
+            slot.mkdir(parents=True)
+            lock=slot/'.activation.lock'; lock.write_bytes(b''); lock.chmod(0o600)
+            result=slot/'activation.json'
+            result.write_text(json.dumps({'split-lock':{'status':'ready','session_restart_required':False},
+                                          'input':{'status':'failed','reason':'device unavailable'},
+                                          'maintenance-tool':{'status':'active','session_restart_required':False},
+                                          'deck-access':{'status':'refused','reason':'unavailable'}}))
+            result.chmod(0o600)
+            allowed={'split-lock','input','maintenance-tool','deck-access'}
+            m._check_journal_inventory(root,'A',set(),activation_components=allowed)
+            with self.assertRaises(MaintenanceError): m._check_journal_inventory(root,'A',set())
+            for value in ({'other':{'status':'ready','session_restart_required':False}},
+                          {'input':{'status':'active','session_restart_required':'yes'}},
+                          {'input':{'status':'failed'}}, {'input':{'status':'unknown','reason':'x'}}):
+                result.write_text(json.dumps(value))
+                with self.subTest(value=value), self.assertRaises(MaintenanceError):
+                    m._check_journal_inventory(root,'A',set(),activation_components=allowed)
+            result.write_text('{}'); lock.write_bytes(b'x')
+            with self.assertRaises(MaintenanceError): m._check_journal_inventory(root,'A',set(),activation_components=allowed)
+            lock.write_bytes(b''); (slot/'unexpected').write_bytes(b'')
+            with self.assertRaises(MaintenanceError): m._check_journal_inventory(root,'A',set(),activation_components=allowed)
+            (slot/'unexpected').unlink(); shared=slot.parent/'shared'; shared.mkdir()
+            (shared/'activation.json').write_text('{}')
+            with self.assertRaises(MaintenanceError): m._check_journal_inventory(root,'A',set(),activation_components=allowed)
+
     def test_generic_guard_blocks_model_boot_targets_and_hooks(self):
         applied=m._render(ORIGINAL)
         record=dict(version=2,target=m._model_target(BOUND),source=SOURCE,original=b._encode(ORIGINAL),

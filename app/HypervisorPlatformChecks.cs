@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace OxpInstaller;
 
@@ -81,13 +83,44 @@ internal static class HypervisorPlatformChecks
         }
         try
         {
-            var status = HypervisorAction.Active;
+            var status = HypervisorAction.Offer;
             window.AccelerationStatusForChecks = () => status;
             ((PartitionPicker)window.FindName("PartitionSelector")).AutomaticReadEnabled = false;
+            window.ContentRendered += window.OfferAccelerationOnStartup;
             window.Show();
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            var overlay = (Grid)window.FindName("AccelerationOverlay");
+            var shell = (Grid)window.FindName("WizardShell");
+            var home = ((Grid)window.Content).Children.OfType<Border>().Single();
+            var dismiss = (Button)window.FindName("AccelerationDismiss");
+            var confirm = (Button)window.FindName("AccelerationConfirm");
+            var benefit = (TextBlock)window.FindName("AccelerationPromptBenefit");
+            var promptStatus = (TextBlock)window.FindName("AccelerationPromptStatus");
+            void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(overlay.IsVisible && Panel.GetZIndex(overlay) > Panel.GetZIndex(home) && !home.IsEnabled && !shell.IsEnabled,
+                "normal-startup-offer-is-modal-over-the-home-page");
+            Require(benefit.Text.Contains("20") && !confirm.IsDefault
+                && ((TextBlock)confirm.Content).Text == PartitionInventory.L("启用并重启", "Enable and restart"),
+                "offer-shows-the-estimate-and-requires-explicit-consent");
+            window.Width = 640; window.Height = 360;
+            await Capture("startup-acceleration-compact");
+            var escape = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(window), 0, Key.Escape)
+                { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+            window.RaiseEvent(escape);
+            Require(escape.Handled && !overlay.IsVisible && home.IsEnabled && shell.IsEnabled,
+                "escape-dismisses-the-offer-and-restores-the-home-page");
+            window.Width = 1060; window.Height = 720;
+            status = HypervisorAction.Active;
+            window.OfferAccelerationOnStartup(window, EventArgs.Empty);
+            status = HypervisorAction.Ineffective;
+            window.OfferAccelerationOnStartup(window, EventArgs.Empty);
+            Require(!overlay.IsVisible, "startup-does-not-prompt-when-acceleration-is-active-or-ineffective");
+            status = HypervisorAction.Active;
             await Capture("home");
             window.BoilerModeForChecks("vanilla");
-            ((RadioButton)window.FindName("ExternalTarget")).IsChecked = true;
+            var partitionPicker = (PartitionPicker)window.FindName("PartitionSelector");
+            partitionPicker.LoadSnapshot(PartitionPickerChecks.ExampleWithExternalDisk(), true);
+            partitionPicker.Disks.SelectedIndex = 1;
             var checkbox = (CheckBox)window.FindName("ReviewAcceleration");
             var action = (Button)window.FindName("ReviewAccelerationAction");
             var hint = (Control)window.FindName("InstallerLanguageHint");
@@ -109,10 +142,35 @@ internal static class HypervisorPlatformChecks
             checkbox.IsChecked = true;
             checkbox.RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
             Require(checkbox.IsChecked == false && action.Visibility == Visibility.Visible, "unavailable-acceleration-reveals-inline-enablement");
+            Click(action);
+            Require(overlay.IsVisible && !shell.IsEnabled, "review-enablement-opens-the-same-confirmation");
+            var enableAttempts = 0;
+            var restartAttempts = 0;
+            Task FailEnable() { enableAttempts++; throw new IOException("fixture enable failure"); }
+            Task Enable() { enableAttempts++; status = HypervisorAction.AwaitRestart; return Task.CompletedTask; }
+            Task FailRestart() { restartAttempts++; throw new IOException("fixture restart failure"); }
+            Task RestartWindows() { restartAttempts++; return Task.CompletedTask; }
+            await window.ConfirmAccelerationPromptAsync(FailEnable, RestartWindows);
+            Require(enableAttempts == 1 && restartAttempts == 0 && overlay.IsVisible
+                && promptStatus.Text == "fixture enable failure" && dismiss.IsEnabled && confirm.IsEnabled,
+                "enable-failure-keeps-the-dialog-open-without-restarting");
+            await window.ConfirmAccelerationPromptAsync(Enable, FailRestart);
+            Require(enableAttempts == 2 && restartAttempts == 1 && overlay.IsVisible
+                && promptStatus.Text == "fixture restart failure"
+                && ((TextBlock)confirm.Content).Text == PartitionInventory.L("立即重启", "Restart now"),
+                "confirmed-enable-precedes-restart-and-a-restart-failure-allows-retry");
+            await window.ConfirmAccelerationPromptAsync(Enable, RestartWindows);
+            Require(enableAttempts == 2 && restartAttempts == 2 && !overlay.IsVisible && shell.IsEnabled,
+                "restart-retry-does-not-repeat-enablement");
             status = HypervisorAction.AwaitRestart;
-            window.PreviewStep(3);
             Require(action.Visibility == Visibility.Visible && ((TextBlock)action.Content).Text == PartitionInventory.L("立即重启到 Windows", "Restart into Windows now"),
                 "pending-enablement-offers-immediate-windows-restart-on-review");
+            window.OfferAccelerationOnStartup(window, EventArgs.Empty);
+            Require(overlay.IsVisible && ((TextBlock)dismiss.Content).Text == PartitionInventory.L("稍后重启", "Restart later"),
+                "startup-with-pending-enablement-offers-restart-or-deferral");
+            Click(dismiss);
+            Require(!overlay.IsVisible && enableAttempts == 2 && restartAttempts == 2,
+                "deferring-the-restart-leaves-system-actions-untouched");
             window.Width = 640;
             await Capture("review-restart-compact");
         }

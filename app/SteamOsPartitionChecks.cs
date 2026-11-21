@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Threading;
 
@@ -20,7 +21,7 @@ internal static class SteamOsPartitionChecks
         var checks = new List<string>(); var captures = new List<string>(); var captureErrors = new List<string>();
         void Require(bool ok, string name) { if (!ok) throw new IOException("SteamOS partition check failed: " + name); checks.Add(name); }
         void Reject(Action action, string name) { var rejected = false; try { action(); } catch (InvalidOperationException) { rejected = true; } Require(rejected, name); }
-        async Task Capture(MainWindow owner, string name)
+        async Task Capture(Window owner, string name)
         {
             await Flush(owner);
             var path = Path.Combine(directory, name + ".png");
@@ -35,6 +36,24 @@ internal static class SteamOsPartitionChecks
                 == steam.Single(row => row.SteamOsRole == role.GetProperty("name").GetString()).Size), "example-layout-matches-production-boot-sizes");
         var starts = deletable.Select(r => r.Start).Order().ToArray();
         var request = new PartitionDeleteRequest(json, true, disk.Number, starts[0], "zh-CN", starts);
+        var crowded = JsonNode.Parse(json)![0]!;
+        var diskSize = (long)crowded["size"]!;
+        var crowdedParts = crowded["partitions"]!.AsArray();
+        var originals = crowdedParts.Where(p => starts.Contains((long)p!["offset"]!)).ToArray();
+        for (var group = 1; group <= 2; group++)
+            foreach (var original in originals)
+            {
+                var copy = original!.DeepClone();
+                copy["number"] = (int)copy["number"]! + group * 8;
+                copy["offset"] = (long)copy["offset"]! + group * diskSize;
+                copy["guid"] = Guid.NewGuid().ToString("D");
+                crowdedParts.Add(copy);
+            }
+        crowded["size"] = diskSize * 3;
+        var crowdedSnapshot = "[" + crowded.ToJsonString() + "]";
+        var crowdedStarts = PartitionInventory.Read(crowdedSnapshot).Single().Rows.Where(r => r.SteamOsRole != null && r.CanDelete).Select(r => r.Start).ToArray();
+        Require(crowdedStarts.Length == 24, "fixture-contains-three-steamos-groups");
+        var crowdedRequest = request with { Snapshot = crowdedSnapshot, SteamOsStarts = crowdedStarts };
         Require(PartitionDeletion.ValidateTargets(request).Rows.Length == 8, "batch-includes-all-steamos-boot-and-linux-roles");
         foreach (var mutation in new[] { "gptName", "missing-role", "gap", "label-only", "duplicate-role" })
         {
@@ -120,85 +139,138 @@ internal static class SteamOsPartitionChecks
                 window = new MainWindow(true) { Width = 1060, Height = 720, WindowState = WindowState.Normal, ShowActivated = false };
                 var picker = (PartitionPicker)window.FindName("PartitionSelector"); picker.AutomaticReadEnabled = false;
                 window.Show(); window.BoilerModeForChecks("imported"); window.PreviewStep(0);
-                picker.LoadSnapshot(remnants, true);
-                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(bootStarts)
-                    && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().Count(c => c.IsEnabled && c.IsChecked == true) == 3,
-                    language + "-residual-three-boot-partitions-all-selected");
-                picker.SteamOsDetails.IsExpanded = true;
                 await Flush(window);
-                picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().First().BringIntoView();
-                await Capture(window, language + "-residual-three");
+                Require(window.FindName("TargetChoices") == null && window.FindName("ExternalTarget") == null && window.FindName("BootPrerequisitesCard") == null,
+                    language + "-redundant-target-and-prerequisites-controls-removed");
+                Require(picker.Disks.IsVisible, language + "-disk-list-visible-on-location-page");
+                if (language == "zh-CN")
+                    Require(((TextBlock)window.FindName("PageTitle")).Text == "在你选择的位置安装 SteamOS", "location-page-title");
+                void ReviewSelection(Func<Window, CheckBox[], Button, Task> inspect, bool proceed = false)
+                {
+                    Exception? dialogError = null;
+                    var selectionSeen = false;
+                    var confirmationSeen = false;
+                    Window OpenDialog() => Application.Current.Windows.OfType<Window>().Single(w => w != window && w.IsVisible);
+                    var interaction = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(async () =>
+                    {
+                        Window? selection = null;
+                        try
+                        {
+                            selection = OpenDialog();
+                            var root = (Grid)selection.Content;
+                            var list = (UniformGrid)root.Children.OfType<ScrollViewer>().Single().Content;
+                            var review = root.Children.OfType<WrapPanel>().Single().Children.OfType<Button>().Single(b => b.Name == "SteamOsReview");
+                            await inspect(selection, list.Children.OfType<CheckBox>().ToArray(), review);
+                            selectionSeen = true;
+                            if (!proceed) { selection.Close(); return; }
+                            _ = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+                            {
+                                var activeConfirmation = OpenDialog();
+                                confirmationSeen = true;
+                                activeConfirmation.Close();
+                            }));
+                            review.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        }
+                        catch (Exception error) { dialogError = error; selection?.Close(); }
+                    }));
+                    picker.ReinstallSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    interaction.Abort();
+                    if (dialogError != null) throw dialogError;
+                    if (!selectionSeen || proceed && !confirmationSeen) throw new IOException("The SteamOS partition workflow did not open the expected dialogs.");
+                }
+                picker.LoadSnapshot(remnants, true);
+                ReviewSelection(async (dialog, choices, _) =>
+                {
+                    Require(choices.Where(c => c.IsEnabled && c.IsChecked == true).Select(c => (long)c.Tag).SequenceEqual(bootStarts),
+                        language + "-residual-three-boot-partitions-all-selected");
+                    await Capture(dialog, language + "-residual-three");
+                });
                 var protectedBoot = JsonNode.Parse(json)!;
                 var systemEsp = protectedBoot[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!;
                 systemEsp["isSystem"] = true; systemEsp["deletionAllowed"] = false;
                 systemEsp["deletionBlockReason"] = "System, boot, hidden, offline, or read-only partition is protected.";
                 picker.LoadSnapshot(protectedBoot.ToJsonString(), true);
-                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7
-                    && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().Count(c => !c.IsEnabled) == 1,
-                    language + "-real-system-esp-remains-disabled-while-seven-eligible-select");
-                picker.SteamOsDetails.IsExpanded = true;
-                await Flush(window);
-                picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().First().BringIntoView();
-                await Capture(window, language + "-protected-system-esp");
+                ReviewSelection(async (dialog, choices, _) =>
+                {
+                    Require(choices.Count(c => c.IsEnabled && c.IsChecked == true) == 7 && choices.Count(c => !c.IsEnabled && c.IsChecked != true) == 1,
+                        language + "-real-system-esp-remains-disabled-while-seven-eligible-select");
+                    await Capture(dialog, language + "-protected-system-esp");
+                });
                 picker.LoadSnapshot(json, true);
-                Require(picker.DeleteSteamOsButton.IsEnabled && !picker.SteamOsDetails.IsExpanded, language + "-empty-selection-offers-selection");
-                picker.DeleteSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts) && picker.SteamOsDetails.IsExpanded, language + "-delete-action-selects-all-eligible-only");
-                var choices = picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().ToArray();
-                Require(choices.Length == 8 && choices.All(c => c.IsEnabled && c.IsChecked == true), language + "-all-steamos-boot-rows-selectable");
-                Require((string)picker.SelectSteamOsButton.Content == (language == "en-US" ? "Select all SteamOS partitions for deletion" : "选择 SteamOS 分区全部删除"), language + "-select-all-wording");
+                Require(picker.FindName("Heading") == null && picker.InventoryStatus.Visibility == Visibility.Collapsed,
+                    language + "-disk-list-has-no-static-intro");
+                Require(picker.ReinstallSteamOsButton.IsEnabled, language + "-empty-selection-offers-reinstallation");
                 var unknownReason = JsonNode.Parse(json)!;
                 unknownReason[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "esp")!["deletionBlockReason"] = "Unrecognized protection reason.";
                 var unknownStatus = PartitionInventory.Read(unknownReason.ToJsonString()).Single().Rows.Single(r => r.SteamOsRole == "esp").Status;
                 Require(unknownStatus.Contains("Unrecognized protection reason.") && unknownStatus.Contains(language == "en-US" ? "Protected" : "受保护"), language + "-unknown-reason-remains-protected");
                 unknownReason[0]!["partitions"]!.AsArray().Single(p => (string?)p!["gptName"] == "rootfs-A")!["deletionBlockReason"] = "Unrecognized protection reason.";
                 Require(!PartitionInventory.Read(unknownReason.ToJsonString()).Single().Rows.Single(r => r.SteamOsRole == "rootfs-A").CanDelete, language + "-unknown-reason-blocks-conflicting-allow");
-                choices.First(c => c.IsEnabled).IsChecked = false;
-                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7 && picker.SelectSteamOsButton.IsEnabled, language + "-individual-opt-out");
-                var confirmationSeen = false;
-                _ = window.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => {
-                    var confirmation = Application.Current.Windows.OfType<Window>().Single(w => w != window && w.IsVisible);
-                    confirmationSeen = true; confirmation.Close();
-                }));
-                picker.DeleteSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(confirmationSeen && picker.SteamOsDeleteRequest().SteamOsStarts!.Length == 7, language + "-delete-preserves-manual-subset");
-                choices.First(c => c.IsEnabled).IsChecked = true;
-                picker.RefreshLanguage(); Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts), language + "-language-refresh-retains-selection");
+                ReviewSelection((dialog, choices, review) =>
+                {
+                    Require(choices.Select(c => (long)c.Tag).SequenceEqual(starts) && choices.All(c => c.IsEnabled && c.IsChecked == true),
+                        language + "-all-steamos-boot-rows-selectable");
+                    var actions = ((Grid)dialog.Content).Children.OfType<WrapPanel>().Single().Children.OfType<Button>().ToArray();
+                    actions.Single(b => b.Name == "SteamOsClear").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Require(!review.IsEnabled && choices.All(c => c.IsChecked != true), language + "-empty-selection-cannot-proceed");
+                    actions.Single(b => b.Name == "SteamOsSelectAll").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    choices[0].IsChecked = false;
+                    return Task.CompletedTask;
+                }, proceed: true);
+                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts.Skip(1)), language + "-delete-preserves-manual-subset");
+                picker.RefreshLanguage();
+                Require(picker.SteamOsDeleteRequest().SteamOsStarts!.SequenceEqual(starts.Skip(1)), language + "-language-refresh-retains-selection");
                 foreach (var size in new[] { new Size(1060, 720), new Size(640, 360) })
                 {
                     window.Width = size.Width; window.Height = size.Height;
-                    picker.SteamOsDetails.IsExpanded = size.Width > 640;
-                    picker.SteamOsHeading.BringIntoView(); await Flush(window);
+                    picker.Disks.BringIntoView(); await Flush(window);
                     var scroll = (ScrollViewer)window.FindName("PageScroll");
                     Require(scroll.ExtentWidth <= scroll.ViewportWidth + 1, language + "-no-horizontal-overflow-" + size.Width);
-                    foreach (var button in new[] { picker.SelectSteamOsButton, picker.ClearSteamOsButton, picker.DeleteSteamOsButton })
-                    {
-                        button.BringIntoView(); await Flush(window);
-                        var bounds = button.TransformToAncestor(scroll).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
-                        Require(bounds.Left >= -1 && bounds.Right <= scroll.ActualWidth + 1 && bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1, language + "-action-reachable-" + button.Name + "-" + size.Width);
-                    }
-                    picker.SteamOsHeading.BringIntoView(); await Flush(window);
-                    var capture = Path.Combine(directory, language + "-picker-" + size.Width + ".png");
-                    try { await BoilerUiChecks.CaptureAsync((FrameworkElement)window.Content, capture); captures.Add(capture); } catch (IOException error) { captureErrors.Add(error.Message); }
+                    Require(Fits(picker.RefreshButton, scroll) && SameRowOnRight(picker.RefreshButton, picker.Disks),
+                        language + "-refresh-is-to-the-right-of-the-disk-list-" + size.Width);
+                    picker.ReinstallSteamOsButton.BringIntoView(); await Flush(window);
+                    Require(Fits(picker.ReinstallSteamOsButton, scroll) && SameRowOnRight(picker.ReinstallSteamOsButton, picker.SteamOsStatus),
+                        language + "-reinstall-is-to-the-right-of-the-steamos-status-" + size.Width);
+                    await Capture(window, language + "-picker-" + size.Width);
                 }
+                picker.LoadSnapshot(crowdedSnapshot, true);
+                ReviewSelection(async (dialog, choices, review) =>
+                {
+                    dialog.MaxHeight = 360; await Flush(dialog);
+                    var root = (Grid)dialog.Content;
+                    var list = root.Children.OfType<ScrollViewer>().Single();
+                    Require(dialog.Width > 580 && ((UniformGrid)list.Content).Columns == 2 && choices.Length == 24, language + "-wide-two-column-selection");
+                    Require(list.ScrollableHeight > 0 && Fits(review, root), language + "-selection-review-visible-without-scrolling");
+                    await Capture(dialog, language + "-selection-24-short");
+                });
                 // Use the real helper's window configuration with synthetic data only.
-                var dialog = PartitionDeletion.Confirmation(request with { Example = false, Language = language });
-                dialog.ShowActivated = false; dialog.MaxHeight = 540; dialog.Show(); await Flush(dialog);
+                var confirmation = PartitionDeletion.Confirmation(crowdedRequest with { Example = false, Language = language });
+                confirmation.ShowActivated = false; confirmation.MaxHeight = 360; confirmation.Show(); await Flush(confirmation);
                 const uint noMoveSizeOrActivation = 0x0001 | 0x0002 | 0x0010;
                 Require(SetWindowPos(new WindowInteropHelper(window).Handle, IntPtr.Zero, 0, 0, 0, 0, noMoveSizeOrActivation),
                     language + "-raise-installer-in-normal-window-order");
-                Require(IsAbove(dialog, window), language + "-elevated-confirmation-is-above-installer-without-activation");
-                var panel = (StackPanel)((ScrollViewer)dialog.Content).Content;
+                Require(IsAbove(confirmation, window), language + "-elevated-confirmation-is-above-installer-without-activation");
+                var confirmationRoot = (Grid)confirmation.Content;
+                var details = confirmationRoot.Children.OfType<ScrollViewer>().Single();
+                var columns = ((StackPanel)details.Content).Children.OfType<UniformGrid>().Single();
+                var panel = confirmationRoot.Children.OfType<StackPanel>().Last();
                 var consent = panel.Children.OfType<CheckBox>().Single();
                 var buttons = panel.Children.OfType<WrapPanel>().Single().Children.OfType<Button>().ToArray();
+                Require(confirmation.Width > 580 && columns.Columns == 2 && columns.Children.Count == 24
+                    && details.ScrollableHeight > 0, language + "-wide-two-column-confirmation");
+                Require(Fits(consent, confirmationRoot) && buttons.All(b => Fits(b, confirmationRoot)), language + "-confirmation-controls-visible-without-scrolling");
+                await Capture(confirmation, language + "-confirmation-24-short");
+                details.ScrollToBottom(); await Flush(confirmation);
+                Require(details.VerticalOffset > 0 && buttons.All(b => Fits(b, confirmationRoot)), language + "-confirmation-buttons-stay-visible-after-scrolling");
                 Require(buttons[0].IsDefault && buttons[0].IsCancel && !buttons[1].IsEnabled && !buttons[1].IsDefault, language + "-cancel-default-and-explicit-consent-required");
                 consent.IsChecked = true; Require(buttons[1].IsEnabled, language + "-consent-enables-delete");
                 consent.IsChecked = false; Require(!buttons[1].IsEnabled, language + "-unchecking-consent-disables-delete");
-                dialog.Close();
+                confirmation.Close();
                 picker.SelectReleasedSpace(result, true, request);
-                Require(picker.Selection.Capacity >= PartitionInventory.Minimum && !picker.DeleteSteamOsButton.IsEnabled, language + "-simulated-deletion-selects-released-space");
+                Require(picker.Selection.Capacity >= PartitionInventory.Minimum
+                    && ((InventoryDisk)picker.Disks.SelectedItem).Rows.All(r => r.SteamOsRole == null),
+                    language + "-simulated-deletion-selects-released-space");
+                Require(picker.InventoryStatus.Visibility == Visibility.Visible, language + "-deletion-result-remains-visible");
                 var sparseStarts = steam.Where(r => r.SteamOsRole is "var-A" or "home").Select(r => r.Start).ToArray();
                 var sparseRequest = request with { Start = sparseStarts.Min(), SteamOsStarts = sparseStarts };
                 picker.SelectReleasedSpace(PartitionDeletion.Simulate(sparseRequest), true, sparseRequest);
@@ -212,14 +284,47 @@ internal static class SteamOsPartitionChecks
                 picker.SelectReleasedSpace(PartitionDeletion.Simulate(roomyRequest), true, roomyRequest);
                 Require(picker.Selection.Start == steam.Single(r => r.SteamOsRole == "home").Start, language + "-partial-selection-chooses-largest-released-installable-region");
                 var disks = JsonNode.Parse(json)!.AsArray(); var second = disks[0]!.DeepClone(); second["number"] = 1; second["guid"] = Guid.NewGuid().ToString(); disks.Add(second);
-                picker.LoadSnapshot(disks.ToJsonString(), true); picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); picker.Disks.SelectedIndex = 1;
-                Require(picker.DeleteSteamOsButton.IsEnabled && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().All(c => c.IsChecked != true), language + "-disk-change-clears-batch-selection");
-                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); picker.LoadSnapshot(json, true);
-                Require(picker.DeleteSteamOsButton.IsEnabled && picker.SteamOsPartitionsHost.Children.OfType<CheckBox>().All(c => c.IsChecked != true), language + "-refresh-clears-batch-selection");
+                picker.LoadSnapshot(disks.ToJsonString(), true);
+                ReviewSelection((_, choices, _) => { choices[0].IsChecked = false; return Task.CompletedTask; }, proceed: true);
+                picker.Disks.SelectedIndex = 1;
+                Reject(() => picker.SteamOsDeleteRequest(), language + "-disk-change-clears-batch-selection");
+                ReviewSelection((_, choices, _) => { choices[0].IsChecked = false; return Task.CompletedTask; }, proceed: true);
+                picker.LoadSnapshot(json, true);
+                Reject(() => picker.SteamOsDeleteRequest(), language + "-refresh-clears-batch-selection");
                 picker.AllowPhysicalDeletion = false; picker.LoadSnapshot(json, false);
-                Require(!picker.DeleteSteamOsButton.IsEnabled, language + "-rehearsal-blocks-physical-empty-selection");
-                picker.SelectSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Require(!picker.DeleteSteamOsButton.IsEnabled, language + "-rehearsal-blocks-physical-batch");
+                Require(!picker.ReinstallSteamOsButton.IsEnabled, language + "-rehearsal-blocks-physical-empty-selection");
+                picker.ReinstallSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Reject(() => picker.SteamOsDeleteRequest(), language + "-rehearsal-blocks-physical-batch");
+
+                // Run the real reinstall click handler against synthetic inventory. Cancel before any delete request.
+                var beforeScan = JsonNode.Parse(disks.ToJsonString())!.AsArray();
+                beforeScan[1]!["partitions"] = new JsonArray();
+                var scans = 0;
+                picker.AllowPhysicalDeletion = true;
+                picker.ReadDiskSnapshotAsync = _ => { scans++; return Task.FromResult(disks.ToJsonString()); };
+                picker.LoadSnapshot(beforeScan.ToJsonString(), false);
+                picker.Disks.SelectedIndex = 1;
+                Require(picker.ReinstallSteamOsButton.IsEnabled && ((InventoryDisk)picker.Disks.SelectedItem).Rows.All(r => r.SteamOsRole == null),
+                    language + "-reinstall-allows-a-fresh-scan-without-cached-steamos-rows");
+                ReviewSelection((_, choices, _) =>
+                {
+                    Require(scans == 1 && ((InventoryDisk)picker.Disks.SelectedItem).Number == 1 && choices.Length == 8,
+                        language + "-click-scans-selected-disk-and-opens-selection-directly");
+                    return Task.CompletedTask;
+                });
+                var replaced = JsonNode.Parse(disks.ToJsonString())!.AsArray();
+                replaced[1]!["guid"] = Guid.NewGuid().ToString();
+                picker.ReadDiskSnapshotAsync = _ => Task.FromResult(replaced.ToJsonString());
+                picker.ReinstallSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Require(picker.Disks.SelectedItem == null && !picker.ReinstallSteamOsButton.IsEnabled,
+                    language + "-scan-stops-if-selected-disk-is-replaced");
+                picker.ReadDiskSnapshotAsync = _ => Task.FromResult(beforeScan.ToJsonString());
+                picker.LoadSnapshot(beforeScan.ToJsonString(), false);
+                picker.Disks.SelectedIndex = 1;
+                picker.ReinstallSteamOsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Require(picker.Disks.SelectedItem is InventoryDisk { Number: 1 } scanned && scanned.Rows.All(r => r.SteamOsRole == null)
+                    && picker.SteamOsStatus.Text.StartsWith(language == "en-US" ? "No verifiable" : "未识别到"),
+                    language + "-no-steamos-displays-result-without-switching-to-other-disk");
                 window.Close(); window = null;
             }
         }
@@ -227,6 +332,19 @@ internal static class SteamOsPartitionChecks
         var report = JsonSerializer.Serialize(new { passed = true, checks, captures, captureErrors, directory,
             scope = "Synthetic GPT snapshots, batch simulation, WPF routed controls and layout only. No native disk queries, deletion, installation, firmware writes or device acceptance." }, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(directory, "checks.json"), report); return report;
+    }
+    private static bool Fits(FrameworkElement element, FrameworkElement viewport)
+    {
+        var bounds = element.TransformToAncestor(viewport).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        return bounds.Left >= -1 && bounds.Right <= viewport.ActualWidth + 1 && bounds.Top >= -1 && bounds.Bottom <= viewport.ActualHeight + 1;
+    }
+    private static bool SameRowOnRight(FrameworkElement button, FrameworkElement adjacent)
+    {
+        var parent = (Grid)button.Parent;
+        var buttonAt = button.TranslatePoint(new Point(), parent);
+        var adjacentAt = adjacent.TranslatePoint(new Point(), parent);
+        return button.Parent == adjacent.Parent && buttonAt.X >= adjacentAt.X + adjacent.ActualWidth - 1
+            && Math.Abs(buttonAt.Y + button.ActualHeight / 2 - adjacentAt.Y - adjacent.ActualHeight / 2) <= 1;
     }
     private static bool IsAbove(Window dialog, Window installer)
     {

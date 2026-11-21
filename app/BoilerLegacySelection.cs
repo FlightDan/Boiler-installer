@@ -6,10 +6,12 @@ namespace OxpInstaller;
 
 public partial class MainWindow
 {
+    private const string SleepSwitcherId = "boiler:s2s4";
     private readonly Dictionary<string, CheckBox> deviceLegacyChoices = new();
     private CheckBox? deviceLegacyUpdateHold;
     private string? deviceLegacyBridge;
     private bool updatingLegacyChoices;
+    private bool restoreSleepSwitcherWithDecky;
     private TextBlock? deviceLegacyHeading, deviceLegacyNotice;
 
     private DeviceLegacySelection? CurrentDeviceLegacyOptions
@@ -26,6 +28,7 @@ public partial class MainWindow
 
     private void ClearLegacyDeviceOptions()
     {
+        restoreSleepSwitcherWithDecky = false;
         deviceLegacyChoices.Clear(); deviceLegacyBridge = null; deviceLegacyUpdateHold = null;
         deviceLegacyHeading = deviceLegacyNotice = null;
     }
@@ -56,7 +59,7 @@ public partial class MainWindow
         // A dependent cannot be selected when its prerequisite is unavailable or absent.
         bool Available(string id, HashSet<string> seen)
         {
-            if (!deviceLegacyChoices.TryGetValue(id, out var box) || !box.IsEnabled) return false;
+            if (!deviceLegacyChoices.TryGetValue(id, out var box) || !ModelOptionAvailable(box)) return false;
             if (!seen.Add(id)) return true;
             return LegacyDependencies(box).All(dependency => Available(dependency, seen));
         }
@@ -68,11 +71,11 @@ public partial class MainWindow
             {
                 var chosen = prior != null ? prior.Repairs.Concat(prior.Plugins).Contains(pair.Key)
                     : true;
-                if (chosen && pair.Value.IsEnabled) SetLegacyClosure(pair.Key, true, new());
+                if (chosen && ModelOptionAvailable(pair.Value)) SetLegacyClosure(pair.Key, true, new());
             }
         }
         finally { updatingLegacyChoices = false; }
-        if (deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) && deviceDecky.IsEnabled
+        if (deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) && ModelOptionAvailable(deviceDecky)
             && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
         {
             updatingLegacyChoices = true;
@@ -88,12 +91,9 @@ public partial class MainWindow
                 try { SetLegacyClosure(pair.Key, pair.Value.IsChecked == true, new()); }
                 finally { updatingLegacyChoices = false; }
                 if (pair.Key == "oxp3:decky" && pair.Value.IsChecked != true)
-                {
-                    updatingDeviceAdaptations = true;
-                    try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
-                    finally { updatingDeviceAdaptations = false; }
-                    if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
-                }
+                    ClearStaticDeckyConsumers();
+                else if (deviceLegacyChoices.TryGetValue("oxp3:decky", out var provider) && provider.IsChecked == true)
+                    RestoreSleepSwitcher();
                 SyncLegacyBridge(); ConfigurationChanged();
             }
             pair.Value.Checked += Changed; pair.Value.Unchecked += Changed;
@@ -128,10 +128,14 @@ public partial class MainWindow
         return rows.Where(pair => Available(pair.Key, new())).Select(pair => pair.Key).ToArray();
     }
 
+    // Model rows set a local Boolean from the manifest and its dependency closure.
+    // WPF also disables the entire page while a background inspection is running.
+    private static bool ModelOptionAvailable(CheckBox box) => box.ReadLocalValue(UIElement.IsEnabledProperty) is true;
+
     private void SetLegacyClosure(string id, bool selected, HashSet<string> seen)
     {
         if (!seen.Add(id) || !deviceLegacyChoices.TryGetValue(id, out var box)) return;
-        box.IsChecked = selected && box.IsEnabled;
+        box.IsChecked = selected && ModelOptionAvailable(box);
         if (selected)
         {
             foreach (var dependency in LegacyDependencies(box)) SetLegacyClosure(dependency, true, seen);
@@ -139,14 +143,14 @@ public partial class MainWindow
         else
             foreach (var dependent in deviceLegacyChoices.Where(pair => LegacyDependencies(pair.Value).Contains(id)).Select(pair => pair.Key))
                 SetLegacyClosure(dependent, false, seen);
-        if (id == "oxp3:decky" && box.IsEnabled && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
+        if (id == "oxp3:decky" && ModelOptionAvailable(box) && optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky))
             coreDecky.IsChecked = box.IsChecked == true;
     }
 
     private static bool IsStaticDeckyConsumer(CheckBox box)
     {
         if (box.Tag is JsonElement component && component.TryGetProperty("id", out var id)
-            && id.GetString() is "oxp3:fingerprint-unlock" or "boiler:s2s4") return true;
+            && id.GetString() is FingerprintId or SleepSwitcherId) return true;
         const string prefix = "home/deck/homebrew/plugins/";
         if (box.Tag is not JsonElement item || !item.TryGetProperty("files", out var files)
             || files.ValueKind != JsonValueKind.Array) return false;
@@ -162,12 +166,33 @@ public partial class MainWindow
         return false;
     }
 
+    private void ClearStaticDeckyConsumers()
+    {
+        // A provider toggle temporarily suppresses S4. A manually unchecked switcher stays unchecked.
+        if (deviceComponentChoices.TryGetValue(SleepSwitcherId, out var switcher) && switcher.IsChecked == true)
+            restoreSleepSwitcherWithDecky = true;
+        updatingDeviceAdaptations = true;
+        try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
+        finally { updatingDeviceAdaptations = false; }
+        if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
+    }
+
+    private void RestoreSleepSwitcher()
+    {
+        if (!restoreSleepSwitcherWithDecky || !deviceComponentChoices.TryGetValue(SleepSwitcherId, out var switcher) || !ModelOptionAvailable(switcher)) return;
+        restoreSleepSwitcherWithDecky = false;
+        updatingDeviceAdaptations = true;
+        try { switcher.IsChecked = true; }
+        finally { updatingDeviceAdaptations = false; }
+        RefreshDeviceAdaptationsChoice();
+    }
+
     private void EnsureStaticDeckyProvider()
     {
         if (!deviceComponentChoices.Values.Any(box => box.IsChecked == true && IsStaticDeckyConsumer(box))) return;
         if (deviceLegacyBridge != null)
         {
-            if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var provider) || !provider.IsEnabled)
+            if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var provider) || !ModelOptionAvailable(provider))
             {
                 updatingDeviceAdaptations = true;
                 try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
@@ -177,6 +202,7 @@ public partial class MainWindow
             updatingLegacyChoices = true;
             try { SetLegacyClosure("oxp3:decky", true, new()); }
             finally { updatingLegacyChoices = false; }
+            RestoreSleepSwitcher();
             SyncLegacyBridge();
         }
         else if (optionsPanel.OptionBoxes.TryGetValue("core:decky", out var coreDecky)) coreDecky.IsChecked = true;
@@ -185,27 +211,20 @@ public partial class MainWindow
     private void CoreDeckyProviderChecked(object sender, RoutedEventArgs args)
     {
         if (updatingLegacyChoices || updatingDeviceAdaptations) return;
+        var selected = ((CheckBox)sender).IsChecked == true;
         if (deviceLegacyBridge == null)
         {
-            if (((CheckBox)sender).IsChecked == true) return;
-            updatingDeviceAdaptations = true;
-            try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
-            finally { updatingDeviceAdaptations = false; }
-            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
+            if (selected) RestoreSleepSwitcher();
+            else ClearStaticDeckyConsumers();
             RefreshDeviceAdaptationsChoice(); ConfigurationChanged();
             return;
         }
-        if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) || !deviceDecky.IsEnabled) return;
+        if (!deviceLegacyChoices.TryGetValue("oxp3:decky", out var deviceDecky) || !ModelOptionAvailable(deviceDecky)) return;
         updatingLegacyChoices = true;
-        try { SetLegacyClosure("oxp3:decky", ((CheckBox)sender).IsChecked == true, new()); }
+        try { SetLegacyClosure("oxp3:decky", selected, new()); }
         finally { updatingLegacyChoices = false; }
-        if (((CheckBox)sender).IsChecked != true)
-        {
-            updatingDeviceAdaptations = true;
-            try { foreach (var box in deviceComponentChoices.Values.Where(IsStaticDeckyConsumer)) box.IsChecked = false; }
-            finally { updatingDeviceAdaptations = false; }
-            if (deviceComponentChoices.TryGetValue(FingerprintId, out var fingerprint)) RecordFingerprintPreference(fingerprint);
-        }
+        if (selected) RestoreSleepSwitcher();
+        else ClearStaticDeckyConsumers();
         SyncLegacyBridge(); ConfigurationChanged();
     }
 
@@ -235,7 +254,7 @@ public partial class MainWindow
             var text = PreviewText(item, "name", pair.Key);
             var description = PreviewText(item, "description", "");
             if (description.Length > 0) text += "\n" + description;
-            if (!pair.Value.IsEnabled) text += "\n" + PreviewText(item, "reason", PartitionInventory.L("此项目或其依赖暂不可安装。", "This item or its dependency is unavailable."));
+            if (!ModelOptionAvailable(pair.Value)) text += "\n" + PreviewText(item, "reason", PartitionInventory.L("此项目或其依赖暂不可安装。", "This item or its dependency is unavailable."));
             ((TextBlock)pair.Value.Content).Text = text;
         }
         ((TextBlock)deviceLegacyUpdateHold!.Content).Text = PartitionInventory.L("为保留适配，暂停安装后进入系统时的首次更新。", "Pause the first system update after installation to preserve device support.");

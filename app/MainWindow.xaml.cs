@@ -93,7 +93,8 @@ public partial class MainWindow : Window
         InstallerI18n.Apply(this); PartitionSelector.RefreshLanguage(); ready = true; UpdateTargetMode();
         PartitionSelector.Changed += () =>
         {
-            acknowledgedSelection = null; reviewSeen = false; PhysicalConsent.IsChecked = false;
+            acknowledgedSelection = null; reviewSeen = false;
+            UpdateTargetMode();
             SyncCurrentHardwareTarget();
             ClearSsdSelection(); SyncFingerprintCandidateSelection();
             if (ready) { ValidationMessage.Text = ""; UpdateNavigationState(); }
@@ -114,7 +115,6 @@ public partial class MainWindow : Window
         CreateInputAssociationPanel(); CreateSystemSourceCards(); CreateAdaptationFlow(); CreateCustomBuild(); AddImageExport(); UpdateRecovery(); Closing += OnClosing; ShowStep(0); UpdateResponsiveLayout();
         Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/boiler-app-icon.png"));
         RefreshBootPrerequisites();
-        BootPrerequisitesCard.Visibility = physicalInstallation ? Visibility.Visible : Visibility.Collapsed;
         ShowBoilerHome();
         Closing += (_, _) => sourceInspection?.Cancel();
     }
@@ -137,7 +137,7 @@ public partial class MainWindow : Window
                 : InstallerI18n.T("上次任务未完成。可以查看记录，排查问题后重新演练。")
         };
     }
-    private InstallationTargetKind Kind => ExternalTarget.IsChecked == true ? InstallationTargetKind.ExternalDisk : InstallationTargetKind.InternalShared;
+    private InstallationTargetKind Kind => PartitionSelector.TargetKind;
     // Shared partition mounting is temporarily unavailable in the installer UI.
     // Explicitly clear persisted options so hiding the page cannot submit them.
     internal SelectedOptions CurrentOptions
@@ -180,7 +180,7 @@ public partial class MainWindow : Window
         step = value;
         var pages = new[] { TargetPage, SourcePage, ContentPage, ReviewPage, BootPage, ProgressPage, ResultPage, StoragePage, AdaptationPage };
         for (var i = 0; i < pages.Length; i++) pages[i].Visibility = i == step ? Visibility.Visible : Visibility.Collapsed;
-        PageTitle.Text = new[] { InstallerI18n.T("SteamOS，装在你选择的位置"), InstallerI18n.T("准备你的 SteamOS 系统"), InstallerI18n.T("选择安装内容"), InstallerI18n.T("开始前，核对这次方案"), InstallerI18n.T("启动器安装"), InstallerI18n.T("正在完成安装演练"), InstallerI18n.T("本次演练结果"), PartitionInventory.L("挂载分区到 SteamOS", "Mount partitions in SteamOS"), PartitionInventory.L("选择设备适配方式", "Choose device support") }[step];
+        PageTitle.Text = new[] { InstallerI18n.T("在你选择的位置安装 SteamOS"), InstallerI18n.T("准备你的 SteamOS 系统"), InstallerI18n.T("选择安装内容"), InstallerI18n.T("开始前，核对这次方案"), InstallerI18n.T("启动器安装"), InstallerI18n.T("正在完成安装演练"), InstallerI18n.T("本次演练结果"), PartitionInventory.L("挂载分区到 SteamOS", "Mount partitions in SteamOS"), PartitionInventory.L("选择设备适配方式", "Choose device support") }[step];
         PageSubtitle.Text = new[] { InstallerI18n.T("保留 Windows 双系统，或把完整系统装进外部设备。"), InstallerI18n.T("选好镜像，后面的系统准备交给安装助手。"), PartitionInventory.L("选择设备适配和插件。", "Choose device support and plugins."), InstallerI18n.T("只创建本工具自己的测试盘；所有结果都会记录。"), InstallerI18n.T("rEFInd 启动菜单与配置。"), InstallerI18n.T("保持电脑接通电源，完成前请不要移动工作目录。"), InstallerI18n.T("查看已完成的步骤，以及下一步需要处理的事项。"), PartitionInventory.L("可选步骤：访问两个系统共用的文件空间。", "Optional: access file storage shared by both systems."), PartitionInventory.L("选择机型适配，或按通用配置安装。", "Choose a device package or use generic installation.") }[step];
         BackButton.Visibility = step is 1 or 2 or 3 or 4 ? Visibility.Visible : Visibility.Hidden;
         NextButton.Visibility = step == 5 ? Visibility.Collapsed : Visibility.Visible;
@@ -393,7 +393,6 @@ public partial class MainWindow : Window
             if (restoreFocus) homeLanguage?.Focus();
         }
     }
-    private void ChoiceChanged(object sender, RoutedEventArgs e) { if (ready) { acknowledgedSelection = null; SyncCurrentHardwareTarget(); reviewSeen = false; ValidationMessage.Text = ""; UpdateTargetMode(); UpdateNavigationState(); } }
     private void UpdateTargetMode()
     {
         bootPanel.SetFirmwareContext(physicalInstallation && Kind == InstallationTargetKind.InternalShared);
@@ -401,7 +400,6 @@ public partial class MainWindow : Window
         StopButton.Content=physicalInstallation?PartitionInventory.L("停止安装","Stop installation"):InstallerI18n.T("停止演练");
         ModeBanner.Text=physicalInstallation?PartitionInventory.L("请先备份重要数据。安装将格式化目标 SteamOS 分区。","Back up important data. Installation formats the target SteamOS partitions."):PartitionInventory.L("开发演练 · 仅写入独立虚拟盘，不写入实际设备。","Developer rehearsal · Writes only an independent virtual disk, not a physical device.");
         ProgressStopNote.Text = physicalInstallation ? PartitionInventory.L("停止会保留已写入的分区。请等待当前操作结束，不要关闭电源。关闭窗口会先进行清理，清理结束后自动关闭。", "Stopping preserves partitions already written. Wait for the current operation to end; do not power off. Closing the window starts cleanup; the window closes automatically when cleanup finishes.") : PartitionInventory.L("可以停止演练。正在写入时，会先结束当前操作并卸载测试盘。不要关闭电源。关闭窗口会先进行清理，清理结束后自动关闭。", "You can stop the rehearsal. A write operation will finish and the test disk will detach first. Do not power off. Closing the window starts cleanup; the window closes automatically when cleanup finishes.");
-        PartitionCard.Visibility = Kind == InstallationTargetKind.InternalShared || physicalInstallation ? Visibility.Visible : Visibility.Collapsed;
         PlanningScope.Text = Kind == InstallationTargetKind.InternalShared
             ? PartitionInventory.L("所选磁盘与容量用于安装规划；本次执行仍使用独立的 80 GiB 虚拟测试盘。", "Disk and capacity selections are for planning; execution still uses a separate 80 GiB virtual test disk.")
             : PartitionInventory.L("外部完整系统演练使用新建的 80 GiB 虚拟盘；真实外部设备选择尚未开放。", "The external full-system rehearsal uses a new 80 GiB virtual disk; real external-device selection is not available yet.");
@@ -424,7 +422,7 @@ public partial class MainWindow : Window
     private async void Next(object sender, RoutedEventArgs e)
     {
         if (operation != null || DownloadsBusy || deviceActionBusy || inputInspectionBusy || inputAssociationBusy) return;
-        if (physicalInstallation && (!bootPrerequisitesAcknowledged || BootPrerequisitesOverlay.Visibility == Visibility.Visible)) { ShowBootPrerequisites(null, null); return; }
+        if (physicalInstallation && (!bootPrerequisitesAcknowledged || BootPrerequisitesOverlay.Visibility == Visibility.Visible)) { ShowBootPrerequisites(); return; }
         try
         {
             if (step == 3 && ContentIssue() is string invalidContent) throw new IOException(invalidContent);
@@ -542,11 +540,10 @@ public partial class MainWindow : Window
     }
     private void UpdateResponsiveLayout()
     {
-        if (MainContent == null || TargetChoices == null) return;
+        if (MainContent == null || PartitionSelector == null) return;
         var width = WindowRoot.ActualWidth > 0 ? WindowRoot.ActualWidth : Width;
         var height = WindowRoot.ActualHeight > 0 ? WindowRoot.ActualHeight : Height;
         var compact = width < 960;
-        var stackedChoices = width < 800;
         var shortSidebar = height < 420;
         var shortWindow = height < 480;
         PageSubtitle.Visibility = shortWindow ? Visibility.Collapsed : Visibility.Visible;
@@ -569,9 +566,6 @@ public partial class MainWindow : Window
         PartitionSelector.FreeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         PartitionSelector.TypeColumn.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         PartitionSelector.FitColumns();
-        Grid.SetColumnSpan(InternalTarget, stackedChoices ? 2 : 1);
-        Grid.SetColumn(ExternalTarget, stackedChoices ? 0 : 1); Grid.SetRow(ExternalTarget, stackedChoices ? 1 : 0); Grid.SetColumnSpan(ExternalTarget, stackedChoices ? 2 : 1);
-        InternalTarget.Margin = new Thickness(0,0,stackedChoices ? 0 : 10,12);
         UpdateBoilerHomeLayout();
         UpdateAdaptationLayout();
         UpdateLogLayout();
@@ -582,7 +576,8 @@ public partial class MainWindow : Window
     }
     private void WindowKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && BootPrerequisitesOverlay.Visibility == Visibility.Visible) { Close(); e.Handled = true; }
+        if (e.Key == Key.Escape && AccelerationPromptOpen) { DismissAccelerationPrompt(sender, e); e.Handled = true; }
+        else if (e.Key == Key.Escape && BootPrerequisitesOverlay.Visibility == Visibility.Visible) { Close(); e.Handled = true; }
         else if (e.Key == Key.Escape && SafetyOverlay.Visibility == Visibility.Visible) { CancelSafety(sender,e); e.Handled = true; }
         else if (e.Key == Key.F11 || e.Key == Key.Escape && WindowState == WindowState.Maximized) { ToggleFullscreen(sender,e); e.Handled = true; }
     }
@@ -705,8 +700,13 @@ public partial class MainWindow : Window
                         if (language != options.KdeLanguage)
                             effective = InstallerI18n.Format($"镜像缺少 {options.KdeLanguage} 的语言资源，已使用 {language}。",
                                 $"The image lacks {options.KdeLanguage} language resources and uses {language}.");
-                        return effective + " " + PartitionInventory.L("首次启动时请在 Steam 中选择游戏模式语言。",
-                            "Choose the Game Mode language in Steam on first boot.");
+                        var seeds = group.Where(row => row.TryGetProperty("steam_language_seed", out _))
+                            .Select(row => row.GetProperty("steam_language_seed").GetString()).Distinct().ToArray();
+                        if (seeds is ["prepared"])
+                            return effective + " " + PartitionInventory.L("已准备 Steam 首次启动语言。已有 Steam 设置会保留。", "Steam first-launch language is ready. Existing Steam settings are preserved.");
+                        if (seeds.Contains("unsupported"))
+                            return effective + " " + PartitionInventory.L("此镜像或语言不支持自动设置。请在 Steam 中设置语言。", "Automatic Steam language setup is unavailable for this image or language. Set it in Steam.");
+                        return effective;
                     }
                 }
                 if (failed.Length == 0 && group.All(record => record.TryGetProperty("activation", out var activation) && activation.GetString() == "first_boot_required"

@@ -262,11 +262,17 @@ public static partial class InstallationController
             // Existing SSD ledgers contain destination identity and cannot be rebound.
             // Inspect the immutable input before any selected repair can write.
             await Backend.GuestAsync("source-info", image, false, log, token);
-            if (request.Options != null && request.Mode is not ("imported" or "local"))
+            if (request.Options is { } options && request.Mode != "imported")
             {
-                Phase("components", InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…"), "02.01");
-                var expected = Math.Max(1, 2 * ComponentOutcome.Expected(request.Options).Count);
-                var componentMessage = InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…");
+                // The checked official local pair only needs the SteamOS baseline.
+                var integrationOptions = request.Mode == "local"
+                    ? new SelectedOptions(1, [], [], options.InstallerLanguage, "system", InstallMode: "vanilla")
+                    : options;
+                var expected = Math.Max(1, 2 * ComponentOutcome.Expected(integrationOptions).Count);
+                var componentMessage = request.Mode == "local"
+                    ? PartitionInventory.L("正在准备 Steam 首次启动的网络配置…", "Preparing networking for Steam's first launch…")
+                    : InstallerI18n.T("正在配置所选修复、插件与 KDE 语言…");
+                Phase("components", componentMessage, "02.01");
                 void ComponentLog(string text)
                 {
                     log(text);
@@ -278,7 +284,7 @@ public static partial class InstallationController
                         report(new("components", componentMessage + "\n" + PartitionInventory.L("最近完成：", "Last completed: ") + progress.ComponentDetail, progress.Percent));
                     }
                 }
-                var optionPayload = JsonSerializer.SerializeToNode(request.Options, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower })!;
+                var optionPayload = JsonSerializer.SerializeToNode(integrationOptions, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower })!;
                 if (request.Physical && request.PlannedPartition != null)
                 {
                     var repairDisk = PartitionInventory.Read(request.PlannedPartition.Snapshot).Single(d => d.Number == request.PlannedPartition.Disk);
@@ -303,11 +309,11 @@ public static partial class InstallationController
                 var firmwarePayload = await FirmwareDownloads.PrepareAsync(selectedImage, directory, repairSelection, ComponentLog, token);
                 var resultFile = await Backend.GuestAsync("integration", selectedImage, true, ComponentLog, token,
                     selection: repairSelection,
-                    secureInput: request.Options.SetDeckPassword ? request.InitialDeckPassword : null, integrationPayload: firmwarePayload);
+                    secureInput: integrationOptions.SetDeckPassword ? request.InitialDeckPassword : null, integrationPayload: firmwarePayload);
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.log"), resultFile, token);
                 var componentResults = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("OXP_COMPONENT_RESULT=", StringComparison.Ordinal)).Select(x => JsonDocument.Parse(x[21..]).RootElement.Clone()).ToArray();
                 await File.WriteAllTextAsync(Path.Combine(directory, "components.json"), JsonSerializer.Serialize(componentResults, new JsonSerializerOptions { WriteIndented = true }), token);
-                ComponentOutcome.Validate(componentResults, request.Options, ssdBinding, ssdIdentity);
+                ComponentOutcome.Validate(componentResults, integrationOptions, ssdBinding, ssdIdentity);
                 if (ssdSelected) { ssdResults = componentResults; ssdSelection = repairSelection; ssdPayload = firmwarePayload; }
                 var slotPlans = resultFile.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("BOILER_INSTALL_PLAN_JSON=", StringComparison.Ordinal))
                     .Select(x => JsonDocument.Parse(x["BOILER_INSTALL_PLAN_JSON=".Length..]).RootElement.Clone()).ToArray();
@@ -358,9 +364,13 @@ public static partial class InstallationController
                 await Backend.GuestAsync("source-info", image, false, log, token);
             JsonElement exportPlan;
             if (request.Mode == "local")
+            {
+                using var localPlan = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(directory, "install-plan-A.json"), token));
                 exportPlan = JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "InstallPlan", mode = "vanilla", source_mode = "local",
-                    components = Array.Empty<object>(), upgrade_to_310 = true, build_version = ReleaseInfo.DisplayVersion,
+                    components = Array.Empty<object>(), steam_dns = localPlan.RootElement.GetProperty("steam_dns"),
+                    upgrade_to_310 = true, build_version = ReleaseInfo.DisplayVersion,
                     source_sha256 = request.ExpectedSourceSha256, official_source_sha256 = request.OfficialSource!.Sha256 });
+            }
             else if (request.Mode == "imported")
                 exportPlan = importedManifest is { } importedMetadata && importedMetadata.TryGetProperty("install_plan", out var prior)
                     ? prior.Clone() : JsonSerializer.SerializeToElement(new { schema_version = 1, kind = "InstallPlan", mode = "imported", components = Array.Empty<object>(), component_ownership = "unknown-preserved" });

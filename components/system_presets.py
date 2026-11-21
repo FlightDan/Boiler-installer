@@ -17,7 +17,71 @@ IMAGE_LOCALE = re.compile(r'[a-z]{2,3}_[A-Z]{2}\Z')
 PASSWORD_HASH = re.compile(r'\$6\$(?:rounds=\d+\$)?[A-Za-z0-9./]{1,16}\$[A-Za-z0-9./]{86}\Z')
 SSH_TARGET = 'etc/systemd/system/multi-user.target.d/50-boiler-ssh.conf'
 SSH_DATA = b'# Boiler offline SSH preset\n[Unit]\nWants=sshd.service\n'
+STEAM_DROPIN = 'etc/systemd/user/steam-launcher.service.d/50-boiler-language.conf'
+STEAM_SCRIPT = 'etc/boiler/steam-language-seed.sh'
+STEAM_SESSION_LAUNCHER = 'usr/lib/steamos/steam-launcher'
+STEAM_DROPIN_DATA = b'[Service]\nExecStartPre=-/bin/sh /etc/boiler/steam-language-seed.sh\n'
+STEAM_LANGUAGES = {
+    'en': 'english', 'ja': 'japanese', 'ko': 'koreana', 'de': 'german',
+    'fr': 'french', 'es': 'spanish', 'ru': 'russian', 'pt': 'portuguese',
+    'it': 'italian', 'pl': 'polish', 'tr': 'turkish', 'uk': 'ukrainian',
+    'nl': 'dutch', 'sv': 'swedish', 'da': 'danish', 'fi': 'finnish',
+    'no': 'norwegian', 'nb': 'norwegian', 'cs': 'czech', 'hu': 'hungarian',
+    'ro': 'romanian', 'bg': 'bulgarian', 'el': 'greek', 'th': 'thai',
+    'vi': 'vietnamese', 'id': 'indonesian', 'ms': 'malay',
+}
+STEAM_REGIONAL_LANGUAGES = {
+    'zh_CN': 'schinese', 'zh_SG': 'schinese', 'zh_TW': 'tchinese',
+    'zh_HK': 'tchinese', 'zh_MO': 'tchinese', 'pt_BR': 'brazilian', 'es_MX': 'latam',
+}
 LOCALE_CATEGORIES = ('LC_CTYPE', 'LC_NUMERIC', 'LC_TIME', 'LC_COLLATE', 'LC_MONETARY', 'LC_MESSAGES/SYS_LC_MESSAGES', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS', 'LC_TELEPHONE', 'LC_MEASUREMENT', 'LC_IDENTIFICATION')
+
+
+def steam_seed(root, language):
+    """Return generated first-launch files only for a recognised SteamOS path."""
+    token = STEAM_REGIONAL_LANGUAGES.get(language) or STEAM_LANGUAGES.get(language.split('_')[0])
+    if token is None: return {}
+    from source_profile import image_path
+    try:
+        unit = _read(root, 'etc/systemd/user/steam-launcher.service')
+        if unit is None: unit = _read(root, 'usr/lib/systemd/user/steam-launcher.service')
+        if (not unit or b'ExecStart=/' + STEAM_SESSION_LAUNCHER.encode() not in unit.splitlines()
+                or _artifact(root, STEAM_SESSION_LAUNCHER, executable=True) is None):
+            return {}
+        with _artifact_file(image_path(root, 'usr/bin/steam'), maximum=1024 * 1024) as (stream, _):
+            launcher = stream.read()
+        if b'steam_registry_oobe.vdf' not in launcher or b'/.steam' not in launcher or b'/registry.vdf' not in launcher:
+            return {}
+    except (FileNotFoundError, ValueError, OSError, RuntimeError):
+        return {}
+    script = '''#!/bin/sh
+# Seed only a fresh deck Steam registry; Steam consumes its OOBE backup.
+[ "$(id -un)" = deck ] && [ "$HOME" = /home/deck ] || exit 0
+registry="$HOME/.steam/registry.vdf"
+backup="$HOME/.local/share/steam_registry_oobe.vdf"
+[ ! -e "$registry" ] && [ ! -L "$registry" ] || exit 0
+[ ! -e "$backup" ] && [ ! -L "$backup" ] || exit 0
+mkdir -p "$HOME/.local/share" || exit 0
+umask 077
+( set -C; cat > "$backup" <<'BOILER_VDF'
+"Registry"
+{
+    "HKCU"
+    {
+        "Software"
+        {
+            "Valve"
+            {
+                "Steamsteamglobal" { "language" "%s" }
+                "Steam" { "language" "%s" }
+            }
+        }
+    }
+}
+BOILER_VDF
+) 2>/dev/null || :
+''' % (token, token)
+    return {STEAM_DROPIN: STEAM_DROPIN_DATA, STEAM_SCRIPT: script.encode()}
 
 
 def locale_magic(category):
@@ -288,6 +352,7 @@ def prepare(root, options, password_hash=None):
         desktop = (_read(root, 'etc/xdg/plasma-localerc') or b'').decode()
         desktop = _config(desktop, 'Translations', {'LANGUAGE': language})
         files['etc/xdg/plasma-localerc'] = _config(desktop, 'Formats', {'LANG': locale, 'LC_MESSAGES': locale}).encode()
+        files.update(steam_seed(root, language))
     if options.get('set_deck_password', False):
         if not isinstance(password_hash, str) or not PASSWORD_HASH.fullmatch(password_hash):
             raise ValueError('A SHA-512 crypt hash is required for the selected deck password')
@@ -321,7 +386,7 @@ def prepare(root, options, password_hash=None):
         files[SSH_TARGET] = SSH_DATA
     from payload_lock import record
     records = [record('preset/' + target, data, target=target, mode=0o600 if target == 'etc/shadow' else 0o644) for target, data in sorted(files.items())]
-    return dict(schema_version=1, kind='ComponentManifest', id=IDENTITY, version='0.1.0', files=records, requires=[], conflicts=[], hooks={}), files, language
+    return dict(schema_version=1, kind='ComponentManifest', id=IDENTITY, version='0.2.0', files=records, requires=[], conflicts=[], hooks={}), files, language
 
 
 def apply(engine, component, files):
@@ -366,3 +431,14 @@ def verify(root, options, engine):
         unit = override if override is not None else _read(root, 'usr/lib/systemd/system/sshd.service', required=True)
         if b'[Service]' not in unit: raise ValueError('Target SSH service is missing')
     return language
+
+
+def verify_steam_seed(root, language, recorded):
+    if recorded not in ('prepared', 'unsupported'):
+        raise ValueError('Invalid Steam language seed result')
+    expected = steam_seed(root, language) if language != 'system' else {}
+    if recorded == 'prepared':
+        if not expected or any(_read(root, path, required=True) != data for path, data in expected.items()):
+            raise ValueError('Steam first-launch language seed differs')
+    elif expected:
+        raise ValueError('Steam language seed capability differs from result')

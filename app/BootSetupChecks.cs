@@ -25,6 +25,7 @@ internal static class BootSetupChecks
         void Click(string name) => Find<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var picker = Find<PartitionPicker>("PartitionSelector");
         picker.AutomaticReadEnabled = false;
+        window.SecureBootPreflight = () => { };
         window.BoilerModeForChecks("vanilla");
         window.PreviewStep(0);
         window.WindowState = WindowState.Normal; window.ShowActivated = false; window.Show();
@@ -38,7 +39,7 @@ internal static class BootSetupChecks
         foreach (var failure in new[] { "Secure Boot is still enabled", "Firmware read failed" })
         {
             window.SecureBootPreflight = () => throw new IOException(failure);
-            Click("BootPrerequisitesShow");
+            window.ShowBootPrerequisites();
             Find<CheckBox>("BootPrerequisitesConsent").IsChecked = true;
             Click("BootPrerequisitesContinue");
             Require(Find<Grid>("BootPrerequisitesOverlay").IsVisible && !picker.BootPrerequisitesReady
@@ -47,7 +48,7 @@ internal static class BootSetupChecks
         }
         var probes = 0;
         window.SecureBootPreflight = () => { if (++probes > 1) throw new IOException("changed-before-dismissal"); };
-        Click("BootPrerequisitesShow");
+        window.ShowBootPrerequisites();
         Find<CheckBox>("BootPrerequisitesConsent").IsChecked = true;
         Click("BootPrerequisitesContinue");
         Require(probes == 2 && Find<Grid>("BootPrerequisitesOverlay").IsVisible && !picker.BootPrerequisitesReady,
@@ -55,11 +56,11 @@ internal static class BootSetupChecks
         window.SecureBootPreflight = () => { };
         foreach (var english in new[] { false, true })
         {
-            // Check entry into the warning from the location page in both languages.
+            // Check the entry warning in both languages.
             if (Find<Grid>("BootPrerequisitesOverlay").IsVisible) Acknowledge(window);
             Find<ComboBox>("InstallerLanguage").SelectedValue = english ? "en-US" : "zh-CN";
             window.SecureBootPreflight = () => FirmwareBoot.RequireSecureBootDisabled([1]);
-            Click("BootPrerequisitesShow");
+            window.ShowBootPrerequisites();
             Find<CheckBox>("BootPrerequisitesConsent").IsChecked = true;
             Click("BootPrerequisitesContinue");
             window.Width = 640; window.Height = 360; window.UpdateLayout();
@@ -74,7 +75,7 @@ internal static class BootSetupChecks
                 "actual-enabled-state-message-blocks-entry-" + english);
             Capture(Find<Grid>("WindowRoot"), Path.Combine(directory, $"prerequisites-enabled-{(english ? "en" : "zh")}-640x360.png"));
             window.SecureBootPreflight = () => { };
-            Click("BootPrerequisitesShow");
+            window.ShowBootPrerequisites();
             Require(Find<TextBlock>("BootPrerequisitesMessage").Text.Contains("BitLocker") && Find<TextBlock>("BootPrerequisitesMessage").Text.Contains("Secure Boot"), "prerequisites-name-encryption-and-secure-boot-" + english);
             foreach (var size in new[] { new Size(640, 360), new Size(853, 480), new Size(1280, 720) })
             {
@@ -114,9 +115,10 @@ internal static class BootSetupChecks
             panel.MakeDefaultChoice.IsChecked = false;
             Require(!panel.MakeDefaultBoot, "uncheck-keeps-original-order-" + english);
             panel.MakeDefaultChoice.IsChecked = true;
-            Find<RadioButton>("ExternalTarget").IsChecked = true;
+            picker.LoadSnapshot(PartitionPickerChecks.ExampleWithExternalDisk(), true);
+            picker.Disks.SelectedIndex = 1;
             Require(!panel.MakeDefaultChoice.IsEnabled && !panel.MakeDefaultBoot, "external-mode-disables-host-default-" + english);
-            Find<RadioButton>("InternalTarget").IsChecked = true;
+            picker.Disks.SelectedIndex = 0;
             panel.InstallChoice.IsChecked = true;
             Require(panel.MakeDefaultBoot && panel.Selection != null, "refind-and-firmware-default-both-selected-" + english);
             var scanLine = panel.Configuration().Split('\n').Single(line => line.Contains("OXP3-rEFInd/drivers_x64"));

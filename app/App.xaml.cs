@@ -475,6 +475,7 @@ public partial class App : Application
             await window.StartAsync(new(kind, e.Args[1], e.Args[0] != "--wizard-run-image"));
             Shutdown(window.CompletedSession?.Status == (e.Args[0] == "--wizard-cancel-prepared" ? "cancelled" : "complete") ? 0 : 1); return;
         }
+        if (e.Args.Length == 0) window.ContentRendered += window.OfferAccelerationOnStartup;
         window.Show();
     }
 }

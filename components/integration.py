@@ -489,7 +489,7 @@ def _stage_mark(slot, phase, clock):
     print('BOILER_TIMING=stage-%s:%s:%.3f' % (slot, phase, time.monotonic() - clock), flush=True)
 
 
-def stage(root, payload, options, slot, password_hash=None, target_disk=None, ssd_context=None, ssd_plan=None, ssd_identity=None, defer_ssd=False, model_review_path=None):
+def stage(root, payload, options, slot, password_hash=None, target_disk=None, ssd_context=None, ssd_plan=None, ssd_identity=None, defer_ssd=False, model_review_path=None, dns_baseline=None):
     clock = time.monotonic()
     validate_options(options)
     if slot not in ('A', 'B'): raise ValueError('Unknown installation slot')
@@ -502,6 +502,8 @@ def stage(root, payload, options, slot, password_hash=None, target_disk=None, ss
     root, payload = Path(root), Path(payload)
     result['source'] = release(root)
     result['install_plan'] = install_plan(options, result['source'], slot)
+    if dns_baseline is not None:
+        result['install_plan']['steam_dns'] = dns_baseline
     choices = list(dict.fromkeys(options.get('repairs', []) + options.get('plugins', [])))
     vendors = selected_wireless(options)
     graphics_profile = graphics.selected(options)

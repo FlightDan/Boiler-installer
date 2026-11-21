@@ -18,6 +18,7 @@ import graphics_boot
 import microcode
 import microcode_boot
 import cpufreq
+import steam_dns
 
 # Phase timing is plain log output; nothing below reads these values.
 _boiler_clock = time.monotonic()
@@ -68,8 +69,12 @@ for slot in ('A', 'B'):
             raise RuntimeError('Prepared root protection missing')
         mount(parts['var-' + slot], root / 'var', '-t', 'ext4', '-o', 'ro,noload')
         mount(parts['home'], root / 'home', '-t', 'ext4', '-o', 'ro,noload')
+        if not mount_etc(root, mounts, readonly=True):
+            raise RuntimeError('SteamOS persistent /etc is required to verify first-boot DNS')
+        dns_baseline = steam_dns.verify(root)
+        print('OXP_STEAM_DNS_VERIFIED=' + slot, flush=True)
         if not empty:
-            mount_etc(root, mounts, readonly=True); mount_opt(root, mounts, readonly=True)
+            mount_opt(root, mounts, readonly=True)
         if options.get('device_package') or ssd_selected or model_needed:
             mount(parts['efi-' + slot], root / 'efi', '-t', 'vfat', '-o', 'ro')
             guest_marker('boiler-guest-context', 'managed-qemu-integration\n')
@@ -88,6 +93,8 @@ for slot in ('A', 'B'):
             print('OXP_INTEGRATION_VERIFY='+json.dumps(dict(slot=slot,readonly=True)), flush=True)
             continue
         result = json.loads((root / 'home/.boiler/integration' / slot / 'result.json').read_text())
+        if result['install_plan'].get('steam_dns') != dns_baseline:
+            raise RuntimeError('SteamOS DNS verification differs from the installed plan')
         if result['options'] != {key: value for key,value in options.items() if key != '_target_disk'}:
             raise RuntimeError('Verification selection differs from installed request')
         graphics_profile = graphics.selected(options)
